@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Bell, Plus, X, Pencil, Check } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft } from "lucide-react";
 
 const defaultNavItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, fixed: true },
-  { id: "tramite", label: "Causas en Trámite", icon: Scale, fixed: true },
-  { id: "detenidos", label: "Detenidos", icon: Shield, fixed: true },
-  { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle, fixed: true },
-  { id: "sjp", label: "SJP en Trámite", icon: Pause, fixed: true },
-  { id: "recursos", label: "Recursos", icon: Users, fixed: true },
-  { id: "alertas", label: "Alertas", icon: Bell, fixed: true },
-  { id: "calendario", label: "Vencimientos", icon: Calendar, fixed: true },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "tramite", label: "Causas en Trámite", icon: Scale },
+  { id: "detenidos", label: "Detenidos", icon: Shield },
+  { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle },
+  { id: "sjp", label: "SJP en Trámite", icon: Pause },
+  { id: "recursos", label: "Recursos", icon: Users },
+  { id: "calendario", label: "Calendario / Alertas", icon: Calendar },
 ];
 
 export interface CustomBoard {
@@ -24,9 +23,11 @@ interface Props {
   onAddBoard: () => void;
   onRemoveBoard: (id: string) => void;
   onRenameBoard: (id: string, name: string) => void;
+  vocalia: number;
+  onBack: () => void;
 }
 
-export default function AppSidebar({ active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard }: Props) {
+export default function AppSidebar({ active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard, vocalia, onBack }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -42,9 +43,18 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
 
   return (
     <aside className="w-56 shrink-0 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen border-r border-sidebar-border">
-      <div className="px-5 py-6 flex items-center gap-2">
-        <Scale className="w-6 h-6 text-sidebar-primary" />
-        <span className="font-display text-lg font-bold text-sidebar-primary-foreground tracking-tight">JusTrack</span>
+      <div className="px-5 py-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Scale className="w-6 h-6 text-sidebar-primary" />
+          <span className="font-display text-lg font-bold text-sidebar-primary-foreground tracking-tight">JusTrack</span>
+        </div>
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Vocalía {vocalia} — Cambiar
+        </button>
       </div>
 
       <nav className="flex-1 px-3 space-y-1">
@@ -120,7 +130,7 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
       </nav>
 
       <div className="px-5 py-4 text-[11px] text-sidebar-foreground/40">
-        TOCC 26 · Prototipo v2
+        TOCC 26 · Prototipo v3
       </div>
     </aside>
   );
