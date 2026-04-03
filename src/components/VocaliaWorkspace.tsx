@@ -16,10 +16,17 @@ interface Props {
 export default function VocaliaWorkspace({ vocalia, onBack }: Props) {
   const [view, setView] = useState<View>("dashboard");
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
+  const [causas, setCausas] = useState<Causa[]>(() => mockCausas.filter((c) => c.vocalia === vocalia));
 
-  const causasVocalia = mockCausas.filter((c) => c.vocalia === vocalia);
+  const updateCausa = (updated: Causa) => {
+    setCausas((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
 
-  const causasEnTramite = causasVocalia.filter(
+  const deleteCausa = (id: string) => {
+    setCausas((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const causasEnTramite = causas.filter(
     (c) =>
       (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
       !c.imputados.some((i) => i.estadoLibertad === "Rebelde") &&
@@ -28,13 +35,13 @@ export default function VocaliaWorkspace({ vocalia, onBack }: Props) {
       !c.probation
   );
 
-  const causasRebeldes = causasVocalia.filter((c) =>
+  const causasRebeldes = causas.filter((c) =>
     c.imputados.some((i) => i.estadoLibertad === "Rebelde")
   );
-  const causasSJP = causasVocalia.filter((c) =>
+  const causasSJP = causas.filter((c) =>
     c.imputados.some((i) => i.estadoLibertad === "SJP") || !!c.probation
   );
-  const causasRecursos = causasVocalia.filter((c) =>
+  const causasRecursos = causas.filter((c) =>
     ["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa)
   );
 
@@ -83,20 +90,20 @@ export default function VocaliaWorkspace({ vocalia, onBack }: Props) {
 
         {view === "dashboard" && (
           <div className="space-y-8">
-            <KpiCards causas={causasVocalia} />
-            <CausasTable causas={causasEnTramite} title="Causas en Trámite" />
+            <KpiCards causas={causas} />
+            <CausasTable causas={causasEnTramite} title="Causas en Trámite" onUpdateCausa={updateCausa} />
           </div>
         )}
 
-        {view === "tramite" && <CausasTable causas={causasEnTramite} title="Causas en Trámite" />}
-        {view === "detenidos" && <DetenidosList causas={causasVocalia} />}
-        {view === "rebeldes" && <CausasTable causas={causasRebeldes} title="Rebeldes / Paraderos" />}
-        {view === "sjp" && <CausasTable causas={causasSJP} title="SJP en Trámite" />}
-        {view === "recursos" && <CausasTable causas={causasRecursos} title="Recursos" />}
-        {view === "calendario" && <CalendarioAlertas causas={causasVocalia} />}
+        {view === "tramite" && <CausasTable causas={causasEnTramite} title="Causas en Trámite" onUpdateCausa={updateCausa} />}
+        {view === "detenidos" && <DetenidosList causas={causas} onUpdateCausa={updateCausa} />}
+        {view === "rebeldes" && <CausasTable causas={causasRebeldes} title="Rebeldes / Paraderos" onUpdateCausa={updateCausa} />}
+        {view === "sjp" && <CausasTable causas={causasSJP} title="SJP en Trámite" onUpdateCausa={updateCausa} />}
+        {view === "recursos" && <CausasTable causas={causasRecursos} title="Recursos" onUpdateCausa={updateCausa} />}
+        {view === "calendario" && <CalendarioAlertas causas={causas} />}
 
         {view.startsWith("custom-") && (
-          <CausasTable causas={causasVocalia} title={customBoards.find((b) => b.id === view)?.label || "Tablero"} />
+          <CausasTable causas={causas} title={customBoards.find((b) => b.id === view)?.label || "Tablero"} onUpdateCausa={updateCausa} />
         )}
       </main>
     </div>

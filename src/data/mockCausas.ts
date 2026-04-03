@@ -8,6 +8,11 @@ export interface Audiencia {
   notas?: string;
 }
 
+export interface AgendaItem {
+  texto: string;
+  fecha: string;
+}
+
 export interface Imputado {
   nombre: string;
   estadoLibertad: EstadoLibertad;
@@ -29,18 +34,18 @@ export interface Causa {
   juicioFijado?: { fecha: string; hora: string };
   audiencias?: Audiencia[];
   probation?: { vencimiento: string };
-  vocalia: number; // 1, 2, or 3
+  vocalia: number;
   causasConexas?: string[];
   notas?: string;
+  anotaciones?: string;
+  agenda?: AgendaItem[];
 }
 
-// Carátula = first imputado's last name
 export function getCaratula(causa: Causa): string {
   if (causa.imputados.length === 1) return causa.imputados[0].nombre;
   return `${causa.imputados[0].nombre} y otros`;
 }
 
-// --- Proximity-based color (continuous gradient) ---
 export type ProximityLevel = "vencido" | "critico" | "urgente" | "proximo" | "lejano";
 
 export function getProximityLevel(fecha: string): ProximityLevel {
@@ -87,7 +92,7 @@ export function getProximityDot(fecha: string): string {
 
 export interface Evento {
   causa: Causa;
-  tipo: "Juicio" | "Prescripción" | "Vto. PP" | "Audiencia" | "Vto. Probation";
+  tipo: "Juicio" | "Prescripción" | "Vto. PP" | "Audiencia" | "Vto. Probation" | "Agenda";
   descripcion: string;
   fecha: string;
   hora?: string;
@@ -97,7 +102,7 @@ export function getAllEventos(causas: Causa[]): Evento[] {
   const eventos: Evento[] = [];
   for (const c of causas) {
     if (c.juicioFijado) {
-      eventos.push({ causa: c, tipo: "Juicio", descripcion: `Juicio oral`, fecha: c.juicioFijado.fecha, hora: c.juicioFijado.hora });
+      eventos.push({ causa: c, tipo: "Juicio", descripcion: "Juicio oral", fecha: c.juicioFijado.fecha, hora: c.juicioFijado.hora });
     }
     eventos.push({ causa: c, tipo: "Prescripción", descripcion: "Prescripción", fecha: c.fechaPrescripcion });
     if (c.fechaVencimientoPP) {
@@ -109,6 +114,11 @@ export function getAllEventos(causas: Causa[]): Evento[] {
     if (c.audiencias) {
       for (const a of c.audiencias) {
         eventos.push({ causa: c, tipo: "Audiencia", descripcion: `Aud. ${a.tipo}`, fecha: a.fecha, hora: a.hora });
+      }
+    }
+    if (c.agenda) {
+      for (const ag of c.agenda) {
+        eventos.push({ causa: c, tipo: "Agenda", descripcion: ag.texto, fecha: ag.fecha });
       }
     }
   }
@@ -136,6 +146,10 @@ export const mockCausas: Causa[] = [
     vocalia: 1,
     causasConexas: ["82100/2018"],
     notas: "Cómputo de palabra vigente. Paradero actualizado.",
+    anotaciones: "Verificar si el defensor presentó la prueba documental.",
+    agenda: [
+      { texto: "Llamar al defensor por prueba pendiente", fecha: "2025-04-18" },
+    ],
   },
   {
     id: "2",
@@ -219,6 +233,10 @@ export const mockCausas: Causa[] = [
     ],
     vocalia: 2,
     notas: "Víctima menor de edad. Trámite prioritario.",
+    agenda: [
+      { texto: "Coordinar con Cámara Gesell", fecha: "2025-04-25" },
+      { texto: "Revisar pericia psicológica", fecha: "2025-05-10" },
+    ],
   },
   {
     id: "7",
