@@ -1,9 +1,12 @@
-import { LayoutDashboard, Users, Calendar, Columns3, Scale } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause } from "lucide-react";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "kanban", label: "Tablero Kanban", icon: Columns3 },
-  { id: "detenidos", label: "Detenidos", icon: Users },
+  { id: "tramite", label: "Causas en Trámite", icon: Scale },
+  { id: "detenidos", label: "Detenidos", icon: Shield },
+  { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle },
+  { id: "sjp", label: "SJP en Trámite", icon: Pause },
+  { id: "recursos", label: "Recursos", icon: Users },
   { id: "calendario", label: "Vencimientos", icon: Calendar },
 ];
 
