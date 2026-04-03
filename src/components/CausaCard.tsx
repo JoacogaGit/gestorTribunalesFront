@@ -1,14 +1,6 @@
-import { Causa } from "@/data/mockCausas";
+import { Causa, getAlertSeverity } from "@/data/mockCausas";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, User, Calendar, Link2, FileText } from "lucide-react";
-
-function alertLevel(fecha: string): "urgent" | "warning" | "ok" {
-  const diff = new Date(fecha).getTime() - Date.now();
-  const days = diff / (1000 * 60 * 60 * 24);
-  if (days < 0) return "urgent";
-  if (days < 90) return "warning";
-  return "ok";
-}
 
 const libertadColors: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent border-alert-urgent/30",
@@ -18,21 +10,21 @@ const libertadColors: Record<string, string> = {
 };
 
 export default function CausaCard({ causa, onClick }: { causa: Causa; onClick?: () => void }) {
-  const ppLevel = causa.fechaVencimientoPP ? alertLevel(causa.fechaVencimientoPP) : null;
+  const ppLevel = causa.fechaVencimientoPP ? getAlertSeverity(causa.fechaVencimientoPP) : null;
 
   return (
     <button
       onClick={onClick}
-      className="glass-card rounded-lg p-4 text-left w-full hover:shadow-md transition-all hover:border-accent/40 group"
+      className="glass-card rounded-lg p-4 text-left w-full hover:shadow-md transition-all hover:border-primary/40 group"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-xs font-mono font-semibold text-accent">{causa.numero}</span>
+        <span className="text-xs font-mono font-semibold text-primary">{causa.numero}</span>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${libertadColors[causa.estadoLibertad]}`}>
           {causa.estadoLibertad}
         </span>
       </div>
 
-      <h4 className="text-sm font-semibold text-foreground leading-tight mb-1 group-hover:text-accent transition-colors">
+      <h4 className="text-sm font-semibold text-foreground leading-tight mb-1 group-hover:text-primary transition-colors">
         {causa.caratula}
       </h4>
 
@@ -60,7 +52,7 @@ export default function CausaCard({ causa, onClick }: { causa: Causa; onClick?: 
       )}
 
       {ppLevel && ppLevel !== "ok" && (
-        <div className={`flex items-center gap-1.5 text-xs mt-1 ${ppLevel === "urgent" ? "text-alert-urgent animate-pulse-alert" : "text-alert-warning"}`}>
+        <div className={`flex items-center gap-1.5 text-xs mt-1 ${ppLevel === "critical" || ppLevel === "urgent" ? "text-alert-urgent animate-pulse-alert" : "text-alert-warning"}`}>
           <FileText className="w-3 h-3" />
           <span className="font-medium">PP vence: {new Date(causa.fechaVencimientoPP!).toLocaleDateString("es-AR")}</span>
         </div>

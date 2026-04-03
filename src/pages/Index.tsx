@@ -1,23 +1,13 @@
 import { useState } from "react";
-import AppSidebar from "@/components/AppSidebar";
+import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
 import CausasTable from "@/components/CausasTable";
 import CalendarioVencimientos from "@/components/CalendarioVencimientos";
+import AlertasPanel from "@/components/AlertasPanel";
 import { mockCausas } from "@/data/mockCausas";
 
-type View = "dashboard" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "calendario";
+type View = string;
 
-const titles: Record<View, string> = {
-  dashboard: "Panel General",
-  tramite: "Causas en Trámite",
-  detenidos: "Causas con Detenidos",
-  rebeldes: "Rebeldes / Paraderos",
-  sjp: "SJP en Trámite",
-  recursos: "Recursos (Casación / Queja / REX)",
-  calendario: "Calendario de Vencimientos",
-};
-
-// Causas "en trámite" = En trámite o En juicio (excluye rebeldes, SJP, recursos)
 const causasEnTramite = mockCausas.filter(
   (c) =>
     (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
@@ -33,14 +23,51 @@ const causasRecursos = mockCausas.filter((c) =>
   ["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa)
 );
 
+const defaultTitles: Record<string, string> = {
+  dashboard: "Panel General",
+  tramite: "Causas en Trámite",
+  detenidos: "Causas con Detenidos",
+  rebeldes: "Rebeldes / Paraderos",
+  sjp: "SJP en Trámite",
+  recursos: "Recursos (Casación / Queja / REX)",
+  alertas: "Centro de Alertas",
+  calendario: "Calendario de Vencimientos",
+};
+
 export default function Index() {
   const [view, setView] = useState<View>("dashboard");
+  const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
+
+  const addBoard = () => {
+    if (customBoards.length >= 2) return;
+    const id = `custom-${Date.now()}`;
+    setCustomBoards([...customBoards, { id, label: `Tablero ${customBoards.length + 1}` }]);
+    setView(id);
+  };
+
+  const removeBoard = (id: string) => {
+    setCustomBoards(customBoards.filter((b) => b.id !== id));
+    if (view === id) setView("dashboard");
+  };
+
+  const renameBoard = (id: string, name: string) => {
+    setCustomBoards(customBoards.map((b) => (b.id === id ? { ...b, label: name } : b)));
+  };
+
+  const title = defaultTitles[view] || customBoards.find((b) => b.id === view)?.label || "Tablero";
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AppSidebar active={view} onNavigate={(id) => setView(id as View)} />
+      <AppSidebar
+        active={view}
+        onNavigate={(id) => setView(id)}
+        customBoards={customBoards}
+        onAddBoard={addBoard}
+        onRemoveBoard={removeBoard}
+        onRenameBoard={renameBoard}
+      />
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
-        <h1 className="text-2xl font-display font-bold text-foreground mb-6">{titles[view]}</h1>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-6">{title}</h1>
 
         {view === "dashboard" && (
           <div className="space-y-8">
@@ -49,12 +76,17 @@ export default function Index() {
           </div>
         )}
 
-        {view === "tramite" && <CausasTable causas={causasEnTramite} />}
-        {view === "detenidos" && <CausasTable causas={causasDetenidos} />}
-        {view === "rebeldes" && <CausasTable causas={causasRebeldes} />}
-        {view === "sjp" && <CausasTable causas={causasSJP} />}
-        {view === "recursos" && <CausasTable causas={causasRecursos} />}
+        {view === "tramite" && <CausasTable causas={causasEnTramite} title="Causas en Trámite" />}
+        {view === "detenidos" && <CausasTable causas={causasDetenidos} title="Causas con Detenidos" />}
+        {view === "rebeldes" && <CausasTable causas={causasRebeldes} title="Rebeldes / Paraderos" />}
+        {view === "sjp" && <CausasTable causas={causasSJP} title="SJP en Trámite" />}
+        {view === "recursos" && <CausasTable causas={causasRecursos} title="Recursos" />}
+        {view === "alertas" && <AlertasPanel />}
         {view === "calendario" && <CalendarioVencimientos />}
+
+        {view.startsWith("custom-") && (
+          <CausasTable causas={mockCausas} title={customBoards.find((b) => b.id === view)?.label || "Tablero"} />
+        )}
       </main>
     </div>
   );
