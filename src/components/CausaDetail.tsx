@@ -1,12 +1,20 @@
-import { Causa } from "@/data/mockCausas";
+import { Causa, getCausaAlerts, getAlertLabel } from "@/data/mockCausas";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
+const severityColor: Record<string, string> = {
+  critical: "bg-alert-urgent/15 text-alert-urgent",
+  urgent: "bg-alert-urgent/10 text-alert-urgent",
+  warning: "bg-alert-warning/10 text-alert-warning",
+};
+
 export default function CausaDetail({ causa, onClose }: { causa: Causa; onClose: () => void }) {
+  const alerts = getCausaAlerts(causa);
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="font-display text-lg">
             Causa N° {causa.numero}
@@ -18,6 +26,17 @@ export default function CausaDetail({ causa, onClose }: { causa: Causa; onClose:
             <h4 className="font-semibold text-foreground mb-1">{causa.caratula}</h4>
             <p className="text-muted-foreground">{causa.delito}</p>
           </div>
+
+          {alerts.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground">Alertas activas</p>
+              {alerts.map((a, i) => (
+                <div key={i} className={`rounded-md px-3 py-2 text-xs font-medium ${severityColor[a.severity] || ""}`}>
+                  {a.descripcion} — {fmt(a.fecha)} ({getAlertLabel(a.severity)})
+                </div>
+              ))}
+            </div>
+          )}
 
           <Separator />
 
@@ -64,6 +83,21 @@ export default function CausaDetail({ causa, onClose }: { causa: Causa; onClose:
             </div>
           )}
 
+          {causa.audiencias && causa.audiencias.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Audiencias</p>
+              <div className="space-y-1">
+                {causa.audiencias.map((a, i) => (
+                  <div key={i} className="bg-accent/10 rounded-md px-3 py-2 text-xs">
+                    <span className="font-semibold text-accent">{a.tipo}</span>
+                    <span className="text-muted-foreground ml-2">{fmt(a.fecha)} {a.hora} hs</span>
+                    {a.notas && <p className="text-muted-foreground mt-0.5 italic">{a.notas}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {causa.causasConexas && causa.causasConexas.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-1">Causas conexas</p>
@@ -76,7 +110,7 @@ export default function CausaDetail({ causa, onClose }: { causa: Causa; onClose:
           )}
 
           {causa.notas && (
-            <div className="bg-surface-sunken rounded-md p-3">
+            <div className="bg-muted/50 rounded-md p-3">
               <p className="text-xs font-semibold text-muted-foreground mb-1">Notas</p>
               <p className="text-sm text-foreground">{causa.notas}</p>
             </div>

@@ -1,6 +1,13 @@
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
 export type EstadoCausa = "En trámite" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX";
 
+export interface Audiencia {
+  tipo: string; // ej: "Audiencia Art. 454", "Cesura", "Nulidad", etc.
+  fecha: string;
+  hora: string;
+  notas?: string;
+}
+
 export interface Causa {
   id: string;
   numero: string;
@@ -17,11 +24,87 @@ export interface Causa {
   fechaPrescripcion: string;
   fechaVencimientoPP?: string;
   juicioFijado?: { fecha: string; hora: string };
+  audiencias?: Audiencia[];
   probation?: { vencimiento: string };
   vocalia: string;
   secretaria: string;
   causasConexas?: string[];
   notas?: string;
+}
+
+// --- Alert helpers ---
+export type AlertSeverity = "critical" | "urgent" | "warning" | "ok";
+
+export function getAlertSeverity(fecha: string): AlertSeverity {
+  const diff = new Date(fecha).getTime() - Date.now();
+  const days = diff / (1000 * 60 * 60 * 24);
+  if (days < 0) return "critical";
+  if (days < 30) return "urgent";
+  if (days < 90) return "warning";
+  return "ok";
+}
+
+export function getAlertLabel(severity: AlertSeverity): string {
+  switch (severity) {
+    case "critical": return "VENCIDO";
+    case "urgent": return "< 30 días";
+    case "warning": return "< 90 días";
+    case "ok": return "Al día";
+  }
+}
+
+export interface CausaAlert {
+  causa: Causa;
+  tipo: "prescripcion" | "pp" | "juicio" | "audiencia" | "probation";
+  fecha: string;
+  severity: AlertSeverity;
+  descripcion: string;
+}
+
+export function getCausaAlerts(causa: Causa): CausaAlert[] {
+  const alerts: CausaAlert[] = [];
+
+  // Prescripción
+  const prescSev = getAlertSeverity(causa.fechaPrescripcion);
+  if (prescSev !== "ok") {
+    alerts.push({ causa, tipo: "prescripcion", fecha: causa.fechaPrescripcion, severity: prescSev, descripcion: "Prescripción" });
+  }
+
+  // PP
+  if (causa.fechaVencimientoPP) {
+    const ppSev = getAlertSeverity(causa.fechaVencimientoPP);
+    if (ppSev !== "ok") {
+      alerts.push({ causa, tipo: "pp", fecha: causa.fechaVencimientoPP, severity: ppSev, descripcion: "Vto. Prisión Preventiva" });
+    }
+  }
+
+  // Juicio
+  if (causa.juicioFijado) {
+    const jSev = getAlertSeverity(causa.juicioFijado.fecha);
+    if (jSev !== "ok") {
+      alerts.push({ causa, tipo: "juicio", fecha: causa.juicioFijado.fecha, severity: jSev, descripcion: "Juicio fijado" });
+    }
+  }
+
+  // Audiencias
+  if (causa.audiencias) {
+    for (const aud of causa.audiencias) {
+      const aSev = getAlertSeverity(aud.fecha);
+      if (aSev !== "ok") {
+        alerts.push({ causa, tipo: "audiencia", fecha: aud.fecha, severity: aSev, descripcion: `Audiencia: ${aud.tipo}` });
+      }
+    }
+  }
+
+  // Probation
+  if (causa.probation) {
+    const pSev = getAlertSeverity(causa.probation.vencimiento);
+    if (pSev !== "ok") {
+      alerts.push({ causa, tipo: "probation", fecha: causa.probation.vencimiento, severity: pSev, descripcion: "Vto. Probation" });
+    }
+  }
+
+  return alerts;
 }
 
 export const mockCausas: Causa[] = [
@@ -41,6 +124,9 @@ export const mockCausas: Causa[] = [
     fechaPrescripcion: "2037-03-25",
     fechaVencimientoPP: "2025-06-15",
     juicioFijado: { fecha: "2025-05-12", hora: "09:30" },
+    audiencias: [
+      { tipo: "Art. 454 CPPN", fecha: "2025-04-20", hora: "10:00", notas: "Audiencia previa al debate" },
+    ],
     vocalia: "Vocalía 1",
     secretaria: "Secretaría 54",
     causasConexas: ["82100/2018"],
@@ -58,6 +144,9 @@ export const mockCausas: Causa[] = [
     fechaInicio: "2018-09-22",
     fechaElevacion: "2020-01-15",
     fechaPrescripcion: "2030-09-22",
+    audiencias: [
+      { tipo: "Cesura", fecha: "2025-04-28", hora: "11:00" },
+    ],
     vocalia: "Vocalía 1",
     secretaria: "Secretaría 54",
     causasConexas: ["81233/2018"],
@@ -92,6 +181,9 @@ export const mockCausas: Causa[] = [
     fechaRadicacion: "2022-04-20",
     fechaPrescripcion: "2036-07-05",
     fechaVencimientoPP: "2025-07-05",
+    audiencias: [
+      { tipo: "Nulidad", fecha: "2025-05-05", hora: "14:00", notas: "Planteo de nulidad de procedimiento" },
+    ],
     vocalia: "Vocalía 3",
     secretaria: "Secretaría 56",
   },
@@ -126,6 +218,10 @@ export const mockCausas: Causa[] = [
     fechaPrescripcion: "2038-02-28",
     fechaVencimientoPP: "2025-08-28",
     juicioFijado: { fecha: "2025-06-20", hora: "10:00" },
+    audiencias: [
+      { tipo: "Instrucción suplementaria", fecha: "2025-04-15", hora: "09:00" },
+      { tipo: "Cámara Gesell", fecha: "2025-05-02", hora: "15:00", notas: "Declaración testimonial víctima" },
+    ],
     vocalia: "Vocalía 2",
     secretaria: "Secretaría 55",
     notas: "Víctima menor de edad. Trámite prioritario.",
@@ -157,6 +253,9 @@ export const mockCausas: Causa[] = [
     defensor: { nombre: "Dra. Ruiz, Florencia", tipo: "DPO", contacto: "4370-4600 int. 3440" },
     fechaInicio: "2024-01-15",
     fechaPrescripcion: "2029-01-15",
+    audiencias: [
+      { tipo: "Conciliación", fecha: "2025-04-10", hora: "12:00" },
+    ],
     vocalia: "Vocalía 1",
     secretaria: "Secretaría 54",
   },
