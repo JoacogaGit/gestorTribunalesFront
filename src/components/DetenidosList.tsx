@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Causa, getCaratula, getProximityColor, Imputado } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
-import { Search } from "lucide-react";
+import { Search, Copy } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
+import { toast } from "sonner";
 
 interface DetenidoRow {
   imputado: Imputado;
@@ -16,7 +17,12 @@ function fmtDate(d?: string) {
   return new Date(d).toLocaleDateString("es-AR");
 }
 
-export default function DetenidosList({ causas }: { causas: Causa[] }) {
+interface Props {
+  causas: Causa[];
+  onUpdateCausa?: (causa: Causa) => void;
+}
+
+export default function DetenidosList({ causas, onUpdateCausa }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [search, setSearch] = useState("");
 
@@ -40,20 +46,34 @@ export default function DetenidosList({ causas }: { causas: Causa[] }) {
     );
   });
 
+  const copyToClipboard = () => {
+    const header = "Imputado\tLugar\tN° Causa\tDelito\tVto. PP";
+    const lines = filtered.map((r) =>
+      `${r.imputado.nombre}\t${r.imputado.lugarDetencion || ""}\t${r.causa.numero}\t${r.causa.delito}\t${fmtDate(r.causa.fechaVencimientoPP)}`
+    );
+    navigator.clipboard.writeText([header, ...lines].join("\n"));
+    toast.success("Lista copiada al portapapeles");
+  };
+
   return (
     <>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-display font-semibold text-foreground">
           Detenidos <span className="text-muted-foreground font-normal text-sm">({filtered.length})</span>
         </h2>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar..."
-            className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
-          />
+        <div className="flex items-center gap-2">
+          <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
+            <Copy className="w-4 h-4" />
+          </button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar..."
+              className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
+            />
+          </div>
         </div>
       </div>
       <div className="glass-card rounded-lg overflow-hidden">
@@ -97,7 +117,13 @@ export default function DetenidosList({ causas }: { causas: Causa[] }) {
           </Table>
         </div>
       </div>
-      {selected && <CausaDetail causa={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <CausaDetail
+          causa={selected}
+          onClose={() => setSelected(null)}
+          onUpdate={onUpdateCausa}
+        />
+      )}
     </>
   );
 }

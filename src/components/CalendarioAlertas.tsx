@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Causa, getAllEventos, getProximityBg, getProximityDot, getCaratula } from "@/data/mockCausas";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Scale, Clock, AlertTriangle, Gavel, Calendar as CalIcon, FileCheck } from "lucide-react";
+import { Search, Scale, Clock, AlertTriangle, Gavel, Calendar as CalIcon, FileCheck, BookOpen } from "lucide-react";
 
 const tipoIcons: Record<string, typeof Clock> = {
   Juicio: Gavel,
@@ -9,6 +9,7 @@ const tipoIcons: Record<string, typeof Clock> = {
   "Vto. PP": Clock,
   Audiencia: CalIcon,
   "Vto. Probation": FileCheck,
+  Agenda: BookOpen,
 };
 
 function fmtDate(d: string) {
@@ -21,15 +22,8 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
 
   const allEventos = getAllEventos(causas);
 
-  // Filter: only upcoming + last 30 days
-  const now = Date.now();
-  const relevantEventos = allEventos.filter((e) => {
-    const d = new Date(e.fecha).getTime();
-    return d > now - 30 * 24 * 60 * 60 * 1000;
-  });
-
   // Search filter
-  const filtered = relevantEventos.filter((e) => {
+  const filtered = allEventos.filter((e) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -49,7 +43,8 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
     : filtered;
 
   // Dates with events for the calendar
-  const eventDates = new Set(relevantEventos.map((e) => new Date(e.fecha).toDateString()));
+  const eventDates = new Set(allEventos.map((e) => new Date(e.fecha).toDateString()));
+  const now = Date.now();
 
   return (
     <div className="space-y-6">
@@ -78,7 +73,7 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-display font-semibold text-foreground">
-              Próximos Eventos
+              Todos los Eventos
               <span className="text-muted-foreground font-normal text-sm ml-2">({displayed.length})</span>
             </h2>
             <div className="relative">
@@ -111,6 +106,7 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {e.causa.numero} — {getCaratula(e.causa)}
+                      {e.tipo === "Agenda" && ` — ${e.descripcion}`}
                     </p>
                   </div>
                   <span className="text-xs font-mono text-muted-foreground shrink-0">
@@ -121,7 +117,7 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
             })}
             {displayed.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
-                {search || selectedDate ? "Sin resultados" : "Sin eventos próximos"}
+                {search || selectedDate ? "Sin resultados" : "Sin eventos"}
               </div>
             )}
           </div>

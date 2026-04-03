@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Causa, getCaratula, getProximityColor } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
-import { Pencil, Check, Search } from "lucide-react";
+import { Pencil, Check, Search, Copy, Trash2 } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
+import { toast } from "sonner";
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
@@ -18,7 +19,13 @@ function fmtDate(d?: string) {
   return new Date(d).toLocaleDateString("es-AR");
 }
 
-export default function CausasTable({ causas, title }: { causas: Causa[]; title?: string }) {
+interface Props {
+  causas: Causa[];
+  title?: string;
+  onUpdateCausa?: (causa: Causa) => void;
+}
+
+export default function CausasTable({ causas, title, onUpdateCausa }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
@@ -36,6 +43,15 @@ export default function CausasTable({ causas, title }: { causas: Causa[]; title?
       c.imputados.some((i) => i.nombre.toLowerCase().includes(q))
     );
   });
+
+  const copyToClipboard = () => {
+    const header = "N°\tCarátula\tDelito\tEstado\tPrescripción";
+    const rows = filtered.map((c) =>
+      `${c.numero}\t${getCaratula(c)}\t${c.delito}\t${c.estadoCausa}\t${fmtDate(c.fechaPrescripcion)}`
+    );
+    navigator.clipboard.writeText([header, ...rows].join("\n"));
+    toast.success("Lista copiada al portapapeles");
+  };
 
   return (
     <>
@@ -68,14 +84,19 @@ export default function CausasTable({ causas, title }: { causas: Causa[]; title?
             )}
           </div>
         )}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar..."
-            className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
-          />
+        <div className="flex items-center gap-2">
+          <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
+            <Copy className="w-4 h-4" />
+          </button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar..."
+              className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
+            />
+          </div>
         </div>
       </div>
       <div className="glass-card rounded-lg overflow-hidden">
@@ -93,6 +114,8 @@ export default function CausasTable({ causas, title }: { causas: Causa[]; title?
                 <TableHead className="whitespace-nowrap">PP Vence</TableHead>
                 <TableHead className="whitespace-nowrap">Juicio</TableHead>
                 <TableHead className="whitespace-nowrap">Audiencias</TableHead>
+                <TableHead>Anotaciones</TableHead>
+                <TableHead>Agenda</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -148,11 +171,25 @@ export default function CausasTable({ causas, title }: { causas: Causa[]; title?
                       </div>
                     ) : "—"}
                   </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">
+                    {c.anotaciones || "—"}
+                  </TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">
+                    {c.agenda && c.agenda.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {c.agenda.map((ag, i) => (
+                          <div key={i} className={getProximityColor(ag.fecha)}>
+                            {ag.texto.substring(0, 20)}… — {fmtDate(ag.fecha)}
+                          </div>
+                        ))}
+                      </div>
+                    ) : "—"}
+                  </TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                     {search ? "Sin resultados" : "Sin causas en esta categoría"}
                   </TableCell>
                 </TableRow>
@@ -161,7 +198,13 @@ export default function CausasTable({ causas, title }: { causas: Causa[]; title?
           </Table>
         </div>
       </div>
-      {selected && <CausaDetail causa={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <CausaDetail
+          causa={selected}
+          onClose={() => setSelected(null)}
+          onUpdate={onUpdateCausa}
+        />
+      )}
     </>
   );
 }
