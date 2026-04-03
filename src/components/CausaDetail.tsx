@@ -1,17 +1,16 @@
-import { Causa, getCausaAlerts, getAlertLabel } from "@/data/mockCausas";
+import { Causa, getCaratula, getProximityColor } from "@/data/mockCausas";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-const severityColor: Record<string, string> = {
-  critical: "bg-alert-urgent/15 text-alert-urgent",
-  urgent: "bg-alert-urgent/10 text-alert-urgent",
-  warning: "bg-alert-warning/10 text-alert-warning",
+const libertadBadge: Record<string, string> = {
+  Detenido: "bg-alert-urgent/15 text-alert-urgent",
+  Excarcelado: "bg-alert-ok/15 text-alert-ok",
+  Rebelde: "bg-alert-warning/15 text-alert-warning",
+  SJP: "bg-alert-info/15 text-alert-info",
 };
 
 export default function CausaDetail({ causa, onClose }: { causa: Causa; onClose: () => void }) {
-  const alerts = getCausaAlerts(causa);
-
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-card border-border">
@@ -23,46 +22,39 @@ export default function CausaDetail({ causa, onClose }: { causa: Causa; onClose:
 
         <div className="space-y-4 text-sm">
           <div>
-            <h4 className="font-semibold text-foreground mb-1">{causa.caratula}</h4>
+            <h4 className="font-semibold text-foreground mb-1">{getCaratula(causa)}</h4>
             <p className="text-muted-foreground">{causa.delito}</p>
           </div>
 
-          {alerts.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-muted-foreground">Alertas activas</p>
-              {alerts.map((a, i) => (
-                <div key={i} className={`rounded-md px-3 py-2 text-xs font-medium ${severityColor[a.severity] || ""}`}>
-                  {a.descripcion} — {fmt(a.fecha)} ({getAlertLabel(a.severity)})
+          <Separator />
+
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Imputados ({causa.imputados.length})</p>
+            <div className="space-y-2">
+              {causa.imputados.map((imp, i) => (
+                <div key={i} className="bg-muted/40 rounded-md px-3 py-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-foreground font-medium">{imp.nombre}</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${libertadBadge[imp.estadoLibertad]}`}>
+                      {imp.estadoLibertad}
+                    </span>
+                  </div>
+                  {imp.lugarDetencion && (
+                    <p className="text-xs text-alert-urgent">📍 {imp.lugarDetencion}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {imp.defensor.nombre} ({imp.defensor.tipo}) — {imp.defensor.contacto}
+                  </p>
                 </div>
               ))}
             </div>
-          )}
+          </div>
 
           <Separator />
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Estado" value={causa.estadoCausa} />
-            <Field label="Libertad" value={causa.estadoLibertad} />
-            {causa.lugarDetencion && <Field label="Lugar detención" value={causa.lugarDetencion} />}
-            <Field label="Vocalía" value={causa.vocalia} />
-            <Field label="Secretaría" value={causa.secretaria} />
-          </div>
-
-          <Separator />
-
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-1">Imputados</p>
-            <div className="flex flex-wrap gap-1">
-              {causa.imputados.map((i) => (
-                <Badge key={i} variant="secondary">{i}</Badge>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-1">Defensa</p>
-            <p className="text-foreground">{causa.defensor.nombre} <span className="text-muted-foreground">({causa.defensor.tipo})</span></p>
-            <p className="text-muted-foreground">{causa.defensor.contacto}</p>
+            <Field label="Vocalía" value={`Vocalía ${causa.vocalia}`} />
           </div>
 
           <Separator />
@@ -71,9 +63,9 @@ export default function CausaDetail({ causa, onClose }: { causa: Causa; onClose:
             <Field label="Inicio" value={fmt(causa.fechaInicio)} />
             {causa.fechaElevacion && <Field label="Elevación" value={fmt(causa.fechaElevacion)} />}
             {causa.fechaRadicacion && <Field label="Radicación" value={fmt(causa.fechaRadicacion)} />}
-            <Field label="Prescripción" value={fmt(causa.fechaPrescripcion)} />
-            {causa.fechaVencimientoPP && <Field label="Vto. PP" value={fmt(causa.fechaVencimientoPP)} />}
-            {causa.probation && <Field label="Vto. Probation" value={fmt(causa.probation.vencimiento)} />}
+            <FieldColored label="Prescripción" value={fmt(causa.fechaPrescripcion)} fecha={causa.fechaPrescripcion} />
+            {causa.fechaVencimientoPP && <FieldColored label="Vto. PP" value={fmt(causa.fechaVencimientoPP)} fecha={causa.fechaVencimientoPP} />}
+            {causa.probation && <FieldColored label="Vto. Probation" value={fmt(causa.probation.vencimiento)} fecha={causa.probation.vencimiento} />}
           </div>
 
           {causa.juicioFijado && (
@@ -126,6 +118,15 @@ function Field({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
       <p className="text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function FieldColored({ label, value, fecha }: { label: string; value: string; fecha: string }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
+      <p className={getProximityColor(fecha)}>{value}</p>
     </div>
   );
 }
