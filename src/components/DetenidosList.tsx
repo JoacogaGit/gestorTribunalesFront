@@ -1,15 +1,26 @@
 import { useState } from "react";
-import { Causa, getCaratula, getProximityColor, Imputado } from "@/data/mockCausas";
+import { Causa, getProximityColor, Imputado, createEmptyCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
-import { Search, Copy } from "lucide-react";
+import { Search, Copy, Plus, ChevronDown } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface DetenidoRow {
   imputado: Imputado;
   causa: Causa;
+}
+
+interface ColDef {
+  key: string;
+  label: string;
+  render: (r: DetenidoRow) => React.ReactNode;
+  cellClass?: string;
+  headClass?: string;
 }
 
 function fmtDate(d?: string) {
@@ -19,19 +30,56 @@ function fmtDate(d?: string) {
 
 interface Props {
   causas: Causa[];
+  vocalia?: number;
   onUpdateCausa?: (causa: Causa) => void;
+  onDeleteCausa?: (id: string) => void;
+  onCreateCausa?: (causa: Causa) => void;
 }
 
-export default function DetenidosList({ causas, onUpdateCausa }: Props) {
+export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDeleteCausa, onCreateCausa }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [search, setSearch] = useState("");
+
+  const allColumns: ColDef[] = [
+    { key: "imputado", label: "Imputado", cellClass: "text-sm font-medium text-foreground", render: (r) => r.imputado.nombre },
+    { key: "lugar", label: "Lugar de Detención", cellClass: "text-xs text-alert-urgent", render: (r) => r.imputado.lugarDetencion || "—" },
+    {
+      key: "numero", label: "N° Causa", cellClass: "font-mono text-xs font-semibold",
+      render: (r) => r.causa.link
+        ? <a href={r.causa.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">{r.causa.numero}</a>
+        : <span className="text-primary">{r.causa.numero}</span>,
+    },
+    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[200px] truncate", render: (r) => r.causa.delito },
+    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground", render: (r) => r.imputado.defensor.nombre },
+    {
+      key: "pp", label: "Vto. PP", headClass: "whitespace-nowrap",
+      render: (r) => <span className={`text-xs whitespace-nowrap ${r.causa.fechaVencimientoPP ? getProximityColor(r.causa.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(r.causa.fechaVencimientoPP)}</span>,
+    },
+    {
+      key: "vtoPena", label: "Vto. Pena", headClass: "whitespace-nowrap",
+      render: (r) => <span className={`text-xs whitespace-nowrap ${r.imputado.fechaVencimientoPena ? getProximityColor(r.imputado.fechaVencimientoPena) : "text-muted-foreground"}`}>{fmtDate(r.imputado.fechaVencimientoPena)}</span>,
+    },
+  ];
+
+  const storageKey = "cols-hidden-detenidos";
+  const initialHidden = (() => {
+    try { return new Set<string>(JSON.parse(localStorage.getItem(storageKey) || "[]")); } catch { return new Set<string>(); }
+  })();
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(initialHidden);
+
+  const toggleCol = (key: string) => {
+    const next = new Set(hiddenCols);
+    next.has(key) ? next.delete(key) : next.add(key);
+    setHiddenCols(next);
+    localStorage.setItem(storageKey, JSON.stringify([...next]));
+  };
+
+  const visibleColumns = allColumns.filter((c) => !hiddenCols.has(c.key));
 
   const rows: DetenidoRow[] = [];
   for (const c of causas) {
     for (const imp of c.imputados) {
-      if (imp.estadoLibertad === "Detenido") {
-        rows.push({ imputado: imp, causa: c });
-      }
+      if (imp.estadoLibertad === "Detenido") rows.push({ imputado: imp, causa: c });
     }
   }
 
@@ -47,12 +95,29 @@ export default function DetenidosList({ causas, onUpdateCausa }: Props) {
   });
 
   const copyToClipboard = () => {
-    const header = "Imputado\tLugar\tN° Causa\tDelito\tVto. PP";
-    const lines = filtered.map((r) =>
-      `${r.imputado.nombre}\t${r.imputado.lugarDetencion || ""}\t${r.causa.numero}\t${r.causa.delito}\t${fmtDate(r.causa.fechaVencimientoPP)}`
-    );
+    const header = visibleColumns.map((c) => c.label).join("\t");
+    const lines = filtered.map((r) => visibleColumns.map((col) => {
+      switch (col.key) {
+        case "imputado": return r.imputado.nombre;
+        case "lugar": return r.imputado.lugarDetencion || "";
+        case "numero": return r.causa.numero;
+        case "delito": return r.causa.delito;
+        case "defensor": return r.imputado.defensor.nombre;
+        case "pp": return fmtDate(r.causa.fechaVencimientoPP);
+        case "vtoPena": return fmtDate(r.imputado.fechaVencimientoPena);
+        default: return "";
+      }
+    }).join("\t"));
     navigator.clipboard.writeText([header, ...lines].join("\n"));
     toast.success("Lista copiada al portapapeles");
+  };
+
+  const handleCreate = () => {
+    if (!onCreateCausa) return;
+    const nueva = createEmptyCausa(vocalia);
+    nueva.imputados[0].estadoLibertad = "Detenido";
+    onCreateCausa(nueva);
+    setSelected(nueva);
   };
 
   return (
@@ -62,6 +127,21 @@ export default function DetenidosList({ causas, onUpdateCausa }: Props) {
           Detenidos <span className="text-muted-foreground font-normal text-sm">({filtered.length})</span>
         </h2>
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
+              Categorías <ChevronDown className="w-3 h-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="text-xs">Mostrar / Ocultar</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {allColumns.map((col) => (
+                <DropdownMenuItem key={col.key} onSelect={(e) => { e.preventDefault(); toggleCol(col.key); }} className="text-xs flex items-center gap-2">
+                  <input type="checkbox" readOnly checked={!hiddenCols.has(col.key)} className="accent-primary" />
+                  {col.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
             <Copy className="w-4 h-4" />
           </button>
@@ -81,35 +161,30 @@ export default function DetenidosList({ causas, onUpdateCausa }: Props) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead>Imputado</TableHead>
-                <TableHead>Lugar de Detención</TableHead>
-                <TableHead>N° Causa</TableHead>
-                <TableHead>Delito</TableHead>
-                <TableHead>Defensor</TableHead>
-                <TableHead className="whitespace-nowrap">Vto. PP</TableHead>
+                {visibleColumns.map((col) => (
+                  <TableHead key={col.key} className={col.headClass}>{col.label}</TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((r, i) => (
-                <TableRow
-                  key={`${r.causa.id}-${i}`}
-                  className="cursor-pointer hover:bg-primary/5 transition-colors"
-                  onClick={() => setSelected(r.causa)}
-                >
-                  <TableCell className="text-sm font-medium text-foreground">{r.imputado.nombre}</TableCell>
-                  <TableCell className="text-xs text-alert-urgent">{r.imputado.lugarDetencion || "—"}</TableCell>
-                  <TableCell className="font-mono text-xs font-semibold text-primary">{r.causa.numero}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{r.causa.delito}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{r.imputado.defensor.nombre}</TableCell>
-                  <TableCell className={`text-xs whitespace-nowrap ${r.causa.fechaVencimientoPP ? getProximityColor(r.causa.fechaVencimientoPP) : "text-muted-foreground"}`}>
-                    {fmtDate(r.causa.fechaVencimientoPP)}
-                  </TableCell>
+                <TableRow key={`${r.causa.id}-${i}`} className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(r.causa)}>
+                  {visibleColumns.map((col) => (
+                    <TableCell key={col.key} className={col.cellClass}>{col.render(r)}</TableCell>
+                  ))}
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    Sin detenidos
+                  <TableCell colSpan={visibleColumns.length} className="text-center text-muted-foreground py-8">Sin detenidos</TableCell>
+                </TableRow>
+              )}
+              {onCreateCausa && !search && (
+                <TableRow className="bg-muted/10">
+                  <TableCell colSpan={visibleColumns.length} className="py-2 text-center">
+                    <button onClick={handleCreate} className="inline-flex items-center gap-1.5 text-xs text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md border border-dashed border-primary/40">
+                      <Plus className="w-3.5 h-3.5" /> Nueva causa con detenido
+                    </button>
                   </TableCell>
                 </TableRow>
               )}
@@ -122,6 +197,7 @@ export default function DetenidosList({ causas, onUpdateCausa }: Props) {
           causa={selected}
           onClose={() => setSelected(null)}
           onUpdate={onUpdateCausa}
+          onDelete={onDeleteCausa}
         />
       )}
     </>
