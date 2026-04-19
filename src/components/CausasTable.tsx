@@ -93,16 +93,22 @@ export default function CausasTable({
       render: (c) => <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(c.fechaVencimientoPP)}</span>,
     },
     {
-      key: "juicio", label: "Juicio", headClass: "whitespace-nowrap",
-      render: (c) => c.juicioFijado
-        ? <span className={`text-xs whitespace-nowrap ${getProximityColor(c.juicioFijado.fecha)}`}>{fmtDate(c.juicioFijado.fecha)} {c.juicioFijado.hora}</span>
-        : <span className="text-xs text-muted-foreground">—</span>,
-    },
-    {
-      key: "audiencias", label: "Audiencias", headClass: "whitespace-nowrap",
-      render: (c) => c.audiencias && c.audiencias.length > 0
-        ? <div className="space-y-0.5 text-xs">{c.audiencias.map((a, i) => <div key={i} className={getProximityColor(a.fecha)}>{a.tipo} — {fmtDate(a.fecha)}</div>)}</div>
-        : <span className="text-xs text-muted-foreground">—</span>,
+      key: "juicios", label: "Juicios y Audiencias", headClass: "whitespace-nowrap",
+      render: (c) => {
+        const items: { label: string; fecha: string; hora?: string }[] = [];
+        if (c.juicioFijado) items.push({ label: "Juicio", fecha: c.juicioFijado.fecha, hora: c.juicioFijado.hora });
+        (c.audiencias || []).forEach((a) => items.push({ label: a.tipo || "Audiencia", fecha: a.fecha, hora: a.hora }));
+        if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <div className="space-y-0.5 text-xs">
+            {items.map((it, i) => (
+              <div key={i} className={getProximityColor(it.fecha)}>
+                {it.label} — {fmtDate(it.fecha)}{it.hora ? ` ${it.hora}` : ""}
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
     { key: "anotaciones", label: "Anotaciones", cellClass: "text-xs text-muted-foreground max-w-[150px] truncate", render: (c) => c.anotaciones || "—" },
     {
