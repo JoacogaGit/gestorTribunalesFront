@@ -17,6 +17,7 @@ export interface Imputado {
   nombre: string;
   estadoLibertad: EstadoLibertad;
   lugarDetencion?: string;
+  fechaVencimientoPena?: string;
   defensor: { nombre: string; tipo: "DPO" | "Particular"; contacto: string };
 }
 
@@ -39,6 +40,24 @@ export interface Causa {
   notas?: string;
   anotaciones?: string;
   agenda?: AgendaItem[];
+  link?: string;
+  /** Categorías ocultas por el usuario en cada lista */
+  hiddenColumns?: Record<string, string[]>;
+}
+
+export function createEmptyCausa(vocalia: number): Causa {
+  return {
+    id: `new-${Date.now()}`,
+    numero: "",
+    delito: "",
+    imputados: [
+      { nombre: "", estadoLibertad: "Excarcelado", defensor: { nombre: "", tipo: "DPO", contacto: "" } },
+    ],
+    estadoCausa: "En trámite",
+    fechaInicio: new Date().toISOString().slice(0, 10),
+    fechaPrescripcion: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    vocalia,
+  };
 }
 
 export function getCaratula(causa: Causa): string {
@@ -92,7 +111,7 @@ export function getProximityDot(fecha: string): string {
 
 export interface Evento {
   causa: Causa;
-  tipo: "Juicio" | "Prescripción" | "Vto. PP" | "Audiencia" | "Vto. Probation" | "Agenda";
+  tipo: "Juicio" | "Prescripción" | "Vto. PP" | "Audiencia" | "Vto. Probation" | "Agenda" | "Vto. Pena";
   descripcion: string;
   fecha: string;
   hora?: string;
@@ -101,24 +120,32 @@ export interface Evento {
 export function getAllEventos(causas: Causa[]): Evento[] {
   const eventos: Evento[] = [];
   for (const c of causas) {
-    if (c.juicioFijado) {
+    if (!c.numero && !c.imputados.some((i) => i.nombre)) continue;
+    if (c.juicioFijado?.fecha) {
       eventos.push({ causa: c, tipo: "Juicio", descripcion: "Juicio oral", fecha: c.juicioFijado.fecha, hora: c.juicioFijado.hora });
     }
-    eventos.push({ causa: c, tipo: "Prescripción", descripcion: "Prescripción", fecha: c.fechaPrescripcion });
+    if (c.fechaPrescripcion) {
+      eventos.push({ causa: c, tipo: "Prescripción", descripcion: "Prescripción", fecha: c.fechaPrescripcion });
+    }
     if (c.fechaVencimientoPP) {
       eventos.push({ causa: c, tipo: "Vto. PP", descripcion: "Vto. Prisión Preventiva", fecha: c.fechaVencimientoPP });
     }
-    if (c.probation) {
+    if (c.probation?.vencimiento) {
       eventos.push({ causa: c, tipo: "Vto. Probation", descripcion: "Vto. Probation", fecha: c.probation.vencimiento });
     }
     if (c.audiencias) {
       for (const a of c.audiencias) {
-        eventos.push({ causa: c, tipo: "Audiencia", descripcion: `Aud. ${a.tipo}`, fecha: a.fecha, hora: a.hora });
+        if (a.fecha) eventos.push({ causa: c, tipo: "Audiencia", descripcion: `Aud. ${a.tipo}`, fecha: a.fecha, hora: a.hora });
       }
     }
     if (c.agenda) {
       for (const ag of c.agenda) {
-        eventos.push({ causa: c, tipo: "Agenda", descripcion: ag.texto, fecha: ag.fecha });
+        if (ag.fecha) eventos.push({ causa: c, tipo: "Agenda", descripcion: ag.texto, fecha: ag.fecha });
+      }
+    }
+    for (const imp of c.imputados) {
+      if (imp.fechaVencimientoPena) {
+        eventos.push({ causa: c, tipo: "Vto. Pena", descripcion: `Vto. Pena — ${imp.nombre}`, fecha: imp.fechaVencimientoPena });
       }
     }
   }

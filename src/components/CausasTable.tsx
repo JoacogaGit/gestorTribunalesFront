@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Causa, getCaratula, getProximityColor } from "@/data/mockCausas";
+import { Causa, getCaratula, getProximityColor, createEmptyCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
-import { Pencil, Check, Search, Copy, Trash2 } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
@@ -14,6 +17,14 @@ const libertadBadge: Record<string, string> = {
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
+interface ColDef {
+  key: string;
+  label: string;
+  render: (c: Causa) => React.ReactNode;
+  cellClass?: string;
+  headClass?: string;
+}
+
 function fmtDate(d?: string) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("es-AR");
@@ -21,16 +32,102 @@ function fmtDate(d?: string) {
 
 interface Props {
   causas: Causa[];
+  /** All cases in the workspace, used for the "import from another list" feature. */
+  allCausas?: Causa[];
   title?: string;
+  /** Identifier of the list (used to persist hidden columns per list). */
+  listKey?: string;
+  vocalia?: number;
   onUpdateCausa?: (causa: Causa) => void;
+  onDeleteCausa?: (id: string) => void;
+  onCreateCausa?: (causa: Causa) => void;
+  /** Called when user picks an existing case from another list to import here. */
+  onImportCausa?: (causa: Causa) => void;
 }
 
-export default function CausasTable({ causas, title, onUpdateCausa }: Props) {
+export default function CausasTable({
+  causas, allCausas, title, listKey, vocalia = 1,
+  onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa,
+}: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
   const [search, setSearch] = useState("");
 
+  const allColumns: ColDef[] = [
+    {
+      key: "numero",
+      label: "N° Causa",
+      headClass: "whitespace-nowrap",
+      cellClass: "font-mono text-xs font-semibold whitespace-nowrap",
+      render: (c) => c.link
+        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline inline-flex items-center gap-1">{c.numero}<ExternalLink className="w-3 h-3" /></a>
+        : <span className="text-primary">{c.numero}</span>,
+    },
+    {
+      key: "caratula", label: "Carátula",
+      cellClass: "text-sm font-medium text-foreground max-w-[220px] truncate",
+      render: (c) => c.link
+        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline">{getCaratula(c)}</a>
+        : getCaratula(c),
+    },
+    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", render: (c) => c.delito },
+    {
+      key: "libertad", label: "Libertad",
+      render: (c) => (
+        <div className="flex flex-wrap gap-1">
+          {c.imputados.map((imp, i) => (
+            <span key={i} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${libertadBadge[imp.estadoLibertad]}`}>{imp.estadoLibertad}</span>
+          ))}
+        </div>
+      ),
+    },
+    { key: "estado", label: "Estado", cellClass: "text-xs text-foreground whitespace-nowrap", render: (c) => c.estadoCausa },
+    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
+    {
+      key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
+      render: (c) => <span className={`text-xs whitespace-nowrap ${getProximityColor(c.fechaPrescripcion)}`}>{fmtDate(c.fechaPrescripcion)}</span>,
+    },
+    {
+      key: "pp", label: "PP Vence", headClass: "whitespace-nowrap",
+      render: (c) => <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(c.fechaVencimientoPP)}</span>,
+    },
+    {
+      key: "juicio", label: "Juicio", headClass: "whitespace-nowrap",
+      render: (c) => c.juicioFijado
+        ? <span className={`text-xs whitespace-nowrap ${getProximityColor(c.juicioFijado.fecha)}`}>{fmtDate(c.juicioFijado.fecha)} {c.juicioFijado.hora}</span>
+        : <span className="text-xs text-muted-foreground">—</span>,
+    },
+    {
+      key: "audiencias", label: "Audiencias", headClass: "whitespace-nowrap",
+      render: (c) => c.audiencias && c.audiencias.length > 0
+        ? <div className="space-y-0.5 text-xs">{c.audiencias.map((a, i) => <div key={i} className={getProximityColor(a.fecha)}>{a.tipo} — {fmtDate(a.fecha)}</div>)}</div>
+        : <span className="text-xs text-muted-foreground">—</span>,
+    },
+    { key: "anotaciones", label: "Anotaciones", cellClass: "text-xs text-muted-foreground max-w-[150px] truncate", render: (c) => c.anotaciones || "—" },
+    {
+      key: "agenda", label: "Agenda", headClass: "whitespace-nowrap",
+      render: (c) => c.agenda && c.agenda.length > 0
+        ? <div className="space-y-0.5 text-xs">{c.agenda.map((ag, i) => <div key={i} className={getProximityColor(ag.fecha)}>{ag.texto.substring(0, 20)}… — {fmtDate(ag.fecha)}</div>)}</div>
+        : <span className="text-xs text-muted-foreground">—</span>,
+    },
+  ];
+
+  const storageKey = listKey ? `cols-hidden-${listKey}` : null;
+  const initialHidden = (() => {
+    if (!storageKey) return new Set<string>();
+    try { return new Set<string>(JSON.parse(localStorage.getItem(storageKey) || "[]")); } catch { return new Set<string>(); }
+  })();
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(initialHidden);
+
+  const toggleCol = (key: string) => {
+    const next = new Set(hiddenCols);
+    next.has(key) ? next.delete(key) : next.add(key);
+    setHiddenCols(next);
+    if (storageKey) localStorage.setItem(storageKey, JSON.stringify([...next]));
+  };
+
+  const visibleColumns = allColumns.filter((c) => !hiddenCols.has(c.key));
   const displayTitle = customTitle || title;
 
   const filtered = causas.filter((c) => {
@@ -45,17 +142,29 @@ export default function CausasTable({ causas, title, onUpdateCausa }: Props) {
   });
 
   const copyToClipboard = () => {
-    const header = "N°\tCarátula\tDelito\tEstado\tPrescripción";
+    const header = visibleColumns.map((c) => c.label).join("\t");
     const rows = filtered.map((c) =>
-      `${c.numero}\t${getCaratula(c)}\t${c.delito}\t${c.estadoCausa}\t${fmtDate(c.fechaPrescripcion)}`
+      visibleColumns.map((col) => {
+        const node = col.render(c);
+        return typeof node === "string" ? node : (col.key === "numero" ? c.numero : col.key === "caratula" ? getCaratula(c) : "");
+      }).join("\t")
     );
     navigator.clipboard.writeText([header, ...rows].join("\n"));
     toast.success("Lista copiada al portapapeles");
   };
 
+  const handleCreate = () => {
+    if (!onCreateCausa) return;
+    const nueva = createEmptyCausa(vocalia);
+    onCreateCausa(nueva);
+    setSelected(nueva);
+  };
+
+  const importable = (allCausas || []).filter((c) => !causas.some((x) => x.id === c.id));
+
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         {displayTitle && (
           <div className="flex items-center gap-2 group">
             {editingTitle ? (
@@ -84,7 +193,22 @@ export default function CausasTable({ causas, title, onUpdateCausa }: Props) {
             )}
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
+              Categorías <ChevronDown className="w-3 h-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="text-xs">Mostrar / Ocultar</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {allColumns.map((col) => (
+                <DropdownMenuItem key={col.key} onSelect={(e) => { e.preventDefault(); toggleCol(col.key); }} className="text-xs flex items-center gap-2">
+                  <input type="checkbox" readOnly checked={!hiddenCols.has(col.key)} className="accent-primary" />
+                  {col.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
             <Copy className="w-4 h-4" />
           </button>
@@ -99,98 +223,59 @@ export default function CausasTable({ causas, title, onUpdateCausa }: Props) {
           </div>
         </div>
       </div>
+
       <div className="glass-card rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="whitespace-nowrap">N° Causa</TableHead>
-                <TableHead>Carátula</TableHead>
-                <TableHead>Delito</TableHead>
-                <TableHead>Libertad</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Defensor</TableHead>
-                <TableHead className="whitespace-nowrap">Prescripción</TableHead>
-                <TableHead className="whitespace-nowrap">PP Vence</TableHead>
-                <TableHead className="whitespace-nowrap">Juicio</TableHead>
-                <TableHead className="whitespace-nowrap">Audiencias</TableHead>
-                <TableHead>Anotaciones</TableHead>
-                <TableHead>Agenda</TableHead>
+                {visibleColumns.map((col) => (
+                  <TableHead key={col.key} className={col.headClass}>{col.label}</TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((c) => (
-                <TableRow
-                  key={c.id}
-                  className="cursor-pointer hover:bg-primary/5 transition-colors"
-                  onClick={() => setSelected(c)}
-                >
-                  <TableCell className="font-mono text-xs font-semibold text-primary whitespace-nowrap">
-                    {c.numero}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium text-foreground max-w-[220px] truncate">
-                    {getCaratula(c)}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">
-                    {c.delito}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {c.imputados.map((imp, i) => (
-                        <span key={i} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${libertadBadge[imp.estadoLibertad]}`}>
-                          {imp.estadoLibertad}
-                        </span>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-foreground whitespace-nowrap">{c.estadoCausa}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {c.imputados[0].defensor.nombre}
-                  </TableCell>
-                  <TableCell className={`text-xs whitespace-nowrap ${getProximityColor(c.fechaPrescripcion)}`}>
-                    {fmtDate(c.fechaPrescripcion)}
-                  </TableCell>
-                  <TableCell className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>
-                    {fmtDate(c.fechaVencimientoPP)}
-                  </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">
-                    {c.juicioFijado ? (
-                      <span className={getProximityColor(c.juicioFijado.fecha)}>
-                        {fmtDate(c.juicioFijado.fecha)} {c.juicioFijado.hora}
-                      </span>
-                    ) : "—"}
-                  </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">
-                    {c.audiencias && c.audiencias.length > 0 ? (
-                      <div className="space-y-0.5">
-                        {c.audiencias.map((a, i) => (
-                          <div key={i} className={getProximityColor(a.fecha)}>
-                            {a.tipo} — {fmtDate(a.fecha)}
-                          </div>
-                        ))}
-                      </div>
-                    ) : "—"}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">
-                    {c.anotaciones || "—"}
-                  </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">
-                    {c.agenda && c.agenda.length > 0 ? (
-                      <div className="space-y-0.5">
-                        {c.agenda.map((ag, i) => (
-                          <div key={i} className={getProximityColor(ag.fecha)}>
-                            {ag.texto.substring(0, 20)}… — {fmtDate(ag.fecha)}
-                          </div>
-                        ))}
-                      </div>
-                    ) : "—"}
-                  </TableCell>
+                <TableRow key={c.id} className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(c)}>
+                  {visibleColumns.map((col) => (
+                    <TableCell key={col.key} className={col.cellClass}>{col.render(c)}</TableCell>
+                  ))}
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={visibleColumns.length} className="text-center text-muted-foreground py-8">
                     {search ? "Sin resultados" : "Sin causas en esta categoría"}
+                  </TableCell>
+                </TableRow>
+              )}
+              {(onCreateCausa || onImportCausa) && !search && (
+                <TableRow className="bg-muted/10">
+                  <TableCell colSpan={visibleColumns.length} className="py-2">
+                    <div className="flex items-center justify-center gap-2">
+                      {onCreateCausa && (
+                        <button onClick={handleCreate} className="flex items-center gap-1.5 text-xs text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md border border-dashed border-primary/40">
+                          <Plus className="w-3.5 h-3.5" /> Nueva causa
+                        </button>
+                      )}
+                      {onImportCausa && importable.length > 0 && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 px-3 py-1.5 rounded-md border border-dashed border-border">
+                            <MoveRight className="w-3.5 h-3.5" /> Traer de otra lista
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="center" className="max-h-60 overflow-y-auto w-72">
+                            <DropdownMenuLabel className="text-xs">Causas en otras listas</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {importable.map((c) => (
+                              <DropdownMenuItem key={c.id} onSelect={() => onImportCausa(c)} className="text-xs flex flex-col items-start">
+                                <span className="font-mono text-primary">{c.numero}</span>
+                                <span className="text-muted-foreground truncate w-full">{getCaratula(c)}</span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
@@ -203,6 +288,7 @@ export default function CausasTable({ causas, title, onUpdateCausa }: Props) {
           causa={selected}
           onClose={() => setSelected(null)}
           onUpdate={onUpdateCausa}
+          onDelete={onDeleteCausa}
         />
       )}
     </>
