@@ -127,7 +127,7 @@ export default function VocaliaWorkspace({ vocalia, onBack }: Props) {
         {view === "dashboard" && (
           <div className="space-y-8">
             <KpiCards causas={causas} />
-            <CausasTable causas={causasEnTramite} title="Causas en Trámite" listKey="tramite" {...commonProps} onImportCausa={importToList("tramite")} />
+            <CausasTable causas={causas} title="Todas las Causas" listKey="todas" {...commonProps} onImportCausa={importToList("tramite")} />
           </div>
         )}
 
