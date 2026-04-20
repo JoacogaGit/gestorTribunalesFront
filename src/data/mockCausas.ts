@@ -21,6 +21,18 @@ export interface Imputado {
   defensor: { nombre: string; tipo: "DPO" | "Particular"; contacto: string };
 }
 
+export interface OtroInterviniente {
+  rol: string; // Querella, Actor civil, Demandado civil, etc.
+  nombre: string;
+  contacto?: string;
+}
+
+export interface AdjuntoPDF {
+  nombre: string;
+  /** Data URL (base64). Persistido en localStorage para el prototipo. */
+  data: string;
+}
+
 export interface Causa {
   id: string;
   numero: string;
@@ -30,9 +42,7 @@ export interface Causa {
   fechaInicio: string;
   fechaElevacion?: string;
   fechaRadicacion?: string;
-  /** Fecha principal de prescripción (compatibilidad). Se usa como primera fecha. */
   fechaPrescripcion: string;
-  /** Fechas adicionales de prescripción (cuando hay varias por imputado/hecho). */
   fechasPrescripcionExtra?: { fecha: string; label?: string }[];
   fechaVencimientoPP?: string;
   juicioFijado?: { fecha: string; hora: string };
@@ -40,12 +50,14 @@ export interface Causa {
   probation?: { vencimiento: string };
   vocalia: number;
   causasConexas?: string[];
-  notas?: string;
+  /** Campo unificado: anotaciones / notas. */
   anotaciones?: string;
   agenda?: AgendaItem[];
   link?: string;
-  /** Categorías ocultas por el usuario en cada lista */
+  otrosIntervinientes?: OtroInterviniente[];
+  adjuntos?: AdjuntoPDF[];
   hiddenColumns?: Record<string, string[]>;
+  extra?: Record<string, string>;
 }
 
 export function createEmptyCausa(vocalia: number): Causa {
@@ -83,10 +95,10 @@ export function getProximityColor(fecha: string): string {
   const level = getProximityLevel(fecha);
   switch (level) {
     case "vencido": return "text-alert-urgent font-bold";
-    case "critico": return "text-red-400 font-semibold";
-    case "urgente": return "text-orange-400 font-semibold";
-    case "proximo": return "text-amber-400";
-    case "lejano": return "text-emerald-400";
+    case "critico": return "text-red-500 font-semibold";
+    case "urgente": return "text-orange-500 font-semibold";
+    case "proximo": return "text-amber-500";
+    case "lejano": return "text-emerald-500";
   }
 }
 
@@ -94,10 +106,10 @@ export function getProximityBg(fecha: string): string {
   const level = getProximityLevel(fecha);
   switch (level) {
     case "vencido": return "bg-alert-urgent/20 border-l-alert-urgent";
-    case "critico": return "bg-red-500/10 border-l-red-400";
-    case "urgente": return "bg-orange-500/10 border-l-orange-400";
-    case "proximo": return "bg-amber-500/10 border-l-amber-400";
-    case "lejano": return "bg-emerald-500/10 border-l-emerald-400";
+    case "critico": return "bg-red-500/10 border-l-red-500";
+    case "urgente": return "bg-orange-500/10 border-l-orange-500";
+    case "proximo": return "bg-amber-500/10 border-l-amber-500";
+    case "lejano": return "bg-emerald-500/10 border-l-emerald-500";
   }
 }
 
@@ -105,16 +117,20 @@ export function getProximityDot(fecha: string): string {
   const level = getProximityLevel(fecha);
   switch (level) {
     case "vencido": return "bg-alert-urgent";
-    case "critico": return "bg-red-400";
-    case "urgente": return "bg-orange-400";
-    case "proximo": return "bg-amber-400";
-    case "lejano": return "bg-emerald-400";
+    case "critico": return "bg-red-500";
+    case "urgente": return "bg-orange-500";
+    case "proximo": return "bg-amber-500";
+    case "lejano": return "bg-emerald-500";
   }
 }
 
+export type TipoEvento = "Juicio" | "Prescripción" | "Vto. PP" | "Audiencia" | "Vto. Probation" | "Agenda" | "Vto. Pena";
+
+export const TIPOS_EVENTO: TipoEvento[] = ["Juicio", "Audiencia", "Prescripción", "Vto. PP", "Vto. Probation", "Vto. Pena", "Agenda"];
+
 export interface Evento {
   causa: Causa;
-  tipo: "Juicio" | "Prescripción" | "Vto. PP" | "Audiencia" | "Vto. Probation" | "Agenda" | "Vto. Pena";
+  tipo: TipoEvento;
   descripcion: string;
   fecha: string;
   hora?: string;
@@ -180,8 +196,7 @@ export const mockCausas: Causa[] = [
     ],
     vocalia: 1,
     causasConexas: ["82100/2018"],
-    notas: "Cómputo de palabra vigente. Paradero actualizado.",
-    anotaciones: "Verificar si el defensor presentó la prueba documental.",
+    anotaciones: "Cómputo de palabra vigente. Verificar prueba documental presentada por la defensa.",
     agenda: [
       { texto: "Llamar al defensor por prueba pendiente", fecha: "2025-04-18" },
     ],
@@ -215,7 +230,7 @@ export const mockCausas: Causa[] = [
     fechaInicio: "2020-03-10",
     fechaPrescripcion: "2026-08-10",
     vocalia: 2,
-    notas: "Paradero vigente. Último domicilio: Av. Rivadavia 4500, CABA.",
+    anotaciones: "Paradero vigente. Último domicilio: Av. Rivadavia 4500, CABA.",
   },
   {
     id: "4",
@@ -267,7 +282,7 @@ export const mockCausas: Causa[] = [
       { tipo: "Cámara Gesell", fecha: "2025-05-02", hora: "15:00", notas: "Declaración testimonial víctima" },
     ],
     vocalia: 2,
-    notas: "Víctima menor de edad. Trámite prioritario.",
+    anotaciones: "Víctima menor de edad. Trámite prioritario.",
     agenda: [
       { texto: "Coordinar con Cámara Gesell", fecha: "2025-04-25" },
       { texto: "Revisar pericia psicológica", fecha: "2025-05-10" },
@@ -317,5 +332,18 @@ export const mockCausas: Causa[] = [
     fechaPrescripcion: "2028-03-10",
     fechaVencimientoPP: "2025-09-10",
     vocalia: 2,
+  },
+  {
+    id: "10",
+    numero: "70200/2016",
+    delito: "Hurto simple (Art. 162 CP)",
+    imputados: [
+      { nombre: "Aguirre, Pablo", estadoLibertad: "Excarcelado", defensor: { nombre: "Dr. Ríos, Esteban", tipo: "DPO", contacto: "4370-4600 int. 3411" } },
+    ],
+    estadoCausa: "Terminada",
+    fechaInicio: "2016-05-02",
+    fechaPrescripcion: "2024-05-02",
+    vocalia: 1,
+    anotaciones: "Sentencia firme. Archivo definitivo.",
   },
 ];

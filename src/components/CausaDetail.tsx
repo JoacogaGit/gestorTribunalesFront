@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Causa, getCaratula, getProximityColor, EstadoLibertad, EstadoCausa } from "@/data/mockCausas";
+import { useRef, useState } from "react";
+import { Causa, getCaratula, getProximityColor, EstadoLibertad, EstadoCausa, OtroInterviniente, AdjuntoPDF } from "@/data/mockCausas";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, Link2, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Save, Link2, ExternalLink, Paperclip, FileText, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const estadosLibertad: EstadoLibertad[] = ["Detenido", "Excarcelado", "Rebelde", "SJP"];
 const estadosCausa: EstadoCausa[] = ["En trámite", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX"];
@@ -18,9 +19,11 @@ interface Props {
 
 export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Props) {
   const [draft, setDraft] = useState<Causa>(() => JSON.parse(JSON.stringify(causa)));
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const save = () => {
     onUpdate?.(draft);
+    toast.success("Cambios guardados");
     onClose();
   };
 
@@ -52,33 +55,58 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
     setDraft({ ...draft, imputados: draft.imputados.filter((_, i) => i !== idx) });
   };
 
-  const addAudiencia = () => {
-    setDraft({ ...draft, audiencias: [...(draft.audiencias || []), { tipo: "", fecha: "", hora: "" }] });
-  };
-
+  const addAudiencia = () => setDraft({ ...draft, audiencias: [...(draft.audiencias || []), { tipo: "", fecha: "", hora: "" }] });
   const updateAudiencia = (idx: number, patch: Partial<Causa["audiencias"][number]>) => {
     const auds = [...(draft.audiencias || [])];
     auds[idx] = { ...auds[idx], ...patch };
     setDraft({ ...draft, audiencias: auds });
   };
+  const removeAudiencia = (idx: number) => setDraft({ ...draft, audiencias: (draft.audiencias || []).filter((_, i) => i !== idx) });
 
-  const removeAudiencia = (idx: number) => {
-    setDraft({ ...draft, audiencias: (draft.audiencias || []).filter((_, i) => i !== idx) });
-  };
-
-  const addAgenda = () => {
-    setDraft({ ...draft, agenda: [...(draft.agenda || []), { texto: "", fecha: "" }] });
-  };
-
+  const addAgenda = () => setDraft({ ...draft, agenda: [...(draft.agenda || []), { texto: "", fecha: "" }] });
   const updateAgenda = (idx: number, patch: Partial<Causa["agenda"][number]>) => {
     const ag = [...(draft.agenda || [])];
     ag[idx] = { ...ag[idx], ...patch };
     setDraft({ ...draft, agenda: ag });
   };
+  const removeAgenda = (idx: number) => setDraft({ ...draft, agenda: (draft.agenda || []).filter((_, i) => i !== idx) });
 
-  const removeAgenda = (idx: number) => {
-    setDraft({ ...draft, agenda: (draft.agenda || []).filter((_, i) => i !== idx) });
+  // Otros intervinientes
+  const addOtro = () => setDraft({ ...draft, otrosIntervinientes: [...(draft.otrosIntervinientes || []), { rol: "Querella", nombre: "", contacto: "" }] });
+  const updateOtro = (idx: number, patch: Partial<OtroInterviniente>) => {
+    const arr = [...(draft.otrosIntervinientes || [])];
+    arr[idx] = { ...arr[idx], ...patch };
+    setDraft({ ...draft, otrosIntervinientes: arr });
   };
+  const removeOtro = (idx: number) => setDraft({ ...draft, otrosIntervinientes: (draft.otrosIntervinientes || []).filter((_, i) => i !== idx) });
+
+  // Causas conexas
+  const addConexa = () => setDraft({ ...draft, causasConexas: [...(draft.causasConexas || []), ""] });
+  const updateConexa = (idx: number, value: string) => {
+    const arr = [...(draft.causasConexas || [])];
+    arr[idx] = value;
+    setDraft({ ...draft, causasConexas: arr });
+  };
+  const removeConexa = (idx: number) => setDraft({ ...draft, causasConexas: (draft.causasConexas || []).filter((_, i) => i !== idx) });
+
+  // PDF
+  const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") { toast.error("Solo se permiten archivos PDF"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Máximo 5 MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = reader.result as string;
+      const adj: AdjuntoPDF = { nombre: file.name, data };
+      setDraft({ ...draft, adjuntos: [...(draft.adjuntos || []), adj] });
+      toast.success(`PDF "${file.name}" agregado`);
+    };
+    reader.readAsDataURL(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+  const openPDF = (a: AdjuntoPDF) => window.open(a.data, "_blank");
+  const removeAdjunto = (idx: number) => setDraft({ ...draft, adjuntos: (draft.adjuntos || []).filter((_, i) => i !== idx) });
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -98,14 +126,25 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
               </DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">{getCaratula(draft) || "(sin imputado)"}</p>
             </div>
-            <div className="flex items-center gap-1.5 bg-muted/50 border border-border rounded-md px-2 py-1.5">
-              <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <input
-                value={draft.link || ""}
-                onChange={(e) => setDraft({ ...draft, link: e.target.value })}
-                placeholder="Pegar link…"
-                className="bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none w-44"
-              />
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1.5 bg-muted/50 border border-border rounded-md px-2 py-1.5">
+                <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <input
+                  value={draft.link || ""}
+                  onChange={(e) => setDraft({ ...draft, link: e.target.value })}
+                  placeholder="Pegar link…"
+                  className="bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none w-44"
+                />
+              </div>
+              {onUpdate && (
+                <button
+                  onClick={save}
+                  className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors"
+                  title="Guardar cambios"
+                >
+                  <Save className="w-3.5 h-3.5" /> Guardar
+                </button>
+              )}
             </div>
           </div>
         </DialogHeader>
@@ -124,6 +163,34 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
                 </SelectContent>
               </Select>
             </Labeled>
+          </div>
+
+          {/* Causas conexas */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs font-semibold text-muted-foreground">Causas conexas</p>
+              <button onClick={addConexa} className="text-xs flex items-center gap-1 text-primary hover:text-primary/80">
+                <Plus className="w-3 h-3" /> Agregar
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {(draft.causasConexas || []).map((cn, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input
+                    value={cn}
+                    onChange={(e) => updateConexa(i, e.target.value)}
+                    placeholder="N° causa conexa"
+                    className="h-7 text-xs flex-1"
+                  />
+                  <button onClick={() => removeConexa(i)} className="text-alert-urgent/60 hover:text-alert-urgent p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {(draft.causasConexas || []).length === 0 && (
+                <p className="text-[11px] text-muted-foreground italic">Sin causas conexas</p>
+              )}
+            </div>
           </div>
 
           <Labeled label="Delito">
@@ -189,20 +256,37 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
                       </Select>
                     </Labeled>
                   </div>
-                  <Input
-                    value={imp.defensor.nombre}
-                    onChange={(e) => updateDefensor(i, { nombre: e.target.value })}
-                    placeholder="Nombre defensor"
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    value={imp.defensor.contacto}
-                    onChange={(e) => updateDefensor(i, { contacto: e.target.value })}
-                    placeholder="Contacto"
-                    className="h-8 text-xs"
-                  />
+                  <Input value={imp.defensor.nombre} onChange={(e) => updateDefensor(i, { nombre: e.target.value })} placeholder="Nombre defensor" className="h-8 text-xs" />
+                  <Input value={imp.defensor.contacto} onChange={(e) => updateDefensor(i, { contacto: e.target.value })} placeholder="Contacto" className="h-8 text-xs" />
                 </div>
               ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Otros intervinientes */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground">Otros intervinientes (querella, actor civil, etc.)</p>
+              <button onClick={addOtro} className="text-xs flex items-center gap-1 text-primary hover:text-primary/80">
+                <Plus className="w-3 h-3" /> Agregar
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(draft.otrosIntervinientes || []).map((o, i) => (
+                <div key={i} className="flex items-center gap-2 bg-muted/40 rounded-md p-2">
+                  <Input value={o.rol} onChange={(e) => updateOtro(i, { rol: e.target.value })} placeholder="Rol" className="h-8 text-xs w-32" />
+                  <Input value={o.nombre} onChange={(e) => updateOtro(i, { nombre: e.target.value })} placeholder="Nombre" className="h-8 text-xs flex-1" />
+                  <Input value={o.contacto || ""} onChange={(e) => updateOtro(i, { contacto: e.target.value })} placeholder="Contacto" className="h-8 text-xs w-40" />
+                  <button onClick={() => removeOtro(i)} className="text-alert-urgent/60 hover:text-alert-urgent p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {(draft.otrosIntervinientes || []).length === 0 && (
+                <p className="text-[11px] text-muted-foreground italic">Sin otros intervinientes</p>
+              )}
             </div>
           </div>
 
@@ -337,13 +421,13 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
 
           <Separator />
 
-          {/* Anotaciones */}
+          {/* Anotaciones (unificada con notas) */}
           <Labeled label="Anotaciones">
             <textarea
               value={draft.anotaciones || ""}
               onChange={(e) => setDraft({ ...draft, anotaciones: e.target.value })}
-              placeholder="Escribí anotaciones sobre la causa..."
-              className="w-full bg-muted/50 border border-border rounded-md p-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-y min-h-[60px]"
+              placeholder="Escribí anotaciones, observaciones y notas sobre la causa…"
+              className="w-full bg-muted/50 border border-border rounded-md p-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-y min-h-[80px]"
             />
           </Labeled>
 
@@ -372,13 +456,38 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
 
           <Separator />
 
-          <Labeled label="Notas">
-            <textarea
-              value={draft.notas || ""}
-              onChange={(e) => setDraft({ ...draft, notas: e.target.value })}
-              className="w-full bg-muted/50 border border-border rounded-md p-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary resize-y min-h-[50px]"
-            />
-          </Labeled>
+          {/* Adjuntos PDF */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground">Archivos PDF adjuntos</p>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="text-xs flex items-center gap-1 text-primary hover:text-primary/80"
+              >
+                <Paperclip className="w-3 h-3" /> Adjuntar PDF
+              </button>
+              <input ref={fileRef} type="file" accept="application/pdf" className="hidden" onChange={onFileSelected} />
+            </div>
+            <div className="space-y-1.5">
+              {(draft.adjuntos || []).map((a, i) => (
+                <div key={i} className="flex items-center gap-2 bg-muted/40 rounded-md p-2">
+                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                  <button onClick={() => openPDF(a)} className="flex-1 text-left text-xs text-foreground hover:text-primary truncate">
+                    {a.nombre}
+                  </button>
+                  <button onClick={() => openPDF(a)} className="text-muted-foreground hover:text-foreground p-1" title="Abrir">
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => removeAdjunto(i)} className="text-alert-urgent/60 hover:text-alert-urgent p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {(draft.adjuntos || []).length === 0 && (
+                <p className="text-[11px] text-muted-foreground italic">Sin archivos adjuntos</p>
+              )}
+            </div>
+          </div>
 
           <div className="flex items-center gap-2 pt-2">
             {onDelete && (

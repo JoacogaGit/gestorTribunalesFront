@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Causa, getCaratula, getProximityColor, createEmptyCausa } from "@/data/mockCausas";
+import { Causa, getCaratula, getProximityColor, createEmptyCausa, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2 } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -9,7 +9,11 @@ import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuLabel, ContextMenuSeparator, ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent,
+} from "@/components/ui/context-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -20,12 +24,16 @@ const libertadBadge: Record<string, string> = {
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
+const estadosCausa: EstadoCausa[] = ["En trámite", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX"];
+
 interface ColDef {
   key: string;
   label: string;
   render: (c: Causa) => React.ReactNode;
   cellClass?: string;
   headClass?: string;
+  /** Function returning a value used for sorting. Numbers, strings or undefined. */
+  sortValue?: (c: Causa) => string | number | undefined;
 }
 
 function fmtDate(d?: string) {
@@ -35,27 +43,27 @@ function fmtDate(d?: string) {
 
 interface Props {
   causas: Causa[];
-  /** All cases in the workspace, used for the "import from another list" feature. */
   allCausas?: Causa[];
   title?: string;
-  /** Identifier of the list (used to persist hidden columns per list). */
   listKey?: string;
   vocalia?: number;
   onUpdateCausa?: (causa: Causa) => void;
   onDeleteCausa?: (id: string) => void;
   onCreateCausa?: (causa: Causa) => void;
-  /** Called when user picks an existing case from another list to import here. */
   onImportCausa?: (causa: Causa) => void;
+  /** Allow changing case status from context menu (used for "all" / dashboard view). */
+  onChangeEstado?: (causa: Causa, nuevoEstado: EstadoCausa) => void;
 }
 
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
-  onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa,
+  onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
 
   const allColumns: ColDef[] = [
     {
@@ -63,20 +71,60 @@ export default function CausasTable({
       label: "N° Causa",
       headClass: "whitespace-nowrap",
       cellClass: "font-mono text-xs font-semibold whitespace-nowrap",
-      render: (c) => c.link
-        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline inline-flex items-center gap-1">{c.numero}<ExternalLink className="w-3 h-3" /></a>
-        : <span className="text-primary">{c.numero}</span>,
+      sortValue: (c) => c.numero,
+      render: (c) => {
+        const conexas = (c.causasConexas || []).filter(Boolean);
+        const hasPdf = (c.adjuntos || []).length > 0;
+        const numEl = c.link
+          ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline inline-flex items-center gap-1">{c.numero}<ExternalLink className="w-3 h-3" /></a>
+          : <span className="text-primary">{c.numero}</span>;
+        return (
+          <div className="flex items-center gap-1.5">
+            {numEl}
+            {conexas.length > 0 && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-2 h-2 rounded-full bg-sky-400 ring-1 ring-sky-400/40 cursor-help"
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <p className="font-semibold mb-0.5">Causas conexas:</p>
+                    {conexas.map((cn, i) => <div key={i} className="font-mono">{cn}</div>)}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {hasPdf && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Paperclip className="w-3 h-3 text-muted-foreground" onClick={(e) => e.stopPropagation()} />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {(c.adjuntos || []).length} archivo(s) PDF
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "caratula", label: "Carátula",
       cellClass: "text-sm font-medium text-foreground max-w-[220px] truncate",
+      sortValue: (c) => getCaratula(c),
       render: (c) => c.link
         ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline">{getCaratula(c)}</a>
         : getCaratula(c),
     },
-    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", render: (c) => c.delito },
+    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", sortValue: (c) => c.delito, render: (c) => c.delito },
     {
       key: "libertad", label: "Libertad",
+      sortValue: (c) => c.imputados[0]?.estadoLibertad,
       render: (c) => (
         <div className="flex flex-wrap gap-1">
           {c.imputados.map((imp, i) => (
@@ -85,10 +133,15 @@ export default function CausasTable({
         </div>
       ),
     },
-    { key: "estado", label: "Estado", cellClass: "text-xs text-foreground whitespace-nowrap", render: (c) => c.estadoCausa },
-    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
+    { key: "estado", label: "Estado", cellClass: "text-xs text-foreground whitespace-nowrap", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
+    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
     {
       key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
+      sortValue: (c) => {
+        const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
+        const future = all.map((d) => new Date(d).getTime()).sort((a, b) => a - b);
+        return future[0] ?? Number.MAX_SAFE_INTEGER;
+      },
       render: (c) => {
         const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
         if (all.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
@@ -103,10 +156,18 @@ export default function CausasTable({
     },
     {
       key: "pp", label: "PP Vence", headClass: "whitespace-nowrap",
+      sortValue: (c) => c.fechaVencimientoPP ? new Date(c.fechaVencimientoPP).getTime() : Number.MAX_SAFE_INTEGER,
       render: (c) => <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(c.fechaVencimientoPP)}</span>,
     },
     {
       key: "juicios", label: "Juicios y Audiencias", headClass: "whitespace-nowrap",
+      sortValue: (c) => {
+        const fechas: number[] = [];
+        if (c.juicioFijado) fechas.push(new Date(c.juicioFijado.fecha).getTime());
+        (c.audiencias || []).forEach((a) => a.fecha && fechas.push(new Date(a.fecha).getTime()));
+        fechas.sort((a, b) => a - b);
+        return fechas[0] ?? Number.MAX_SAFE_INTEGER;
+      },
       render: (c) => {
         const items: { label: string; fecha: string; hora?: string }[] = [];
         if (c.juicioFijado) items.push({ label: "Juicio", fecha: c.juicioFijado.fecha, hora: c.juicioFijado.hora });
@@ -123,11 +184,23 @@ export default function CausasTable({
         );
       },
     },
-    { key: "anotaciones", label: "Anotaciones", cellClass: "text-xs text-muted-foreground max-w-[150px] truncate", render: (c) => c.anotaciones || "—" },
+    {
+      key: "otrosIntervinientes", label: "Otros intervinientes",
+      cellClass: "text-xs text-muted-foreground max-w-[180px]",
+      sortValue: (c) => (c.otrosIntervinientes || []).map((o) => o.nombre).join(", "),
+      render: (c) => (c.otrosIntervinientes && c.otrosIntervinientes.length > 0)
+        ? <div className="space-y-0.5">{c.otrosIntervinientes.map((o, i) => <div key={i}><span className="font-medium text-foreground/80">{o.rol}:</span> {o.nombre}</div>)}</div>
+        : <span className="text-muted-foreground">—</span>,
+    },
+    { key: "anotaciones", label: "Anotaciones", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", sortValue: (c) => c.anotaciones || "", render: (c) => c.anotaciones || "—" },
     {
       key: "agenda", label: "Agenda", headClass: "whitespace-nowrap",
+      sortValue: (c) => {
+        const f = (c.agenda || []).map((a) => new Date(a.fecha).getTime()).filter(Boolean).sort((a, b) => a - b);
+        return f[0] ?? Number.MAX_SAFE_INTEGER;
+      },
       render: (c) => c.agenda && c.agenda.length > 0
-        ? <div className="space-y-0.5 text-xs">{c.agenda.map((ag, i) => <div key={i} className={getProximityColor(ag.fecha)}>{ag.texto.substring(0, 20)}… — {fmtDate(ag.fecha)}</div>)}</div>
+        ? <div className="space-y-0.5 text-xs">{c.agenda.map((ag, i) => <div key={i} className={getProximityColor(ag.fecha)}>{ag.texto.substring(0, 20)}{ag.texto.length > 20 ? "…" : ""} — {fmtDate(ag.fecha)}</div>)}</div>
         : <span className="text-xs text-muted-foreground">—</span>,
     },
   ];
@@ -162,9 +235,7 @@ export default function CausasTable({
     toast.success(`Categoría "${label}" agregada`);
   };
 
-  const removeCustomCol = (key: string) => {
-    persistCustomCols(customCols.filter((c) => c.key !== key));
-  };
+  const removeCustomCol = (key: string) => persistCustomCols(customCols.filter((c) => c.key !== key));
 
   const toggleCol = (key: string) => {
     const next = new Set(hiddenCols);
@@ -177,8 +248,9 @@ export default function CausasTable({
     key: cc.key,
     label: cc.label,
     cellClass: "text-xs text-muted-foreground max-w-[160px]",
+    sortValue: (c) => (c.extra?.[cc.key] || "").toString(),
     render: (c) => {
-      const val = (c as any).extra?.[cc.key] || "";
+      const val = c.extra?.[cc.key] || "";
       return (
         <input
           defaultValue={val}
@@ -186,8 +258,8 @@ export default function CausasTable({
           onBlur={(e) => {
             const v = e.target.value;
             if (v === val) return;
-            const extra = { ...((c as any).extra || {}), [cc.key]: v };
-            onUpdateCausa?.({ ...c, extra } as any);
+            const extra = { ...(c.extra || {}), [cc.key]: v };
+            onUpdateCausa?.({ ...c, extra });
           }}
           placeholder="—"
           className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary rounded px-1 py-0.5"
@@ -200,6 +272,15 @@ export default function CausasTable({
   const visibleColumns = fullColumns.filter((c) => !hiddenCols.has(c.key));
   const displayTitle = customTitle || title;
 
+  const handleHeaderSort = (key: string) => {
+    if (sortBy?.key === key) {
+      if (sortBy.dir === "asc") setSortBy({ key, dir: "desc" });
+      else setSortBy(null);
+    } else {
+      setSortBy({ key, dir: "asc" });
+    }
+  };
+
   const filtered = causas.filter((c) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -211,12 +292,34 @@ export default function CausasTable({
     );
   });
 
+  const sorted = (() => {
+    if (!sortBy) return filtered;
+    const col = fullColumns.find((c) => c.key === sortBy.key);
+    if (!col?.sortValue) return filtered;
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      const va = col.sortValue!(a);
+      const vb = col.sortValue!(b);
+      if (va === undefined || va === null) return 1;
+      if (vb === undefined || vb === null) return -1;
+      if (typeof va === "number" && typeof vb === "number") return va - vb;
+      return String(va).localeCompare(String(vb), "es", { numeric: true });
+    });
+    if (sortBy.dir === "desc") arr.reverse();
+    return arr;
+  })();
+
   const copyToClipboard = () => {
     const header = visibleColumns.map((c) => c.label).join("\t");
-    const rows = filtered.map((c) =>
+    const rows = sorted.map((c) =>
       visibleColumns.map((col) => {
         const node = col.render(c);
-        return typeof node === "string" ? node : (col.key === "numero" ? c.numero : col.key === "caratula" ? getCaratula(c) : "");
+        if (typeof node === "string") return node;
+        if (col.key === "numero") return c.numero;
+        if (col.key === "caratula") return getCaratula(c);
+        if (col.key === "estado") return c.estadoCausa;
+        if (col.key === "delito") return c.delito;
+        return "";
       }).join("\t")
     );
     navigator.clipboard.writeText([header, ...rows].join("\n"));
@@ -264,6 +367,15 @@ export default function CausasTable({
           </div>
         )}
         <div className="flex items-center gap-2 ml-auto">
+          {sortBy && (
+            <button
+              onClick={() => setSortBy(null)}
+              className="text-[10px] text-muted-foreground hover:text-foreground bg-muted/40 px-2 py-1 rounded-md flex items-center gap-1"
+              title="Quitar ordenamiento"
+            >
+              <X className="w-3 h-3" /> Orden: {fullColumns.find((c) => c.key === sortBy.key)?.label} ({sortBy.dir})
+            </button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
               Categorías <ChevronDown className="w-3 h-3" />
@@ -322,20 +434,80 @@ export default function CausasTable({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                {visibleColumns.map((col) => (
-                  <TableHead key={col.key} className={col.headClass}>{col.label}</TableHead>
-                ))}
+                {visibleColumns.map((col) => {
+                  const isSorted = sortBy?.key === col.key;
+                  const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
+                  return (
+                    <TableHead
+                      key={col.key}
+                      className={`${col.headClass || ""} ${col.sortValue ? "cursor-pointer select-none hover:text-foreground" : ""}`}
+                      onClick={() => col.sortValue && handleHeaderSort(col.key)}
+                      title={col.sortValue ? "Clic para ordenar" : undefined}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {col.label}
+                        {col.sortValue && (
+                          <SortIcon className={`w-3 h-3 ${isSorted ? "text-primary" : "text-muted-foreground/40"}`} />
+                        )}
+                      </span>
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((c) => (
-                <TableRow key={c.id} className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(c)}>
-                  {visibleColumns.map((col) => (
-                    <TableCell key={col.key} className={col.cellClass}>{col.render(c)}</TableCell>
-                  ))}
-                </TableRow>
+              {sorted.map((c) => (
+                <ContextMenu key={c.id}>
+                  <ContextMenuTrigger asChild>
+                    <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(c)}>
+                      {visibleColumns.map((col) => (
+                        <TableCell key={col.key} className={col.cellClass}>{col.render(c)}</TableCell>
+                      ))}
+                    </TableRow>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-56">
+                    <ContextMenuLabel className="text-xs font-mono">{c.numero}</ContextMenuLabel>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => setSelected(c)} className="text-xs">
+                      <Pencil className="w-3.5 h-3.5 mr-2" /> Abrir / Editar
+                    </ContextMenuItem>
+                    {(onChangeEstado || onUpdateCausa) && (
+                      <ContextMenuSub>
+                        <ContextMenuSubTrigger className="text-xs">
+                          Cambiar estado
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent>
+                          {estadosCausa.map((e) => (
+                            <ContextMenuItem
+                              key={e}
+                              onSelect={() => {
+                                if (onChangeEstado) onChangeEstado(c, e);
+                                else onUpdateCausa?.({ ...c, estadoCausa: e });
+                                toast.success(`Estado: ${e}`);
+                              }}
+                              className={`text-xs ${c.estadoCausa === e ? "bg-primary/10 text-primary" : ""}`}
+                            >
+                              {e}
+                            </ContextMenuItem>
+                          ))}
+                        </ContextMenuSubContent>
+                      </ContextMenuSub>
+                    )}
+                    {onDeleteCausa && (
+                      <>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          onSelect={() => { if (confirm(`¿Eliminar causa ${c.numero}?`)) onDeleteCausa(c.id); }}
+                          className="text-xs text-alert-urgent focus:text-alert-urgent"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar causa
+                        </ContextMenuItem>
+                      </>
+                    )}
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
-              {filtered.length === 0 && (
+              {sorted.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={visibleColumns.length} className="text-center text-muted-foreground py-8">
                     {search ? "Sin resultados" : "Sin causas en esta categoría"}
