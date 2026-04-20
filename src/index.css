@@ -6,6 +6,62 @@
 
 @layer base {
   :root {
+    /* Light theme */
+    --background: 220 25% 97%;
+    --foreground: 225 20% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 225 20% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 225 20% 14%;
+
+    --primary: 210 80% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 225 20% 22%;
+
+    --muted: 220 15% 94%;
+    --muted-foreground: 225 10% 42%;
+
+    --accent: 265 70% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 90%;
+    --ring: 210 80% 48%;
+
+    --radius: 0.625rem;
+
+    --alert-urgent: 0 72% 50%;
+    --alert-urgent-foreground: 0 0% 100%;
+    --alert-warning: 38 92% 45%;
+    --alert-warning-foreground: 38 92% 14%;
+    --alert-ok: 152 60% 38%;
+    --alert-ok-foreground: 0 0% 100%;
+    --alert-info: 210 80% 48%;
+    --alert-info-foreground: 0 0% 100%;
+    --alert-critical: 330 80% 50%;
+    --alert-critical-foreground: 0 0% 100%;
+
+    --surface-elevated: 0 0% 100%;
+    --surface-sunken: 220 20% 95%;
+
+    --sidebar-background: 225 25% 12%;
+    --sidebar-foreground: 220 10% 75%;
+    --sidebar-primary: 210 80% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 225 18% 18%;
+    --sidebar-accent-foreground: 220 15% 95%;
+    --sidebar-border: 225 18% 16%;
+    --sidebar-ring: 210 80% 55%;
+  }
+
+  .dark {
     --background: 225 15% 8%;
     --foreground: 220 15% 90%;
 
@@ -34,9 +90,6 @@
     --input: 225 12% 20%;
     --ring: 210 80% 55%;
 
-    --radius: 0.625rem;
-
-    /* LegalTech semantic tokens */
     --alert-urgent: 0 72% 55%;
     --alert-urgent-foreground: 0 0% 100%;
     --alert-warning: 38 92% 50%;
