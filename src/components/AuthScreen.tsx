@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 interface Props {
-  onAuth: () => void;
+  onAuth: (user: { name: string; email: string }) => void;
 }
 
 type Mode = "login" | "signup";
@@ -17,15 +17,24 @@ export default function AuthScreen({ onAuth }: Props) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
+  const deriveName = (mail: string) => {
+    const local = mail.split("@")[0] || "Usuario";
+    return local
+      .split(/[._-]+/)
+      .filter(Boolean)
+      .map((p) => p[0].toUpperCase() + p.slice(1))
+      .join(" ");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success(mode === "login" ? "Sesión iniciada" : "Cuenta creada");
-    onAuth();
+    onAuth({ name: name || deriveName(email), email });
   };
 
   const handleGoogle = () => {
     toast.success("Sesión iniciada con Google");
-    onAuth();
+    onAuth({ name: "Usuario Google", email: "usuario@gmail.com" });
   };
 
   return (

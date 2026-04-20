@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Causa, getCaratula, getProximityColor, createEmptyCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2 } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
@@ -86,7 +89,17 @@ export default function CausasTable({
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
     {
       key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
-      render: (c) => <span className={`text-xs whitespace-nowrap ${getProximityColor(c.fechaPrescripcion)}`}>{fmtDate(c.fechaPrescripcion)}</span>,
+      render: (c) => {
+        const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
+        if (all.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <div className="space-y-0.5 text-xs whitespace-nowrap">
+            {all.map((f, i) => (
+              <div key={i} className={getProximityColor(f)}>{fmtDate(f)}</div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: "pp", label: "PP Vence", headClass: "whitespace-nowrap",
@@ -120,11 +133,38 @@ export default function CausasTable({
   ];
 
   const storageKey = listKey ? `cols-hidden-${listKey}` : null;
+  const customColsKey = listKey ? `cols-custom-${listKey}` : null;
   const initialHidden = (() => {
     if (!storageKey) return new Set<string>();
     try { return new Set<string>(JSON.parse(localStorage.getItem(storageKey) || "[]")); } catch { return new Set<string>(); }
   })();
+  const initialCustom = (() => {
+    if (!customColsKey) return [] as { key: string; label: string }[];
+    try { return JSON.parse(localStorage.getItem(customColsKey) || "[]"); } catch { return []; }
+  })();
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(initialHidden);
+  const [customCols, setCustomCols] = useState<{ key: string; label: string }[]>(initialCustom);
+  const [showAddCol, setShowAddCol] = useState(false);
+  const [newColLabel, setNewColLabel] = useState("");
+
+  const persistCustomCols = (next: { key: string; label: string }[]) => {
+    setCustomCols(next);
+    if (customColsKey) localStorage.setItem(customColsKey, JSON.stringify(next));
+  };
+
+  const addCustomCol = () => {
+    const label = newColLabel.trim();
+    if (!label) return;
+    const key = `custom-${Date.now()}`;
+    persistCustomCols([...customCols, { key, label }]);
+    setNewColLabel("");
+    setShowAddCol(false);
+    toast.success(`Categoría "${label}" agregada`);
+  };
+
+  const removeCustomCol = (key: string) => {
+    persistCustomCols(customCols.filter((c) => c.key !== key));
+  };
 
   const toggleCol = (key: string) => {
     const next = new Set(hiddenCols);
@@ -133,7 +173,31 @@ export default function CausasTable({
     if (storageKey) localStorage.setItem(storageKey, JSON.stringify([...next]));
   };
 
-  const visibleColumns = allColumns.filter((c) => !hiddenCols.has(c.key));
+  const customColDefs: ColDef[] = customCols.map((cc) => ({
+    key: cc.key,
+    label: cc.label,
+    cellClass: "text-xs text-muted-foreground max-w-[160px]",
+    render: (c) => {
+      const val = (c as any).extra?.[cc.key] || "";
+      return (
+        <input
+          defaultValue={val}
+          onClick={(e) => e.stopPropagation()}
+          onBlur={(e) => {
+            const v = e.target.value;
+            if (v === val) return;
+            const extra = { ...((c as any).extra || {}), [cc.key]: v };
+            onUpdateCausa?.({ ...c, extra } as any);
+          }}
+          placeholder="—"
+          className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary rounded px-1 py-0.5"
+        />
+      );
+    },
+  }));
+
+  const fullColumns = [...allColumns, ...customColDefs];
+  const visibleColumns = fullColumns.filter((c) => !hiddenCols.has(c.key));
   const displayTitle = customTitle || title;
 
   const filtered = causas.filter((c) => {
@@ -204,7 +268,7 @@ export default function CausasTable({
             <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
               Categorías <ChevronDown className="w-3 h-3" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel className="text-xs">Mostrar / Ocultar</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {allColumns.map((col) => (
@@ -213,6 +277,29 @@ export default function CausasTable({
                   {col.label}
                 </DropdownMenuItem>
               ))}
+              {customCols.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs">Personalizadas</DropdownMenuLabel>
+                  {customCols.map((col) => (
+                    <DropdownMenuItem key={col.key} onSelect={(e) => e.preventDefault()} className="text-xs flex items-center gap-2 group">
+                      <input type="checkbox" readOnly checked={!hiddenCols.has(col.key)} onClick={() => toggleCol(col.key)} className="accent-primary" />
+                      <span className="flex-1 truncate" onClick={() => toggleCol(col.key)}>{col.label}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeCustomCol(col.key); }}
+                        className="text-alert-urgent/60 hover:text-alert-urgent opacity-0 group-hover:opacity-100"
+                        title="Eliminar categoría"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowAddCol(true); }} className="text-xs flex items-center gap-2 text-primary">
+                <Plus className="w-3 h-3" /> Agregar categoría
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
@@ -297,6 +384,30 @@ export default function CausasTable({
           onDelete={onDeleteCausa}
         />
       )}
+
+      <Dialog open={showAddCol} onOpenChange={setShowAddCol}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-base">Nueva categoría</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <Input
+              autoFocus
+              value={newColLabel}
+              onChange={(e) => setNewColLabel(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addCustomCol()}
+              placeholder="Ej. Fiscal, Querella, Observaciones…"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Aparecerá como una columna editable en cada fila de esta lista.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setShowAddCol(false); setNewColLabel(""); }}>Cancelar</Button>
+              <Button className="flex-1" onClick={addCustomCol} disabled={!newColLabel.trim()}>Crear</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

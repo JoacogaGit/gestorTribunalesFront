@@ -4,6 +4,7 @@ import KpiCards from "@/components/KpiCards";
 import CausasTable from "@/components/CausasTable";
 import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
+import UserMenu from "@/components/UserMenu";
 import { mockCausas, Causa } from "@/data/mockCausas";
 import { toast } from "sonner";
 
@@ -12,9 +13,12 @@ type View = string;
 interface Props {
   vocalia: number;
   onBack: () => void;
+  user: { name: string; email: string };
+  onLogout: () => void;
+  onUpdateUser: (u: { name: string; email: string }) => void;
 }
 
-export default function VocaliaWorkspace({ vocalia, onBack }: Props) {
+export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUpdateUser }: Props) {
   const [view, setView] = useState<View>("dashboard");
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
   const [causas, setCausas] = useState<Causa[]>(() => mockCausas.filter((c) => c.vocalia === vocalia));
@@ -122,7 +126,15 @@ export default function VocaliaWorkspace({ vocalia, onBack }: Props) {
         onBack={onBack}
       />
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
-        <h1 className="text-2xl font-display font-bold text-foreground mb-6">{title}</h1>
+        <div className="flex items-center justify-between mb-6 gap-4">
+          <h1 className="text-2xl font-display font-bold text-foreground">{title}</h1>
+          <UserMenu
+            email={user.email}
+            name={user.name}
+            onLogout={onLogout}
+            onUpdateProfile={onUpdateUser}
+          />
+        </div>
 
         {view === "dashboard" && (
           <div className="space-y-8">
@@ -139,7 +151,7 @@ export default function VocaliaWorkspace({ vocalia, onBack }: Props) {
         {view === "calendario" && <CalendarioAlertas causas={causas} />}
 
         {view.startsWith("custom-") && (
-          <CausasTable causas={causas} title={customBoards.find((b) => b.id === view)?.label || "Tablero"} listKey={view} {...commonProps} />
+          <CausasTable causas={causas} title={customBoards.find((b) => b.id === view)?.label || "Tablero"} listKey={view} {...commonProps} onImportCausa={importToList(view)} />
         )}
       </main>
     </div>
