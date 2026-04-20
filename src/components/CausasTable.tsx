@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Causa, getCaratula, getProximityColor, createEmptyCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2 } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
@@ -86,7 +89,17 @@ export default function CausasTable({
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
     {
       key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
-      render: (c) => <span className={`text-xs whitespace-nowrap ${getProximityColor(c.fechaPrescripcion)}`}>{fmtDate(c.fechaPrescripcion)}</span>,
+      render: (c) => {
+        const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
+        if (all.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <div className="space-y-0.5 text-xs whitespace-nowrap">
+            {all.map((f, i) => (
+              <div key={i} className={getProximityColor(f)}>{fmtDate(f)}</div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: "pp", label: "PP Vence", headClass: "whitespace-nowrap",
