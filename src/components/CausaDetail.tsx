@@ -213,9 +213,6 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
             <Labeled label="Inicio">
               <Input type="date" value={draft.fechaInicio} onChange={(e) => setDraft({ ...draft, fechaInicio: e.target.value })} className="h-8" />
             </Labeled>
-            <Labeled label="Prescripción">
-              <Input type="date" value={draft.fechaPrescripcion} onChange={(e) => setDraft({ ...draft, fechaPrescripcion: e.target.value })} className={`h-8 ${getProximityColor(draft.fechaPrescripcion)}`} />
-            </Labeled>
             <Labeled label="Elevación">
               <Input type="date" value={draft.fechaElevacion || ""} onChange={(e) => setDraft({ ...draft, fechaElevacion: e.target.value || undefined })} className="h-8" />
             </Labeled>
@@ -233,6 +230,63 @@ export default function CausaDetail({ causa, onClose, onUpdate, onDelete }: Prop
                 className={`h-8 ${draft.probation ? getProximityColor(draft.probation.vencimiento) : ""}`}
               />
             </Labeled>
+          </div>
+
+          <Separator />
+
+          {/* Prescripciones (múltiples) */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground">Fechas de prescripción</p>
+              <button
+                onClick={() => setDraft({ ...draft, fechasPrescripcionExtra: [...(draft.fechasPrescripcionExtra || []), { fecha: "", label: "" }] })}
+                className="text-xs flex items-center gap-1 text-primary hover:text-primary/80"
+              >
+                <Plus className="w-3 h-3" /> Prescripción
+              </button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 bg-muted/40 rounded-md p-2">
+                <Input value="Principal" disabled className="flex-1 h-8 text-xs" />
+                <Input
+                  type="date"
+                  value={draft.fechaPrescripcion}
+                  onChange={(e) => setDraft({ ...draft, fechaPrescripcion: e.target.value })}
+                  className={`h-8 text-xs w-44 ${getProximityColor(draft.fechaPrescripcion)}`}
+                />
+                <span className="w-7" />
+              </div>
+              {(draft.fechasPrescripcionExtra || []).map((fp, i) => (
+                <div key={i} className="flex items-center gap-2 bg-muted/40 rounded-md p-2">
+                  <Input
+                    value={fp.label || ""}
+                    onChange={(e) => {
+                      const arr = [...(draft.fechasPrescripcionExtra || [])];
+                      arr[i] = { ...arr[i], label: e.target.value };
+                      setDraft({ ...draft, fechasPrescripcionExtra: arr });
+                    }}
+                    placeholder="Etiqueta (imputado, hecho…)"
+                    className="flex-1 h-8 text-xs"
+                  />
+                  <Input
+                    type="date"
+                    value={fp.fecha}
+                    onChange={(e) => {
+                      const arr = [...(draft.fechasPrescripcionExtra || [])];
+                      arr[i] = { ...arr[i], fecha: e.target.value };
+                      setDraft({ ...draft, fechasPrescripcionExtra: arr });
+                    }}
+                    className={`h-8 text-xs w-44 ${fp.fecha ? getProximityColor(fp.fecha) : ""}`}
+                  />
+                  <button
+                    onClick={() => setDraft({ ...draft, fechasPrescripcionExtra: (draft.fechasPrescripcionExtra || []).filter((_, j) => j !== i) })}
+                    className="text-alert-urgent/60 hover:text-alert-urgent p-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <Separator />
