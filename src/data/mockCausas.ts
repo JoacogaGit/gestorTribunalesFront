@@ -30,7 +30,10 @@ export interface Causa {
   fechaInicio: string;
   fechaElevacion?: string;
   fechaRadicacion?: string;
+  /** Fecha principal de prescripción (compatibilidad). Se usa como primera fecha. */
   fechaPrescripcion: string;
+  /** Fechas adicionales de prescripción (cuando hay varias por imputado/hecho). */
+  fechasPrescripcionExtra?: { fecha: string; label?: string }[];
   fechaVencimientoPP?: string;
   juicioFijado?: { fecha: string; hora: string };
   audiencias?: Audiencia[];
@@ -126,6 +129,11 @@ export function getAllEventos(causas: Causa[]): Evento[] {
     }
     if (c.fechaPrescripcion) {
       eventos.push({ causa: c, tipo: "Prescripción", descripcion: "Prescripción", fecha: c.fechaPrescripcion });
+    }
+    if (c.fechasPrescripcionExtra) {
+      for (const fp of c.fechasPrescripcionExtra) {
+        if (fp.fecha) eventos.push({ causa: c, tipo: "Prescripción", descripcion: fp.label ? `Prescripción — ${fp.label}` : "Prescripción", fecha: fp.fecha });
+      }
     }
     if (c.fechaVencimientoPP) {
       eventos.push({ causa: c, tipo: "Vto. PP", descripcion: "Vto. Prisión Preventiva", fecha: c.fechaVencimientoPP });
