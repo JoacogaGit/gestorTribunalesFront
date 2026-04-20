@@ -268,7 +268,7 @@ export default function CausasTable({
             <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
               Categorías <ChevronDown className="w-3 h-3" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel className="text-xs">Mostrar / Ocultar</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {allColumns.map((col) => (
@@ -277,6 +277,29 @@ export default function CausasTable({
                   {col.label}
                 </DropdownMenuItem>
               ))}
+              {customCols.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs">Personalizadas</DropdownMenuLabel>
+                  {customCols.map((col) => (
+                    <DropdownMenuItem key={col.key} onSelect={(e) => e.preventDefault()} className="text-xs flex items-center gap-2 group">
+                      <input type="checkbox" readOnly checked={!hiddenCols.has(col.key)} onClick={() => toggleCol(col.key)} className="accent-primary" />
+                      <span className="flex-1 truncate" onClick={() => toggleCol(col.key)}>{col.label}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeCustomCol(col.key); }}
+                        className="text-alert-urgent/60 hover:text-alert-urgent opacity-0 group-hover:opacity-100"
+                        title="Eliminar categoría"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowAddCol(true); }} className="text-xs flex items-center gap-2 text-primary">
+                <Plus className="w-3 h-3" /> Agregar categoría
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
