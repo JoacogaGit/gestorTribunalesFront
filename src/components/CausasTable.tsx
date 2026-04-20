@@ -384,6 +384,30 @@ export default function CausasTable({
           onDelete={onDeleteCausa}
         />
       )}
+
+      <Dialog open={showAddCol} onOpenChange={setShowAddCol}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-base">Nueva categoría</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <Input
+              autoFocus
+              value={newColLabel}
+              onChange={(e) => setNewColLabel(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addCustomCol()}
+              placeholder="Ej. Fiscal, Querella, Observaciones…"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Aparecerá como una columna editable en cada fila de esta lista.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setShowAddCol(false); setNewColLabel(""); }}>Cancelar</Button>
+              <Button className="flex-1" onClick={addCustomCol} disabled={!newColLabel.trim()}>Crear</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
