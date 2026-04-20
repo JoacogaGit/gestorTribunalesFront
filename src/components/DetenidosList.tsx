@@ -50,6 +50,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
         : <span className="text-primary">{r.causa.numero}</span>,
     },
     { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[200px] truncate", render: (r) => r.causa.delito },
+    { key: "estadoCausa", label: "Estado causa", cellClass: "text-xs text-foreground whitespace-nowrap", render: (r) => r.causa.estadoCausa },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground", render: (r) => r.imputado.defensor.nombre },
     {
       key: "pp", label: "Vto. PP", headClass: "whitespace-nowrap",
@@ -102,6 +103,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
         case "lugar": return r.imputado.lugarDetencion || "";
         case "numero": return r.causa.numero;
         case "delito": return r.causa.delito;
+        case "estadoCausa": return r.causa.estadoCausa;
         case "defensor": return r.imputado.defensor.nombre;
         case "pp": return fmtDate(r.causa.fechaVencimientoPP);
         case "vtoPena": return fmtDate(r.imputado.fechaVencimientoPena);

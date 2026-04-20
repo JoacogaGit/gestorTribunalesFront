@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Causa, getAllEventos, getProximityBg, getProximityDot, getCaratula, Evento } from "@/data/mockCausas";
+import { Causa, getAllEventos, getProximityBg, getProximityDot, getCaratula, Evento, TIPOS_EVENTO, TipoEvento } from "@/data/mockCausas";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Scale, Clock, AlertTriangle, Gavel, Calendar as CalIcon, FileCheck, BookOpen, X } from "lucide-react";
+import { Search, Scale, Clock, AlertTriangle, Gavel, Calendar as CalIcon, FileCheck, BookOpen, X, Filter } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 const tipoIcons: Record<string, typeof Clock> = {
   Juicio: Gavel,
@@ -22,6 +23,7 @@ function eventoKey(e: Evento) {
 }
 
 const STORAGE_KEY = "calendario-dismissed";
+const FILTER_KEY = "calendario-tipos-ocultos";
 
 export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
   const [search, setSearch] = useState("");
@@ -29,10 +31,12 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try { return new Set<string>(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch { return new Set(); }
   });
+  const [hiddenTipos, setHiddenTipos] = useState<Set<TipoEvento>>(() => {
+    try { return new Set<TipoEvento>(JSON.parse(localStorage.getItem(FILTER_KEY) || "[]")); } catch { return new Set(); }
+  });
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...dismissed]));
-  }, [dismissed]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify([...dismissed])); }, [dismissed]);
+  useEffect(() => { localStorage.setItem(FILTER_KEY, JSON.stringify([...hiddenTipos])); }, [hiddenTipos]);
 
   const dismiss = (e: Evento) => {
     const next = new Set(dismissed);
@@ -42,7 +46,15 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
 
   const restoreAll = () => setDismissed(new Set());
 
-  const allEventos = getAllEventos(causas).filter((e) => !dismissed.has(eventoKey(e)));
+  const toggleTipo = (t: TipoEvento) => {
+    const next = new Set(hiddenTipos);
+    next.has(t) ? next.delete(t) : next.add(t);
+    setHiddenTipos(next);
+  };
+
+  const allEventos = getAllEventos(causas)
+    .filter((e) => !dismissed.has(eventoKey(e)))
+    .filter((e) => !hiddenTipos.has(e.tipo));
 
   const matchesSearch = (e: Evento) => {
     if (!search) return true;
@@ -145,19 +157,50 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
 
         {/* Right column: Upcoming events */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2">
             <h2 className="text-lg font-display font-semibold text-foreground">
               Próximos Eventos
               <span className="text-muted-foreground font-normal text-sm ml-2">({futuros.length})</span>
             </h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar..."
-                className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
-              />
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
+                  <Filter className="w-3.5 h-3.5" />
+                  Tipos
+                  {hiddenTipos.size > 0 && <span className="text-[10px] bg-primary/20 text-primary rounded-full px-1.5">{TIPOS_EVENTO.length - hiddenTipos.size}</span>}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="text-xs">Mostrar tipos de evento</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {TIPOS_EVENTO.map((t) => (
+                    <DropdownMenuItem
+                      key={t}
+                      onSelect={(e) => { e.preventDefault(); toggleTipo(t); }}
+                      className="text-xs flex items-center gap-2"
+                    >
+                      <input type="checkbox" readOnly checked={!hiddenTipos.has(t)} className="accent-primary" />
+                      {t}
+                    </DropdownMenuItem>
+                  ))}
+                  {hiddenTipos.size > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setHiddenTipos(new Set()); }} className="text-xs text-primary">
+                        Mostrar todos
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar..."
+                  className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
+                />
+              </div>
             </div>
           </div>
 
@@ -165,7 +208,7 @@ export default function CalendarioAlertas({ causas }: { causas: Causa[] }) {
             {futuros.map((e, i) => renderEvento(e, i, false))}
             {futuros.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
-                {search || selectedDate ? "Sin resultados" : "Sin eventos próximos"}
+                {search || selectedDate || hiddenTipos.size > 0 ? "Sin resultados" : "Sin eventos próximos"}
               </div>
             )}
           </div>
