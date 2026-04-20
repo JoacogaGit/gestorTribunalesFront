@@ -5,8 +5,11 @@ import CausasTable from "@/components/CausasTable";
 import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
-import { mockCausas, Causa } from "@/data/mockCausas";
+import ThemeToggle from "@/components/ThemeToggle";
+import { mockCausas, Causa, EstadoCausa } from "@/data/mockCausas";
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Filter, X } from "lucide-react";
 
 type View = string;
 
@@ -18,10 +21,23 @@ interface Props {
   onUpdateUser: (u: { name: string; email: string }) => void;
 }
 
+type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "terminadas";
+
+const dashFilterLabels: Record<DashboardFilter, string> = {
+  all: "Todas",
+  tramite: "En trámite",
+  detenidos: "Con detenidos",
+  rebeldes: "Rebeldes",
+  sjp: "SJP / Probation",
+  recursos: "Recursos",
+  terminadas: "Terminadas",
+};
+
 export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUpdateUser }: Props) {
   const [view, setView] = useState<View>("dashboard");
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
   const [causas, setCausas] = useState<Causa[]>(() => mockCausas.filter((c) => c.vocalia === vocalia));
+  const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
 
   const updateCausa = (updated: Causa) => {
     setCausas((prev) => {
@@ -41,7 +57,10 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
     setCausas((prev) => [...prev, { ...nueva, vocalia }]);
   };
 
-  // Importar (mover) una causa a esta lista — ajusta su estado para que entre en el filtro.
+  const changeEstado = (c: Causa, nuevoEstado: EstadoCausa) => {
+    updateCausa({ ...c, estadoCausa: nuevoEstado });
+  };
+
   const importToList = (listId: string) => (c: Causa) => {
     let patched: Causa = { ...c };
     switch (listId) {
@@ -59,23 +78,39 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
       case "recursos":
         patched.estadoCausa = "Casación";
         break;
+      case "terminadas":
+        patched.estadoCausa = "Terminada";
+        break;
     }
     updateCausa(patched);
     toast.success(`Causa ${c.numero} movida`);
   };
 
-  const causasEnTramite = causas.filter(
-    (c) =>
-      (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
-      !c.imputados.some((i) => i.estadoLibertad === "Rebelde") &&
-      !c.imputados.some((i) => i.estadoLibertad === "SJP") &&
-      !["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa) &&
-      !c.probation
-  );
+  const isTramite = (c: Causa) =>
+    (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
+    !c.imputados.some((i) => i.estadoLibertad === "Rebelde") &&
+    !c.imputados.some((i) => i.estadoLibertad === "SJP") &&
+    !["Casación", "Queja en Corte", "REX", "Terminada"].includes(c.estadoCausa) &&
+    !c.probation;
 
+  const causasEnTramite = causas.filter(isTramite);
   const causasRebeldes = causas.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
   const causasSJP = causas.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP") || !!c.probation);
   const causasRecursos = causas.filter((c) => ["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa));
+  const causasTerminadas = causas.filter((c) => c.estadoCausa === "Terminada");
+  const causasConDetenidos = causas.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Detenido"));
+
+  const dashCausas = (() => {
+    switch (dashFilter) {
+      case "tramite": return causasEnTramite;
+      case "detenidos": return causasConDetenidos;
+      case "rebeldes": return causasRebeldes;
+      case "sjp": return causasSJP;
+      case "recursos": return causasRecursos;
+      case "terminadas": return causasTerminadas;
+      default: return causas;
+    }
+  })();
 
   const addBoard = () => {
     if (customBoards.length >= 2) return;
@@ -100,6 +135,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
     rebeldes: "Rebeldes / Paraderos",
     sjp: "SJP en Trámite",
     recursos: "Recursos (Casación / Queja / REX)",
+    terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
   };
 
@@ -110,6 +146,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
     onUpdateCausa: updateCausa,
     onDeleteCausa: deleteCausa,
     onCreateCausa: createCausa,
+    onChangeEstado: changeEstado,
     allCausas: causas,
   };
 
@@ -128,18 +165,51 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
         <div className="flex items-center justify-between mb-6 gap-4">
           <h1 className="text-2xl font-display font-bold text-foreground">{title}</h1>
-          <UserMenu
-            email={user.email}
-            name={user.name}
-            onLogout={onLogout}
-            onUpdateProfile={onUpdateUser}
-          />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <UserMenu
+              email={user.email}
+              name={user.name}
+              onLogout={onLogout}
+              onUpdateProfile={onUpdateUser}
+            />
+          </div>
         </div>
 
         {view === "dashboard" && (
           <div className="space-y-8">
             <KpiCards causas={causas} />
-            <CausasTable causas={causas} title="Todas las Causas" listKey="todas" {...commonProps} onImportCausa={importToList("tramite")} />
+            <div className="flex items-center gap-2 flex-wrap">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
+                  <Filter className="w-3.5 h-3.5" />
+                  Filtrar: <span className="text-foreground font-semibold">{dashFilterLabels[dashFilter]}</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-52">
+                  <DropdownMenuLabel className="text-xs">Filtrar por lista</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {(Object.keys(dashFilterLabels) as DashboardFilter[]).map((f) => (
+                    <DropdownMenuItem
+                      key={f}
+                      onSelect={() => setDashFilter(f)}
+                      className={`text-xs ${dashFilter === f ? "bg-primary/10 text-primary" : ""}`}
+                    >
+                      {dashFilterLabels[f]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {dashFilter !== "all" && (
+                <button
+                  onClick={() => setDashFilter("all")}
+                  className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" /> Quitar filtro
+                </button>
+              )}
+              <span className="text-xs text-muted-foreground ml-auto">{dashCausas.length} causas</span>
+            </div>
+            <CausasTable causas={dashCausas} title={`Causas — ${dashFilterLabels[dashFilter]}`} listKey="todas" {...commonProps} onImportCausa={importToList("tramite")} />
           </div>
         )}
 
@@ -148,6 +218,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
         {view === "rebeldes" && <CausasTable causas={causasRebeldes} title="Rebeldes / Paraderos" listKey="rebeldes" {...commonProps} onImportCausa={importToList("rebeldes")} />}
         {view === "sjp" && <CausasTable causas={causasSJP} title="SJP en Trámite" listKey="sjp" {...commonProps} onImportCausa={importToList("sjp")} />}
         {view === "recursos" && <CausasTable causas={causasRecursos} title="Recursos" listKey="recursos" {...commonProps} onImportCausa={importToList("recursos")} />}
+        {view === "terminadas" && <CausasTable causas={causasTerminadas} title="Causas Terminadas" listKey="terminadas" {...commonProps} onImportCausa={importToList("terminadas")} />}
         {view === "calendario" && <CalendarioAlertas causas={causas} />}
 
         {view.startsWith("custom-") && (
