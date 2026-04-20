@@ -133,11 +133,38 @@ export default function CausasTable({
   ];
 
   const storageKey = listKey ? `cols-hidden-${listKey}` : null;
+  const customColsKey = listKey ? `cols-custom-${listKey}` : null;
   const initialHidden = (() => {
     if (!storageKey) return new Set<string>();
     try { return new Set<string>(JSON.parse(localStorage.getItem(storageKey) || "[]")); } catch { return new Set<string>(); }
   })();
+  const initialCustom = (() => {
+    if (!customColsKey) return [] as { key: string; label: string }[];
+    try { return JSON.parse(localStorage.getItem(customColsKey) || "[]"); } catch { return []; }
+  })();
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(initialHidden);
+  const [customCols, setCustomCols] = useState<{ key: string; label: string }[]>(initialCustom);
+  const [showAddCol, setShowAddCol] = useState(false);
+  const [newColLabel, setNewColLabel] = useState("");
+
+  const persistCustomCols = (next: { key: string; label: string }[]) => {
+    setCustomCols(next);
+    if (customColsKey) localStorage.setItem(customColsKey, JSON.stringify(next));
+  };
+
+  const addCustomCol = () => {
+    const label = newColLabel.trim();
+    if (!label) return;
+    const key = `custom-${Date.now()}`;
+    persistCustomCols([...customCols, { key, label }]);
+    setNewColLabel("");
+    setShowAddCol(false);
+    toast.success(`Categoría "${label}" agregada`);
+  };
+
+  const removeCustomCol = (key: string) => {
+    persistCustomCols(customCols.filter((c) => c.key !== key));
+  };
 
   const toggleCol = (key: string) => {
     const next = new Set(hiddenCols);
@@ -146,7 +173,31 @@ export default function CausasTable({
     if (storageKey) localStorage.setItem(storageKey, JSON.stringify([...next]));
   };
 
-  const visibleColumns = allColumns.filter((c) => !hiddenCols.has(c.key));
+  const customColDefs: ColDef[] = customCols.map((cc) => ({
+    key: cc.key,
+    label: cc.label,
+    cellClass: "text-xs text-muted-foreground max-w-[160px]",
+    render: (c) => {
+      const val = (c as any).extra?.[cc.key] || "";
+      return (
+        <input
+          defaultValue={val}
+          onClick={(e) => e.stopPropagation()}
+          onBlur={(e) => {
+            const v = e.target.value;
+            if (v === val) return;
+            const extra = { ...((c as any).extra || {}), [cc.key]: v };
+            onUpdateCausa?.({ ...c, extra } as any);
+          }}
+          placeholder="—"
+          className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary rounded px-1 py-0.5"
+        />
+      );
+    },
+  }));
+
+  const fullColumns = [...allColumns, ...customColDefs];
+  const visibleColumns = fullColumns.filter((c) => !hiddenCols.has(c.key));
   const displayTitle = customTitle || title;
 
   const filtered = causas.filter((c) => {
