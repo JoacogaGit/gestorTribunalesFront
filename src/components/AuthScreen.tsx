@@ -28,11 +28,24 @@ export default function AuthScreen({ onAuth }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup") {
+      // Marca la cuenta como nueva: VocaliaWorkspace arrancará vacío y mostrará el modal de bienvenida.
+      localStorage.setItem("justrack-new-user", "1");
+      localStorage.removeItem(`justrack-welcome-seen-${email}`);
+    } else {
+      localStorage.removeItem("justrack-new-user");
+    }
     toast.success(mode === "login" ? "Sesión iniciada" : "Cuenta creada");
     onAuth({ name: name || deriveName(email), email });
   };
 
   const handleGoogle = () => {
+    if (mode === "signup") {
+      localStorage.setItem("justrack-new-user", "1");
+      localStorage.removeItem("justrack-welcome-seen-usuario@gmail.com");
+    } else {
+      localStorage.removeItem("justrack-new-user");
+    }
     toast.success("Sesión iniciada con Google");
     onAuth({ name: "Usuario Google", email: "usuario@gmail.com" });
   };

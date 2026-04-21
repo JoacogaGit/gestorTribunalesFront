@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
 import CausasTable from "@/components/CausasTable";
@@ -6,6 +6,7 @@ import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
 import ThemeToggle from "@/components/ThemeToggle";
+import WelcomeModal from "@/components/WelcomeModal";
 import { mockCausas, Causa, EstadoCausa } from "@/data/mockCausas";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -36,8 +37,32 @@ const dashFilterLabels: Record<DashboardFilter, string> = {
 export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUpdateUser }: Props) {
   const [view, setView] = useState<View>("dashboard");
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
-  const [causas, setCausas] = useState<Causa[]>(() => mockCausas.filter((c) => c.vocalia === vocalia));
+
+  // Las cuentas marcadas como "nuevas" (flag justrack-new-user) arrancan vacías.
+  // El resto sigue viendo los datos de muestra.
+  const isNewUser = typeof window !== "undefined" && localStorage.getItem("justrack-new-user") === "1";
+  const [causas, setCausas] = useState<Causa[]>(() =>
+    isNewUser ? [] : mockCausas.filter((c) => c.vocalia === vocalia)
+  );
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
+
+  // Modal de bienvenida: se muestra automáticamente la primera vez que un
+  // usuario nuevo entra a una vocalía vacía. Queda siempre disponible desde
+  // el sidebar para reabrirlo más adelante.
+  const welcomeKey = `justrack-welcome-seen-${user.email}`;
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  useEffect(() => {
+    const seen = localStorage.getItem(welcomeKey) === "1";
+    if (!seen && causas.length === 0) {
+      setWelcomeOpen(true);
+      localStorage.setItem(welcomeKey, "1");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleImportCausas = (importadas: Causa[]) => {
+    setCausas((prev) => [...prev, ...importadas.map((c) => ({ ...c, vocalia }))]);
+  };
 
   const updateCausa = (updated: Causa) => {
     setCausas((prev) => {
@@ -161,6 +186,13 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
         onRenameBoard={renameBoard}
         vocalia={vocalia}
         onBack={onBack}
+        onOpenWelcome={() => setWelcomeOpen(true)}
+      />
+      <WelcomeModal
+        open={welcomeOpen}
+        onClose={() => setWelcomeOpen(false)}
+        vocalia={vocalia}
+        onImport={handleImportCausas}
       />
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
         <div className="flex items-center justify-between mb-6 gap-4">

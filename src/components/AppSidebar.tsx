@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, Sparkles } from "lucide-react";
 
 const defaultNavItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,9 +26,10 @@ interface Props {
   onRenameBoard: (id: string, name: string) => void;
   vocalia: number;
   onBack: () => void;
+  onOpenWelcome?: () => void;
 }
 
-export default function AppSidebar({ active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard, vocalia, onBack }: Props) {
+export default function AppSidebar({ active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard, vocalia, onBack, onOpenWelcome }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -129,6 +130,16 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
           </button>
         )}
       </nav>
+
+      {onOpenWelcome && (
+        <button
+          onClick={onOpenWelcome}
+          className="mx-3 mb-2 mt-2 flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-primary-foreground bg-sidebar-primary/20 hover:bg-sidebar-primary/30 transition-colors border border-sidebar-primary/30"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-sidebar-primary" />
+          Migrar / Importar lista
+        </button>
+      )}
 
       <div className="px-5 py-4 text-[11px] text-sidebar-foreground/40">
         TOCC 26 · Prototipo v3
