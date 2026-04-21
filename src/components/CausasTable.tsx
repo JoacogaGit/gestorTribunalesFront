@@ -545,7 +545,7 @@ export default function CausasTable({
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+          </table>
         </div>
       </div>
       {selected && (
