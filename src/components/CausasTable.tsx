@@ -430,17 +430,17 @@ export default function CausasTable({
       </div>
 
       <div className="glass-card rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
+        <div className="max-h-[calc(100vh-16rem)] overflow-auto">
+          <table className="w-full caption-bottom text-sm">
+            <TableHeader className="sticky top-0 z-20 bg-card [&_tr]:border-b">
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
                 {visibleColumns.map((col) => {
                   const isSorted = sortBy?.key === col.key;
                   const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
                   return (
                     <TableHead
                       key={col.key}
-                      className={`${col.headClass || ""} ${col.sortValue ? "cursor-pointer select-none hover:text-foreground" : ""}`}
+                      className={`bg-muted/30 ${col.headClass || ""} ${col.sortValue ? "cursor-pointer select-none hover:text-foreground" : ""}`}
                       onClick={() => col.sortValue && handleHeaderSort(col.key)}
                       title={col.sortValue ? "Clic para ordenar" : undefined}
                     >
@@ -545,7 +545,7 @@ export default function CausasTable({
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+          </table>
         </div>
       </div>
       {selected && (
