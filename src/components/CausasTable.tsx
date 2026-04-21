@@ -337,6 +337,7 @@ export default function CausasTable({
 
   return (
     <>
+      <div className="flex flex-col flex-1 min-h-0 h-full">
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         {displayTitle && (
           <div className="flex items-center gap-2 group">
