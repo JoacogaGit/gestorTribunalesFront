@@ -194,7 +194,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
         vocalia={vocalia}
         onImport={handleImportCausas}
       />
-      <main className="flex-1 p-6 lg:p-8 overflow-auto">
+      <main className="flex-1 p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
         <div className="flex items-center justify-between mb-6 gap-4">
           <h1 className="text-2xl font-display font-bold text-foreground">{title}</h1>
           <div className="flex items-center gap-2">
