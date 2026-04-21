@@ -178,7 +178,7 @@ export default function WelcomeModal({ open, onClose, vocalia, onImport }: Props
           <>
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-6 h-6 text-green-500" />
+                <CheckCircle2 className="w-6 h-6 text-success" />
                 <DialogTitle>¡Migración completada con éxito!</DialogTitle>
               </div>
               <DialogDescription>
@@ -203,8 +203,8 @@ export default function WelcomeModal({ open, onClose, vocalia, onImport }: Props
               </div>
             )}
 
-            <div className="flex gap-2 items-start bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 rounded-md p-3 text-xs">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="flex gap-2 items-start bg-warning/10 border border-warning/30 text-warning-foreground rounded-md p-3 text-xs">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
               <p>
                 <strong>Importante:</strong> este es un proceso asistido por IA. Es responsabilidad
                 del usuario corroborar que los datos (especialmente fechas de vencimiento y estados

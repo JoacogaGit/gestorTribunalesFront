@@ -163,8 +163,8 @@ async function leerDOCX(file: File): Promise<string> {
 async function leerPDF(file: File): Promise<string> {
   // Carga perezosa del worker
   const pdfjs = await import("pdfjs-dist");
-  // @ts-expect-error worker URL string accepted at runtime
-  pdfjs.GlobalWorkerOptions.workerSrc = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
   const buf = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data: buf }).promise;
   const partes: string[] = [];
