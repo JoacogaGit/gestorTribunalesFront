@@ -429,8 +429,8 @@ export default function CausasTable({
         </div>
       </div>
 
-      <div className="glass-card rounded-lg overflow-hidden">
-        <div className="max-h-[calc(100vh-16rem)] overflow-auto">
+      <div className="glass-card rounded-lg overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full caption-bottom text-sm">
             <TableHeader className="sticky top-0 z-20 bg-card [&_tr]:border-b">
               <TableRow className="bg-muted/30 hover:bg-muted/30">
