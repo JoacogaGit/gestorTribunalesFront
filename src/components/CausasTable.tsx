@@ -337,6 +337,7 @@ export default function CausasTable({
 
   return (
     <>
+      <div className="flex flex-col flex-1 min-h-0 h-full">
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         {displayTitle && (
           <div className="flex items-center gap-2 group">
@@ -429,8 +430,8 @@ export default function CausasTable({
         </div>
       </div>
 
-      <div className="glass-card rounded-lg overflow-hidden">
-        <div className="max-h-[calc(100vh-16rem)] overflow-auto">
+      <div className="glass-card rounded-lg overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full caption-bottom text-sm">
             <TableHeader className="sticky top-0 z-20 bg-card [&_tr]:border-b">
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -547,6 +548,7 @@ export default function CausasTable({
             </TableBody>
           </table>
         </div>
+      </div>
       </div>
       {selected && (
         <CausaDetail
