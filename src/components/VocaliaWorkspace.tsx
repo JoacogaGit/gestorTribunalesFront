@@ -209,7 +209,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
         </div>
 
         {view === "dashboard" && (
-          <div className="space-y-8">
+          <div className="space-y-8 flex flex-col flex-1 min-h-0">
             <KpiCards causas={causas} />
             <div className="flex items-center gap-2 flex-wrap">
               <DropdownMenu>
