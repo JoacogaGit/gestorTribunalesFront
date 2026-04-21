@@ -549,6 +549,7 @@ export default function CausasTable({
           </table>
         </div>
       </div>
+      </div>
       {selected && (
         <CausaDetail
           causa={selected}
