@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Users, Gavel, AlertTriangle, ShieldAlert, Clock, Scale } from "lucide-react";
 import { Causa, getCaratula, getAllEventos } from "@/data/mockCausas";
 
@@ -68,17 +69,21 @@ export default function KpiCards({ causas }: { causas: Causa[] }) {
     <div className="space-y-3">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpis.map((kpi, i) => (
-          <button
+          <motion.button
             key={kpi.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.04, ease: "easeOut" }}
+            whileHover={{ y: -3 }}
             onClick={() => setExpanded(expanded === i ? null : i)}
-            className={`glass-card rounded-lg p-4 flex flex-col gap-2 text-left transition-all hover:border-primary/40 ${expanded === i ? "ring-1 ring-primary" : ""}`}
+            className={`elevated-card rounded-xl p-4 flex flex-col gap-2 text-left transition-all ${expanded === i ? "ring-1 ring-primary shadow-glow" : ""}`}
           >
-            <div className={`w-9 h-9 rounded-md flex items-center justify-center ${kpi.color}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
               <kpi.icon className="w-5 h-5" />
             </div>
-            <span className="text-2xl font-bold text-foreground">{kpi.value}</span>
-            <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
-          </button>
+            <span className="text-3xl font-display font-bold text-foreground leading-none">{kpi.value}</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{kpi.label}</span>
+          </motion.button>
         ))}
       </div>
 
