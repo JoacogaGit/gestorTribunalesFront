@@ -51,19 +51,26 @@ export default function AuthScreen({ onAuth }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">
+      {/* Decorative background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-surface" />
+      <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-primary/10 blur-3xl -z-10" />
+      <div className="absolute -bottom-40 -right-32 w-[520px] h-[520px] rounded-full bg-gold/15 blur-3xl -z-10" />
+
+      <div className="w-full max-w-md animate-fade-in">
         {/* Logo / Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Scale className="w-10 h-10 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-gold flex items-center justify-center shadow-glow">
+              <Scale className="w-6 h-6 text-primary-foreground" />
+            </div>
             <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">JusTrack</h1>
           </div>
-          <p className="text-muted-foreground text-sm">Sistema de gestión de causas penales</p>
+          <p className="text-muted-foreground text-sm tracking-wide">Sistema de gestión de causas penales</p>
         </div>
 
         {/* Card */}
-        <div className="glass-card rounded-xl p-8 shadow-xl shadow-primary/5">
+        <div className="elevated-card rounded-2xl p-8 animate-scale-in">
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-muted/50 rounded-lg mb-6">
             <button
