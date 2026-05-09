@@ -44,15 +44,20 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
   };
 
   return (
-    <aside className="w-56 shrink-0 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen border-r border-sidebar-border">
+    <aside className="w-56 shrink-0 bg-gradient-sidebar text-sidebar-foreground flex flex-col min-h-screen border-r border-sidebar-border shadow-elevated">
       <div className="px-5 py-6">
         <div className="flex items-center gap-2 mb-3">
-          <Scale className="w-6 h-6 text-sidebar-primary" />
-          <span className="font-display text-lg font-bold text-sidebar-primary-foreground tracking-tight">JusTrack</span>
+          <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center shadow-soft">
+            <Scale className="w-5 h-5 text-sidebar-primary-foreground" />
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="font-display text-lg font-bold text-sidebar-accent-foreground tracking-tight">JusTrack</span>
+            <span className="text-[9px] uppercase tracking-[0.18em] text-sidebar-primary/80">Gestión Judicial</span>
+          </div>
         </div>
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+          className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-primary transition-colors"
         >
           <ArrowLeft className="w-3 h-3" />
           Vocalía {vocalia} — Cambiar
@@ -60,20 +65,24 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
       </div>
 
       <nav className="flex-1 px-3 space-y-1">
-        {defaultNavItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-              active === item.id
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-            }`}
-          >
-            <item.icon className="w-4 h-4" />
-            {item.label}
-          </button>
-        ))}
+        {defaultNavItems.map((item) => {
+          const isActive = active === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
+              <item.icon className={`w-4 h-4 ${isActive ? "text-sidebar-primary" : ""}`} />
+              {item.label}
+            </button>
+          );
+        })}
 
         {customBoards.length > 0 && (
           <div className="pt-4 pb-1">
@@ -134,14 +143,14 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
       {onOpenWelcome && (
         <button
           onClick={onOpenWelcome}
-          className="mx-3 mb-2 mt-2 flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-primary-foreground bg-sidebar-primary/20 hover:bg-sidebar-primary/30 transition-colors border border-sidebar-primary/30"
+          className="mx-3 mb-2 mt-2 flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-primary-foreground bg-gradient-gold hover:opacity-90 transition-opacity shadow-soft"
         >
-          <Sparkles className="w-3.5 h-3.5 text-sidebar-primary" />
+          <Sparkles className="w-3.5 h-3.5" />
           Migrar / Importar lista
         </button>
       )}
 
-      <div className="px-5 py-4 text-[11px] text-sidebar-foreground/40">
+      <div className="px-5 py-4 text-[11px] text-sidebar-foreground/40 border-t border-sidebar-border/60">
         TOCC 26 · Prototipo v3
       </div>
     </aside>
