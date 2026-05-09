@@ -38,12 +38,12 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile }: Pro
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-muted/60 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold">
+        <DropdownMenuTrigger className="group flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-muted/60 transition-colors">
+          <div className="relative w-9 h-9 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shadow-soft ring-2 ring-transparent group-hover:ring-gold/50 transition-all">
             {initials}
           </div>
           <div className="hidden md:flex flex-col items-start leading-tight pr-2">
-            <span className="text-xs font-medium text-foreground">{name}</span>
+            <span className="text-xs font-semibold text-foreground">{name}</span>
             <span className="text-[10px] text-muted-foreground">{email}</span>
           </div>
         </DropdownMenuTrigger>
