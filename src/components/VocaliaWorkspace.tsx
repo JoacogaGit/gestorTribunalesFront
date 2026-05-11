@@ -11,7 +11,11 @@ import WelcomeModal from "@/components/WelcomeModal";
 import { mockCausas, Causa, EstadoCausa } from "@/data/mockCausas";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Inbox, RefreshCw } from "lucide-react";
+import { useCausasTramite } from "@/hooks/useCausasTramite";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 type View = string;
 
@@ -46,6 +50,10 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
     isNewUser ? [] : mockCausas.filter((c) => c.vocalia === vocalia)
   );
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
+
+  // Pestaña Trámite: datos reales desde Supabase (sin filtro de vocalía por ahora).
+  const tramiteRemote = useCausasTramite();
+  const tramiteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
   // Modal de bienvenida: se muestra automáticamente la primera vez que un
   // usuario nuevo entra a una vocalía vacía. Queda siempre disponible desde
@@ -261,7 +269,56 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
               </div>
             )}
 
-            {view === "tramite" && <CausasTable causas={causasEnTramite} title="Causas en Trámite" listKey="tramite" {...commonProps} onImportCausa={importToList("tramite")} />}
+            {view === "tramite" && (
+              <>
+                {tramiteRemote.loading && (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-64" />
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                )}
+                {!tramiteRemote.loading && tramiteRemote.error && (
+                  <Alert variant="destructive">
+                    <AlertTitle>No se pudieron cargar las causas</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between gap-4">
+                      <span className="text-xs">{tramiteRemote.error}</span>
+                      <Button size="sm" variant="outline" onClick={tramiteRemote.refetch}>
+                        <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Reintentar
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {!tramiteRemote.loading && !tramiteRemote.error && tramiteRemote.causas.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center mb-4">
+                      <Inbox className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-display text-lg font-semibold text-foreground">No hay causas en trámite</h3>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                      Cuando se carguen causas con estado "trámite" en la base, van a aparecer acá.
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-4" onClick={tramiteRemote.refetch}>
+                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Recargar
+                    </Button>
+                  </div>
+                )}
+                {!tramiteRemote.loading && !tramiteRemote.error && tramiteRemote.causas.length > 0 && (
+                  <CausasTable
+                    causas={tramiteRemote.causas}
+                    title="Causas en Trámite"
+                    listKey="tramite"
+                    vocalia={vocalia}
+                    allCausas={tramiteRemote.causas}
+                    onUpdateCausa={tramiteNoop}
+                    onDeleteCausa={tramiteNoop}
+                    onCreateCausa={tramiteNoop}
+                    onChangeEstado={tramiteNoop}
+                  />
+                )}
+              </>
+            )}
             {view === "detenidos" && <DetenidosList causas={causas} vocalia={vocalia} onUpdateCausa={updateCausa} onDeleteCausa={deleteCausa} onCreateCausa={createCausa} />}
             {view === "rebeldes" && <CausasTable causas={causasRebeldes} title="Rebeldes / Paraderos" listKey="rebeldes" {...commonProps} onImportCausa={importToList("rebeldes")} />}
             {view === "sjp" && <CausasTable causas={causasSJP} title="SJP en Trámite" listKey="sjp" {...commonProps} onImportCausa={importToList("sjp")} />}

@@ -36,6 +36,8 @@ export interface AdjuntoPDF {
 export interface Causa {
   id: string;
   numero: string;
+  /** Carátula explícita (cuando viene de DB). Si no, se deriva de imputados. */
+  caratulaOverride?: string;
   delito: string;
   imputados: Imputado[];
   estadoCausa: EstadoCausa;
@@ -76,6 +78,7 @@ export function createEmptyCausa(vocalia: number): Causa {
 }
 
 export function getCaratula(causa: Causa): string {
+  if (causa.caratulaOverride) return causa.caratulaOverride;
   if (causa.imputados.length === 1) return causa.imputados[0].nombre;
   return `${causa.imputados[0].nombre} y otros`;
 }
