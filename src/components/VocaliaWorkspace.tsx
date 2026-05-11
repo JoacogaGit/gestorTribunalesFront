@@ -11,7 +11,11 @@ import WelcomeModal from "@/components/WelcomeModal";
 import { mockCausas, Causa, EstadoCausa } from "@/data/mockCausas";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Inbox, RefreshCw } from "lucide-react";
+import { useCausasTramite } from "@/hooks/useCausasTramite";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 type View = string;
 
