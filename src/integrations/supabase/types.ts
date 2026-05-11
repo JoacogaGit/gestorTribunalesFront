@@ -385,6 +385,7 @@ export type Database = {
           delito: string | null
           fecha_detencion: string | null
           id: string
+          lugar_alojamiento: string | null
           modificado_por: string | null
           nombre_completo: string
           observaciones: string | null
@@ -402,6 +403,7 @@ export type Database = {
           delito?: string | null
           fecha_detencion?: string | null
           id?: string
+          lugar_alojamiento?: string | null
           modificado_por?: string | null
           nombre_completo: string
           observaciones?: string | null
@@ -419,6 +421,7 @@ export type Database = {
           delito?: string | null
           fecha_detencion?: string | null
           id?: string
+          lugar_alojamiento?: string | null
           modificado_por?: string | null
           nombre_completo?: string
           observaciones?: string | null
