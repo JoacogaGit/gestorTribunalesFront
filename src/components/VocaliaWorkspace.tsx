@@ -106,9 +106,14 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
   );
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
 
-  // Pestaña Trámite: datos reales desde Supabase (sin filtro de vocalía por ahora).
-  const tramiteRemote = useCausasTramite();
-  const tramiteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
+  // Pestañas conectadas a Supabase (sin filtro de vocalía por ahora).
+  const tramiteRemote = useCausasPorEstado("tramite");
+  const recursosRemote = useCausasPorEstado("recurso");
+  const terminadasRemote = useCausasPorEstado("terminada");
+  const rebeldesRemote = useCausasConSujetoEn("rebelde");
+  const sjpRemote = useCausasConSujetoEn("probation");
+  const detenidosRemote = useDetenidos();
+  const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
   // Modal de bienvenida: se muestra automáticamente la primera vez que un
   // usuario nuevo entra a una vocalía vacía. Queda siempre disponible desde
