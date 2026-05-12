@@ -1,24 +1,30 @@
-import { Causa, EstadoLibertad, Imputado, OtroInterviniente } from "@/data/mockCausas";
+import { Causa, EstadoCausa, EstadoLibertad, Imputado, OtroInterviniente } from "@/data/mockCausas";
 
-type DbSujeto = {
+export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "probation" | "condenado";
+export type DbEstadoCausa = "tramite" | "recurso" | "terminada";
+export type DbTipoRecurso = "casacion" | "rex" | "queja_corte" | null;
+
+export type DbSujeto = {
   id: string;
   nombre_completo: string;
   delito: string | null;
-  situacion_libertad: "libre" | "detenido" | "rebelde" | "probation" | "condenado";
+  situacion_libertad: DbSituacionLibertad;
   defensor: string | null;
   fecha_detencion: string | null;
   prescripcion_fecha: string | null;
   vencimiento_pp: string | null;
   vencimiento_pena: string | null;
   observaciones: string | null;
+  lugar_alojamiento: string | null;
   causa_id: string;
 };
 
-type DbCausa = {
+export type DbCausa = {
   id: string;
   expediente_nro: string;
   caratula: string | null;
-  estado_causa: string;
+  estado_causa: DbEstadoCausa;
+  tipo_recurso: DbTipoRecurso;
   vocalia_id: string;
   created_at: string | null;
   querella: string | null;
@@ -28,20 +34,33 @@ type DbCausa = {
   sujetos?: DbSujeto[];
 };
 
-const libertadMap: Record<DbSujeto["situacion_libertad"], EstadoLibertad> = {
+const libertadMap: Record<DbSituacionLibertad, EstadoLibertad> = {
   detenido: "Detenido",
   libre: "Excarcelado",
   rebelde: "Rebelde",
   probation: "SJP",
-  // No hay variante "Condenado" en el tipo UI todavía; se trata como excarcelado.
   condenado: "Excarcelado",
 };
 
-function mapSujeto(s: DbSujeto): Imputado {
+function mapEstadoCausa(estado: DbEstadoCausa, tipo: DbTipoRecurso): EstadoCausa {
+  if (estado === "tramite") return "En trámite";
+  if (estado === "terminada") return "Terminada";
+  // recurso
+  switch (tipo) {
+    case "casacion": return "Casación";
+    case "rex": return "REX";
+    case "queja_corte": return "Queja en Corte";
+    default: return "Casación";
+  }
+}
+
+export function mapSujeto(s: DbSujeto): Imputado {
   return {
     nombre: s.nombre_completo,
     estadoLibertad: libertadMap[s.situacion_libertad] ?? "Excarcelado",
-    lugarDetencion: s.situacion_libertad === "detenido" ? s.observaciones ?? undefined : undefined,
+    lugarDetencion: s.situacion_libertad === "detenido"
+      ? (s.lugar_alojamiento ?? s.observaciones ?? undefined)
+      : undefined,
     fechaVencimientoPena: s.vencimiento_pena ?? undefined,
     defensor: {
       nombre: s.defensor || "—",
@@ -77,7 +96,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
     caratulaOverride: row.caratula ?? undefined,
     delito: firstNonNull(sujetos.map((s) => s.delito)) ?? "—",
     imputados,
-    estadoCausa: "En trámite",
+    estadoCausa: mapEstadoCausa(row.estado_causa, row.tipo_recurso),
     fechaInicio: (row.created_at ?? new Date().toISOString()).slice(0, 10),
     fechaPrescripcion: firstNonNull(sujetos.map((s) => s.prescripcion_fecha)) ?? "",
     fechaVencimientoPP: firstNonNull(sujetos.map((s) => s.vencimiento_pp)),
