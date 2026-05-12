@@ -1,87 +1,58 @@
 ## Objetivo
 
-Conectar la pestaña **Trámite** a Supabase: traer las causas reales (`causas` con `estado_causa = 'tramite'`) junto con sus imputados (`sujetos`), y mostrarlas en la tabla existente sin tocar login, vocalías, ni las otras pestañas.
+Conectar las pestañas restantes de listado a Supabase replicando el patrón hook + mapper que ya usamos en "Causas en Trámite". Eliminar todos los datos mock de esas pestañas y manejar loading / error / vacío de forma uniforme.
 
 ## Alcance
 
-- **Sí toco**: la rama `view === "tramite"` dentro de `VocaliaWorkspace.tsx`, agrego un hook nuevo y un mapper.
-- **No toco**: AuthScreen, selector de vocalía, pestañas Detenidos / Rebeldes / SJP / Recursos / Terminadas / Calendario / Dashboard, RLS, schema, ni `mockCausas` (lo dejo como fallback de las otras vistas hasta que migremos el resto).
+- **Sí toco**: las ramas `view === "detenidos" | "rebeldes" | "sjp" | "recursos" | "terminadas"` dentro de `VocaliaWorkspace.tsx`, hooks nuevos, y un pequeño retoque al mapper para mapear estado de causa.
+- **No toco**: Dashboard, Calendario, pestaña Trámite (ya está), auth, RLS, schema, vocalía selector, mocks (los dejo para que Dashboard/Calendario sigan funcionando hasta que migremos esos también).
 
 ## Cambios
 
-### 1. Nuevo hook `src/hooks/useCausasTramite.ts`
+### 1. Refactor del mapper `src/lib/causaMapper.ts`
 
-- Usa `supabase` desde `@/integrations/supabase/client`.
-- Query única con join embebido:
-  ```ts
-  supabase
-    .from("causas")
-    .select("*, sujetos(*)")
-    .eq("estado_causa", "tramite")
-    .order("created_at", { ascending: false })
-  ```
-- Devuelve `{ causas: Causa[], loading: boolean, error: string | null, refetch }`.
-- No filtra por vocalía (a propósito, según pedido).
-- Ejecuta el fetch en `useEffect` al montar.
+- Agregar mapeo del enum `estado_causa` → texto UI (`tramite` → "En trámite", `recurso` + `tipo_recurso` → "Casación" / "REX" / "Queja en Corte", `terminada` → "Terminada"). Hoy queda fijo en `"En trámite"`.
+- Pasar `tipo_recurso` al `Causa` para que la tabla pueda mostrarlo si tiene una columna específica (si el tipo `Causa` no lo tiene, lo agrego como `tipoRecurso?: string` opcional, no rompedor).
 
-### 2. Nuevo mapper `src/lib/causaMapper.ts`
+### 2. Hooks nuevos en `src/hooks/`
 
-Función `dbCausaToUI(row, sujetos): Causa` que adapta la fila de Supabase al tipo `Causa` existente (para no romper `CausasTable`):
+- **`useCausasPorEstado(estado: 'tramite' | 'recurso' | 'terminada')`** — genérico, hace `causas.select("*, sujetos(*)").eq("estado_causa", estado).order("created_at", desc)`. Devuelve `{causas, loading, error, refetch}`.
+  - Refactor: `useCausasTramite` pasa a ser un wrapper de una línea sobre este hook (o se elimina y se usa el genérico directamente desde la rama `tramite`). Esto NO cambia el comportamiento de Trámite.
+- **`useCausasConSujetoEn(situacion: 'rebelde' | 'probation')`** — trae causas que tengan al menos un sujeto en esa situación. Implementación: `causas.select("*, sujetos!inner(*)").eq("sujetos.situacion_libertad", situacion)`. El `!inner` filtra causas sin match. Devuelve la misma forma.
+  - Nota técnica: el `!inner` con filtro sobre la tabla anidada solo trae los sujetos que matchean. Para que la fila de la causa muestre TODOS sus imputados (rebeldes y no rebeldes juntos, como pide el requisito de "Libertad" en Rebeldes), hago un segundo paso: una vez obtenidos los `causa.id`, hago `causas.select("*, sujetos(*)").in("id", ids)` para traer la lista completa de sujetos por causa. Dos queries, simple, sin tocar RLS.
+- **`useDetenidos()`** — trae sujetos detenidos con su causa: `sujetos.select("*, causas(*)").eq("situacion_libertad", "detenido").order("created_at", desc)`. Devuelve `{rows: DetenidoRow[], loading, error, refetch}` donde `DetenidoRow = { imputado: Imputado, causa: Causa }` (la forma que ya consume `DetenidosList`). El mapeo arma cada fila usando `mapSujeto` + `dbCausaToUI` con un único sujeto embebido.
 
-| UI (`Causa`)                  | Supabase                                                      |
-|-------------------------------|---------------------------------------------------------------|
-| `id`                          | `causas.id`                                                   |
-| `numero`                      | `causas.expediente_nro`                                       |
-| `delito`                      | `sujetos[0].delito ?? "—"`                                    |
-| `imputados[]`                 | `sujetos[]` mapeados (ver abajo)                              |
-| `estadoCausa`                 | `"En trámite"` (constante para esta vista)                    |
-| `fechaInicio`                 | `causas.created_at` (slice fecha)                             |
-| `fechaPrescripcion`           | primer `sujetos[*].prescripcion_fecha` no nulo, o vacío       |
-| `fechaVencimientoPP`          | primer `sujetos[*].vencimiento_pp` no nulo                    |
-| `otrosIntervinientes`         | derivado de `querella`, `actor_civil`, `otros_intervinientes` |
-| `causasConexas`               | `[causa_conexa_texto]` si existe                              |
-| `vocalia`                     | 1 (placeholder, ignorado en esta vista)                       |
+### 3. `src/components/DetenidosList.tsx`
 
-Mapeo de cada `sujeto → Imputado`:
+- Cambiar la firma: en vez de recibir `causas: Causa[]` y derivar las filas localmente, recibir `rows: DetenidoRow[]` directamente (o seguir aceptando causas pero opcional). Para minimizar cambios, **mantengo la firma actual** y desde `VocaliaWorkspace` le paso un array de causas reconstruido a partir de `rows` (cada causa con un solo imputado detenido). La tabla ya itera sujetos detenidos dentro de cada causa, así que funciona tal cual.
+- Ocultar el botón "Nueva causa con detenido" cuando los datos vienen de Supabase (paso `onCreateCausa={undefined}` en esa rama). La edición/borrado quedan como no-ops con toast, igual que en Trámite.
 
-- `nombre` ← `nombre_completo`
-- `defensor.nombre` ← `defensor ?? "—"`, `tipo: "DPO"`, `contacto: ""`
-- `lugarDetencion` ← `observaciones` solo si está detenido (opcional)
-- `fechaVencimientoPena` ← `vencimiento_pena`
-- `estadoLibertad`: enum DB → enum UI
-  - `detenido` → `"Detenido"` (rojo, ya estilizado)
-  - `libre` → `"Excarcelado"` (verde)
-  - `rebelde` → `"Rebelde"` (naranja)
-  - `probation` → `"SJP"` (amarillo/info, ya estilizado)
-  - `condenado` → `"Excarcelado"` por ahora **+ TODO**: agregar variante visual gris en otra iteración (requiere extender el tipo `EstadoLibertad`, que está fuera del alcance actual).
+### 4. `src/components/VocaliaWorkspace.tsx`
 
-> El `getCaratula()` actual deriva la carátula del primer imputado. Como la DB tiene `caratula` propia, voy a guardarla en un campo nuevo opcional `caratulaOverride?: string` en el tipo `Causa` y modificar `getCaratula` para usarla si existe. Es una adición no-rompedora (1 campo opcional + 1 línea en la función).
+Para cada una de las 5 ramas (`detenidos`, `rebeldes`, `sjp`, `recursos`, `terminadas`):
 
-### 3. Modificar `src/components/VocaliaWorkspace.tsx`
+- Llamar al hook correspondiente.
+- Renderizar los 4 estados con el mismo bloque que usa Trámite hoy: **loading** (skeleton), **error** (Alert + Reintentar), **vacío** (mensaje "Sin causas en esta categoría" / "Sin detenidos") y **OK** (la tabla con datos reales).
+- Para evitar duplicar el JSX 5 veces, extraer un componente local `<RemoteListSection>` (o helper) que reciba `{loading, error, isEmpty, emptyTitle, emptyMessage, onRetry, children}` y renderice los 4 estados. Usado por las 6 ramas (incluyendo Trámite, refactorizada).
+- Callbacks `onUpdateCausa` / `onDeleteCausa` / `onCreateCausa` / `onChangeEstado` → no-op con el mismo toast "La edición se conectará a Supabase en el próximo paso" (ya usado en Trámite).
 
-Solo la rama `{view === "tramite" && ...}`:
+### 5. Mocks
 
-- Reemplazar `causasEnTramite` (que sale del mock filtrado) por el resultado del hook **únicamente para la vista "tramite"**.
-- Renderizar tres estados:
-  - **Loading**: skeleton con `<Skeleton />` (5 filas de la altura de la tabla).
-  - **Error**: `<Alert variant="destructive">` con el mensaje + botón "Reintentar" que llama `refetch`.
-  - **Vacío** (`data.length === 0`): card centrada con ícono y texto "No hay causas en trámite".
-  - **OK**: el `<CausasTable>` actual con las causas reales.
-- Para evitar romper edición desde la tabla, las callbacks `onUpdateCausa` / `onDeleteCausa` / `onCreateCausa` en esta vista quedan **no-op temporales** (muestran `toast.info("La edición se conectará a Supabase en el próximo paso")`). Esto es explícito porque el pedido dice "solo lectura por ahora".
-
-### 4. Sin migraciones, sin tocar RLS, sin tocar tipos generados
-
-El cliente ya está; las RLS actuales asumen `auth.uid()` válido. Como dijiste que asumamos sesión activa, eso queda para el siguiente paso.
-
-## Notas técnicas para vos
-
-- Si al probar ves la tabla vacía aunque haya causas en la DB, es porque las RLS exigen `es_miembro_de_vocalia(...)` y el usuario actual no está autenticado o no es miembro. La consulta no falla, simplemente devuelve `[]`. Cuando conectemos auth, esto se resuelve solo.
-- Los campos `juicioFijado`, `audiencias`, `agenda`, `adjuntos` no existen aún en tu schema (los maneja la tabla `eventos`). En esta vista van a aparecer como "—". Si querés traerlos, lo hacemos en un paso separado.
-- Mantengo el resto de pestañas leyendo del mock para no romper nada. La migración de las otras vistas la hacemos cuando me digas.
+No los elimino del archivo `mockCausas.ts` (Dashboard y Calendario los siguen usando). Sí dejan de usarse en las 5 pestañas migradas.
 
 ## Resumen de archivos
 
-- ✏️  `src/data/mockCausas.ts` — agregar campo opcional `caratulaOverride?: string` y usarlo en `getCaratula`.
-- ➕ `src/lib/causaMapper.ts` (nuevo)
-- ➕ `src/hooks/useCausasTramite.ts` (nuevo)
-- ✏️  `src/components/VocaliaWorkspace.tsx` — solo la rama `tramite`.
+- ✏️  `src/lib/causaMapper.ts` — mapear `estado_causa` y `tipo_recurso`.
+- ➕ `src/hooks/useCausasPorEstado.ts` (nuevo)
+- ➕ `src/hooks/useCausasConSujetoEn.ts` (nuevo)
+- ➕ `src/hooks/useDetenidos.ts` (nuevo)
+- ✏️  `src/hooks/useCausasTramite.ts` — pasa a ser wrapper de `useCausasPorEstado('tramite')` (o se elimina; lo más limpio es dejarlo como wrapper de 1 línea para no tocar el import en Workspace).
+- ✏️  `src/components/VocaliaWorkspace.tsx` — reemplazar las 5 ramas por hooks + componente `RemoteListSection`.
+- ✏️  `src/data/mockCausas.ts` — agregar `tipoRecurso?: string` opcional al tipo `Causa` si no existe (chequeo al implementar).
+
+## Notas técnicas
+
+- Como las RLS exigen `es_miembro_de_vocalia(...)` y aún no hay auth conectada, las queries pueden devolver `[]` aunque haya datos. Está bien — caerán al estado "vacío". Cuando conectemos auth, se llenan solas.
+- El requisito "una fila por detenido" se mantiene: `DetenidosList` ya genera una fila por imputado detenido. Pasándole causas con un único sujeto cada una, sale exactamente eso.
+- En Rebeldes, para que se vea cuál imputado es el rebelde con todos sus co-imputados visibles, traemos la causa completa (todos los sujetos) — la columna "Libertad" del `CausasTable` ya muestra el estado de cada uno.
+- No se filtra por vocalía en ningún hook (a propósito).
