@@ -1,105 +1,82 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Gavel, AlertTriangle, ShieldAlert, Clock, Scale } from "lucide-react";
-import { Causa, getCaratula, getAllEventos } from "@/data/mockCausas";
-
-const now = new Date();
-const thisMonth = now.getMonth();
-const thisYear = now.getFullYear();
+import { Users, Gavel, AlertTriangle, ShieldAlert, Clock, Scale, RefreshCw } from "lucide-react";
+import { DashboardKpis } from "@/hooks/useDashboardKpis";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface KpiDef {
+  key: keyof DashboardKpis;
   label: string;
-  value: number;
   icon: typeof ShieldAlert;
   color: string;
-  items: { label: string; sub: string }[];
+  empty: string;
 }
 
-function buildKpis(causas: Causa[]): KpiDef[] {
-  // Detenidos (per imputado)
-  const detenidos: { label: string; sub: string }[] = [];
-  for (const c of causas) {
-    for (const imp of c.imputados) {
-      if (imp.estadoLibertad === "Detenido") {
-        detenidos.push({ label: imp.nombre, sub: `${c.numero} — ${imp.lugarDetencion || ""}` });
-      }
-    }
-  }
+const KPI_DEFS: KpiDef[] = [
+  { key: "detenidos", label: "Detenidos", icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", empty: "No hay detenidos" },
+  { key: "juiciosEsteMes", label: "Juicios este mes", icon: Gavel, color: "bg-alert-info/10 text-alert-info", empty: "Sin juicios este mes" },
+  { key: "ppProximas", label: "PP próximas", icon: Clock, color: "bg-alert-warning/10 text-alert-warning", empty: "Sin PP próximas" },
+  { key: "rebeldes", label: "Rebeldes", icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", empty: "No hay rebeldes" },
+  { key: "eventos30d", label: "Eventos 30 días", icon: Scale, color: "bg-accent/10 text-accent", empty: "Sin eventos próximos" },
+  { key: "totalCausas", label: "Total causas", icon: Users, color: "bg-alert-ok/10 text-alert-ok", empty: "No hay causas activas" },
+];
 
-  const juiciosEsteMes = causas.filter(
-    (c) => c.juicioFijado && new Date(c.juicioFijado.fecha).getMonth() === thisMonth && new Date(c.juicioFijado.fecha).getFullYear() === thisYear
-  );
-
-  const ppProximas = causas.filter((c) => {
-    if (!c.fechaVencimientoPP) return false;
-    const diff = new Date(c.fechaVencimientoPP).getTime() - now.getTime();
-    return diff > 0 && diff < 90 * 24 * 60 * 60 * 1000;
-  });
-
-  const rebeldes: { label: string; sub: string }[] = [];
-  for (const c of causas) {
-    for (const imp of c.imputados) {
-      if (imp.estadoLibertad === "Rebelde") {
-        rebeldes.push({ label: imp.nombre, sub: c.numero });
-      }
-    }
-  }
-
-  const eventos = getAllEventos(causas);
-  const proxEventos = eventos.filter((e) => {
-    const d = new Date(e.fecha).getTime();
-    return d > now.getTime() && d < now.getTime() + 30 * 24 * 60 * 60 * 1000;
-  });
-
-  return [
-    { label: "Detenidos", value: detenidos.length, icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", items: detenidos },
-    { label: "Juicios este mes", value: juiciosEsteMes.length, icon: Gavel, color: "bg-alert-info/10 text-alert-info", items: juiciosEsteMes.map((c) => ({ label: getCaratula(c), sub: c.numero })) },
-    { label: "PP próximas", value: ppProximas.length, icon: Clock, color: "bg-alert-warning/10 text-alert-warning", items: ppProximas.map((c) => ({ label: getCaratula(c), sub: `Vence: ${new Date(c.fechaVencimientoPP!).toLocaleDateString("es-AR")}` })) },
-    { label: "Rebeldes", value: rebeldes.length, icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", items: rebeldes },
-    { label: "Eventos 30 días", value: proxEventos.length, icon: Scale, color: "bg-accent/10 text-accent", items: proxEventos.map((e) => ({ label: `${e.tipo}: ${getCaratula(e.causa)}`, sub: new Date(e.fecha).toLocaleDateString("es-AR") })) },
-    { label: "Total causas", value: causas.length, icon: Users, color: "bg-alert-ok/10 text-alert-ok", items: causas.map((c) => ({ label: getCaratula(c), sub: c.numero })) },
-  ];
+interface Props {
+  kpis: DashboardKpis;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
 }
 
-export default function KpiCards({ causas }: { causas: Causa[] }) {
-  const [expanded, setExpanded] = useState<number | null>(null);
-  const kpis = buildKpis(causas);
+export default function KpiCards({ kpis, loading, error, onRetry }: Props) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>No se pudieron cargar los indicadores</AlertTitle>
+        <AlertDescription className="flex items-center justify-between gap-4">
+          <span className="text-xs">{error}</span>
+          <Button size="sm" variant="outline" onClick={onRetry}>
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Reintentar
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {kpis.map((kpi, i) => (
-          <motion.button
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {KPI_DEFS.map((kpi, i) => {
+        const value = kpis[kpi.key];
+        return (
+          <motion.div
             key={kpi.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.04, ease: "easeOut" }}
-            whileHover={{ y: -3 }}
-            onClick={() => setExpanded(expanded === i ? null : i)}
-            className={`elevated-card rounded-xl p-4 flex flex-col gap-2 text-left transition-all ${expanded === i ? "ring-1 ring-primary shadow-glow" : ""}`}
+            className="elevated-card rounded-xl p-4 flex flex-col gap-2 text-left"
           >
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
               <kpi.icon className="w-5 h-5" />
             </div>
-            <span className="text-3xl font-display font-bold text-foreground leading-none">{kpi.value}</span>
+            {value > 0 ? (
+              <span className="text-3xl font-display font-bold text-foreground leading-none">{value}</span>
+            ) : (
+              <span className="text-xs text-muted-foreground italic leading-tight">{kpi.empty}</span>
+            )}
             <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{kpi.label}</span>
-          </motion.button>
-        ))}
-      </div>
-
-      {expanded !== null && kpis[expanded].items.length > 0 && (
-        <div className="glass-card rounded-lg p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-          <h3 className="text-sm font-semibold text-foreground mb-3">{kpis[expanded].label} — {kpis[expanded].items.length}</h3>
-          <div className="space-y-1 max-h-48 overflow-y-auto">
-            {kpis[expanded].items.map((item, j) => (
-              <div key={j} className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/40 hover:bg-muted/70 transition-colors text-sm">
-                <span className="text-foreground truncate flex-1">{item.label}</span>
-                <span className="text-xs text-muted-foreground shrink-0">{item.sub}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
