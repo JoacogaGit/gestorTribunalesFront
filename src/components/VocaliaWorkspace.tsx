@@ -330,60 +330,132 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
             )}
 
             {view === "tramite" && (
-              <>
-                {tramiteRemote.loading && (
-                  <div className="space-y-3">
-                    <Skeleton className="h-8 w-64" />
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                )}
-                {!tramiteRemote.loading && tramiteRemote.error && (
-                  <Alert variant="destructive">
-                    <AlertTitle>No se pudieron cargar las causas</AlertTitle>
-                    <AlertDescription className="flex items-center justify-between gap-4">
-                      <span className="text-xs">{tramiteRemote.error}</span>
-                      <Button size="sm" variant="outline" onClick={tramiteRemote.refetch}>
-                        <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Reintentar
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {!tramiteRemote.loading && !tramiteRemote.error && tramiteRemote.causas.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center mb-4">
-                      <Inbox className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                    <h3 className="font-display text-lg font-semibold text-foreground">No hay causas en trámite</h3>
-                    <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                      Cuando se carguen causas con estado "trámite" en la base, van a aparecer acá.
-                    </p>
-                    <Button size="sm" variant="outline" className="mt-4" onClick={tramiteRemote.refetch}>
-                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Recargar
-                    </Button>
-                  </div>
-                )}
-                {!tramiteRemote.loading && !tramiteRemote.error && tramiteRemote.causas.length > 0 && (
-                  <CausasTable
-                    causas={tramiteRemote.causas}
-                    title="Causas en Trámite"
-                    listKey="tramite"
-                    vocalia={vocalia}
-                    allCausas={tramiteRemote.causas}
-                    onUpdateCausa={tramiteNoop}
-                    onDeleteCausa={tramiteNoop}
-                    onCreateCausa={tramiteNoop}
-                    onChangeEstado={tramiteNoop}
-                  />
-                )}
-              </>
+              <RemoteListSection
+                loading={tramiteRemote.loading}
+                error={tramiteRemote.error}
+                isEmpty={tramiteRemote.causas.length === 0}
+                emptyTitle="No hay causas en trámite"
+                emptyMessage='Cuando se carguen causas con estado "trámite" en la base, van a aparecer acá.'
+                onRetry={tramiteRemote.refetch}
+              >
+                <CausasTable
+                  causas={tramiteRemote.causas}
+                  title="Causas en Trámite"
+                  listKey="tramite"
+                  vocalia={vocalia}
+                  allCausas={tramiteRemote.causas}
+                  onUpdateCausa={remoteNoop}
+                  onDeleteCausa={remoteNoop}
+                  onCreateCausa={remoteNoop}
+                  onChangeEstado={remoteNoop}
+                />
+              </RemoteListSection>
             )}
-            {view === "detenidos" && <DetenidosList causas={causas} vocalia={vocalia} onUpdateCausa={updateCausa} onDeleteCausa={deleteCausa} onCreateCausa={createCausa} />}
-            {view === "rebeldes" && <CausasTable causas={causasRebeldes} title="Rebeldes / Paraderos" listKey="rebeldes" {...commonProps} onImportCausa={importToList("rebeldes")} />}
-            {view === "sjp" && <CausasTable causas={causasSJP} title="SJP en Trámite" listKey="sjp" {...commonProps} onImportCausa={importToList("sjp")} />}
-            {view === "recursos" && <CausasTable causas={causasRecursos} title="Recursos" listKey="recursos" {...commonProps} onImportCausa={importToList("recursos")} />}
-            {view === "terminadas" && <CausasTable causas={causasTerminadas} title="Causas Terminadas" listKey="terminadas" {...commonProps} onImportCausa={importToList("terminadas")} />}
+            {view === "detenidos" && (
+              <RemoteListSection
+                loading={detenidosRemote.loading}
+                error={detenidosRemote.error}
+                isEmpty={detenidosRemote.causas.length === 0}
+                emptyTitle="Sin detenidos"
+                emptyMessage="No hay sujetos con situación de libertad 'detenido' en la base."
+                onRetry={detenidosRemote.refetch}
+              >
+                <DetenidosList
+                  causas={detenidosRemote.causas}
+                  vocalia={vocalia}
+                  onUpdateCausa={remoteNoop}
+                  onDeleteCausa={remoteNoop}
+                />
+              </RemoteListSection>
+            )}
+            {view === "rebeldes" && (
+              <RemoteListSection
+                loading={rebeldesRemote.loading}
+                error={rebeldesRemote.error}
+                isEmpty={rebeldesRemote.causas.length === 0}
+                emptyTitle="Sin causas en esta categoría"
+                emptyMessage="No hay causas con sujetos en situación de rebeldía."
+                onRetry={rebeldesRemote.refetch}
+              >
+                <CausasTable
+                  causas={rebeldesRemote.causas}
+                  title="Rebeldes / Paraderos"
+                  listKey="rebeldes"
+                  vocalia={vocalia}
+                  allCausas={rebeldesRemote.causas}
+                  onUpdateCausa={remoteNoop}
+                  onDeleteCausa={remoteNoop}
+                  onCreateCausa={remoteNoop}
+                  onChangeEstado={remoteNoop}
+                />
+              </RemoteListSection>
+            )}
+            {view === "sjp" && (
+              <RemoteListSection
+                loading={sjpRemote.loading}
+                error={sjpRemote.error}
+                isEmpty={sjpRemote.causas.length === 0}
+                emptyTitle="Sin causas en esta categoría"
+                emptyMessage="No hay causas con sujetos en probation."
+                onRetry={sjpRemote.refetch}
+              >
+                <CausasTable
+                  causas={sjpRemote.causas}
+                  title="SJP en Trámite"
+                  listKey="sjp"
+                  vocalia={vocalia}
+                  allCausas={sjpRemote.causas}
+                  onUpdateCausa={remoteNoop}
+                  onDeleteCausa={remoteNoop}
+                  onCreateCausa={remoteNoop}
+                  onChangeEstado={remoteNoop}
+                />
+              </RemoteListSection>
+            )}
+            {view === "recursos" && (
+              <RemoteListSection
+                loading={recursosRemote.loading}
+                error={recursosRemote.error}
+                isEmpty={recursosRemote.causas.length === 0}
+                emptyTitle="Sin causas en esta categoría"
+                emptyMessage="No hay causas con estado 'recurso'."
+                onRetry={recursosRemote.refetch}
+              >
+                <CausasTable
+                  causas={recursosRemote.causas}
+                  title="Recursos"
+                  listKey="recursos"
+                  vocalia={vocalia}
+                  allCausas={recursosRemote.causas}
+                  onUpdateCausa={remoteNoop}
+                  onDeleteCausa={remoteNoop}
+                  onCreateCausa={remoteNoop}
+                  onChangeEstado={remoteNoop}
+                />
+              </RemoteListSection>
+            )}
+            {view === "terminadas" && (
+              <RemoteListSection
+                loading={terminadasRemote.loading}
+                error={terminadasRemote.error}
+                isEmpty={terminadasRemote.causas.length === 0}
+                emptyTitle="Sin causas en esta categoría"
+                emptyMessage="No hay causas con estado 'terminada'."
+                onRetry={terminadasRemote.refetch}
+              >
+                <CausasTable
+                  causas={terminadasRemote.causas}
+                  title="Causas Terminadas"
+                  listKey="terminadas"
+                  vocalia={vocalia}
+                  allCausas={terminadasRemote.causas}
+                  onUpdateCausa={remoteNoop}
+                  onDeleteCausa={remoteNoop}
+                  onCreateCausa={remoteNoop}
+                  onChangeEstado={remoteNoop}
+                />
+              </RemoteListSection>
+            )}
             {view === "calendario" && <CalendarioAlertas causas={causas} />}
 
             {view.startsWith("custom-") && (
