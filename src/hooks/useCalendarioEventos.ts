@@ -8,7 +8,7 @@ import {
   mapSujetoFechaToCalendar,
 } from "@/lib/eventoMapper";
 
-const ACTIVOS = ["tramite", "recurso"];
+const ACTIVOS = ["tramite", "recurso"] as const;
 const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa";
 
 export function useCalendarioEventos() {
