@@ -12,10 +12,65 @@ import { mockCausas, Causa, EstadoCausa } from "@/data/mockCausas";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Filter, X, Inbox, RefreshCw } from "lucide-react";
-import { useCausasTramite } from "@/hooks/useCausasTramite";
+import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
+import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
+import { useDetenidos } from "@/hooks/useDetenidos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+
+interface RemoteListSectionProps {
+  loading: boolean;
+  error: string | null;
+  isEmpty: boolean;
+  emptyTitle: string;
+  emptyMessage?: string;
+  onRetry: () => void;
+  children: React.ReactNode;
+}
+
+function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, onRetry, children }: RemoteListSectionProps) {
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-64" />
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>No se pudieron cargar los datos</AlertTitle>
+        <AlertDescription className="flex items-center justify-between gap-4">
+          <span className="text-xs">{error}</span>
+          <Button size="sm" variant="outline" onClick={onRetry}>
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Reintentar
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  if (isEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center mb-4">
+          <Inbox className="w-6 h-6 text-muted-foreground" />
+        </div>
+        <h3 className="font-display text-lg font-semibold text-foreground">{emptyTitle}</h3>
+        {emptyMessage && (
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm">{emptyMessage}</p>
+        )}
+        <Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Recargar
+        </Button>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
 
 type View = string;
 
