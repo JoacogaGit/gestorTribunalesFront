@@ -15,6 +15,7 @@ import { Filter, X, Inbox, RefreshCw } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
+import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
   const rebeldesRemote = useCausasConSujetoEn("rebelde");
   const sjpRemote = useCausasConSujetoEn("probation");
   const detenidosRemote = useDetenidos();
+  const dashboardKpis = useDashboardKpis();
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
   // Modal de bienvenida: se muestra automáticamente la primera vez que un
@@ -294,7 +296,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
           >
             {view === "dashboard" && (
               <div className="space-y-8 flex flex-col flex-1 min-h-0">
-                <KpiCards causas={causas} />
+                <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-card/80 border border-border/60 rounded-full shadow-soft transition-colors">
@@ -456,7 +458,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                 />
               </RemoteListSection>
             )}
-            {view === "calendario" && <CalendarioAlertas causas={causas} />}
+            {view === "calendario" && <CalendarioAlertas />}
 
             {view.startsWith("custom-") && (
               <CausasTable causas={causas} title={customBoards.find((b) => b.id === view)?.label || "Tablero"} listKey={view} {...commonProps} onImportCausa={importToList(view)} />
