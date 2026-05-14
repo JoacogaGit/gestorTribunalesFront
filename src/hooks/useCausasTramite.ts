@@ -1,6 +1,6 @@
 import { useCausasPorEstado } from "./useCausasPorEstado";
 
-/** Wrapper retro-compatible de useCausasPorEstado('tramite'). */
-export function useCausasTramite() {
-  return useCausasPorEstado("tramite");
+/** Wrapper retro-compatible. */
+export function useCausasTramite(vocaliaId: string | null) {
+  return useCausasPorEstado("tramite", vocaliaId);
 }
