@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Causa, getProximityColor, Imputado } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Search, Copy, Plus, ChevronDown } from "lucide-react";
+import { Search, Copy, Plus, ChevronDown, Trash2, Pencil, Loader2 } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -10,6 +10,14 @@ import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuLabel, ContextMenuSeparator,
+} from "@/components/ui/context-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useCausaMutations } from "@/hooks/useCausaMutations";
 
 interface DetenidoRow {
   imputado: Imputado;
