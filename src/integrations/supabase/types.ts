@@ -518,6 +518,10 @@ export type Database = {
     Functions: {
       aceptar_invitacion: { Args: { p_token: string }; Returns: string }
       crear_tribunal: { Args: { p_nombre: string }; Returns: string }
+      cuenta_admins_tribunal: {
+        Args: { p_tribunal_id: string }
+        Returns: number
+      }
       es_admin_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_miembro_de_vocalia: {
         Args: { p_vocalia_id: string }
