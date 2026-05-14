@@ -20,6 +20,7 @@ import {
   ESTADOS_CAUSA_DB, SITUACIONES_LIBERTAD, TIPOS_RECURSO,
   labelEstadoCausa, labelSituacionLibertad, labelTipoRecurso,
 } from "@/lib/causaMapper";
+import CausaConexaInput from "./CausaConexaInput";
 
 type Mode = "crear" | "editar";
 
