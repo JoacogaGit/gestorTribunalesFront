@@ -331,10 +331,7 @@ export default function CausasTable({
   };
 
   const handleCreate = () => {
-    if (!onCreateCausa) return;
-    const nueva = createEmptyCausa(vocalia);
-    onCreateCausa(nueva);
-    setSelected(nueva);
+    setShowCreate(true);
   };
 
   const importable = (allCausas || []).filter((c) => !causas.some((x) => x.id === c.id));
