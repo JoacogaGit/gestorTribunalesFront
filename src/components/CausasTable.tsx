@@ -54,13 +54,16 @@ interface Props {
   onImportCausa?: (causa: Causa) => void;
   /** Allow changing case status from context menu (used for "all" / dashboard view). */
   onChangeEstado?: (causa: Causa, nuevoEstado: EstadoCausa) => void;
+  /** Refetch de la lista tras una mutación CRUD. */
+  onMutated?: () => void;
 }
 
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
-  onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado,
+  onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
   const [search, setSearch] = useState("");
