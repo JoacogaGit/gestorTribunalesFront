@@ -188,11 +188,29 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
             </TableHeader>
             <TableBody>
               {filtered.map((r, i) => (
-                <TableRow key={`${r.causa.id}-${i}`} className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(r.causa)}>
-                  {visibleColumns.map((col) => (
-                    <TableCell key={col.key} className={col.cellClass}>{col.render(r)}</TableCell>
-                  ))}
-                </TableRow>
+                <ContextMenu key={`${r.causa.id}-${i}`}>
+                  <ContextMenuTrigger asChild>
+                    <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(r.causa)}>
+                      {visibleColumns.map((col) => (
+                        <TableCell key={col.key} className={col.cellClass}>{col.render(r)}</TableCell>
+                      ))}
+                    </TableRow>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-56">
+                    <ContextMenuLabel className="text-xs font-mono">{r.causa.numero}</ContextMenuLabel>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => setSelected(r.causa)} className="text-xs">
+                      <Pencil className="w-3.5 h-3.5 mr-2" /> Abrir / Editar
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      onSelect={() => setConfirmDelete(r.causa)}
+                      className="text-xs text-alert-urgent focus:text-alert-urgent"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
