@@ -163,6 +163,32 @@ export default function CausasTable({
       sortValue: (c) => c.fechaVencimientoPP ? new Date(c.fechaVencimientoPP).getTime() : Number.MAX_SAFE_INTEGER,
       render: (c) => <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(c.fechaVencimientoPP)}</span>,
     },
+    ...(listKey === "recursos" ? [{
+      key: "vtoPena",
+      label: "Vto. Pena",
+      headClass: "whitespace-nowrap",
+      sortValue: (c: Causa) => {
+        const fechas = c.imputados
+          .map((i) => i.fechaVencimientoPena)
+          .filter((f): f is string => !!f)
+          .map((f) => new Date(f).getTime());
+        return fechas.length ? Math.min(...fechas) : Number.MAX_SAFE_INTEGER;
+      },
+      render: (c: Causa) => {
+        const items = c.imputados
+          .map((i) => ({ nombre: i.nombre, fecha: i.fechaVencimientoPena }))
+          .filter((x) => !!x.fecha) as { nombre: string; fecha: string }[];
+        if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+        items.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        return (
+          <div className="space-y-0.5 text-xs whitespace-nowrap">
+            {items.map((it, i) => (
+              <div key={i} className={getProximityColor(it.fecha)}>{fmtDate(it.fecha)}</div>
+            ))}
+          </div>
+        );
+      },
+    } satisfies ColDef] : []),
     {
       key: "juicios", label: "Juicios y Audiencias", headClass: "whitespace-nowrap",
       sortValue: (c) => {
