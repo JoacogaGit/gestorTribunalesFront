@@ -1,24 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
-import { dbCausaToUI, DbEstadoCausa } from "@/lib/causaMapper";
+import { dbCausaToUI } from "@/lib/causaMapper";
 
-export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | null) {
+const ACTIVOS = ["tramite", "recurso"] as const;
+
+export function useCausasDashboard(vocaliaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!vocaliaId) { setCausas([]); setLoading(false); return; }
+    if (!vocaliaId) {
+      setCausas([]); setLoading(false); return;
+    }
     setLoading(true);
     setError(null);
     const { data, error } = await supabase
       .from("causas")
       .select("*, sujetos(*)")
-      .eq("estado_causa", estado)
       .eq("vocalia_id", vocaliaId)
+      .in("estado_causa", ACTIVOS)
       .order("created_at", { ascending: false });
-
     if (error) {
       setError(error.message);
       setCausas([]);
@@ -27,7 +30,7 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
       setCausas((data as any[]).map(dbCausaToUI));
     }
     setLoading(false);
-  }, [estado, vocaliaId]);
+  }, [vocaliaId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

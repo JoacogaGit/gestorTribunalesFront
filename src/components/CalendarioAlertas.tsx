@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Clock, AlertTriangle, Gavel, Calendar as CalIcon, FileCheck, X, Filter, RefreshCw, Inbox, Scale } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Search, Clock, AlertTriangle, Calendar as CalIcon, FileCheck, X, RefreshCw, Inbox, Scale } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useCalendarioEventos } from "@/hooks/useCalendarioEventos";
 import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSemaforoDot } from "@/lib/eventoMapper";
 
@@ -27,8 +27,8 @@ const STORAGE_KEY = "calendario-dismissed-v2";
 const FILTER_KEY = "calendario-tipos-ocultos-v2";
 const TIPOS: CalendarTipo[] = ["evento", "vencimiento_pp", "vencimiento_pena", "prescripcion"];
 
-export default function CalendarioAlertas() {
-  const { eventos, loading, error, refetch } = useCalendarioEventos();
+export default function CalendarioAlertas({ vocaliaId }: { vocaliaId: string | null }) {
+  const { eventos, loading, error, refetch } = useCalendarioEventos(vocaliaId);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
@@ -154,6 +154,27 @@ export default function CalendarioAlertas() {
             )}
           </div>
 
+          <div className="glass-card rounded-lg p-3 space-y-2">
+            <h3 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide">
+              Tipos de fecha
+            </h3>
+            {TIPOS.map((t) => (
+              <label key={t} className="flex items-center gap-2 cursor-pointer text-xs text-foreground select-none">
+                <Checkbox
+                  checked={!hiddenTipos.has(t)}
+                  onCheckedChange={() => toggleTipo(t)}
+                />
+                <span className={`w-2 h-2 rounded-full ${
+                  t === "evento" ? "bg-primary" :
+                  t === "vencimiento_pp" ? "bg-alert-warning" :
+                  t === "vencimiento_pena" ? "bg-alert-info" :
+                  "bg-alert-urgent"
+                }`} />
+                {CALENDAR_TIPO_LABEL[t]}
+              </label>
+            ))}
+          </div>
+
           <div className="glass-card rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide">
@@ -183,35 +204,6 @@ export default function CalendarioAlertas() {
               <span className="text-muted-foreground font-normal text-sm ml-2">({futuros.length})</span>
             </h2>
             <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
-                  <Filter className="w-3.5 h-3.5" />
-                  Tipos
-                  {hiddenTipos.size > 0 && <span className="text-[10px] bg-primary/20 text-primary rounded-full px-1.5">{TIPOS.length - hiddenTipos.size}</span>}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72">
-                  <DropdownMenuLabel className="text-xs">Mostrar tipos de fecha</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {TIPOS.map((t) => (
-                    <DropdownMenuItem
-                      key={t}
-                      onSelect={(e) => { e.preventDefault(); toggleTipo(t); }}
-                      className="text-xs flex items-center gap-2"
-                    >
-                      <input type="checkbox" readOnly checked={!hiddenTipos.has(t)} className="accent-primary" />
-                      {CALENDAR_TIPO_LABEL[t]}
-                    </DropdownMenuItem>
-                  ))}
-                  {hiddenTipos.size > 0 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setHiddenTipos(new Set()); }} className="text-xs text-primary">
-                        Mostrar todos
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
