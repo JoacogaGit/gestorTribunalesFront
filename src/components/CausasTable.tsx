@@ -652,6 +652,28 @@ export default function CausasTable({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar esta causa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esto borrará la causa <span className="font-mono">{confirmDelete?.numero}</span>, todos sus imputados y todos sus eventos asociados. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={muts.saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleConfirmDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={muts.saving}
+            >
+              {muts.saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+              Sí, borrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
