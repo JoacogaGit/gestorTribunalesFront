@@ -178,20 +178,21 @@ export default function CausaFormDialog({
   };
 
   const buildPayload = (): { causa: CausaInput; sujetos: SujetoInput[] } => {
+    const baseCausa = nullify({ ...causa } as unknown as Record<string, unknown>) as unknown as CausaInput;
     const causaPayload: CausaInput = {
-      ...nullify(causa),
+      ...baseCausa,
       expediente_nro: causa.expediente_nro.trim(),
       estado_causa: causa.estado_causa,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
     };
     const sujetosPayload: SujetoInput[] = visibleSujetos.map((s) => {
       const { _localKey, _markedForDelete, ...rest } = s;
-      return nullify({
+      const cleaned = nullify({
         ...rest,
         nombre_completo: rest.nombre_completo.trim(),
-        // si no está detenido, no guardamos lugar
         lugar_alojamiento: rest.situacion_libertad === "detenido" ? rest.lugar_alojamiento : null,
-      });
+      } as unknown as Record<string, unknown>) as unknown as SujetoInput;
+      return cleaned;
     });
     return { causa: causaPayload, sujetos: sujetosPayload };
   };
