@@ -3,18 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI, DbEstadoCausa } from "@/lib/causaMapper";
 
-export function useCausasPorEstado(estado: DbEstadoCausa) {
+export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!vocaliaId) { setCausas([]); setLoading(false); return; }
     setLoading(true);
     setError(null);
     const { data, error } = await supabase
       .from("causas")
       .select("*, sujetos(*)")
       .eq("estado_causa", estado)
+      .eq("vocalia_id", vocaliaId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -25,7 +27,7 @@ export function useCausasPorEstado(estado: DbEstadoCausa) {
       setCausas((data as any[]).map(dbCausaToUI));
     }
     setLoading(false);
-  }, [estado]);
+  }, [estado, vocaliaId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

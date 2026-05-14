@@ -7,20 +7,22 @@ import { dbCausaToUI, DbSituacionLibertad } from "@/lib/causaMapper";
  * Trae todas las causas que tienen al menos un sujeto en la situación dada,
  * pero embebe TODOS los sujetos de cada causa (no sólo los que matchean).
  */
-export function useCausasConSujetoEn(situacion: DbSituacionLibertad) {
+export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!vocaliaId) { setCausas([]); setLoading(false); return; }
     setLoading(true);
     setError(null);
 
-    // Paso 1: ids de causas con al menos un sujeto en esa situación.
+    // Paso 1: ids de causas (de esta vocalía) con al menos un sujeto en esa situación.
     const { data: matches, error: e1 } = await supabase
       .from("sujetos")
-      .select("causa_id")
-      .eq("situacion_libertad", situacion);
+      .select("causa_id, causas!inner(vocalia_id)")
+      .eq("situacion_libertad", situacion)
+      .eq("causas.vocalia_id", vocaliaId);
 
     if (e1) {
       setError(e1.message); setCausas([]); setLoading(false); return;
@@ -35,6 +37,7 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad) {
       .from("causas")
       .select("*, sujetos(*)")
       .in("id", ids)
+      .eq("vocalia_id", vocaliaId)
       .order("created_at", { ascending: false });
 
     if (e2) {
@@ -44,7 +47,7 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad) {
       setCausas((data as any[]).map(dbCausaToUI));
     }
     setLoading(false);
-  }, [situacion]);
+  }, [situacion, vocaliaId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

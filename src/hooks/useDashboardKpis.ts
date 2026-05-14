@@ -30,7 +30,7 @@ async function countOrThrow(query: { count: number | null; error: { message: str
   return query.count ?? 0;
 }
 
-export function useDashboardKpis() {
+export function useDashboardKpis(vocaliaId: string | null) {
   const [kpis, setKpis] = useState<DashboardKpis>({
     detenidos: 0, juiciosEsteMes: 0, ppProximas: 0, rebeldes: 0, eventos30d: 0, totalCausas: 0,
   });
@@ -38,6 +38,11 @@ export function useDashboardKpis() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
+    if (!vocaliaId) {
+      setKpis({ detenidos: 0, juiciosEsteMes: 0, ppProximas: 0, rebeldes: 0, eventos30d: 0, totalCausas: 0 });
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -46,32 +51,38 @@ export function useDashboardKpis() {
 
       const [detenidos, juicios, pp, rebeldes, evt30, total] = await Promise.all([
         supabase.from("sujetos")
-          .select("id, causas!inner(estado_causa)", { count: "exact", head: true })
+          .select("id, causas!inner(estado_causa,vocalia_id)", { count: "exact", head: true })
           .eq("situacion_libertad", "detenido")
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase.from("eventos")
-          .select("id, causas!inner(estado_causa)", { count: "exact", head: true })
+          .select("id, causas!inner(estado_causa,vocalia_id)", { count: "exact", head: true })
           .in("tipo_evento", ["audiencia", "juicio"])
           .gte("fecha_hora", mesIni)
           .lt("fecha_hora", mesFin)
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase.from("sujetos")
-          .select("id, causas!inner(estado_causa)", { count: "exact", head: true })
+          .select("id, causas!inner(estado_causa,vocalia_id)", { count: "exact", head: true })
           .gte("vencimiento_pp", hoyDate)
           .lte("vencimiento_pp", finDate)
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase.from("sujetos")
-          .select("id, causas!inner(estado_causa)", { count: "exact", head: true })
+          .select("id, causas!inner(estado_causa,vocalia_id)", { count: "exact", head: true })
           .eq("situacion_libertad", "rebelde")
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase.from("eventos")
-          .select("id, causas!inner(estado_causa)", { count: "exact", head: true })
+          .select("id, causas!inner(estado_causa,vocalia_id)", { count: "exact", head: true })
           .gte("fecha_hora", hoyISO)
           .lte("fecha_hora", finISO)
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase.from("causas")
           .select("id", { count: "exact", head: true })
-          .in("estado_causa", ACTIVOS),
+          .in("estado_causa", ACTIVOS)
+          .eq("vocalia_id", vocaliaId),
       ]);
 
       setKpis({
@@ -87,7 +98,7 @@ export function useDashboardKpis() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [vocaliaId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

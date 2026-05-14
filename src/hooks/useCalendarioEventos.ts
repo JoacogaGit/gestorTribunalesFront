@@ -9,14 +9,15 @@ import {
 } from "@/lib/eventoMapper";
 
 const ACTIVOS = ["tramite", "recurso"] as const;
-const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa";
+const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa,vocalia_id";
 
-export function useCalendarioEventos() {
+export function useCalendarioEventos(vocaliaId: string | null) {
   const [eventos, setEventos] = useState<CalendarEvento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
+    if (!vocaliaId) { setEventos([]); setLoading(false); return; }
     setLoading(true);
     setError(null);
     try {
@@ -25,22 +26,26 @@ export function useCalendarioEventos() {
           .from("eventos")
           .select(`id,titulo,descripcion,fecha_hora,tipo_evento,causa_id,sujeto_id, causas!inner(${CAUSA_COLS})`)
           .not("fecha_hora", "is", null)
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase
           .from("sujetos")
           .select(`id,nombre_completo,causa_id,vencimiento_pp, causas!inner(${CAUSA_COLS})`)
           .not("vencimiento_pp", "is", null)
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase
           .from("sujetos")
           .select(`id,nombre_completo,causa_id,vencimiento_pena, causas!inner(${CAUSA_COLS})`)
           .not("vencimiento_pena", "is", null)
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
         supabase
           .from("sujetos")
           .select(`id,nombre_completo,causa_id,prescripcion_fecha, causas!inner(${CAUSA_COLS})`)
           .not("prescripcion_fecha", "is", null)
-          .in("causas.estado_causa", ACTIVOS),
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId),
       ]);
 
       const firstErr = [evtRes, ppRes, penaRes, prescRes].find((r) => r.error)?.error;
@@ -64,7 +69,7 @@ export function useCalendarioEventos() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [vocaliaId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

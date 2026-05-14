@@ -9,18 +9,20 @@ import { dbCausaToUI, DbCausa, DbSujeto, mapSujeto } from "@/lib/causaMapper";
  * que DetenidosList -que itera detenidos dentro de cada causa- muestre una
  * fila por sujeto detenido sin más cambios.
  */
-export function useDetenidos() {
+export function useDetenidos(vocaliaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!vocaliaId) { setCausas([]); setLoading(false); return; }
     setLoading(true);
     setError(null);
     const { data, error } = await supabase
       .from("sujetos")
-      .select("*, causas(*)")
-      .eq("situacion_libertad", "detenido");
+      .select("*, causas!inner(*)")
+      .eq("situacion_libertad", "detenido")
+      .eq("causas.vocalia_id", vocaliaId);
 
     if (error) {
       setError(error.message);
@@ -33,16 +35,14 @@ export function useDetenidos() {
         .map((r) => {
           const sujeto = r as DbSujeto;
           const causa = r.causas as DbCausa;
-          // Construir causa con un solo sujeto (el detenido actual).
           const ui = dbCausaToUI({ ...causa, sujetos: [sujeto] });
-          // Asegurar que el imputado quede como Detenido y con lugar correcto.
           ui.imputados = [mapSujeto(sujeto)];
           return ui;
         });
       setCausas(synthetic);
     }
     setLoading(false);
-  }, []);
+  }, [vocaliaId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
