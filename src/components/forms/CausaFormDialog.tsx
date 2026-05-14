@@ -124,6 +124,7 @@ export default function CausaFormDialog({
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",
             causa_conexa_texto: data.causa_conexa_texto ?? "",
+            causa_conexa_id: data.causa_conexa_id ?? null,
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list: any[] = data.sujetos ?? [];
