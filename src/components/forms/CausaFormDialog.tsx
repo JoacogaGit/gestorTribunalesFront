@@ -170,13 +170,22 @@ export default function CausaFormDialog({
     });
   };
 
+  const isSujetoEmpty = (s: SujetoState) => {
+    return !s.nombre_completo.trim() && !s.delito && !s.defensor && !s.fecha_detencion
+      && !s.lugar_alojamiento && !s.prescripcion_fecha && !s.vencimiento_pp
+      && !s.vencimiento_pena && !s.observaciones && s.situacion_libertad === "libre";
+  };
+
   const validate = (): string | null => {
     if (!causa.expediente_nro.trim()) return "El N° de expediente es obligatorio.";
     if (causa.estado_causa === "recurso" && !causa.tipo_recurso) {
       return 'Si el estado es "Recurso", elegí el tipo de recurso.';
     }
+    // Solo exigir nombre a sujetos con algún dato pero sin nombre.
     for (const s of visibleSujetos) {
-      if (!s.nombre_completo.trim()) return "Cada imputado necesita un nombre.";
+      if (!isSujetoEmpty(s) && !s.nombre_completo.trim()) {
+        return "Cada imputado con datos cargados necesita un nombre.";
+      }
     }
     return null;
   };
@@ -188,8 +197,11 @@ export default function CausaFormDialog({
       expediente_nro: causa.expediente_nro.trim(),
       estado_causa: causa.estado_causa,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
+      causa_conexa_id: causa.causa_conexa_texto?.trim() ? (causa.causa_conexa_id ?? null) : null,
     };
-    const sujetosPayload: SujetoInput[] = visibleSujetos.map((s) => {
+    // Filtrar sujetos completamente vacíos (no se persisten).
+    const sujetosFiltrados = visibleSujetos.filter((s) => !isSujetoEmpty(s));
+    const sujetosPayload: SujetoInput[] = sujetosFiltrados.map((s) => {
       const { _localKey, _markedForDelete, ...rest } = s;
       const cleaned = nullify({
         ...rest,
