@@ -563,17 +563,13 @@ export default function CausasTable({
                         </ContextMenuSubContent>
                       </ContextMenuSub>
                     )}
-                    {(onDeleteCausa || onMutated) && (
-                      <>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem
-                          onSelect={() => setSelected(c)}
-                          className="text-xs text-alert-urgent focus:text-alert-urgent"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar causa…
-                        </ContextMenuItem>
-                      </>
-                    )}
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      onSelect={() => setConfirmDelete(c)}
+                      className="text-xs text-alert-urgent focus:text-alert-urgent"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
+                    </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
               ))}
