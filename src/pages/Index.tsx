@@ -3,19 +3,19 @@ import AuthScreen from "@/components/AuthScreen";
 import VocaliaSelector from "@/components/VocaliaSelector";
 import VocaliaWorkspace from "@/components/VocaliaWorkspace";
 import ThemeToggle from "@/components/ThemeToggle";
+import { VocaliaProvider, useVocaliaActual } from "@/context/VocaliaContext";
 
 export interface CurrentUser {
   name: string;
   email: string;
 }
 
-export default function Index() {
+function IndexInner() {
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [vocalia, setVocalia] = useState<number | null>(null);
+  const { vocalia, setVocalia, clearVocalia } = useVocaliaActual();
 
-  // Theme toggle floats top-right on auth/selector screens.
-  // Inside the workspace, the toggle lives next to the user menu in the header.
   const showFloatingToggle = !user || !vocalia;
+  const handleLogout = () => { setUser(null); clearVocalia(); };
 
   return (
     <>
@@ -27,16 +27,23 @@ export default function Index() {
       {!user ? (
         <AuthScreen onAuth={(u) => setUser(u)} />
       ) : !vocalia ? (
-        <VocaliaSelector onSelect={setVocalia} />
+        <VocaliaSelector onSelect={setVocalia} onLogout={handleLogout} />
       ) : (
         <VocaliaWorkspace
-          vocalia={vocalia}
-          onBack={() => setVocalia(null)}
+          onBack={clearVocalia}
           user={user}
-          onLogout={() => { setUser(null); setVocalia(null); }}
+          onLogout={handleLogout}
           onUpdateUser={(u) => setUser(u)}
         />
       )}
     </>
+  );
+}
+
+export default function Index() {
+  return (
+    <VocaliaProvider>
+      <IndexInner />
+    </VocaliaProvider>
   );
 }
