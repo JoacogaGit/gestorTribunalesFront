@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useVocaliaActual, VocaliaActual } from "@/context/VocaliaContext";
 import { useVocalias } from "@/hooks/useVocalias";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RemoteListSectionProps {
   loading: boolean;
