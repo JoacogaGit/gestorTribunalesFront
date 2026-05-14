@@ -61,11 +61,18 @@ interface Props {
   onChangeEstado?: (causa: Causa, nuevoEstado: EstadoCausa) => void;
   /** Refetch de la lista tras una mutación CRUD. */
   onMutated?: () => void;
+  /** Click en el punto azul de "causa conexa" cuando hay match. */
+  onNavigateToConexa?: (causaId: string) => void;
+  /** Si está seteado y matchea una fila, abre su detalle automáticamente. */
+  openCausaId?: string | null;
+  /** Llamado cuando se consume el openCausaId. */
+  onOpenedCausa?: () => void;
 }
 
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
+  onNavigateToConexa, openCausaId, onOpenedCausa,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -73,6 +80,27 @@ export default function CausasTable({
   const [customTitle, setCustomTitle] = useState(title || "");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
+  const muts = useCausaMutations();
+
+  // Auto-abrir detalle cuando navegan desde una causa conexa.
+  useEffect(() => {
+    if (!openCausaId) return;
+    const found = causas.find((c) => c.id === openCausaId);
+    if (found) {
+      setSelected(found);
+      onOpenedCausa?.();
+    }
+  }, [openCausaId, causas, onOpenedCausa]);
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    const r = await muts.borrarCausa(confirmDelete.id);
+    if (r.ok !== true) { toast.error(r.error); return; }
+    toast.success("Causa eliminada");
+    setConfirmDelete(null);
+    onMutated?.();
+  };
 
   const allColumns: ColDef[] = [
     {
