@@ -506,6 +506,30 @@ export default function CausaFormDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirmar descartar imputados vacíos */}
+      <AlertDialog open={confirmDiscardEmpty} onOpenChange={setConfirmDiscardEmpty}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hay un imputado sin datos</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Querés descartarlo y crear la causa, o completar sus datos?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Completar datos</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                setConfirmDiscardEmpty(false);
+                await doSubmit();
+              }}
+            >
+              Descartar y crear
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
