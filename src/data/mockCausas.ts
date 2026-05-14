@@ -52,6 +52,10 @@ export interface Causa {
   probation?: { vencimiento: string };
   vocalia: number;
   causasConexas?: string[];
+  /** UUID de la causa vinculada (cuando hubo match en autocomplete). */
+  causaConexaId?: string | null;
+  /** Texto libre de la causa conexa (con o sin match). */
+  causaConexaTexto?: string | null;
   /** Campo unificado: anotaciones / notas. */
   anotaciones?: string;
   agenda?: AgendaItem[];
