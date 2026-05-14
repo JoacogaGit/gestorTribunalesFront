@@ -213,10 +213,8 @@ export default function CausaFormDialog({
     return { causa: causaPayload, sujetos: sujetosPayload };
   };
 
-  const handleSubmit = async () => {
+  const doSubmit = async () => {
     setErrorMsg(null);
-    const v = validate();
-    if (v) { setErrorMsg(v); return; }
     const { causa: causaP, sujetos: sujetosP } = buildPayload();
 
     if (mode === "crear") {
@@ -239,9 +237,10 @@ export default function CausaFormDialog({
       const r = await muts.borrarSujeto(s.id!);
       if (r.ok !== true) { setErrorMsg(`Error al borrar imputado: ${r.error}`); return; }
     }
-    // Insertar nuevos / actualizar existentes
-    for (let i = 0; i < visibleSujetos.length; i++) {
-      const draft = visibleSujetos[i];
+    // Procesar visibles no vacíos (alineados con sujetosP)
+    const sujetosToSync = visibleSujetos.filter((s) => !isSujetoEmpty(s));
+    for (let i = 0; i < sujetosToSync.length; i++) {
+      const draft = sujetosToSync[i];
       const payload = sujetosP[i];
       if (draft.id) {
         const r = await muts.actualizarSujeto(draft.id, payload);
@@ -254,6 +253,19 @@ export default function CausaFormDialog({
     toast.success("Cambios guardados");
     onMutated?.();
     onOpenChange(false);
+  };
+
+  const handleSubmit = async () => {
+    setErrorMsg(null);
+    const v = validate();
+    if (v) { setErrorMsg(v); return; }
+    // Si hay sujetos completamente vacíos, ofrecer descartarlos.
+    const hasEmpty = visibleSujetos.some((s) => isSujetoEmpty(s) && !s.id);
+    if (hasEmpty) {
+      setConfirmDiscardEmpty(true);
+      return;
+    }
+    await doSubmit();
   };
 
   const handleDeleteCausa = async () => {
