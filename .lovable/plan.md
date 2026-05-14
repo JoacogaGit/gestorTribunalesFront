@@ -1,120 +1,102 @@
-## Objetivo
+# Plan: CRUD de causas/sujetos + ícono vencimiento pena en Recursos
 
-Cerrar el ciclo de conexión a datos reales: limpiar el último mock del Dashboard, exponer filtros visibles en el Calendario, activar el selector de vocalías con datos reales (incluyendo edición de nombre y vuelta al login), y propagar `vocaliaId` a todas las consultas.
+## Arquitectura general
 
----
+Sigo el patrón existente: hook + mapper + componente. Centralizo toda la mutación en un único hook `useCausaMutations` y un único componente de formulario reutilizable `CausaFormDialog` para crear y editar.
 
-## 1. Estado global de vocalía seleccionada
+```text
+useCausaMutations  ──▶ supabase (causas + sujetos + eventos)
+        ▲
+        │ refetch()
+        │
+CausaFormDialog (modo "crear" | "editar")
+        ▲
+        ├── CausasTable (botón "Nueva causa" + click en fila)
+        └── DetenidosList (botón "Nueva causa con detenido" + click en fila)
+```
 
-**Nuevo:** `src/context/VocaliaContext.tsx`
-- Provee `{ vocaliaId, vocaliaNombre, tribunalId, setVocalia(v), clearVocalia() }`.
-- Hook `useVocaliaActual()` (lanza error si se usa fuera del provider).
-- Persistencia ligera en `localStorage` (`justrack-vocalia-id`) para no perderla en refresh.
+## Archivos nuevos
 
-**`src/pages/Index.tsx`:** envolver el árbol en `<VocaliaProvider>` y reemplazar el state local `vocalia: number` por `vocaliaId: string | null` derivado del contexto.
+### 1. `src/hooks/useCausaMutations.ts`
+Expone funciones async que devuelven `{ ok, error }`:
+- `crearCausa(payload, sujetos[])` — inserta causa con `vocalia_id` del contexto, luego inserta sujetos. Si falla la inserción de sujetos, hace `delete` de la causa creada (rollback manual; PostgREST no soporta tx multi-tabla).
+- `actualizarCausa(id, payload)` — `update` sobre `causas`.
+- `borrarCausa(id)` — `delete` sobre `causas` (Supabase no tiene cascade configurado en el schema visible, así que primero borro `eventos` por `causa_id`, luego `sujetos` por `causa_id`, luego la causa).
+- `crearSujeto(causaId, payload)`, `actualizarSujeto(id, payload)`, `borrarSujeto(id)`.
 
----
+Toma `vocaliaId` del `useVocaliaActual()` internamente para no repetirlo en cada call site.
 
-## 2. Selector de vocalías con datos reales (Tarea 3.1, 3.6, 4)
+### 2. `src/components/forms/CausaFormDialog.tsx`
+Modal grande (`Dialog` de shadcn, `max-w-3xl`, scroll interno) con dos modos:
+- `mode="crear"` — campos vacíos, botón "Crear causa".
+- `mode="editar"` — pre-rellena con la causa, botón "Guardar cambios" y zona roja con "Borrar causa" + confirmación.
 
-**Nuevo hook:** `src/hooks/useVocalias.ts`
-- `select id, nombre, tribunal_id` de `vocalias`, ordenado por nombre.
-- Devuelve `{ vocalias, loading, error, refetch }`.
-- Función `renombrarVocalia(id, nombre)`: valida no vacío, hace `update({ nombre }).eq("id", id)`, refetch optimista.
+Estructura interna del form (RHF + zod):
+- **Datos generales** (siempre visibles)
+  - `expediente_nro` (Input, requerido, validado con zod `min(1)`)
+  - `caratula` (Input)
+  - `estado_causa` (Select cerrado: Trámite / Recurso / Terminada)
+  - `tipo_recurso` (Select condicional, sólo si estado = Recurso: Casación / REX / Queja en Corte)
+- **Datos complementarios** (`Collapsible` cerrado por defecto)
+  - `querella`, `actor_civil`, `otros_intervinientes`, `causa_conexa_texto`
+- **Imputados** (lista dinámica con `useFieldArray`)
+  - Sub-form por imputado renderizado como `<SujetoFormCard />` (componente interno o archivo aparte).
+  - Botón "+ Agregar imputado" arriba de la lista.
+  - En modo editar: cada card de imputado existente tiene su propio botón "Borrar imputado" con confirmación inline (`AlertDialog`).
+  - En modo crear: botón "X" simple (no hay nada en DB todavía).
 
-**`src/components/VocaliaSelector.tsx`** (rewrite):
-- Consume `useVocalias()`, ya no `mockCausas`.
-- Para cada vocalía: contador real con `useEffect` adicional o (más simple) un único query agregado por vocalía vía `count: 'exact', head: true` en `causas` filtrando `vocalia_id` y `estado_causa in (tramite, recurso)`. Lo dejamos como un hook chico `useVocaliaStats(id)` o un fetch en el componente — un solo `Promise.all` al montar.
-- Ícono lápiz por tarjeta → input inline → confirma con Enter / blur, valida no vacío, llama `renombrarVocalia`.
-- Botón "Volver al inicio de sesión" (icono `LogOut`) en el header del selector que llama `onLogout` (prop nueva, equivalente a setear `user=null` en `Index.tsx`).
-- Estados loading/error/empty ("No hay vocalías disponibles para tu tribunal").
+### 3. `src/components/forms/SujetoFormCard.tsx`
+Tarjeta con campos:
+- `nombre_completo` (requerido)
+- `delito`
+- `situacion_libertad` (Select cerrado: Libre / Detenido / Rebelde / Probation / Condenado)
+- `defensor`
+- `lugar_alojamiento` (sólo si situación = Detenido)
+- `fecha_detencion`, `vencimiento_pp`, `vencimiento_pena`, `prescripcion_fecha` (DatePickers shadcn)
+- `observaciones` (Textarea)
 
-**`src/pages/Index.tsx`:** pasar `onLogout` también al selector.
+### 4. `src/components/forms/ConfirmDeleteDialog.tsx`
+`AlertDialog` reutilizable para "Borrar causa" y "Borrar imputado" con mensajes parametrizados.
 
----
+## Archivos editados
 
-## 3. Propagar `vocaliaId` a todas las consultas (Tarea 3.3)
+### `src/components/CausaDetail.tsx`
+Reemplazo total. En vez del editor mock actual, monta `CausaFormDialog` en modo `"editar"` cargando los datos reales de la causa. Mantiene la misma firma de props (`causa`, `onClose`, `onUpdate`, `onDelete`) para no romper los call sites; `onUpdate`/`onDelete` ya no se usan (la mutación se dispara dentro del propio dialog y llama al `refetch` recibido).
 
-Refactor de hooks para aceptar `vocaliaId: string` como argumento y aplicar `.eq("vocalia_id", vocaliaId)` (o filtro embebido en relación):
+### `src/components/CausasTable.tsx`
+- El click en una fila ya abre `CausaDetail` → ahora abrirá el nuevo dialog editor.
+- El botón "Nueva causa" deja de llamar `onCreateCausa(mockCausa)` y abre `CausaFormDialog` en modo `"crear"`.
+- Recibe un nuevo prop opcional `onMutated?: () => void` que dispara el refetch del workspace.
 
-- `useCausasPorEstado(estado, vocaliaId)` → añade `.eq("vocalia_id", vocaliaId)`.
-- `useCausasConSujetoEn(situacion, vocaliaId)` → en paso 2 (fetch causas por ids) añade `.eq("vocalia_id", vocaliaId)`.
-- `useDetenidos(vocaliaId)` → cambia a `select("*, causas!inner(*)").eq("situacion_libertad","detenido").eq("causas.vocalia_id", vocaliaId)`.
-- `useDashboardKpis(vocaliaId)` → todas las queries embebidas usan `causas!inner(...)` con `.eq("causas.vocalia_id", vocaliaId)`. Para `totalCausas` filtrar directo por `vocalia_id`.
-- `useCalendarioEventos(vocaliaId)` → añade `.eq("causas.vocalia_id", vocaliaId)` en las 4 queries.
+### `src/components/DetenidosList.tsx`
+Mismo cambio: botón "Nueva causa con detenido" abre el dialog en modo crear con `situacion_libertad="detenido"` pre-cargado en el primer imputado.
 
-**Excepción documentada:** las consultas de "causas conexas" (no se tocan en este plan) seguirán sin filtrar por vocalía.
+### `src/components/VocaliaWorkspace.tsx`
+- Elimina `remoteNoop` y `remoteTableCommon`.
+- Pasa a cada `CausasTable` / `DetenidosList` un `onMutated` que invoca el `refetch` del hook correspondiente (`tramiteRemote.refetch`, etc.).
+- Para la pestaña Recursos pasa un flag `showVencPena` (ver tarea 4) o lo activa por `listKey === "recursos"`.
 
-**`VocaliaWorkspace.tsx`:**
-- Lee `vocaliaId, vocaliaNombre` desde `useVocaliaActual()`.
-- Sustituye la prop `vocalia: number` por nada (toma del contexto).
-- Pasa `vocaliaId` a cada hook.
-- Header y breadcrumb (`"Panel General — {vocaliaNombre}"`, chip superior con `vocaliaNombre`).
-- `AppSidebar`: acepta `vocaliaNombre: string` y muestra "{vocaliaNombre} — Cambiar". Convertir el botón "Cambiar" en un `DropdownMenu` poblado con `useVocalias()` filtradas al `tribunal_id` actual; al elegir otra → `setVocalia(v)`. Mantiene la opción "Volver al selector" como item del menú.
-
----
-
-## 4. Limpieza Dashboard (Tarea 1)
-
-**Nuevo hook:** `src/hooks/useCausasDashboard.ts`
-- `select("*, sujetos(*)").eq("vocalia_id", vocaliaId).in("estado_causa", ["tramite","recurso"]).order("created_at", { ascending: false })`.
-- Devuelve `{ causas, loading, error, refetch }` mapeando con `dbCausaToUI`.
-
-**`VocaliaWorkspace.tsx`:**
-- Eliminar el state local `causas` basado en `mockCausas` y todo el bloque `isNewUser`.
-- Eliminar handlers que mutan el array local (`updateCausa`, `deleteCausa`, `createCausa`, `changeEstado`, `importToList`, `handleImportCausas`) y reemplazarlos por `remoteNoop` (igual que las otras pestañas).
-- En `view === "dashboard"`: usar `useCausasDashboard(vocaliaId)`. Mantener el filtro local (`dashFilter`) operando sobre el resultado real. Si `causas.length === 0` → mostrar `RemoteListSection` con mensaje "Sin causas en esta vocalía".
-- `WelcomeModal` y tableros personalizados: dejar la importación como noop por ahora (toast informativo).
-
----
-
-## 5. Filtros del Calendario visibles (Tarea 2)
-
-**`CalendarioAlertas.tsx`:**
-- Reemplazar el `DropdownMenu` actual de "Tipos" por un panel de 4 checkboxes visibles en la columna izquierda, debajo del mini-calendario:
-  - ☑ Eventos manuales
-  - ☑ Vencimientos de PP
-  - ☑ Vencimientos de Pena
-  - ☑ Prescripciones
-- Usar `Checkbox` de shadcn (`@/components/ui/checkbox`) con label clickeable y un punto de color del semáforo al lado del label.
-- Estado ya existe (`hiddenTipos` + `FILTER_KEY` localStorage). Se conserva la persistencia.
-- Cambios reactivos inmediatos (ya está, vía `useMemo`).
-
----
-
-## 6. Volver al login desde el selector (Tarea 4)
-
-Ya cubierto en sección 2 (botón en `VocaliaSelector`). `Index.tsx` expone `onLogout` que setea `user=null` y `clearVocalia()`.
-
----
+### `src/components/CausasTable.tsx` (tarea 4 — ícono vencimiento de pena)
+Sólo cuando `listKey === "recursos"`:
+- Agrega columna "Venc. pena" entre las columnas existentes de fechas.
+- Por fila calcula el vencimiento más próximo entre los imputados (`min(fechaVencimientoPena)` no nulo).
+- Renderiza con un `Badge`/ícono `Gavel` y aplica `getProximityColor()` (mismo helper ya usado para otras fechas) para el semáforo cromático.
+- Si no hay vencimiento cargado: "—" en `text-muted-foreground`.
 
 ## Detalles técnicos
 
-### Tipos `vocalia` en código existente
-Hoy `vocalia` viaja como `number` (1, 2, 3) en muchos componentes (`CausasTable`, `DetenidosList`, `WelcomeModal`, mocks). Cambio mínimo:
-- Mantener la prop visual donde sólo se muestra: pasar `vocaliaNombre` (string) en lugar de número.
-- Donde se usa para filtrar mocks (ya no se va a usar) → remover.
-- El tipo `Causa.vocalia` (mock) se conserva sólo porque `dbCausaToUI` puede setear un placeholder; no impacta la UI.
+- **Validación**: `zod` schema en `CausaFormDialog`. `expediente_nro.trim().min(1)`. Sujetos: `nombre_completo.trim().min(1)`. Selectores tipados con los enums exactos del schema.
+- **Mapeo UI ↔ DB**: ya existe `dbCausaToUI` en `causaMapper.ts`. Agrego `causaUIToDb` y `sujetoUIToDb` (inversos) en el mismo archivo.
+- **Estado de carga**: durante mutación, botón principal con `disabled` + spinner (`Loader2` de lucide). Toast de éxito con `sonner`; toast de error sin cerrar el modal.
+- **Borrado en cascada manual**: orden `eventos → sujetos → causas`. Si alguno falla, toast de error y aborta.
+- **Refetch**: cada vista pasa su `refetch` como `onMutated`; `VocaliaWorkspace` no necesita estado nuevo.
+- **Confirmaciones**: `AlertDialog` (no `confirm()` nativo) tanto para borrar causa como borrar imputado.
 
-### Orden de cambios (para evitar romper compilación intermedia)
+## Fuera de alcance (confirmado en el pedido)
+- No se toca auth, RLS, ni se crean tablas.
+- El "match automático" de causa conexa queda como texto libre.
+- Otros formularios mock que no sean "Nueva causa" / detalle de causa no se tocan.
 
-```text
-1. Crear VocaliaContext + envolver Index
-2. Crear useVocalias + reescribir VocaliaSelector (pantalla previa)
-3. Refactor de hooks de datos para aceptar vocaliaId
-4. Refactor VocaliaWorkspace: leer del contexto, pasar vocaliaId, header dinámico
-5. AppSidebar: dropdown de cambio de vocalía
-6. Crear useCausasDashboard y reemplazar tabla mock del Panel General
-7. Calendario: checkboxes visibles
-```
-
-### Archivos tocados
-
-- **Crea:** `src/context/VocaliaContext.tsx`, `src/hooks/useVocalias.ts`, `src/hooks/useCausasDashboard.ts`
-- **Edita:** `src/pages/Index.tsx`, `src/components/VocaliaSelector.tsx`, `src/components/VocaliaWorkspace.tsx`, `src/components/AppSidebar.tsx`, `src/components/CalendarioAlertas.tsx`, `src/components/KpiCards.tsx` (sólo tipo de prop), `src/hooks/useCausasPorEstado.ts`, `src/hooks/useCausasConSujetoEn.ts`, `src/hooks/useDetenidos.ts`, `src/hooks/useDashboardKpis.ts`, `src/hooks/useCalendarioEventos.ts`
-
-### No se toca
-
-- Esquema de Supabase / RLS / auth.
-- Lógica de causas conexas (las relaciones cross-vocalía siguen sin filtrar).
-- Pestañas ya conectadas conservan su patrón hook + mapper.
+## Riesgos
+- **Sin transacción real**: el rollback manual puede dejar causas huérfanas si la red cae entre dos requests. Mitigación: mensaje de error explícito sugiriendo recargar.
+- **RLS**: las policies actuales requieren `es_miembro_de_vocalia(vocalia_id)` o las dev-policies para `anon`. Con auth aún no implementada, las dev-policies (`true` para `anon`) cubren el caso. Cuando se active auth real habrá que validar membresía — fuera de alcance ahora.

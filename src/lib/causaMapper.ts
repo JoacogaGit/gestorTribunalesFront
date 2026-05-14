@@ -4,6 +4,30 @@ export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "probation"
 export type DbEstadoCausa = "tramite" | "recurso" | "terminada";
 export type DbTipoRecurso = "casacion" | "rex" | "queja_corte" | null;
 
+export const SITUACIONES_LIBERTAD: DbSituacionLibertad[] = ["libre", "detenido", "rebelde", "probation", "condenado"];
+export const ESTADOS_CAUSA_DB: DbEstadoCausa[] = ["tramite", "recurso", "terminada"];
+export const TIPOS_RECURSO: Exclude<DbTipoRecurso, null>[] = ["casacion", "rex", "queja_corte"];
+
+export const labelEstadoCausa: Record<DbEstadoCausa, string> = {
+  tramite: "Trámite",
+  recurso: "Recurso",
+  terminada: "Terminada",
+};
+
+export const labelTipoRecurso: Record<Exclude<DbTipoRecurso, null>, string> = {
+  casacion: "Casación",
+  rex: "REX",
+  queja_corte: "Queja en Corte",
+};
+
+export const labelSituacionLibertad: Record<DbSituacionLibertad, string> = {
+  libre: "Libre",
+  detenido: "Detenido",
+  rebelde: "Rebelde",
+  probation: "Probation",
+  condenado: "Condenado",
+};
+
 export type DbSujeto = {
   id: string;
   nombre_completo: string;

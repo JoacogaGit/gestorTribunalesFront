@@ -261,6 +261,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     title={`Causas — ${dashFilterLabels[dashFilter]}`}
                     listKey="todas"
                     allCausas={dashCausasRemote.causas}
+                    onMutated={dashCausasRemote.refetch}
                     {...remoteTableCommon}
                   />
                 </RemoteListSection>
@@ -281,6 +282,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   title="Causas en Trámite"
                   listKey="tramite"
                   allCausas={tramiteRemote.causas}
+                  onMutated={tramiteRemote.refetch}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -298,6 +300,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   causas={detenidosRemote.causas}
                   onUpdateCausa={remoteNoop}
                   onDeleteCausa={remoteNoop}
+                  onCreateCausa={remoteNoop}
+                  onMutated={detenidosRemote.refetch}
                 />
               </RemoteListSection>
             )}
@@ -315,6 +319,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   title="Rebeldes / Paraderos"
                   listKey="rebeldes"
                   allCausas={rebeldesRemote.causas}
+                  onMutated={rebeldesRemote.refetch}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -333,6 +338,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   title="SJP en Trámite"
                   listKey="sjp"
                   allCausas={sjpRemote.causas}
+                  onMutated={sjpRemote.refetch}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -351,6 +357,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   title="Recursos"
                   listKey="recursos"
                   allCausas={recursosRemote.causas}
+                  onMutated={recursosRemote.refetch}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -369,6 +376,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   title="Causas Terminadas"
                   listKey="terminadas"
                   allCausas={terminadasRemote.causas}
+                  onMutated={terminadasRemote.refetch}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>

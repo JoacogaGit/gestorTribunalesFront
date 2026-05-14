@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Causa, getCaratula, getProximityColor, createEmptyCausa, EstadoCausa } from "@/data/mockCausas";
+import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
+import CausaFormDialog from "./forms/CausaFormDialog";
 import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
@@ -53,13 +54,16 @@ interface Props {
   onImportCausa?: (causa: Causa) => void;
   /** Allow changing case status from context menu (used for "all" / dashboard view). */
   onChangeEstado?: (causa: Causa, nuevoEstado: EstadoCausa) => void;
+  /** Refetch de la lista tras una mutación CRUD. */
+  onMutated?: () => void;
 }
 
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
-  onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado,
+  onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
   const [search, setSearch] = useState("");
@@ -159,6 +163,32 @@ export default function CausasTable({
       sortValue: (c) => c.fechaVencimientoPP ? new Date(c.fechaVencimientoPP).getTime() : Number.MAX_SAFE_INTEGER,
       render: (c) => <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(c.fechaVencimientoPP)}</span>,
     },
+    ...(listKey === "recursos" ? [{
+      key: "vtoPena",
+      label: "Vto. Pena",
+      headClass: "whitespace-nowrap",
+      sortValue: (c: Causa) => {
+        const fechas = c.imputados
+          .map((i) => i.fechaVencimientoPena)
+          .filter((f): f is string => !!f)
+          .map((f) => new Date(f).getTime());
+        return fechas.length ? Math.min(...fechas) : Number.MAX_SAFE_INTEGER;
+      },
+      render: (c: Causa) => {
+        const items = c.imputados
+          .map((i) => ({ nombre: i.nombre, fecha: i.fechaVencimientoPena }))
+          .filter((x) => !!x.fecha) as { nombre: string; fecha: string }[];
+        if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+        items.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        return (
+          <div className="space-y-0.5 text-xs whitespace-nowrap">
+            {items.map((it, i) => (
+              <div key={i} className={getProximityColor(it.fecha)}>{fmtDate(it.fecha)}</div>
+            ))}
+          </div>
+        );
+      },
+    } satisfies ColDef] : []),
     {
       key: "juicios", label: "Juicios y Audiencias", headClass: "whitespace-nowrap",
       sortValue: (c) => {
@@ -327,10 +357,7 @@ export default function CausasTable({
   };
 
   const handleCreate = () => {
-    if (!onCreateCausa) return;
-    const nueva = createEmptyCausa(vocalia);
-    onCreateCausa(nueva);
-    setSelected(nueva);
+    setShowCreate(true);
   };
 
   const importable = (allCausas || []).filter((c) => !causas.some((x) => x.id === c.id));
@@ -494,14 +521,14 @@ export default function CausasTable({
                         </ContextMenuSubContent>
                       </ContextMenuSub>
                     )}
-                    {onDeleteCausa && (
+                    {(onDeleteCausa || onMutated) && (
                       <>
                         <ContextMenuSeparator />
                         <ContextMenuItem
-                          onSelect={() => { if (confirm(`¿Eliminar causa ${c.numero}?`)) onDeleteCausa(c.id); }}
+                          onSelect={() => setSelected(c)}
                           className="text-xs text-alert-urgent focus:text-alert-urgent"
                         >
-                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar causa
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar causa…
                         </ContextMenuItem>
                       </>
                     )}
@@ -554,10 +581,15 @@ export default function CausasTable({
         <CausaDetail
           causa={selected}
           onClose={() => setSelected(null)}
-          onUpdate={onUpdateCausa}
-          onDelete={onDeleteCausa}
+          onMutated={onMutated}
         />
       )}
+      <CausaFormDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        mode="crear"
+        onMutated={onMutated}
+      />
 
       <Dialog open={showAddCol} onOpenChange={setShowAddCol}>
         <DialogContent className="max-w-sm bg-card border-border">

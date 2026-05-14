@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Causa, getProximityColor, Imputado, createEmptyCausa } from "@/data/mockCausas";
+import { Causa, getProximityColor, Imputado } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
+import CausaFormDialog from "./forms/CausaFormDialog";
 import { Search, Copy, Plus, ChevronDown } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
@@ -34,10 +35,12 @@ interface Props {
   onUpdateCausa?: (causa: Causa) => void;
   onDeleteCausa?: (id: string) => void;
   onCreateCausa?: (causa: Causa) => void;
+  onMutated?: () => void;
 }
 
-export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDeleteCausa, onCreateCausa }: Props) {
+export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDeleteCausa, onCreateCausa, onMutated }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
 
   const allColumns: ColDef[] = [
@@ -115,11 +118,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   };
 
   const handleCreate = () => {
-    if (!onCreateCausa) return;
-    const nueva = createEmptyCausa(vocalia);
-    nueva.imputados[0].estadoLibertad = "Detenido";
-    onCreateCausa(nueva);
-    setSelected(nueva);
+    setShowCreate(true);
   };
 
   return (
@@ -198,10 +197,16 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
         <CausaDetail
           causa={selected}
           onClose={() => setSelected(null)}
-          onUpdate={onUpdateCausa}
-          onDelete={onDeleteCausa}
+          onMutated={onMutated}
         />
       )}
+      <CausaFormDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        mode="crear"
+        initialSujetoSituacion="detenido"
+        onMutated={onMutated}
+      />
     </>
   );
 }
