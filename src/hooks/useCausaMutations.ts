@@ -14,6 +14,7 @@ export interface CausaInput {
   actor_civil: string | null;
   otros_intervinientes: string | null;
   causa_conexa_texto: string | null;
+  causa_conexa_id: string | null;
 }
 
 export interface SujetoInput {
