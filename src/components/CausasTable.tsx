@@ -110,7 +110,9 @@ export default function CausasTable({
       cellClass: "font-mono text-xs font-semibold whitespace-nowrap",
       sortValue: (c) => c.numero,
       render: (c) => {
-        const conexas = (c.causasConexas || []).filter(Boolean);
+        const conexaId = c.causaConexaId ?? null;
+        const conexaTexto = c.causaConexaTexto ?? null;
+        const hasConexa = !!(conexaId || conexaTexto);
         const hasPdf = (c.adjuntos || []).length > 0;
         const numEl = c.link
           ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline inline-flex items-center gap-1">{c.numero}<ExternalLink className="w-3 h-3" /></a>
@@ -118,18 +120,25 @@ export default function CausasTable({
         return (
           <div className="flex items-center gap-1.5">
             {numEl}
-            {conexas.length > 0 && (
+            {hasConexa && (
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-2 h-2 rounded-full bg-sky-400 ring-1 ring-sky-400/40 cursor-help"
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (conexaId && onNavigateToConexa) onNavigateToConexa(conexaId);
+                      }}
+                      disabled={!conexaId}
+                      className={`w-2 h-2 rounded-full bg-sky-400 ring-1 ring-sky-400/40 ${conexaId ? "cursor-pointer hover:ring-2 hover:ring-sky-400/70" : "cursor-help"} disabled:cursor-help`}
+                      aria-label="Causa conexa"
                     />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs">
-                    <p className="font-semibold mb-0.5">Causas conexas:</p>
-                    {conexas.map((cn, i) => <div key={i} className="font-mono">{cn}</div>)}
+                    {conexaId
+                      ? <span>Conexa con: <span className="font-mono">{conexaTexto || "(vinculada)"}</span> — clic para abrir</span>
+                      : <span>Conexa: <span className="font-mono">{conexaTexto}</span></span>}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
