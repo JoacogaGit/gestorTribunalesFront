@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Causa, getProximityColor, Imputado } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Search, Copy, Plus, ChevronDown } from "lucide-react";
+import { Search, Copy, Plus, ChevronDown, Trash2, Pencil, Loader2 } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -10,6 +10,14 @@ import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuLabel, ContextMenuSeparator,
+} from "@/components/ui/context-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useCausaMutations } from "@/hooks/useCausaMutations";
 
 interface DetenidoRow {
   imputado: Imputado;
@@ -42,6 +50,17 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
+  const muts = useCausaMutations();
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    const r = await muts.borrarCausa(confirmDelete.id);
+    if (r.ok !== true) { toast.error(r.error); return; }
+    toast.success("Causa eliminada");
+    setConfirmDelete(null);
+    onMutated?.();
+  };
 
   const allColumns: ColDef[] = [
     { key: "imputado", label: "Imputado", cellClass: "text-sm font-medium text-foreground", render: (r) => r.imputado.nombre },
@@ -169,11 +188,29 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
             </TableHeader>
             <TableBody>
               {filtered.map((r, i) => (
-                <TableRow key={`${r.causa.id}-${i}`} className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(r.causa)}>
-                  {visibleColumns.map((col) => (
-                    <TableCell key={col.key} className={col.cellClass}>{col.render(r)}</TableCell>
-                  ))}
-                </TableRow>
+                <ContextMenu key={`${r.causa.id}-${i}`}>
+                  <ContextMenuTrigger asChild>
+                    <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(r.causa)}>
+                      {visibleColumns.map((col) => (
+                        <TableCell key={col.key} className={col.cellClass}>{col.render(r)}</TableCell>
+                      ))}
+                    </TableRow>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-56">
+                    <ContextMenuLabel className="text-xs font-mono">{r.causa.numero}</ContextMenuLabel>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => setSelected(r.causa)} className="text-xs">
+                      <Pencil className="w-3.5 h-3.5 mr-2" /> Abrir / Editar
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      onSelect={() => setConfirmDelete(r.causa)}
+                      className="text-xs text-alert-urgent focus:text-alert-urgent"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
@@ -207,6 +244,28 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
         initialSujetoSituacion="detenido"
         onMutated={onMutated}
       />
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar esta causa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esto borrará la causa <span className="font-mono">{confirmDelete?.numero}</span>, todos sus imputados y todos sus eventos asociados. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={muts.saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleConfirmDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={muts.saving}
+            >
+              {muts.saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+              Sí, borrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

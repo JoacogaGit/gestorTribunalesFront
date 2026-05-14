@@ -1,102 +1,121 @@
-# Plan: CRUD de causas/sujetos + ícono vencimiento pena en Recursos
+# Plan: Causas conexas con vínculo + UX (borrar y sin imputados)
 
-## Arquitectura general
+## Tarea 1 — Causas conexas con autocomplete y navegación cross-vocalía
 
-Sigo el patrón existente: hook + mapper + componente. Centralizo toda la mutación en un único hook `useCausaMutations` y un único componente de formulario reutilizable `CausaFormDialog` para crear y editar.
+### A. Mapper y tipos
+
+**`src/lib/causaMapper.ts`** — extender `DbCausa` con `causa_conexa_id` (ya está en DB pero no en el tipo local), y propagarlo a la `Causa` UI:
+- Agregar a `Causa` (en `src/data/mockCausas.ts`) dos campos opcionales: `causaConexaId?: string | null` y `causaConexaTexto?: string | null`. Mantener `causasConexas?: string[]` por compatibilidad — se popula desde `causa_conexa_texto` para no romper la columna actual.
+- En `dbCausaToUI` setear ambos campos nuevos.
+
+### B. Hook `src/hooks/useCausasSearch.ts` (nuevo)
 
 ```text
-useCausaMutations  ──▶ supabase (causas + sujetos + eventos)
-        ▲
-        │ refetch()
-        │
-CausaFormDialog (modo "crear" | "editar")
-        ▲
-        ├── CausasTable (botón "Nueva causa" + click en fila)
-        └── DetenidosList (botón "Nueva causa con detenido" + click en fila)
+useCausasSearch(query, tribunalId, excludeCausaId?) →
+  { results: Array<{ id, expediente_nro, caratula, vocalia: { id, nombre } }>,
+    loading }
 ```
 
-## Archivos nuevos
+- Debounce interno 250ms con `setTimeout`/cleanup.
+- Cuando `query.trim().length >= 1`, ejecuta:
+  ```ts
+  supabase.from("causas")
+    .select("id, expediente_nro, caratula, vocalias!inner(id, nombre, tribunal_id)")
+    .eq("vocalias.tribunal_id", tribunalId)
+    .ilike("expediente_nro", `%${query}%`)
+    .neq("id", excludeCausaId ?? "00000000-...")
+    .limit(5);
+  ```
+- Si `query` vacío → results vacío.
 
-### 1. `src/hooks/useCausaMutations.ts`
-Expone funciones async que devuelven `{ ok, error }`:
-- `crearCausa(payload, sujetos[])` — inserta causa con `vocalia_id` del contexto, luego inserta sujetos. Si falla la inserción de sujetos, hace `delete` de la causa creada (rollback manual; PostgREST no soporta tx multi-tabla).
-- `actualizarCausa(id, payload)` — `update` sobre `causas`.
-- `borrarCausa(id)` — `delete` sobre `causas` (Supabase no tiene cascade configurado en el schema visible, así que primero borro `eventos` por `causa_id`, luego `sujetos` por `causa_id`, luego la causa).
-- `crearSujeto(causaId, payload)`, `actualizarSujeto(id, payload)`, `borrarSujeto(id)`.
+### C. Componente `src/components/forms/CausaConexaInput.tsx` (nuevo)
 
-Toma `vocaliaId` del `useVocaliaActual()` internamente para no repetirlo en cada call site.
+- Reemplaza el `<Input>` actual de "Causa conexa" en `CausaFormDialog`.
+- Props: `value: { id: string|null, texto: string }`, `onChange(next)`, `excludeCausaId?: string`.
+- Saca `tribunalId` de `useVocaliaActual()`.
+- Render: `<Input>` + dropdown popover/list (renderizado inline debajo del input cuando hay foco y resultados; estilizado como command list con shadcn `Popover` + `Command`, sin necesidad de `CommandDialog`). Cada item muestra:
+  - `expediente_nro` (mono, primary)
+  - `carátula` (text-foreground truncado)
+  - `vocalía` (xs muted)
+- Click en item → `onChange({ id, texto: expediente_nro })` + cerrar dropdown.
+- Tipear sin elegir → `onChange({ id: null, texto: e.target.value })`.
+- Botón "X" para limpiar → `onChange({ id: null, texto: "" })`.
+- ESC cierra dropdown.
 
-### 2. `src/components/forms/CausaFormDialog.tsx`
-Modal grande (`Dialog` de shadcn, `max-w-3xl`, scroll interno) con dos modos:
-- `mode="crear"` — campos vacíos, botón "Crear causa".
-- `mode="editar"` — pre-rellena con la causa, botón "Guardar cambios" y zona roja con "Borrar causa" + confirmación.
+### D. Integración en `CausaFormDialog`
 
-Estructura interna del form (RHF + zod):
-- **Datos generales** (siempre visibles)
-  - `expediente_nro` (Input, requerido, validado con zod `min(1)`)
-  - `caratula` (Input)
-  - `estado_causa` (Select cerrado: Trámite / Recurso / Terminada)
-  - `tipo_recurso` (Select condicional, sólo si estado = Recurso: Casación / REX / Queja en Corte)
-- **Datos complementarios** (`Collapsible` cerrado por defecto)
-  - `querella`, `actor_civil`, `otros_intervinientes`, `causa_conexa_texto`
-- **Imputados** (lista dinámica con `useFieldArray`)
-  - Sub-form por imputado renderizado como `<SujetoFormCard />` (componente interno o archivo aparte).
-  - Botón "+ Agregar imputado" arriba de la lista.
-  - En modo editar: cada card de imputado existente tiene su propio botón "Borrar imputado" con confirmación inline (`AlertDialog`).
-  - En modo crear: botón "X" simple (no hay nada en DB todavía).
+- Agregar al state `causa` el campo `causa_conexa_id: string | null`.
+- En el bloque "Datos complementarios" reemplazar el input por `<CausaConexaInput value={{id, texto}} onChange={...} excludeCausaId={causaId}/>`.
+- En `buildPayload`: si `causa_conexa_texto` está vacío, ambos quedan null (ya pasa con `nullify`); además forzar `causa_conexa_id = null` si texto está vacío.
+- Persistencia: `useCausaMutations` ya hace `insert/update` con spread, pero `CausaInput` no incluye `causa_conexa_id`. Agregarlo al type `CausaInput` en `useCausaMutations.ts`.
 
-### 3. `src/components/forms/SujetoFormCard.tsx`
-Tarjeta con campos:
-- `nombre_completo` (requerido)
-- `delito`
-- `situacion_libertad` (Select cerrado: Libre / Detenido / Rebelde / Probation / Condenado)
-- `defensor`
-- `lugar_alojamiento` (sólo si situación = Detenido)
-- `fecha_detencion`, `vencimiento_pp`, `vencimiento_pena`, `prescripcion_fecha` (DatePickers shadcn)
-- `observaciones` (Textarea)
+### E. Visualización en `CausasTable` y navegación
 
-### 4. `src/components/forms/ConfirmDeleteDialog.tsx`
-`AlertDialog` reutilizable para "Borrar causa" y "Borrar imputado" con mensajes parametrizados.
+- En la celda "N° Causa" (líneas 80–116), reemplazar la lógica actual del punto azul (que usa `c.causasConexas[]` como texto) por:
+  ```tsx
+  if (c.causaConexaId) → punto azul clickeable
+  else if (c.causaConexaTexto) → punto azul no clickeable, tooltip con el texto
+  ```
+- El click del punto azul (con `e.stopPropagation()`) llama un nuevo prop opcional `onNavigateToConexa?: (id: string) => void` que recibe `CausasTable` y lo encadena.
 
-## Archivos editados
+### F. Navegación cross-vocalía en `VocaliaWorkspace`
 
-### `src/components/CausaDetail.tsx`
-Reemplazo total. En vez del editor mock actual, monta `CausaFormDialog` en modo `"editar"` cargando los datos reales de la causa. Mantiene la misma firma de props (`causa`, `onClose`, `onUpdate`, `onDelete`) para no romper los call sites; `onUpdate`/`onDelete` ya no se usan (la mutación se dispara dentro del propio dialog y llama al `refetch` recibido).
+- Nueva función `navigateToCausa(causaId)`:
+  1. `const { data } = await supabase.from("causas").select("id, vocalia_id, estado_causa, vocalias(id, nombre, tribunal_id)").eq("id", causaId).single();`
+  2. Si `vocalia_id !== vocalia.id`: `setVocalia({ id, nombre, tribunalId })`.
+  3. Mapear `estado_causa` → vista del sidebar:
+     - `tramite` → `"tramite"`
+     - `recurso` → `"recursos"`
+     - `terminada` → `"terminadas"`
+  4. `setView(vista)`.
+  5. Setear un nuevo state `pendingOpenCausaId` para que la tabla destino abra el detalle.
+- Pasar `onNavigateToConexa={navigateToCausa}` y `openCausaId={pendingOpenCausaId}` a cada `CausasTable`.
+- Dentro de `CausasTable`, un `useEffect` que cuando `openCausaId` está en `causas` setea `selected` y llama `onConsumeOpen?.()` para limpiar el pending en el padre.
 
-### `src/components/CausasTable.tsx`
-- El click en una fila ya abre `CausaDetail` → ahora abrirá el nuevo dialog editor.
-- El botón "Nueva causa" deja de llamar `onCreateCausa(mockCausa)` y abre `CausaFormDialog` en modo `"crear"`.
-- Recibe un nuevo prop opcional `onMutated?: () => void` que dispara el refetch del workspace.
+## Tarea 2 — Click derecho "Borrar causa"
 
-### `src/components/DetenidosList.tsx`
-Mismo cambio: botón "Nueva causa con detenido" abre el dialog en modo crear con `situacion_libertad="detenido"` pre-cargado en el primer imputado.
+`CausasTable.tsx` líneas 524–534 ya tienen un `ContextMenuItem` "Eliminar causa…" pero hoy solo abre el detalle. Cambios:
 
-### `src/components/VocaliaWorkspace.tsx`
-- Elimina `remoteNoop` y `remoteTableCommon`.
-- Pasa a cada `CausasTable` / `DetenidosList` un `onMutated` que invoca el `refetch` del hook correspondiente (`tramiteRemote.refetch`, etc.).
-- Para la pestaña Recursos pasa un flag `showVencPena` (ver tarea 4) o lo activa por `listKey === "recursos"`.
+- Importar `useCausaMutations` + `AlertDialog` (ya importado).
+- Nuevo state `confirmDelete: Causa | null`.
+- El item del context menu pasa a `onSelect={() => setConfirmDelete(c)}`.
+- Renderizar al final del componente un `<AlertDialog>` con copy: "¿Estás seguro? Esto borrará la causa, todos sus imputados y todos sus eventos asociados. Esta acción no se puede deshacer." + botones Cancelar / "Sí, borrar".
+- Confirmar → `await muts.borrarCausa(c.id)` → toast + `onMutated?.()`.
+- Aplica a todas las pestañas porque `CausasTable` se reusa.
+- `DetenidosList`: revisar si tiene `ContextMenu` propio; si no, agregarlo análogamente reutilizando un nuevo helper compartido o duplicando el bloque (pequeño, ~25 líneas).
 
-### `src/components/CausasTable.tsx` (tarea 4 — ícono vencimiento de pena)
-Sólo cuando `listKey === "recursos"`:
-- Agrega columna "Venc. pena" entre las columnas existentes de fechas.
-- Por fila calcula el vencimiento más próximo entre los imputados (`min(fechaVencimientoPena)` no nulo).
-- Renderiza con un `Badge`/ícono `Gavel` y aplica `getProximityColor()` (mismo helper ya usado para otras fechas) para el semáforo cromático.
-- Si no hay vencimiento cargado: "—" en `text-muted-foreground`.
+`shadcn/ui` `ContextMenu` ya previene el menú nativo del navegador.
 
-## Detalles técnicos
+## Tarea 3 — Permitir crear causa sin imputados
 
-- **Validación**: `zod` schema en `CausaFormDialog`. `expediente_nro.trim().min(1)`. Sujetos: `nombre_completo.trim().min(1)`. Selectores tipados con los enums exactos del schema.
-- **Mapeo UI ↔ DB**: ya existe `dbCausaToUI` en `causaMapper.ts`. Agrego `causaUIToDb` y `sujetoUIToDb` (inversos) en el mismo archivo.
-- **Estado de carga**: durante mutación, botón principal con `disabled` + spinner (`Loader2` de lucide). Toast de éxito con `sonner`; toast de error sin cerrar el modal.
-- **Borrado en cascada manual**: orden `eventos → sujetos → causas`. Si alguno falla, toast de error y aborta.
-- **Refetch**: cada vista pasa su `refetch` como `onMutated`; `VocaliaWorkspace` no necesita estado nuevo.
-- **Confirmaciones**: `AlertDialog` (no `confirm()` nativo) tanto para borrar causa como borrar imputado.
+En `CausaFormDialog.tsx`:
 
-## Fuera de alcance (confirmado en el pedido)
-- No se toca auth, RLS, ni se crean tablas.
-- El "match automático" de causa conexa queda como texto libre.
-- Otros formularios mock que no sean "Nueva causa" / detalle de causa no se tocan.
+- En `validate()` (líneas 169–178): quitar el `for` que exige `nombre_completo` para todos.
+- Nueva lógica antes de submit:
+  - `nonEmpty` = sujetos con cualquier campo no vacío.
+  - `incomplete` = sujetos sin `nombre_completo.trim()` pero con algún otro campo cargado.
+  - Si hay sujetos completamente vacíos → ofrecerlos para descartar (un solo `AlertDialog` con copy: "Hay un imputado sin datos. ¿Querés descartarlo y crear la causa, o completar sus datos?", botones "Descartar y crear" / "Completar datos").
+  - Si hay sujetos `incomplete` (con datos pero sin nombre) → mantener el error actual "Cada imputado necesita un nombre", solo para esos.
+- En `buildPayload`: filtrar los sujetos completamente vacíos.
+- En modo crear, no inicializar con un `emptySujeto()` automático: arrancar con `sujetos: []` y mostrar el empty state que ya existe ("Sin imputados cargados.").
 
-## Riesgos
-- **Sin transacción real**: el rollback manual puede dejar causas huérfanas si la red cae entre dos requests. Mitigación: mensaje de error explícito sugiriendo recargar.
-- **RLS**: las policies actuales requieren `es_miembro_de_vocalia(vocalia_id)` o las dev-policies para `anon`. Con auth aún no implementada, las dev-policies (`true` para `anon`) cubren el caso. Cuando se active auth real habrá que validar membresía — fuera de alcance ahora.
+## Reglas y notas
+
+- Sin cambios de schema, RLS ni autenticación.
+- Patrón hook + mapper preservado.
+- Debounce 250ms en autocomplete.
+- `Causa.causasConexas[]` se sigue derivando de `causa_conexa_texto` para no romper otras vistas; los nuevos campos se usan para el indicador clickeable.
+
+## Archivos tocados
+
+```text
+nuevo  src/hooks/useCausasSearch.ts
+nuevo  src/components/forms/CausaConexaInput.tsx
+edita  src/data/mockCausas.ts            (Causa: + causaConexaId, causaConexaTexto)
+edita  src/lib/causaMapper.ts            (DbCausa + dbCausaToUI propagan campos)
+edita  src/hooks/useCausaMutations.ts    (CausaInput agrega causa_conexa_id)
+edita  src/components/forms/CausaFormDialog.tsx  (input conexa + validación sin imputados)
+edita  src/components/CausasTable.tsx    (punto azul clickeable, AlertDialog borrar, openCausaId)
+edita  src/components/DetenidosList.tsx  (context menu "Borrar causa")
+edita  src/components/VocaliaWorkspace.tsx (navigateToCausa + openCausaId)
+```

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2 } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -13,10 +13,15 @@ import {
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuLabel, ContextMenuSeparator, ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent,
 } from "@/components/ui/context-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useCausaMutations } from "@/hooks/useCausaMutations";
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
@@ -56,11 +61,18 @@ interface Props {
   onChangeEstado?: (causa: Causa, nuevoEstado: EstadoCausa) => void;
   /** Refetch de la lista tras una mutación CRUD. */
   onMutated?: () => void;
+  /** Click en el punto azul de "causa conexa" cuando hay match. */
+  onNavigateToConexa?: (causaId: string) => void;
+  /** Si está seteado y matchea una fila, abre su detalle automáticamente. */
+  openCausaId?: string | null;
+  /** Llamado cuando se consume el openCausaId. */
+  onOpenedCausa?: () => void;
 }
 
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
+  onNavigateToConexa, openCausaId, onOpenedCausa,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -68,6 +80,27 @@ export default function CausasTable({
   const [customTitle, setCustomTitle] = useState(title || "");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
+  const muts = useCausaMutations();
+
+  // Auto-abrir detalle cuando navegan desde una causa conexa.
+  useEffect(() => {
+    if (!openCausaId) return;
+    const found = causas.find((c) => c.id === openCausaId);
+    if (found) {
+      setSelected(found);
+      onOpenedCausa?.();
+    }
+  }, [openCausaId, causas, onOpenedCausa]);
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    const r = await muts.borrarCausa(confirmDelete.id);
+    if (r.ok !== true) { toast.error(r.error); return; }
+    toast.success("Causa eliminada");
+    setConfirmDelete(null);
+    onMutated?.();
+  };
 
   const allColumns: ColDef[] = [
     {
@@ -77,7 +110,9 @@ export default function CausasTable({
       cellClass: "font-mono text-xs font-semibold whitespace-nowrap",
       sortValue: (c) => c.numero,
       render: (c) => {
-        const conexas = (c.causasConexas || []).filter(Boolean);
+        const conexaId = c.causaConexaId ?? null;
+        const conexaTexto = c.causaConexaTexto ?? null;
+        const hasConexa = !!(conexaId || conexaTexto);
         const hasPdf = (c.adjuntos || []).length > 0;
         const numEl = c.link
           ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline inline-flex items-center gap-1">{c.numero}<ExternalLink className="w-3 h-3" /></a>
@@ -85,18 +120,25 @@ export default function CausasTable({
         return (
           <div className="flex items-center gap-1.5">
             {numEl}
-            {conexas.length > 0 && (
+            {hasConexa && (
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-2 h-2 rounded-full bg-sky-400 ring-1 ring-sky-400/40 cursor-help"
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (conexaId && onNavigateToConexa) onNavigateToConexa(conexaId);
+                      }}
+                      disabled={!conexaId}
+                      className={`w-2 h-2 rounded-full bg-sky-400 ring-1 ring-sky-400/40 ${conexaId ? "cursor-pointer hover:ring-2 hover:ring-sky-400/70" : "cursor-help"} disabled:cursor-help`}
+                      aria-label="Causa conexa"
                     />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs">
-                    <p className="font-semibold mb-0.5">Causas conexas:</p>
-                    {conexas.map((cn, i) => <div key={i} className="font-mono">{cn}</div>)}
+                    {conexaId
+                      ? <span>Conexa con: <span className="font-mono">{conexaTexto || "(vinculada)"}</span> — clic para abrir</span>
+                      : <span>Conexa: <span className="font-mono">{conexaTexto}</span></span>}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -521,17 +563,13 @@ export default function CausasTable({
                         </ContextMenuSubContent>
                       </ContextMenuSub>
                     )}
-                    {(onDeleteCausa || onMutated) && (
-                      <>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem
-                          onSelect={() => setSelected(c)}
-                          className="text-xs text-alert-urgent focus:text-alert-urgent"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar causa…
-                        </ContextMenuItem>
-                      </>
-                    )}
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      onSelect={() => setConfirmDelete(c)}
+                      className="text-xs text-alert-urgent focus:text-alert-urgent"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
+                    </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
               ))}
@@ -614,6 +652,28 @@ export default function CausasTable({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar esta causa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esto borrará la causa <span className="font-mono">{confirmDelete?.numero}</span>, todos sus imputados y todos sus eventos asociados. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={muts.saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleConfirmDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={muts.saving}
+            >
+              {muts.saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+              Sí, borrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useVocaliaActual, VocaliaActual } from "@/context/VocaliaContext";
 import { useVocalias } from "@/hooks/useVocalias";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RemoteListSectionProps {
   loading: boolean;
@@ -104,6 +105,39 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [view, setView] = useState<View>("dashboard");
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
+  const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
+
+  const navigateToCausa = async (causaId: string) => {
+    const { data, error } = await supabase
+      .from("causas")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .select("id, vocalia_id, estado_causa, vocalias(id, nombre, tribunal_id)" as any)
+      .eq("id", causaId)
+      .single();
+    if (error || !data) {
+      toast.error("No se pudo abrir la causa vinculada.");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d = data as any;
+    if (d.vocalia_id !== vocaliaId) {
+      setVocalia({
+        id: d.vocalia_id,
+        nombre: d.vocalias?.nombre ?? "—",
+        tribunalId: d.vocalias?.tribunal_id ?? tribunalId ?? "",
+      });
+    }
+    const targetView =
+      d.estado_causa === "tramite" ? "tramite"
+      : d.estado_causa === "recurso" ? "recursos"
+      : d.estado_causa === "terminada" ? "terminadas"
+      : "tramite";
+    setView(targetView);
+    setPendingOpenCausaId(causaId);
+  };
+
+  const consumePending = () => setPendingOpenCausaId(null);
+
 
   // Vocalías del tribunal para el switcher en el sidebar.
   const { vocalias: todasVocalias } = useVocalias();
@@ -262,7 +296,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     listKey="todas"
                     allCausas={dashCausasRemote.causas}
                     onMutated={dashCausasRemote.refetch}
-                    {...remoteTableCommon}
+                    onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
+                  {...remoteTableCommon}
                   />
                 </RemoteListSection>
               </div>
@@ -283,6 +320,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="tramite"
                   allCausas={tramiteRemote.causas}
                   onMutated={tramiteRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -320,6 +360,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="rebeldes"
                   allCausas={rebeldesRemote.causas}
                   onMutated={rebeldesRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -339,6 +382,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="sjp"
                   allCausas={sjpRemote.causas}
                   onMutated={sjpRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -358,6 +404,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="recursos"
                   allCausas={recursosRemote.causas}
                   onMutated={recursosRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>
@@ -377,6 +426,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="terminadas"
                   allCausas={terminadasRemote.causas}
                   onMutated={terminadasRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
                   {...remoteTableCommon}
                 />
               </RemoteListSection>

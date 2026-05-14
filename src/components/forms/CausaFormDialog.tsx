@@ -20,6 +20,7 @@ import {
   ESTADOS_CAUSA_DB, SITUACIONES_LIBERTAD, TIPOS_RECURSO,
   labelEstadoCausa, labelSituacionLibertad, labelTipoRecurso,
 } from "@/lib/causaMapper";
+import CausaConexaInput from "./CausaConexaInput";
 
 type Mode = "crear" | "editar";
 
@@ -49,6 +50,7 @@ function emptyCausa(): CausaInput {
     actor_civil: "",
     otros_intervinientes: "",
     causa_conexa_texto: "",
+    causa_conexa_id: null,
   };
 }
 
@@ -88,16 +90,17 @@ export default function CausaFormDialog({
 
   const [causa, setCausa] = useState<CausaInput>(emptyCausa());
   const [sujetos, setSujetos] = useState<SujetoState[]>(() =>
-    mode === "crear" ? [emptySujeto(initialSujetoSituacion)] : []
+    mode === "crear" && initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []
   );
   const [openExtras, setOpenExtras] = useState(false);
+  const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
 
   // Cargar datos en modo editar
   useEffect(() => {
     if (!open) return;
     if (mode === "crear") {
       setCausa(emptyCausa());
-      setSujetos([emptySujeto(initialSujetoSituacion)]);
+      setSujetos(initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []);
       setErrorMsg(null);
       return;
     }
@@ -123,6 +126,7 @@ export default function CausaFormDialog({
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",
             causa_conexa_texto: data.causa_conexa_texto ?? "",
+            causa_conexa_id: data.causa_conexa_id ?? null,
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list: any[] = data.sujetos ?? [];
@@ -166,13 +170,22 @@ export default function CausaFormDialog({
     });
   };
 
+  const isSujetoEmpty = (s: SujetoState) => {
+    return !s.nombre_completo.trim() && !s.delito && !s.defensor && !s.fecha_detencion
+      && !s.lugar_alojamiento && !s.prescripcion_fecha && !s.vencimiento_pp
+      && !s.vencimiento_pena && !s.observaciones && s.situacion_libertad === "libre";
+  };
+
   const validate = (): string | null => {
     if (!causa.expediente_nro.trim()) return "El N° de expediente es obligatorio.";
     if (causa.estado_causa === "recurso" && !causa.tipo_recurso) {
       return 'Si el estado es "Recurso", elegí el tipo de recurso.';
     }
+    // Solo exigir nombre a sujetos con algún dato pero sin nombre.
     for (const s of visibleSujetos) {
-      if (!s.nombre_completo.trim()) return "Cada imputado necesita un nombre.";
+      if (!isSujetoEmpty(s) && !s.nombre_completo.trim()) {
+        return "Cada imputado con datos cargados necesita un nombre.";
+      }
     }
     return null;
   };
@@ -184,8 +197,11 @@ export default function CausaFormDialog({
       expediente_nro: causa.expediente_nro.trim(),
       estado_causa: causa.estado_causa,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
+      causa_conexa_id: causa.causa_conexa_texto?.trim() ? (causa.causa_conexa_id ?? null) : null,
     };
-    const sujetosPayload: SujetoInput[] = visibleSujetos.map((s) => {
+    // Filtrar sujetos completamente vacíos (no se persisten).
+    const sujetosFiltrados = visibleSujetos.filter((s) => !isSujetoEmpty(s));
+    const sujetosPayload: SujetoInput[] = sujetosFiltrados.map((s) => {
       const { _localKey, _markedForDelete, ...rest } = s;
       const cleaned = nullify({
         ...rest,
@@ -197,10 +213,8 @@ export default function CausaFormDialog({
     return { causa: causaPayload, sujetos: sujetosPayload };
   };
 
-  const handleSubmit = async () => {
+  const doSubmit = async () => {
     setErrorMsg(null);
-    const v = validate();
-    if (v) { setErrorMsg(v); return; }
     const { causa: causaP, sujetos: sujetosP } = buildPayload();
 
     if (mode === "crear") {
@@ -223,9 +237,10 @@ export default function CausaFormDialog({
       const r = await muts.borrarSujeto(s.id!);
       if (r.ok !== true) { setErrorMsg(`Error al borrar imputado: ${r.error}`); return; }
     }
-    // Insertar nuevos / actualizar existentes
-    for (let i = 0; i < visibleSujetos.length; i++) {
-      const draft = visibleSujetos[i];
+    // Procesar visibles no vacíos (alineados con sujetosP)
+    const sujetosToSync = visibleSujetos.filter((s) => !isSujetoEmpty(s));
+    for (let i = 0; i < sujetosToSync.length; i++) {
+      const draft = sujetosToSync[i];
       const payload = sujetosP[i];
       if (draft.id) {
         const r = await muts.actualizarSujeto(draft.id, payload);
@@ -238,6 +253,19 @@ export default function CausaFormDialog({
     toast.success("Cambios guardados");
     onMutated?.();
     onOpenChange(false);
+  };
+
+  const handleSubmit = async () => {
+    setErrorMsg(null);
+    const v = validate();
+    if (v) { setErrorMsg(v); return; }
+    // Si hay sujetos completamente vacíos, ofrecer descartarlos.
+    const hasEmpty = visibleSujetos.some((s) => isSujetoEmpty(s) && !s.id);
+    if (hasEmpty) {
+      setConfirmDiscardEmpty(true);
+      return;
+    }
+    await doSubmit();
   };
 
   const handleDeleteCausa = async () => {
@@ -355,11 +383,14 @@ export default function CausaFormDialog({
                   </div>
                   <div className="space-y-1.5 col-span-2">
                     <Label className="text-xs">Causa conexa</Label>
-                    <Input
-                      value={causa.causa_conexa_texto ?? ""}
-                      onChange={(e) => updateCausa({ causa_conexa_texto: e.target.value })}
-                      placeholder="N° de causa conexa o referencia"
+                    <CausaConexaInput
+                      value={{ id: causa.causa_conexa_id ?? null, texto: causa.causa_conexa_texto ?? "" }}
+                      onChange={(v) => updateCausa({ causa_conexa_id: v.id, causa_conexa_texto: v.texto })}
+                      excludeCausaId={causaId}
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      Buscá por N° de expediente. Elegí una sugerencia para vincular o dejá texto libre.
+                    </p>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -471,6 +502,30 @@ export default function CausaFormDialog({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Sí, borrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmar descartar imputados vacíos */}
+      <AlertDialog open={confirmDiscardEmpty} onOpenChange={setConfirmDiscardEmpty}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hay un imputado sin datos</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Querés descartarlo y crear la causa, o completar sus datos?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Completar datos</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                setConfirmDiscardEmpty(false);
+                await doSubmit();
+              }}
+            >
+              Descartar y crear
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
