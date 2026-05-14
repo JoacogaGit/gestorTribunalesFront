@@ -155,6 +155,27 @@ export default function CalendarioAlertas({ vocaliaId }: { vocaliaId: string | n
             )}
           </div>
 
+          <div className="glass-card rounded-lg p-3 space-y-2">
+            <h3 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide">
+              Tipos de fecha
+            </h3>
+            {TIPOS.map((t) => (
+              <label key={t} className="flex items-center gap-2 cursor-pointer text-xs text-foreground select-none">
+                <Checkbox
+                  checked={!hiddenTipos.has(t)}
+                  onCheckedChange={() => toggleTipo(t)}
+                />
+                <span className={`w-2 h-2 rounded-full ${
+                  t === "evento" ? "bg-primary" :
+                  t === "vencimiento_pp" ? "bg-alert-warning" :
+                  t === "vencimiento_pena" ? "bg-alert-info" :
+                  "bg-alert-urgent"
+                }`} />
+                {CALENDAR_TIPO_LABEL[t]}
+              </label>
+            ))}
+          </div>
+
           <div className="glass-card rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide">
