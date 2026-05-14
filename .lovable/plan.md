@@ -1,93 +1,120 @@
-# Conectar Dashboard y Calendario a Supabase
+## Objetivo
 
-Reemplazar todos los datos hardcodeados del Dashboard y el Calendario por datos reales de Supabase, manteniendo el patrón **hook + mapper** ya usado en las pestañas de listado. Regla transversal: **excluir siempre las causas con `estado_causa = 'terminada'`**.
+Cerrar el ciclo de conexión a datos reales: limpiar el último mock del Dashboard, exponer filtros visibles en el Calendario, activar el selector de vocalías con datos reales (incluyendo edición de nombre y vuelta al login), y propagar `vocaliaId` a todas las consultas.
 
-## Parte 1 — Dashboard (KPIs reales)
+---
 
-Crear `src/hooks/useDashboardKpis.ts` que devuelva `{ kpis, loading, error, refetch }`. Usa `count` exacto en cada consulta y filtra por causas activas (`tramite` + `recurso`).
+## 1. Estado global de vocalía seleccionada
 
-```text
-{ detenidos, juiciosEsteMes, ppProximas, rebeldes, eventos30d, totalCausas }
-```
+**Nuevo:** `src/context/VocaliaContext.tsx`
+- Provee `{ vocaliaId, vocaliaNombre, tribunalId, setVocalia(v), clearVocalia() }`.
+- Hook `useVocaliaActual()` (lanza error si se usa fuera del provider).
+- Persistencia ligera en `localStorage` (`justrack-vocalia-id`) para no perderla en refresh.
 
-Consultas (todas con `head: true, count: 'exact'`):
+**`src/pages/Index.tsx`:** envolver el árbol en `<VocaliaProvider>` y reemplazar el state local `vocalia: number` por `vocaliaId: string | null` derivado del contexto.
 
-1. **Detenidos**: `sujetos` con `situacion_libertad='detenido'` filtrando por causa activa vía `causas!inner(estado_causa)` con `.in('causas.estado_causa', ['tramite','recurso'])`.
-2. **Juicios este mes**: `eventos` con `tipo_evento` ∈ `['audiencia','juicio']`, `fecha_hora` entre primer y último día del mes actual, join `causas!inner` activo.
-3. **PP próximas**: `sujetos` con `vencimiento_pp` entre hoy y hoy+30d, join `causas!inner` activo.
-4. **Rebeldes**: `sujetos` con `situacion_libertad='rebelde'`, join `causas!inner` activo.
-5. **Eventos 30 días**: `eventos` con `fecha_hora` entre hoy y hoy+30d, join `causas!inner` activo.
-6. **Total causas**: `causas` con `estado_causa.in.(tramite,recurso)`.
+---
 
-Refactorizar `src/components/KpiCards.tsx` para recibir el resultado del hook (no `causas: Causa[]`). Estados: skeleton mientras `loading`, alert con retry si `error`. Cada tarjeta sigue siendo clickeable; al expandirse, en lugar del listado mock, mostrar mensaje "Detalle disponible en la pestaña correspondiente" (mantener simple — sin fetchear listas de detalle ahora). Si el contador es 0, mostrar texto amigable ("No hay detenidos", etc.).
+## 2. Selector de vocalías con datos reales (Tarea 3.1, 3.6, 4)
 
-En `VocaliaWorkspace.tsx`, el bloque `view === "dashboard"`:
-- Pasar el hook a `<KpiCards />`.
-- La tabla bajo los filtros usa las causas activas reales: combinar `tramiteRemote.causas` + `recursosRemote.causas` (excluye terminadas) para `dashCausas`. El filtro `dashFilter` se calcula sobre esa unión usando los hooks remotos ya disponibles (rebeldes/sjp/detenidos/recursos). Eliminar dependencia de `mockCausas` en el dashboard.
+**Nuevo hook:** `src/hooks/useVocalias.ts`
+- `select id, nombre, tribunal_id` de `vocalias`, ordenado por nombre.
+- Devuelve `{ vocalias, loading, error, refetch }`.
+- Función `renombrarVocalia(id, nombre)`: valida no vacío, hace `update({ nombre }).eq("id", id)`, refetch optimista.
 
-## Parte 2 — Calendario (eventos unificados)
+**`src/components/VocaliaSelector.tsx`** (rewrite):
+- Consume `useVocalias()`, ya no `mockCausas`.
+- Para cada vocalía: contador real con `useEffect` adicional o (más simple) un único query agregado por vocalía vía `count: 'exact', head: true` en `causas` filtrando `vocalia_id` y `estado_causa in (tramite, recurso)`. Lo dejamos como un hook chico `useVocaliaStats(id)` o un fetch en el componente — un solo `Promise.all` al montar.
+- Ícono lápiz por tarjeta → input inline → confirma con Enter / blur, valida no vacío, llama `renombrarVocalia`.
+- Botón "Volver al inicio de sesión" (icono `LogOut`) en el header del selector que llama `onLogout` (prop nueva, equivalente a setear `user=null` en `Index.tsx`).
+- Estados loading/error/empty ("No hay vocalías disponibles para tu tribunal").
 
-Crear `src/hooks/useCalendarioEventos.ts` que devuelva `{ eventos: CalendarEvento[], loading, error, refetch }` haciendo cuatro consultas en paralelo, todas con join `causas!inner` filtrando `estado_causa.in.(tramite,recurso)`:
+**`src/pages/Index.tsx`:** pasar `onLogout` también al selector.
 
-```text
-type CalendarEvento = {
-  id: string;
-  fecha: string;            // ISO
-  hora?: string;
-  titulo: string;
-  descripcion?: string;
-  tipo: 'evento' | 'vencimiento_pp' | 'vencimiento_pena' | 'prescripcion';
-  causaId: string;
-  causaNumero: string;
-  causaCaratula: string;
-  sujetoId?: string;
-}
-```
+---
 
-Fuentes:
-- **A) Eventos manuales**: `eventos.select('*, causas!inner(expediente_nro,caratula,estado_causa)')` con `not('fecha_hora','is',null)`.
-- **B) Vto PP**: `sujetos.select('id,nombre_completo,vencimiento_pp,causa_id, causas!inner(...)')` con `not('vencimiento_pp','is',null)`. Título: `"Vence PP — " + nombre_completo`.
-- **C) Vto Pena**: idem con `vencimiento_pena`.
-- **D) Prescripciones**: idem con `prescripcion_fecha`. Título: `"Prescripción — " + nombre_completo`.
+## 3. Propagar `vocaliaId` a todas las consultas (Tarea 3.3)
 
-Crear `src/lib/eventoMapper.ts` con:
-- `mapDbEventoToCalendar(row) → CalendarEvento`
-- `mapSujetoFechaToCalendar(row, campo, tipo) → CalendarEvento`
-- **Semáforo cromático** `getSemaforoClasses(fecha)` con buckets: `<=0d` rojo intenso, `1–7d` naranja fuerte, `8–30d` naranja claro, `31–60d` amarillo, `>60d` verde claro. Devolver tres helpers: `bg`, `dot`, `text` con tokens semánticos (extender `tailwind.config.ts`/`index.css` si hace falta agregar `--cal-rojo`, `--cal-naranja-fuerte`, etc., en HSL). Reusar este helper también desde donde se muestren fechas de vencimiento dentro de las listas de causas (por ejemplo `CausasTable` y `DetenidosList`).
+Refactor de hooks para aceptar `vocaliaId: string` como argumento y aplicar `.eq("vocalia_id", vocaliaId)` (o filtro embebido en relación):
 
-Refactorizar `src/components/CalendarioAlertas.tsx`:
-- Quitar prop `causas` y `getAllEventos`. Consumir `useCalendarioEventos()`.
-- Estados: skeleton, error con retry, vacío ("No hay eventos en los próximos 30 días").
-- Reemplazar el filtro existente por tipo (que usaba `TipoEvento` mock) por **4 checkboxes** persistidos en `localStorage`:
-  - ☑ Eventos manuales (`evento`)
-  - ☑ Vencimientos de Prisión Preventiva (`vencimiento_pp`)
-  - ☑ Vencimientos de Pena (`vencimiento_pena`)
-  - ☑ Prescripciones (`prescripcion`)
-  
-  Por defecto todos activos. Cambios reactivos sin recargar.
-- Mantener: calendario lateral con marcador de días con eventos, panel de pasados/futuros, búsqueda, descartar/restaurar (clave `localStorage` por `causaId|tipo|fecha`).
-- Aplicar `getSemaforoClasses` en cada fila de evento (reemplaza `getProximityBg`/`getProximityDot` actual).
+- `useCausasPorEstado(estado, vocaliaId)` → añade `.eq("vocalia_id", vocaliaId)`.
+- `useCausasConSujetoEn(situacion, vocaliaId)` → en paso 2 (fetch causas por ids) añade `.eq("vocalia_id", vocaliaId)`.
+- `useDetenidos(vocaliaId)` → cambia a `select("*, causas!inner(*)").eq("situacion_libertad","detenido").eq("causas.vocalia_id", vocaliaId)`.
+- `useDashboardKpis(vocaliaId)` → todas las queries embebidas usan `causas!inner(...)` con `.eq("causas.vocalia_id", vocaliaId)`. Para `totalCausas` filtrar directo por `vocalia_id`.
+- `useCalendarioEventos(vocaliaId)` → añade `.eq("causas.vocalia_id", vocaliaId)` en las 4 queries.
 
-En `VocaliaWorkspace.tsx`, `view === "calendario"` ya no recibe `causas` — el componente se autoabastece.
+**Excepción documentada:** las consultas de "causas conexas" (no se tocan en este plan) seguirán sin filtrar por vocalía.
+
+**`VocaliaWorkspace.tsx`:**
+- Lee `vocaliaId, vocaliaNombre` desde `useVocaliaActual()`.
+- Sustituye la prop `vocalia: number` por nada (toma del contexto).
+- Pasa `vocaliaId` a cada hook.
+- Header y breadcrumb (`"Panel General — {vocaliaNombre}"`, chip superior con `vocaliaNombre`).
+- `AppSidebar`: acepta `vocaliaNombre: string` y muestra "{vocaliaNombre} — Cambiar". Convertir el botón "Cambiar" en un `DropdownMenu` poblado con `useVocalias()` filtradas al `tribunal_id` actual; al elegir otra → `setVocalia(v)`. Mantiene la opción "Volver al selector" como item del menú.
+
+---
+
+## 4. Limpieza Dashboard (Tarea 1)
+
+**Nuevo hook:** `src/hooks/useCausasDashboard.ts`
+- `select("*, sujetos(*)").eq("vocalia_id", vocaliaId).in("estado_causa", ["tramite","recurso"]).order("created_at", { ascending: false })`.
+- Devuelve `{ causas, loading, error, refetch }` mapeando con `dbCausaToUI`.
+
+**`VocaliaWorkspace.tsx`:**
+- Eliminar el state local `causas` basado en `mockCausas` y todo el bloque `isNewUser`.
+- Eliminar handlers que mutan el array local (`updateCausa`, `deleteCausa`, `createCausa`, `changeEstado`, `importToList`, `handleImportCausas`) y reemplazarlos por `remoteNoop` (igual que las otras pestañas).
+- En `view === "dashboard"`: usar `useCausasDashboard(vocaliaId)`. Mantener el filtro local (`dashFilter`) operando sobre el resultado real. Si `causas.length === 0` → mostrar `RemoteListSection` con mensaje "Sin causas en esta vocalía".
+- `WelcomeModal` y tableros personalizados: dejar la importación como noop por ahora (toast informativo).
+
+---
+
+## 5. Filtros del Calendario visibles (Tarea 2)
+
+**`CalendarioAlertas.tsx`:**
+- Reemplazar el `DropdownMenu` actual de "Tipos" por un panel de 4 checkboxes visibles en la columna izquierda, debajo del mini-calendario:
+  - ☑ Eventos manuales
+  - ☑ Vencimientos de PP
+  - ☑ Vencimientos de Pena
+  - ☑ Prescripciones
+- Usar `Checkbox` de shadcn (`@/components/ui/checkbox`) con label clickeable y un punto de color del semáforo al lado del label.
+- Estado ya existe (`hiddenTipos` + `FILTER_KEY` localStorage). Se conserva la persistencia.
+- Cambios reactivos inmediatos (ya está, vía `useMemo`).
+
+---
+
+## 6. Volver al login desde el selector (Tarea 4)
+
+Ya cubierto en sección 2 (botón en `VocaliaSelector`). `Index.tsx` expone `onLogout` que setea `user=null` y `clearVocalia()`.
+
+---
 
 ## Detalles técnicos
 
-- **Eficiencia**: KPIs usan `select('*', { count: 'exact', head: true })`, sin traer filas. Calendario sí trae filas (necesita renderizar), pero solo columnas necesarias.
-- **Filtro por causa activa en joins**: usar PostgREST inner join + `.in('causas.estado_causa', ['tramite','recurso'])`.
-- **Rango mes actual** y **+30 días**: calcular en JS y pasar como ISO a `.gte/.lte`.
-- **Sin cambios en**: RLS, schema, auth, pestañas de listado ya conectadas, vocalía (no se filtra todavía).
-- **Mock cleanup**: `mockCausas` deja de usarse en Dashboard y Calendario (se mantiene el archivo por ahora porque `WelcomeModal`/import lo usan).
+### Tipos `vocalia` en código existente
+Hoy `vocalia` viaja como `number` (1, 2, 3) en muchos componentes (`CausasTable`, `DetenidosList`, `WelcomeModal`, mocks). Cambio mínimo:
+- Mantener la prop visual donde sólo se muestra: pasar `vocaliaNombre` (string) en lugar de número.
+- Donde se usa para filtrar mocks (ya no se va a usar) → remover.
+- El tipo `Causa.vocalia` (mock) se conserva sólo porque `dbCausaToUI` puede setear un placeholder; no impacta la UI.
 
-## Archivos
+### Orden de cambios (para evitar romper compilación intermedia)
 
-Nuevos:
-- `src/hooks/useDashboardKpis.ts`
-- `src/hooks/useCalendarioEventos.ts`
-- `src/lib/eventoMapper.ts`
+```text
+1. Crear VocaliaContext + envolver Index
+2. Crear useVocalias + reescribir VocaliaSelector (pantalla previa)
+3. Refactor de hooks de datos para aceptar vocaliaId
+4. Refactor VocaliaWorkspace: leer del contexto, pasar vocaliaId, header dinámico
+5. AppSidebar: dropdown de cambio de vocalía
+6. Crear useCausasDashboard y reemplazar tabla mock del Panel General
+7. Calendario: checkboxes visibles
+```
 
-Editados:
-- `src/components/KpiCards.tsx` — consume hook, sin `causas` prop.
-- `src/components/CalendarioAlertas.tsx` — consume hook, 4 filtros, semáforo nuevo.
-- `src/components/VocaliaWorkspace.tsx` — wiring del dashboard y calendario.
-- `src/data/mockCausas.ts` — agregar nuevas funciones de semáforo (o moverlas a `eventoMapper`).
-- `tailwind.config.ts` / `src/index.css` — tokens HSL para semáforo si faltan.
+### Archivos tocados
+
+- **Crea:** `src/context/VocaliaContext.tsx`, `src/hooks/useVocalias.ts`, `src/hooks/useCausasDashboard.ts`
+- **Edita:** `src/pages/Index.tsx`, `src/components/VocaliaSelector.tsx`, `src/components/VocaliaWorkspace.tsx`, `src/components/AppSidebar.tsx`, `src/components/CalendarioAlertas.tsx`, `src/components/KpiCards.tsx` (sólo tipo de prop), `src/hooks/useCausasPorEstado.ts`, `src/hooks/useCausasConSujetoEn.ts`, `src/hooks/useDetenidos.ts`, `src/hooks/useDashboardKpis.ts`, `src/hooks/useCalendarioEventos.ts`
+
+### No se toca
+
+- Esquema de Supabase / RLS / auth.
+- Lógica de causas conexas (las relaciones cross-vocalía siguen sin filtrar).
+- Pestañas ya conectadas conservan su patrón hook + mapper.
