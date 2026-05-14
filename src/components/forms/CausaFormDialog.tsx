@@ -383,11 +383,14 @@ export default function CausaFormDialog({
                   </div>
                   <div className="space-y-1.5 col-span-2">
                     <Label className="text-xs">Causa conexa</Label>
-                    <Input
-                      value={causa.causa_conexa_texto ?? ""}
-                      onChange={(e) => updateCausa({ causa_conexa_texto: e.target.value })}
-                      placeholder="N° de causa conexa o referencia"
+                    <CausaConexaInput
+                      value={{ id: causa.causa_conexa_id ?? null, texto: causa.causa_conexa_texto ?? "" }}
+                      onChange={(v) => updateCausa({ causa_conexa_id: v.id, causa_conexa_texto: v.texto })}
+                      excludeCausaId={causaId}
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      Buscá por N° de expediente. Elegí una sugerencia para vincular o dejá texto libre.
+                    </p>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
