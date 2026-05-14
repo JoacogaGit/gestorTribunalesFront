@@ -90,16 +90,17 @@ export default function CausaFormDialog({
 
   const [causa, setCausa] = useState<CausaInput>(emptyCausa());
   const [sujetos, setSujetos] = useState<SujetoState[]>(() =>
-    mode === "crear" ? [emptySujeto(initialSujetoSituacion)] : []
+    mode === "crear" && initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []
   );
   const [openExtras, setOpenExtras] = useState(false);
+  const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
 
   // Cargar datos en modo editar
   useEffect(() => {
     if (!open) return;
     if (mode === "crear") {
       setCausa(emptyCausa());
-      setSujetos([emptySujeto(initialSujetoSituacion)]);
+      setSujetos(initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []);
       setErrorMsg(null);
       return;
     }
