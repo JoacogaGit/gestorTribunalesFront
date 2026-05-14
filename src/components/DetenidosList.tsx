@@ -197,10 +197,16 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
         <CausaDetail
           causa={selected}
           onClose={() => setSelected(null)}
-          onUpdate={onUpdateCausa}
-          onDelete={onDeleteCausa}
+          onMutated={onMutated}
         />
       )}
+      <CausaFormDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        mode="crear"
+        initialSujetoSituacion="detenido"
+        onMutated={onMutated}
+      />
     </>
   );
 }
