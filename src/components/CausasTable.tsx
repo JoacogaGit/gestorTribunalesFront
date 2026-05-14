@@ -581,10 +581,15 @@ export default function CausasTable({
         <CausaDetail
           causa={selected}
           onClose={() => setSelected(null)}
-          onUpdate={onUpdateCausa}
-          onDelete={onDeleteCausa}
+          onMutated={onMutated}
         />
       )}
+      <CausaFormDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        mode="crear"
+        onMutated={onMutated}
+      />
 
       <Dialog open={showAddCol} onOpenChange={setShowAddCol}>
         <DialogContent className="max-w-sm bg-card border-border">
