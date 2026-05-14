@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Causa, getCaratula, getProximityColor, createEmptyCausa, EstadoCausa } from "@/data/mockCausas";
+import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
+import CausaFormDialog from "./forms/CausaFormDialog";
 import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
