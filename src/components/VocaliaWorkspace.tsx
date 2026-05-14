@@ -261,6 +261,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     title={`Causas — ${dashFilterLabels[dashFilter]}`}
                     listKey="todas"
                     allCausas={dashCausasRemote.causas}
+                    onMutated={dashCausasRemote.refetch}
                     {...remoteTableCommon}
                   />
                 </RemoteListSection>
