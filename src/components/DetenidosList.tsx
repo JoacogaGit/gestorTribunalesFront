@@ -35,10 +35,12 @@ interface Props {
   onUpdateCausa?: (causa: Causa) => void;
   onDeleteCausa?: (id: string) => void;
   onCreateCausa?: (causa: Causa) => void;
+  onMutated?: () => void;
 }
 
-export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDeleteCausa, onCreateCausa }: Props) {
+export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDeleteCausa, onCreateCausa, onMutated }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
 
   const allColumns: ColDef[] = [
