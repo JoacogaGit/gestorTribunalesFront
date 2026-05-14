@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
@@ -7,8 +7,7 @@ import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
 import ThemeToggle from "@/components/ThemeToggle";
-import WelcomeModal from "@/components/WelcomeModal";
-import { mockCausas, Causa, EstadoCausa } from "@/data/mockCausas";
+import { Causa } from "@/data/mockCausas";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Filter, X, Inbox, RefreshCw } from "lucide-react";
@@ -16,9 +15,12 @@ import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
+import { useCausasDashboard } from "@/hooks/useCausasDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useVocaliaActual, VocaliaActual } from "@/context/VocaliaContext";
+import { useVocalias } from "@/hooks/useVocalias";
 
 interface RemoteListSectionProps {
   loading: boolean;
@@ -76,135 +78,56 @@ function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, 
 type View = string;
 
 interface Props {
-  vocalia: number;
   onBack: () => void;
   user: { name: string; email: string };
   onLogout: () => void;
   onUpdateUser: (u: { name: string; email: string }) => void;
 }
 
-type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "terminadas";
+type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos";
 
 const dashFilterLabels: Record<DashboardFilter, string> = {
-  all: "Todas",
+  all: "Todas (trámite + recurso)",
   tramite: "En trámite",
   detenidos: "Con detenidos",
   rebeldes: "Rebeldes",
   sjp: "SJP / Probation",
   recursos: "Recursos",
-  terminadas: "Terminadas",
 };
 
-export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUpdateUser }: Props) {
+export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser }: Props) {
+  const { vocalia, setVocalia } = useVocaliaActual();
+  const vocaliaId = vocalia?.id ?? null;
+  const vocaliaNombre = vocalia?.nombre ?? "—";
+  const tribunalId = vocalia?.tribunalId ?? null;
+
   const [view, setView] = useState<View>("dashboard");
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
-
-  // Las cuentas marcadas como "nuevas" (flag justrack-new-user) arrancan vacías.
-  // El resto sigue viendo los datos de muestra.
-  const isNewUser = typeof window !== "undefined" && localStorage.getItem("justrack-new-user") === "1";
-  const [causas, setCausas] = useState<Causa[]>(() =>
-    isNewUser ? [] : mockCausas.filter((c) => c.vocalia === vocalia)
-  );
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
 
-  // Pestañas conectadas a Supabase (sin filtro de vocalía por ahora).
-  const tramiteRemote = useCausasPorEstado("tramite");
-  const recursosRemote = useCausasPorEstado("recurso");
-  const terminadasRemote = useCausasPorEstado("terminada");
-  const rebeldesRemote = useCausasConSujetoEn("rebelde");
-  const sjpRemote = useCausasConSujetoEn("probation");
-  const detenidosRemote = useDetenidos();
-  const dashboardKpis = useDashboardKpis();
+  // Vocalías del tribunal para el switcher en el sidebar.
+  const { vocalias: todasVocalias } = useVocalias();
+  const vocaliasTribunal = tribunalId ? todasVocalias.filter((v) => v.tribunal_id === tribunalId) : [];
+
+  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId);
+  const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
+  const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
+  const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
+  const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
+  const detenidosRemote = useDetenidos(vocaliaId);
+  const dashboardKpis = useDashboardKpis(vocaliaId);
+  const dashCausasRemote = useCausasDashboard(vocaliaId);
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
-  // Modal de bienvenida: se muestra automáticamente la primera vez que un
-  // usuario nuevo entra a una vocalía vacía. Queda siempre disponible desde
-  // el sidebar para reabrirlo más adelante.
-  const welcomeKey = `justrack-welcome-seen-${user.email}`;
-  const [welcomeOpen, setWelcomeOpen] = useState(false);
-  useEffect(() => {
-    const seen = localStorage.getItem(welcomeKey) === "1";
-    if (!seen && causas.length === 0) {
-      setWelcomeOpen(true);
-      localStorage.setItem(welcomeKey, "1");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleImportCausas = (importadas: Causa[]) => {
-    setCausas((prev) => [...prev, ...importadas.map((c) => ({ ...c, vocalia }))]);
-  };
-
-  const updateCausa = (updated: Causa) => {
-    setCausas((prev) => {
-      if (prev.some((c) => c.id === updated.id)) {
-        return prev.map((c) => (c.id === updated.id ? updated : c));
-      }
-      return [...prev, updated];
-    });
-  };
-
-  const deleteCausa = (id: string) => {
-    setCausas((prev) => prev.filter((c) => c.id !== id));
-    toast.success("Causa eliminada");
-  };
-
-  const createCausa = (nueva: Causa) => {
-    setCausas((prev) => [...prev, { ...nueva, vocalia }]);
-  };
-
-  const changeEstado = (c: Causa, nuevoEstado: EstadoCausa) => {
-    updateCausa({ ...c, estadoCausa: nuevoEstado });
-  };
-
-  const importToList = (listId: string) => (c: Causa) => {
-    let patched: Causa = { ...c };
-    switch (listId) {
-      case "tramite":
-        patched.estadoCausa = patched.estadoCausa === "En juicio" ? "En juicio" : "En trámite";
-        patched.imputados = patched.imputados.map((i) => i.estadoLibertad === "Rebelde" || i.estadoLibertad === "SJP" ? { ...i, estadoLibertad: "Excarcelado" } : i);
-        patched.probation = undefined;
-        break;
-      case "rebeldes":
-        patched.imputados = patched.imputados.map((i, idx) => idx === 0 ? { ...i, estadoLibertad: "Rebelde" } : i);
-        break;
-      case "sjp":
-        patched.imputados = patched.imputados.map((i, idx) => idx === 0 ? { ...i, estadoLibertad: "SJP" } : i);
-        break;
-      case "recursos":
-        patched.estadoCausa = "Casación";
-        break;
-      case "terminadas":
-        patched.estadoCausa = "Terminada";
-        break;
-    }
-    updateCausa(patched);
-    toast.success(`Causa ${c.numero} movida`);
-  };
-
-  const isTramite = (c: Causa) =>
-    (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
-    !c.imputados.some((i) => i.estadoLibertad === "Rebelde") &&
-    !c.imputados.some((i) => i.estadoLibertad === "SJP") &&
-    !["Casación", "Queja en Corte", "REX", "Terminada"].includes(c.estadoCausa) &&
-    !c.probation;
-
-  const causasEnTramite = causas.filter(isTramite);
-  const causasRebeldes = causas.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
-  const causasSJP = causas.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP") || !!c.probation);
-  const causasRecursos = causas.filter((c) => ["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa));
-  const causasTerminadas = causas.filter((c) => c.estadoCausa === "Terminada");
-  const causasConDetenidos = causas.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Detenido"));
-
   const dashCausas = (() => {
+    const all = dashCausasRemote.causas;
     switch (dashFilter) {
-      case "tramite": return causasEnTramite;
-      case "detenidos": return causasConDetenidos;
-      case "rebeldes": return causasRebeldes;
-      case "sjp": return causasSJP;
-      case "recursos": return causasRecursos;
-      case "terminadas": return causasTerminadas;
-      default: return causas;
+      case "tramite": return all.filter((c) => c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio");
+      case "detenidos": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Detenido"));
+      case "rebeldes": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
+      case "sjp": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP"));
+      case "recursos": return all.filter((c) => ["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa));
+      default: return all;
     }
   })();
 
@@ -224,8 +147,12 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
     setCustomBoards(customBoards.map((b) => (b.id === id ? { ...b, label: name } : b)));
   };
 
+  const handleSwitchVocalia = (v: { id: string; nombre: string; tribunal_id: string }) => {
+    setVocalia({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
+  };
+
   const defaultTitles: Record<string, string> = {
-    dashboard: `Panel General — Vocalía ${vocalia}`,
+    dashboard: `Panel General — ${vocaliaNombre}`,
     tramite: "Causas en Trámite",
     detenidos: "Detenidos",
     rebeldes: "Rebeldes / Paraderos",
@@ -237,13 +164,11 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
 
   const title = defaultTitles[view] || customBoards.find((b) => b.id === view)?.label || "Tablero";
 
-  const commonProps = {
-    vocalia,
-    onUpdateCausa: updateCausa,
-    onDeleteCausa: deleteCausa,
-    onCreateCausa: createCausa,
-    onChangeEstado: changeEstado,
-    allCausas: causas,
+  const remoteTableCommon = {
+    onUpdateCausa: remoteNoop,
+    onDeleteCausa: remoteNoop,
+    onCreateCausa: remoteNoop,
+    onChangeEstado: remoteNoop,
   };
 
   return (
@@ -255,20 +180,16 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
         onAddBoard={addBoard}
         onRemoveBoard={removeBoard}
         onRenameBoard={renameBoard}
-        vocalia={vocalia}
+        vocaliaNombre={vocaliaNombre}
+        vocaliasTribunal={vocaliasTribunal}
+        currentVocaliaId={vocaliaId}
+        onSwitchVocalia={handleSwitchVocalia}
         onBack={onBack}
-        onOpenWelcome={() => setWelcomeOpen(true)}
-      />
-      <WelcomeModal
-        open={welcomeOpen}
-        onClose={() => setWelcomeOpen(false)}
-        vocalia={vocalia}
-        onImport={handleImportCausas}
       />
       <main className="flex-1 p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
         <div className="flex items-end justify-between mb-8 gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 mb-1">Vocalía {vocalia}</span>
+            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 mb-1">{vocaliaNombre}</span>
             <h1 className="text-3xl font-display font-bold text-foreground title-underline">{title}</h1>
             <span className="text-xs text-muted-foreground mt-3">
               {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
@@ -303,7 +224,7 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                       <Filter className="w-3.5 h-3.5" />
                       Filtrar: <span className="text-foreground font-semibold">{dashFilterLabels[dashFilter]}</span>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-52">
+                    <DropdownMenuContent align="start" className="w-56">
                       <DropdownMenuLabel className="text-xs">Filtrar por lista</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       {(Object.keys(dashFilterLabels) as DashboardFilter[]).map((f) => (
@@ -327,7 +248,22 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                   )}
                   <span className="text-xs text-muted-foreground ml-auto">{dashCausas.length} causas</span>
                 </div>
-                <CausasTable causas={dashCausas} title={`Causas — ${dashFilterLabels[dashFilter]}`} listKey="todas" {...commonProps} onImportCausa={importToList("tramite")} />
+                <RemoteListSection
+                  loading={dashCausasRemote.loading}
+                  error={dashCausasRemote.error}
+                  isEmpty={dashCausas.length === 0}
+                  emptyTitle="Sin causas en esta vocalía"
+                  emptyMessage="Cuando se carguen causas activas (en trámite o con recurso), van a aparecer acá."
+                  onRetry={dashCausasRemote.refetch}
+                >
+                  <CausasTable
+                    causas={dashCausas}
+                    title={`Causas — ${dashFilterLabels[dashFilter]}`}
+                    listKey="todas"
+                    allCausas={dashCausasRemote.causas}
+                    {...remoteTableCommon}
+                  />
+                </RemoteListSection>
               </div>
             )}
 
@@ -336,20 +272,16 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                 loading={tramiteRemote.loading}
                 error={tramiteRemote.error}
                 isEmpty={tramiteRemote.causas.length === 0}
-                emptyTitle="No hay causas en trámite"
-                emptyMessage='Cuando se carguen causas con estado "trámite" en la base, van a aparecer acá.'
+                emptyTitle="Sin causas en esta categoría"
+                emptyMessage='Cuando se carguen causas con estado "trámite" en esta vocalía, van a aparecer acá.'
                 onRetry={tramiteRemote.refetch}
               >
                 <CausasTable
                   causas={tramiteRemote.causas}
                   title="Causas en Trámite"
                   listKey="tramite"
-                  vocalia={vocalia}
                   allCausas={tramiteRemote.causas}
-                  onUpdateCausa={remoteNoop}
-                  onDeleteCausa={remoteNoop}
-                  onCreateCausa={remoteNoop}
-                  onChangeEstado={remoteNoop}
+                  {...remoteTableCommon}
                 />
               </RemoteListSection>
             )}
@@ -359,12 +291,11 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                 error={detenidosRemote.error}
                 isEmpty={detenidosRemote.causas.length === 0}
                 emptyTitle="Sin detenidos"
-                emptyMessage="No hay sujetos con situación de libertad 'detenido' en la base."
+                emptyMessage="No hay sujetos en situación 'detenido' en esta vocalía."
                 onRetry={detenidosRemote.refetch}
               >
                 <DetenidosList
                   causas={detenidosRemote.causas}
-                  vocalia={vocalia}
                   onUpdateCausa={remoteNoop}
                   onDeleteCausa={remoteNoop}
                 />
@@ -383,12 +314,8 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                   causas={rebeldesRemote.causas}
                   title="Rebeldes / Paraderos"
                   listKey="rebeldes"
-                  vocalia={vocalia}
                   allCausas={rebeldesRemote.causas}
-                  onUpdateCausa={remoteNoop}
-                  onDeleteCausa={remoteNoop}
-                  onCreateCausa={remoteNoop}
-                  onChangeEstado={remoteNoop}
+                  {...remoteTableCommon}
                 />
               </RemoteListSection>
             )}
@@ -405,12 +332,8 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                   causas={sjpRemote.causas}
                   title="SJP en Trámite"
                   listKey="sjp"
-                  vocalia={vocalia}
                   allCausas={sjpRemote.causas}
-                  onUpdateCausa={remoteNoop}
-                  onDeleteCausa={remoteNoop}
-                  onCreateCausa={remoteNoop}
-                  onChangeEstado={remoteNoop}
+                  {...remoteTableCommon}
                 />
               </RemoteListSection>
             )}
@@ -427,12 +350,8 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                   causas={recursosRemote.causas}
                   title="Recursos"
                   listKey="recursos"
-                  vocalia={vocalia}
                   allCausas={recursosRemote.causas}
-                  onUpdateCausa={remoteNoop}
-                  onDeleteCausa={remoteNoop}
-                  onCreateCausa={remoteNoop}
-                  onChangeEstado={remoteNoop}
+                  {...remoteTableCommon}
                 />
               </RemoteListSection>
             )}
@@ -449,19 +368,21 @@ export default function VocaliaWorkspace({ vocalia, onBack, user, onLogout, onUp
                   causas={terminadasRemote.causas}
                   title="Causas Terminadas"
                   listKey="terminadas"
-                  vocalia={vocalia}
                   allCausas={terminadasRemote.causas}
-                  onUpdateCausa={remoteNoop}
-                  onDeleteCausa={remoteNoop}
-                  onCreateCausa={remoteNoop}
-                  onChangeEstado={remoteNoop}
+                  {...remoteTableCommon}
                 />
               </RemoteListSection>
             )}
-            {view === "calendario" && <CalendarioAlertas />}
+            {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} />}
 
             {view.startsWith("custom-") && (
-              <CausasTable causas={causas} title={customBoards.find((b) => b.id === view)?.label || "Tablero"} listKey={view} {...commonProps} onImportCausa={importToList(view)} />
+              <CausasTable
+                causas={[]}
+                title={customBoards.find((b) => b.id === view)?.label || "Tablero"}
+                listKey={view}
+                allCausas={[]}
+                {...remoteTableCommon}
+              />
             )}
           </motion.div>
         </AnimatePresence>
