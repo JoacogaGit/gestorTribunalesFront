@@ -205,7 +205,7 @@ export default function CausaFormDialog({
 
     if (mode === "crear") {
       const res = await muts.crearCausa(causaP, sujetosP);
-      if (!res.ok) { setErrorMsg(res.error); return; }
+      if (res.ok !== true) { setErrorMsg(res.error); return; }
       toast.success("Causa creada");
       onMutated?.();
       onOpenChange(false);
@@ -215,13 +215,13 @@ export default function CausaFormDialog({
     // editar: causa + diferencias de sujetos
     if (!causaId) return;
     const resCausa = await muts.actualizarCausa(causaId, causaP);
-    if (!resCausa.ok) { setErrorMsg(resCausa.error); return; }
+    if (resCausa.ok !== true) { setErrorMsg(resCausa.error); return; }
 
     // Borrar marcados (persistidos)
     const toDelete = sujetos.filter((s) => s._markedForDelete && s.id);
     for (const s of toDelete) {
       const r = await muts.borrarSujeto(s.id!);
-      if (!r.ok) { setErrorMsg(`Error al borrar imputado: ${r.error}`); return; }
+      if (r.ok !== true) { setErrorMsg(`Error al borrar imputado: ${r.error}`); return; }
     }
     // Insertar nuevos / actualizar existentes
     for (let i = 0; i < visibleSujetos.length; i++) {
@@ -229,10 +229,10 @@ export default function CausaFormDialog({
       const payload = sujetosP[i];
       if (draft.id) {
         const r = await muts.actualizarSujeto(draft.id, payload);
-        if (!r.ok) { setErrorMsg(`Error al guardar imputado: ${r.error}`); return; }
+        if (r.ok !== true) { setErrorMsg(`Error al guardar imputado: ${r.error}`); return; }
       } else {
         const r = await muts.crearSujeto(causaId, payload);
-        if (!r.ok) { setErrorMsg(`Error al crear imputado: ${r.error}`); return; }
+        if (r.ok !== true) { setErrorMsg(`Error al crear imputado: ${r.error}`); return; }
       }
     }
     toast.success("Cambios guardados");
@@ -243,7 +243,7 @@ export default function CausaFormDialog({
   const handleDeleteCausa = async () => {
     if (!causaId) return;
     const r = await muts.borrarCausa(causaId);
-    if (!r.ok) { toast.error(r.error); return; }
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Causa eliminada");
     setConfirmDeleteCausa(false);
     onMutated?.();
