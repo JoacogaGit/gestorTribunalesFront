@@ -127,6 +127,8 @@ export function dbCausaToUI(row: DbCausa): Causa {
     fechaVencimientoPP: firstNonNull(sujetos.map((s) => s.vencimiento_pp)),
     otrosIntervinientes: otros.length ? otros : undefined,
     causasConexas: row.causa_conexa_texto ? [row.causa_conexa_texto] : undefined,
+    causaConexaId: row.causa_conexa_id ?? null,
+    causaConexaTexto: row.causa_conexa_texto ?? null,
     vocalia: 1,
   };
 }
