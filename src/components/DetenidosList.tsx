@@ -118,11 +118,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   };
 
   const handleCreate = () => {
-    if (!onCreateCausa) return;
-    const nueva = createEmptyCausa(vocalia);
-    nueva.imputados[0].estadoLibertad = "Detenido";
-    onCreateCausa(nueva);
-    setSelected(nueva);
+    setShowCreate(true);
   };
 
   return (
