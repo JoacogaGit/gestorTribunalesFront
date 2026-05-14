@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLab
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useCalendarioEventos } from "@/hooks/useCalendarioEventos";
 import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSemaforoDot } from "@/lib/eventoMapper";
 
@@ -27,8 +28,8 @@ const STORAGE_KEY = "calendario-dismissed-v2";
 const FILTER_KEY = "calendario-tipos-ocultos-v2";
 const TIPOS: CalendarTipo[] = ["evento", "vencimiento_pp", "vencimiento_pena", "prescripcion"];
 
-export default function CalendarioAlertas() {
-  const { eventos, loading, error, refetch } = useCalendarioEventos();
+export default function CalendarioAlertas({ vocaliaId }: { vocaliaId: string | null }) {
+  const { eventos, loading, error, refetch } = useCalendarioEventos(vocaliaId);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dismissed, setDismissed] = useState<Set<string>>(() => {

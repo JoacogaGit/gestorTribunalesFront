@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, Sparkles } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { VocaliaRow } from "@/hooks/useVocalias";
 
 const defaultNavItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,12 +26,17 @@ interface Props {
   onAddBoard: () => void;
   onRemoveBoard: (id: string) => void;
   onRenameBoard: (id: string, name: string) => void;
-  vocalia: number;
+  vocaliaNombre: string;
+  vocaliasTribunal: VocaliaRow[];
+  currentVocaliaId: string | null;
+  onSwitchVocalia: (v: VocaliaRow) => void;
   onBack: () => void;
-  onOpenWelcome?: () => void;
 }
 
-export default function AppSidebar({ active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard, vocalia, onBack, onOpenWelcome }: Props) {
+export default function AppSidebar({
+  active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
+  vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack,
+}: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -43,6 +50,8 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
     setEditingId(null);
   };
 
+  const otrasVocalias = vocaliasTribunal.filter((v) => v.id !== currentVocaliaId);
+
   return (
     <aside className="w-56 shrink-0 bg-gradient-sidebar text-sidebar-foreground flex flex-col min-h-screen border-r border-sidebar-border shadow-elevated">
       <div className="px-5 py-6">
@@ -55,13 +64,31 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
             <span className="text-[9px] uppercase tracking-[0.18em] text-sidebar-primary/80">Gestión Judicial</span>
           </div>
         </div>
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-primary transition-colors"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          Vocalía {vocalia} — Cambiar
-        </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
+            <span className="truncate flex-1">{vocaliaNombre}</span>
+            <ChevronDown className="w-3 h-3 shrink-0" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel className="text-xs">Cambiar de vocalía</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {otrasVocalias.length === 0 && (
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                No hay otras vocalías
+              </DropdownMenuItem>
+            )}
+            {otrasVocalias.map((v) => (
+              <DropdownMenuItem key={v.id} onSelect={() => onSwitchVocalia(v)} className="text-xs">
+                {v.nombre}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onBack} className="text-xs">
+              <ArrowLeft className="w-3 h-3 mr-1.5" /> Volver al selector
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <nav className="flex-1 px-3 space-y-1">
@@ -139,16 +166,6 @@ export default function AppSidebar({ active, onNavigate, customBoards, onAddBoar
           </button>
         )}
       </nav>
-
-      {onOpenWelcome && (
-        <button
-          onClick={onOpenWelcome}
-          className="mx-3 mb-2 mt-2 flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-primary-foreground bg-gradient-gold hover:opacity-90 transition-opacity shadow-soft"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Migrar / Importar lista
-        </button>
-      )}
 
       <div className="px-5 py-4 text-[11px] text-sidebar-foreground/40 border-t border-sidebar-border/60">
         TOCC 26 · Prototipo v3
