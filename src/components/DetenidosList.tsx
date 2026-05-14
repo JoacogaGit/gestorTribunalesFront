@@ -50,6 +50,17 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
+  const muts = useCausaMutations();
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    const r = await muts.borrarCausa(confirmDelete.id);
+    if (r.ok !== true) { toast.error(r.error); return; }
+    toast.success("Causa eliminada");
+    setConfirmDelete(null);
+    onMutated?.();
+  };
 
   const allColumns: ColDef[] = [
     { key: "imputado", label: "Imputado", cellClass: "text-sm font-medium text-foreground", render: (r) => r.imputado.nombre },
