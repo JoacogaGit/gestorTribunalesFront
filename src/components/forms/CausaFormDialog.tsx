@@ -49,6 +49,7 @@ function emptyCausa(): CausaInput {
     actor_civil: "",
     otros_intervinientes: "",
     causa_conexa_texto: "",
+    causa_conexa_id: null,
   };
 }
 
