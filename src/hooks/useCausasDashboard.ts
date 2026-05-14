@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI } from "@/lib/causaMapper";
 
-const ACTIVOS = ["tramite", "recurso"];
+const ACTIVOS = ["tramite", "recurso"] as const;
 
 export function useCausasDashboard(vocaliaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
