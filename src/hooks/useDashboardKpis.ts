@@ -102,6 +102,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
   }, [vocaliaId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEventosChanged(fetchAll);
 
   return { kpis, loading, error, refetch: fetchAll };
 }
