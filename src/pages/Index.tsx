@@ -1,49 +1,63 @@
-import { useState } from "react";
-import AuthScreen from "@/components/AuthScreen";
+import { Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import VocaliaSelector from "@/components/VocaliaSelector";
 import VocaliaWorkspace from "@/components/VocaliaWorkspace";
+import WelcomeNoTribunal from "@/components/WelcomeNoTribunal";
 import ThemeToggle from "@/components/ThemeToggle";
-import { VocaliaProvider, useVocaliaActual } from "@/context/VocaliaContext";
+import { useVocaliaActual } from "@/context/VocaliaContext";
+import { useAuth } from "@/context/AuthContext";
+import { useMembresias } from "@/hooks/useMembresias";
 
-export interface CurrentUser {
-  name: string;
-  email: string;
-}
-
-function IndexInner() {
-  const [user, setUser] = useState<CurrentUser | null>(null);
+export default function Index() {
+  const { user, loading: authLoading, logout } = useAuth();
   const { vocalia, setVocalia, clearVocalia } = useVocaliaActual();
+  const { count, loading: memLoading, refetch } = useMembresias();
 
-  const showFloatingToggle = !user || !vocalia;
-  const handleLogout = () => { setUser(null); clearVocalia(); };
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/auth" replace />;
+
+  const showFloatingToggle = !vocalia;
+  const handleLogout = () => { clearVocalia(); logout(); };
+
+  if (memLoading || count === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (count === 0) {
+    return (
+      <>
+        <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
+        <WelcomeNoTribunal onCreated={refetch} />
+      </>
+    );
+  }
 
   return (
     <>
       {showFloatingToggle && (
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
-        </div>
+        <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
       )}
-      {!user ? (
-        <AuthScreen onAuth={(u) => setUser(u)} />
-      ) : !vocalia ? (
+      {!vocalia ? (
         <VocaliaSelector onSelect={setVocalia} onLogout={handleLogout} />
       ) : (
         <VocaliaWorkspace
           onBack={clearVocalia}
-          user={user}
+          user={{ name: user.nombre, email: user.email }}
           onLogout={handleLogout}
-          onUpdateUser={(u) => setUser(u)}
+          onUpdateUser={() => { /* perfil se gestiona en Supabase */ }}
         />
       )}
     </>
-  );
-}
-
-export default function Index() {
-  return (
-    <VocaliaProvider>
-      <IndexInner />
-    </VocaliaProvider>
   );
 }
