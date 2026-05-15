@@ -233,6 +233,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         currentVocaliaId={vocaliaId}
         onSwitchVocalia={handleSwitchVocalia}
         onBack={onBack}
+        esAdmin={esAdmin}
       />
       <main className="flex-1 p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
         <div className="flex items-end justify-between mb-8 gap-4">
