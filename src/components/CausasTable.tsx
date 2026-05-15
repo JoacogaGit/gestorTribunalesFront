@@ -274,12 +274,40 @@ export default function CausasTable({
     {
       key: "agenda", label: "Agenda", headClass: "whitespace-nowrap",
       sortValue: (c) => {
-        const f = (c.agenda || []).map((a) => new Date(a.fecha).getTime()).filter(Boolean).sort((a, b) => a - b);
-        return f[0] ?? Number.MAX_SAFE_INTEGER;
+        const ds: number[] = [];
+        const p = proximasMap.get(c.id);
+        if (p) ds.push(new Date(p.proxima.fecha_hora).getTime());
+        (c.agenda || []).forEach((a) => a.fecha && ds.push(new Date(a.fecha).getTime()));
+        ds.sort((a, b) => a - b);
+        return ds[0] ?? Number.MAX_SAFE_INTEGER;
       },
-      render: (c) => c.agenda && c.agenda.length > 0
-        ? <div className="space-y-0.5 text-xs">{c.agenda.map((ag, i) => <div key={i} className={getProximityColor(ag.fecha)}>{ag.texto.substring(0, 20)}{ag.texto.length > 20 ? "…" : ""} — {fmtDate(ag.fecha)}</div>)}</div>
-        : <span className="text-xs text-muted-foreground">—</span>,
+      render: (c) => {
+        const p = proximasMap.get(c.id);
+        const legacy = c.agenda || [];
+        if (!p && legacy.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <div className="space-y-0.5 text-xs">
+            {p && (
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                <span className="truncate max-w-[140px]">
+                  {p.proxima.titulo.length > 22 ? `${p.proxima.titulo.slice(0, 22)}…` : p.proxima.titulo}
+                </span>
+                <span className={getSemaforoText(p.proxima.fecha_hora)}>
+                  {fmtDate(p.proxima.fecha_hora)}
+                </span>
+                {p.total > 1 && (
+                  <span className="text-[10px] text-muted-foreground bg-muted/60 rounded px-1">+{p.total - 1}</span>
+                )}
+              </div>
+            )}
+            {legacy.map((ag, i) => (
+              <div key={i} className={getProximityColor(ag.fecha)}>
+                {ag.texto.substring(0, 20)}{ag.texto.length > 20 ? "…" : ""} — {fmtDate(ag.fecha)}
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
   ];
 
