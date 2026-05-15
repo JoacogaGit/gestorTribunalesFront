@@ -40,7 +40,7 @@ export default function AnotacionesSection({ causaId, onMutated }: Props) {
 
   const handleCreate = async (v: EventoInput) => {
     const r = await muts.crearEvento(causaId, v);
-    if (!r.ok) { toast.error(r.error); return; }
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Anotación agregada");
     setAdding(false);
     await afterMutation();
@@ -48,7 +48,7 @@ export default function AnotacionesSection({ causaId, onMutated }: Props) {
 
   const handleUpdate = async (id: string, v: EventoInput) => {
     const r = await muts.actualizarEvento(id, v);
-    if (!r.ok) { toast.error(r.error); return; }
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Anotación actualizada");
     setEditingId(null);
     await afterMutation();
@@ -57,7 +57,7 @@ export default function AnotacionesSection({ causaId, onMutated }: Props) {
   const handleDelete = async () => {
     if (!confirmDelete) return;
     const r = await muts.borrarEvento(confirmDelete.id);
-    if (!r.ok) { toast.error(r.error); return; }
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Anotación borrada");
     setConfirmDelete(null);
     await afterMutation();
