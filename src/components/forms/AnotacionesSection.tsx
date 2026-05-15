@@ -14,6 +14,8 @@ import EventoFormInline from "./EventoFormInline";
 
 interface Props {
   causaId: string;
+  /** Compat legacy: ya NO se invoca para no cerrar el dialog padre.
+   *  La sincronización con calendario/dashboard ocurre vía eventosBus. */
   onMutated?: () => void;
 }
 
