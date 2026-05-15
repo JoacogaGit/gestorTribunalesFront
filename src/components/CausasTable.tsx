@@ -85,6 +85,10 @@ export default function CausasTable({
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
 
+  // Próximas anotaciones (eventos con fecha) por causa.
+  const causaIds = causas.map((c) => c.id);
+  const { map: proximasMap } = useProximasAnotacionesPorCausa(causaIds);
+
   // Auto-abrir detalle cuando navegan desde una causa conexa.
   useEffect(() => {
     if (!openCausaId) return;
