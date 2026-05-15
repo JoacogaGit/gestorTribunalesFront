@@ -28,7 +28,7 @@ function fmtCreado(d: string | null) {
   return new Date(d).toLocaleDateString("es-AR");
 }
 
-export default function AnotacionesSection({ causaId, onMutated }: Props) {
+export default function AnotacionesSection({ causaId }: Props) {
   const { conFecha, sinFecha, loading, refetch } = useEventosCausa(causaId);
   const muts = useEventoMutations();
   const [adding, setAdding] = useState(false);
@@ -37,7 +37,8 @@ export default function AnotacionesSection({ causaId, onMutated }: Props) {
 
   const afterMutation = async () => {
     await refetch();
-    onMutated?.();
+    // No propagar al padre: cerraría el Dialog de la causa.
+    // El bus de eventos ya refresca calendario/dashboard.
   };
 
   const handleCreate = async (v: EventoInput) => {
