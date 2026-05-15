@@ -7,6 +7,7 @@ import {
   mapDbEventoToCalendar,
   mapSujetoFechaToCalendar,
 } from "@/lib/eventoMapper";
+import { useEventosChanged } from "@/lib/eventosBus";
 
 const ACTIVOS = ["tramite", "recurso"] as const;
 const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa,vocalia_id";
