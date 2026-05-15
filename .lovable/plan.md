@@ -1,95 +1,104 @@
-# Plan: Autenticación funcional con Supabase
 
-Conectar el `AuthScreen` existente (sin tocar su diseño) a Supabase Auth, crear las pantallas faltantes con la misma estética (`elevated-card`, gradientes, ícono `Scale`, fuente `font-display`) y centralizar la sesión en un `AuthContext`.
+# Plan
 
-## 1. AuthContext + protección de rutas
+## TAREA 1 — Anotaciones y eventos en el panel de causa
 
-**Nuevo `src/context/AuthContext.tsx`**
-- Estado: `user` (id, email, nombre desde `user_metadata.full_name`), `session`, `loading`.
-- En el mount: primero `supabase.auth.onAuthStateChange(...)`, luego `getSession()` (orden requerido para evitar deadlocks).
-- Expone `logout()` que hace `signOut()` + `clearVocalia()`.
-- Hook `useAuth()`.
+### 1.1 Hook nuevo: `src/hooks/useEventosCausa.ts`
+- Recibe `causaId` (puede ser `null`).
+- Query a `eventos` filtrando por `causa_id`, seleccionando todos los campos.
+- Devuelve `{ eventos, loading, error, refetch }`.
+- Separa internamente en `conFecha` (fecha_hora ≠ null, asc) y `sinFecha` (fecha_hora null, ordenado por created_at desc) — o devuelve crudo y la UI separa.
 
-**`src/App.tsx`**
-- Envolver el árbol con `<AuthProvider>` dentro de `BrowserRouter`.
-- Agregar rutas:
-  - `/` → flujo principal (Index)
-  - `/auth` (login), `/signup`, `/forgot-password`, `/reset-password`
-  - Las nuevas son públicas; `/` se protege según sesión.
+### 1.2 Hook nuevo: `src/hooks/useEventoMutations.ts`
+- `crearEvento({ causa_id, titulo, descripcion, tipo_evento, fecha_hora })`
+- `actualizarEvento(id, patch)`
+- `borrarEvento(id)`
+- Cada operación devuelve `{ ok, error? }` y maneja `saving` interno.
+- Si se carga `fecha`, se persiste como `YYYY-MM-DDT00:00:00` (TIMESTAMPTZ); si no, `null`.
 
-**`src/pages/Index.tsx`**
-- Reemplazar el `useState<user>` local por `useAuth()`.
-- Si `loading` → spinner de pantalla completa.
-- Si no hay sesión → `<Navigate to="/auth" />`.
-- Si hay sesión: consultar membresías (ver paso 5) y decidir entre Bienvenida, Selector de vocalías o Workspace.
+### 1.3 Componente nuevo: `src/components/forms/EventoFormInline.tsx`
+- Sub-formulario (sección expandible inline dentro del dialog, NO modal anidado).
+- Campos: Título (required), Tipo de evento (text libre, opcional, sin dropdown), Fecha (input `type="date"`, opcional, vaciable), Descripción (textarea opcional).
+- Props: `mode` ("crear"|"editar"), `initialValue`, `onSubmit`, `onCancel`, `saving`.
 
-## 2. Conectar el login existente (`AuthScreen.tsx`)
+### 1.4 Componente nuevo: `src/components/forms/AnotacionesSection.tsx`
+- Se monta dentro de `CausaFormDialog` solo en `mode === "editar"` y con `causaId` válido.
+- Header: título "Anotaciones y eventos" + botón "+ Agregar anotación" que toggleya `EventoFormInline` en modo crear.
+- Bloque A — "Eventos con fecha":
+  - Lista ordenada asc por `fecha_hora`.
+  - Cada item: título, badge con `tipo_evento` (si existe), fecha `DD/MM/AAAA` con clases del semáforo (`getSemaforoBg` + `getSemaforoText` de `eventoMapper`), descripción si tiene.
+  - Acciones: lápiz (abre `EventoFormInline` en editar inline reemplazando el item), basura (abre `AlertDialog` de confirmación).
+  - Empty: texto sutil gris "Sin eventos con fecha".
+- Bloque B — "Anotaciones sin fecha":
+  - Lista ordenada por `created_at` desc.
+  - Cada item: título, badge tipo, descripción, `created_at` chico.
+  - Mismas acciones; empty: "Sin anotaciones sueltas".
+- Tras mutación exitosa: `toast.success`, refetch local + invocar `onMutated` que llega del padre.
 
-Mantener intacto el JSX visual. Cambios funcionales solamente:
-- Eliminar las tabs login/signup y el botón Google (TAREA 1.4 + se mueve registro a página propia).
-- En `handleSubmit`: `await supabase.auth.signInWithPassword({ email, password })`.
-- Mapeo de errores:
-  - `Invalid login credentials` → "Email o contraseña incorrectos."
-  - `Email not confirmed` → "Tu cuenta no está verificada. Revisá tu casilla de mail."
-  - resto → "Ocurrió un error. Intentá de nuevo."
-- Loading state en el botón principal.
-- Reemplazar el footer "¿No tenés cuenta?" por `<Link to="/signup">Registrate</Link>`.
-- Reemplazar "¿Olvidaste tu contraseña?" por `<Link to="/forgot-password">`.
-- Tras login exitoso → `navigate("/")`.
+### 1.5 Integración en `CausaFormDialog.tsx`
+- Importar `AnotacionesSection`.
+- Agregar nueva `<section>` después de Imputados y antes del bloque de error/acciones, condicionada a `mode === "editar" && causaId`.
+- Pasarle `causaId` y un callback `onMutated` que invoque el `onMutated` del dialog (el padre ya invalida el listado de causas; el calendario se sincroniza por re-mount o refetch propio — ver 1.6).
 
-## 3. Pantallas nuevas (mismo layout que `AuthScreen`)
+### 1.6 Sincronización con calendario y dashboard
+- El calendario (`useCalendarioEventos`) y el dashboard KPI (`useDashboardKpis`) se montan en otra vista y refetchean al cambiar de tab. Para que reflejen al instante mientras el usuario sigue en el mismo render:
+  - Crear `src/lib/eventosBus.ts` minúsculo: un `EventTarget` global `eventosBus` con helpers `emitEventosChanged()` y `useEventosChanged(cb)` (hook que suscribe en `useEffect`).
+  - `useEventoMutations` emite `eventosChanged` tras cada operación exitosa.
+  - `useCalendarioEventos` y `useDashboardKpis` se suscriben y llaman a su `refetch` interno.
+- Esto evita acoplar el form con esos hooks y mantiene el patrón existente.
 
-Reutilizar la cáscara visual: gradient surface + blobs + `elevated-card` + header con `Scale` + título "JusTrack". Crear:
+### 1.7 Filtro de calendario respetado
+- Las anotaciones con fecha entran como tipo `"evento"` (mapper actual) → ya son alcanzadas por el toggle "Eventos manuales" de `CalendarioAlertas`. Sin cambios adicionales.
+- Las sin fecha son excluidas naturalmente por el filtro `not("fecha_hora", "is", null)` del hook del calendario.
 
-- **`src/pages/SignUp.tsx`** — campos nombre/email/password/confirmar. Valida formato, ≥8 chars, coincidencia. `signUp({ email, password, options: { data: { full_name }, emailRedirectTo: window.location.origin } })`. Tras éxito muestra estado "verificación enviada" + botón "Volver al login". Link al login.
-- **`src/pages/ForgotPassword.tsx`** — email + `resetPasswordForEmail(email, { redirectTo: ${origin}/reset-password })`. Mensaje genérico siempre. Link al login.
-- **`src/pages/ResetPassword.tsx`** — Supabase ya crea sesión via el link `type=recovery`. Form de nueva contraseña (≥8) + confirmar. `updateUser({ password })`. Éxito → `signOut()` + redirige a `/auth` con toast "Contraseña actualizada…".
+---
 
-## 4. Pantalla de Bienvenida (sin tribunal)
+## TAREA 2 — Botón de refresh en listas
 
-**Nuevo `src/components/WelcomeNoTribunal.tsx`** (reemplaza/complementa el `WelcomeModal` actual cuando el usuario no es miembro de ningún tribunal).
+### 2.1 Componente nuevo: `src/components/RefreshButton.tsx`
+- Props: `onRefresh: () => void | Promise<void>`, `loading?: boolean`, `className?`.
+- Render: `Button` ghost icon-only con `RefreshCw` de lucide.
+- Mientras `loading` (interno o externo) → `disabled` + clase `animate-spin` en el icono.
+- Tooltip "Actualizar lista" usando `Tooltip`/`TooltipContent` de shadcn.
 
-Layout coherente con login. Tres acciones:
-- **Crear mi tribunal** → input nombre → `supabase.rpc('crear_tribunal', { p_nombre })` → flujo de crear vocalía inicial (paso 6).
-- **Unirme con código** → input 8 chars → `supabase.rpc('unirse_por_codigo', { p_codigo })`.
-- **Tengo un token de invitación** (link discreto / accordion) → `supabase.rpc('aceptar_invitacion', { p_token })`.
-- Footer: "Cerrar sesión" → `logout()`.
+### 2.2 Integraciones
+- **`VocaliaWorkspace.tsx`**:
+  - Cada bloque `RemoteListSection` ya recibe `onRetry`. Agregar el `RefreshButton` en el header del workspace (al lado de `ThemeToggle`) que dispare el `refetch` de la vista activa (mapa `view → refetch`). Alternativa: inyectarlo dentro de cada `CausasTable`/`DetenidosList` header — preferimos centralizarlo en el header del workspace porque ya conoce qué hook está activo.
+  - Para el dashboard, refetchear KPIs + lista (`dashboardKpis.refetch()` + `dashCausasRemote.refetch()`).
+  - Para calendario, llamar `useCalendarioEventos.refetch` (necesita exponerlo via prop o ref). Solución simple: pasar a `CalendarioAlertas` un `headerExtra` o que `CalendarioAlertas` reciba un `registerRefetch` callback al mount.
+- **`CalendarioAlertas.tsx`**: agregar `RefreshButton` al lado del input de búsqueda en el header derecho.
+- **`VocaliaSelector.tsx`**: agregar `RefreshButton` arriba a la derecha del grid (al lado del botón "Volver al inicio de sesión") que dispara `refetch` del hook `useVocalias`.
 
-Tras cualquier éxito: invalidar la query de membresías; `Index` re-evalúa y muestra el `VocaliaSelector`.
+### 2.3 Estado de loading
+- `RefreshButton` muestra spin si el hook está `loading`. Para no parpadear con el `loading` inicial vs. refetch, exponer `refetching` opcional o derivarlo del propio `loading` cuando hay datos previos.
 
-## 5. Decisión post-login en `Index`
+---
 
-Nuevo hook `src/hooks/useMembresias.ts`:
-```ts
-supabase.from('miembros_tribunal').select('tribunal_id').eq('usuario_id', user.id)
-```
-- `loading` → spinner.
-- `count === 0` → `<WelcomeNoTribunal />`.
-- `count >= 1` → flujo actual (`VocaliaSelector` → `VocaliaWorkspace`).
+## Detalle técnico — formato de fecha
 
-## 6. Vocalía inicial (post crear tribunal)
+- Input HTML `type="date"` devuelve `YYYY-MM-DD`. Para guardar en TIMESTAMPTZ usamos `new Date(\`${value}T00:00:00\`).toISOString()` (hora local del navegador → UTC). Para mostrar usamos `new Date(fecha_hora).toLocaleDateString("es-AR")`. Coherente con el resto de la app.
 
-Componente inline tras `crear_tribunal`:
-- Texto "Tu tribunal está creado. Creá tu primera vocalía…"
-- Input nombre → `supabase.from('vocalias').insert({ tribunal_id, nombre })`.
-- Refetch de vocalías y caer en el selector.
+## Archivos a crear
 
-## 7. Logout
+- `src/hooks/useEventosCausa.ts`
+- `src/hooks/useEventoMutations.ts`
+- `src/lib/eventosBus.ts`
+- `src/components/forms/EventoFormInline.tsx`
+- `src/components/forms/AnotacionesSection.tsx`
+- `src/components/RefreshButton.tsx`
 
-- `VocaliaSelector` → el botón "Volver al inicio de sesión" llama `useAuth().logout()`.
-- `VocaliaWorkspace` → el `onLogout` existente también pasa por `logout()`.
-- Limpia `vocalia` actual y navega a `/auth`.
+## Archivos a editar
 
-## Notas técnicas
+- `src/components/forms/CausaFormDialog.tsx` — montar `AnotacionesSection` en modo editar.
+- `src/components/VocaliaWorkspace.tsx` — `RefreshButton` en header + cableado de refetch por vista.
+- `src/components/CalendarioAlertas.tsx` — `RefreshButton` + suscripción al bus.
+- `src/components/VocaliaSelector.tsx` — `RefreshButton`.
+- `src/hooks/useCalendarioEventos.ts` y `src/hooks/useDashboardKpis.ts` — suscribirse a `eventosBus` para refetch automático.
 
-- El trigger `trg_crear_perfil` ya inserta en `perfiles`; no se duplica desde el front.
-- Las políticas `dev_*` siguen activas: el plan no toca RLS ni crea tablas.
-- Toda llamada async usa loading state + manejo de error con `toast`.
-- Mobile-friendly heredado del layout actual de `AuthScreen`.
-- No se agrega Google OAuth (queda removido el botón existente para evitar UX rota).
+## Reglas respetadas
 
-## Archivos
-
-**Nuevos:** `src/context/AuthContext.tsx`, `src/pages/SignUp.tsx`, `src/pages/ForgotPassword.tsx`, `src/pages/ResetPassword.tsx`, `src/components/WelcomeNoTribunal.tsx`, `src/hooks/useMembresias.ts`.
-
-**Editados:** `src/App.tsx` (provider + rutas), `src/pages/Index.tsx` (usa `useAuth` + `useMembresias`), `src/components/AuthScreen.tsx` (conecta a Supabase, quita tabs/Google, agrega links a /signup y /forgot-password), `src/components/VocaliaSelector.tsx` (logout via context).
+- No tocar auth, RLS ni esquema.
+- Patrón hook + (ya existente) eventoMapper reutilizado para semáforo.
+- Toda mutación → toast + refetch local + emit bus.
+- Anotaciones sin fecha invisibles para el calendario por construcción.
+- Anotaciones con fecha respetan el toggle "Eventos manuales".
