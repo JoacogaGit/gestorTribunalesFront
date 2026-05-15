@@ -73,6 +73,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
   }, [vocaliaId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEventosChanged(fetchAll);
 
   return { eventos, loading, error, refetch: fetchAll };
 }
