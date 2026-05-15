@@ -191,10 +191,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const { esAdmin } = useRolTribunal(tribunalId);
 
   // Si un no-admin intenta entrar a "miembros", redirigir.
-  if (view === "miembros" && !esAdmin) {
-    toast.error("No tenés permisos para ver esta sección");
-    setView("dashboard");
-  }
+  useEffect(() => {
+    if (view === "miembros" && !esAdmin) {
+      toast.error("No tenés permisos para ver esta sección");
+      setView("dashboard");
+    }
+  }, [view, esAdmin]);
 
   const defaultTitles: Record<string, string> = {
     dashboard: `Panel General — ${vocaliaNombre}`,
