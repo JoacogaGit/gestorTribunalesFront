@@ -46,7 +46,8 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-4xl w-full">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end items-center gap-1 mb-4">
+          <RefreshButton onRefresh={refetch} loading={loading} label="Actualizar vocalías" />
           <Button variant="ghost" size="sm" onClick={onLogout}>
             <LogOut className="w-4 h-4 mr-1.5" />
             Volver al inicio de sesión
