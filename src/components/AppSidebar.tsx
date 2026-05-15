@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { VocaliaRow } from "@/hooks/useVocalias";
 
@@ -31,6 +31,7 @@ interface Props {
   currentVocaliaId: string | null;
   onSwitchVocalia: (v: VocaliaRow) => void;
   onBack: () => void;
+  esAdmin?: boolean;
 }
 
 export default function AppSidebar({
