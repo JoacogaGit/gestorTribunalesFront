@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
