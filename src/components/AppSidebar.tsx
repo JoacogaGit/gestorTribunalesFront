@@ -112,6 +112,24 @@ export default function AppSidebar({
           );
         })}
 
+        {esAdmin && (() => {
+          const isActive = active === "miembros";
+          return (
+            <button
+              onClick={() => onNavigate("miembros")}
+              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
+              <UserCog className={`w-4 h-4 ${isActive ? "text-sidebar-primary" : ""}`} />
+              Miembros del tribunal
+            </button>
+          );
+        })()}
+
         {customBoards.length > 0 && (
           <div className="pt-4 pb-1">
             <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Tableros</span>
