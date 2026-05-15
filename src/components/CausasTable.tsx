@@ -22,6 +22,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCausaMutations } from "@/hooks/useCausaMutations";
+import { useProximasAnotacionesPorCausa } from "@/hooks/useProximasAnotacionesPorCausa";
+import { getSemaforoText } from "@/lib/eventoMapper";
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
