@@ -36,7 +36,7 @@ interface Props {
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
-  vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack,
+  vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
