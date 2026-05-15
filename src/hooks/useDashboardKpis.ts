@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useEventosChanged } from "@/lib/eventosBus";
 
 export interface DashboardKpis {
   detenidos: number;
@@ -101,6 +102,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
   }, [vocaliaId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEventosChanged(fetchAll);
 
   return { kpis, loading, error, refetch: fetchAll };
 }

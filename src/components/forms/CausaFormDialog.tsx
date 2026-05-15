@@ -21,6 +21,7 @@ import {
   labelEstadoCausa, labelSituacionLibertad, labelTipoRecurso,
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
+import AnotacionesSection from "./AnotacionesSection";
 
 type Mode = "crear" | "editar";
 
@@ -423,6 +424,13 @@ export default function CausaFormDialog({
                   ))}
                 </div>
               </section>
+
+              {mode === "editar" && causaId && (
+                <>
+                  <Separator />
+                  <AnotacionesSection causaId={causaId} onMutated={onMutated} />
+                </>
+              )}
 
               {errorMsg && (
                 <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-2">

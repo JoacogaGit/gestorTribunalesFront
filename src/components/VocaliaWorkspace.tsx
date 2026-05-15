@@ -7,6 +7,7 @@ import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
 import ThemeToggle from "@/components/ThemeToggle";
+import RefreshButton from "@/components/RefreshButton";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -230,6 +231,20 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {(() => {
+              const map: Record<string, { refetch: () => void; loading: boolean } | undefined> = {
+                dashboard: { refetch: () => { dashboardKpis.refetch(); dashCausasRemote.refetch(); }, loading: dashboardKpis.loading || dashCausasRemote.loading },
+                tramite: { refetch: tramiteRemote.refetch, loading: tramiteRemote.loading },
+                detenidos: { refetch: detenidosRemote.refetch, loading: detenidosRemote.loading },
+                rebeldes: { refetch: rebeldesRemote.refetch, loading: rebeldesRemote.loading },
+                sjp: { refetch: sjpRemote.refetch, loading: sjpRemote.loading },
+                recursos: { refetch: recursosRemote.refetch, loading: recursosRemote.loading },
+                terminadas: { refetch: terminadasRemote.refetch, loading: terminadasRemote.loading },
+              };
+              const cur = map[view];
+              if (!cur) return null;
+              return <RefreshButton onRefresh={cur.refetch} loading={cur.loading} />;
+            })()}
             <ThemeToggle />
             <UserMenu
               email={user.email}
