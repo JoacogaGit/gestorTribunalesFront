@@ -21,6 +21,7 @@ import {
   labelEstadoCausa, labelSituacionLibertad, labelTipoRecurso,
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
+import AnotacionesSection from "./AnotacionesSection";
 
 type Mode = "crear" | "editar";
 
