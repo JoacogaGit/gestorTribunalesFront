@@ -238,31 +238,6 @@ export default function CausasTable({
       },
     } satisfies ColDef] : []),
     {
-      key: "juicios", label: "Juicios y Audiencias", headClass: "whitespace-nowrap",
-      sortValue: (c) => {
-        const fechas: number[] = [];
-        if (c.juicioFijado) fechas.push(new Date(c.juicioFijado.fecha).getTime());
-        (c.audiencias || []).forEach((a) => a.fecha && fechas.push(new Date(a.fecha).getTime()));
-        fechas.sort((a, b) => a - b);
-        return fechas[0] ?? Number.MAX_SAFE_INTEGER;
-      },
-      render: (c) => {
-        const items: { label: string; fecha: string; hora?: string }[] = [];
-        if (c.juicioFijado) items.push({ label: "Juicio", fecha: c.juicioFijado.fecha, hora: c.juicioFijado.hora });
-        (c.audiencias || []).forEach((a) => items.push({ label: a.tipo || "Audiencia", fecha: a.fecha, hora: a.hora }));
-        if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
-        return (
-          <div className="space-y-0.5 text-xs">
-            {items.map((it, i) => (
-              <div key={i} className={getProximityColor(it.fecha)}>
-                {it.label} — {fmtDate(it.fecha)}{it.hora ? ` ${it.hora}` : ""}
-              </div>
-            ))}
-          </div>
-        );
-      },
-    },
-    {
       key: "otrosIntervinientes", label: "Otros intervinientes",
       cellClass: "text-xs text-muted-foreground max-w-[180px]",
       sortValue: (c) => (c.otrosIntervinientes || []).map((o) => o.nombre).join(", "),
@@ -270,19 +245,15 @@ export default function CausasTable({
         ? <div className="space-y-0.5">{c.otrosIntervinientes.map((o, i) => <div key={i}><span className="font-medium text-foreground/80">{o.rol}:</span> {o.nombre}</div>)}</div>
         : <span className="text-muted-foreground">—</span>,
     },
-    { key: "anotaciones", label: "Anotaciones", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", sortValue: (c) => c.anotaciones || "", render: (c) => c.anotaciones || "—" },
     {
-      key: "agenda", label: "Agenda", headClass: "whitespace-nowrap",
+      key: "eventosConFecha", label: "Eventos con fecha", headClass: "whitespace-nowrap",
       sortValue: (c) => {
-        const ds: number[] = [];
-        const p = proximasMap.get(c.id);
-        if (p) ds.push(new Date(p.proxima.fecha_hora).getTime());
-        (c.agenda || []).forEach((a) => a.fecha && ds.push(new Date(a.fecha).getTime()));
-        ds.sort((a, b) => a - b);
-        return ds[0] ?? Number.MAX_SAFE_INTEGER;
+        const p = proximasMap.get(c.id)?.proximaConFecha;
+        return p ? new Date(p.fecha_hora).getTime() : Number.MAX_SAFE_INTEGER;
       },
       render: (c) => {
-        const p = proximasMap.get(c.id);
+        const r = proximasMap.get(c.id);
+        const p = r?.proximaConFecha;
         const legacy = c.agenda || [];
         if (!p && legacy.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
         return (
@@ -290,13 +261,13 @@ export default function CausasTable({
             {p && (
               <div className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="truncate max-w-[140px]">
-                  {p.proxima.titulo.length > 22 ? `${p.proxima.titulo.slice(0, 22)}…` : p.proxima.titulo}
+                  {p.titulo.length > 22 ? `${p.titulo.slice(0, 22)}…` : p.titulo}
                 </span>
-                <span className={getSemaforoText(p.proxima.fecha_hora)}>
-                  {fmtDate(p.proxima.fecha_hora)}
+                <span className={getSemaforoText(p.fecha_hora)}>
+                  {fmtDate(p.fecha_hora)}
                 </span>
-                {p.total > 1 && (
-                  <span className="text-[10px] text-muted-foreground bg-muted/60 rounded px-1">+{p.total - 1}</span>
+                {r && r.totalConFecha > 1 && (
+                  <span className="text-[10px] text-muted-foreground bg-muted/60 rounded px-1">+{r.totalConFecha - 1}</span>
                 )}
               </div>
             )}
@@ -305,6 +276,28 @@ export default function CausasTable({
                 {ag.texto.substring(0, 20)}{ag.texto.length > 20 ? "…" : ""} — {fmtDate(ag.fecha)}
               </div>
             ))}
+          </div>
+        );
+      },
+    },
+    {
+      key: "notas", label: "Notas", headClass: "whitespace-nowrap",
+      sortValue: (c) => {
+        const s = proximasMap.get(c.id)?.proximaSinFecha;
+        return s ? -new Date(s.created_at).getTime() : Number.MAX_SAFE_INTEGER;
+      },
+      render: (c) => {
+        const r = proximasMap.get(c.id);
+        const s = r?.proximaSinFecha;
+        if (!s) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <span className="truncate max-w-[160px]">
+              {s.titulo.length > 26 ? `${s.titulo.slice(0, 26)}…` : s.titulo}
+            </span>
+            {r && r.totalSinFecha > 1 && (
+              <span className="text-[10px] text-muted-foreground bg-muted/60 rounded px-1">+{r.totalSinFecha - 1}</span>
+            )}
           </div>
         );
       },

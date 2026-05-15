@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
@@ -188,6 +188,16 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     setVocalia({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
   };
 
+  const { esAdmin } = useRolTribunal(tribunalId);
+
+  // Si un no-admin intenta entrar a "miembros", redirigir.
+  useEffect(() => {
+    if (view === "miembros" && !esAdmin) {
+      toast.error("No tenés permisos para ver esta sección");
+      setView("dashboard");
+    }
+  }, [view, esAdmin]);
+
   const defaultTitles: Record<string, string> = {
     dashboard: `Panel General — ${vocaliaNombre}`,
     tramite: "Causas en Trámite",
@@ -197,6 +207,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     recursos: "Recursos (Casación / Queja / REX)",
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
+    miembros: "Miembros del tribunal",
   };
 
   const title = defaultTitles[view] || customBoards.find((b) => b.id === view)?.label || "Tablero";
@@ -222,6 +233,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         currentVocaliaId={vocaliaId}
         onSwitchVocalia={handleSwitchVocalia}
         onBack={onBack}
+        esAdmin={esAdmin}
       />
       <main className="flex-1 p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
         <div className="flex items-end justify-between mb-8 gap-4">
@@ -451,6 +463,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} />}
+            {view === "miembros" && esAdmin && tribunalId && <MiembrosTribunal tribunalId={tribunalId} />}
+            {view === "miembros" && !esAdmin && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-sm text-muted-foreground">No tenés permisos para ver esta sección.</p>
+              </div>
+            )}
 
             {view.startsWith("custom-") && (
               <CausasTable
