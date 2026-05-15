@@ -188,6 +188,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     setVocalia({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
   };
 
+  const { esAdmin } = useRolTribunal(tribunalId);
+
+  // Si un no-admin intenta entrar a "miembros", redirigir.
+  if (view === "miembros" && !esAdmin) {
+    toast.error("No tenés permisos para ver esta sección");
+    setView("dashboard");
+  }
+
   const defaultTitles: Record<string, string> = {
     dashboard: `Panel General — ${vocaliaNombre}`,
     tramite: "Causas en Trámite",
@@ -197,6 +205,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     recursos: "Recursos (Casación / Queja / REX)",
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
+    miembros: "Miembros del tribunal",
   };
 
   const title = defaultTitles[view] || customBoards.find((b) => b.id === view)?.label || "Tablero";
