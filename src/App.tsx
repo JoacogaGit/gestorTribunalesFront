@@ -9,6 +9,7 @@ import AuthScreen from "./components/AuthScreen";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AcceptInvitation from "./pages/AcceptInvitation";
 import { VocaliaProvider } from "@/context/VocaliaContext";
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/invitacion/:token" element={<AcceptInvitation />} />
               <Route path="/" element={<Index />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

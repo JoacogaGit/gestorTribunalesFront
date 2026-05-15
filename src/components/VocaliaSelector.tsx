@@ -94,53 +94,73 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
 
         {!loading && !error && vocalias.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {vocalias.map((v) => (
-              <div key={v.id} className="glass-card rounded-xl p-8 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 group">
-                <div className="flex items-start justify-between mb-5">
-                  <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Scale className="w-7 h-7 text-primary" />
+            {vocalias.map((v) => {
+              const isEditing = editingId === v.id;
+              const cardClick = () => { if (!isEditing) handleSelect(v); };
+              const cardKey = (e: React.KeyboardEvent) => {
+                if (isEditing) return;
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(v); }
+              };
+              return (
+                <div
+                  key={v.id}
+                  role="button"
+                  tabIndex={isEditing ? -1 : 0}
+                  onClick={cardClick}
+                  onKeyDown={cardKey}
+                  className={`glass-card rounded-xl p-8 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 group focus:outline-none focus:ring-2 focus:ring-primary/40 ${isEditing ? "cursor-default" : "cursor-pointer"}`}
+                >
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Scale className="w-7 h-7 text-primary" />
+                    </div>
+                    {!isEditing && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startEdit(v); }}
+                        className="p-2 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Editar nombre"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  {editingId !== v.id && (
-                    <button
-                      onClick={() => startEdit(v)}
-                      className="p-2 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Editar nombre"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
+
+                  {isEditing ? (
+                    <div className="flex items-center gap-1 mb-2" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") confirmEdit(v);
+                          if (e.key === "Escape") setEditingId(null);
+                        }}
+                        autoFocus
+                        className="flex-1 bg-muted/50 text-foreground text-xl font-display font-bold px-2 py-1 rounded-md outline-none border border-border focus:border-primary"
+                      />
+                      <button onClick={(e) => { e.stopPropagation(); confirmEdit(v); }} className="p-1 text-alert-ok hover:opacity-80">
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="p-1 text-alert-urgent hover:opacity-80">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <h2 className="text-2xl font-display font-bold text-foreground mb-1 break-words">{v.nombre}</h2>
                   )}
+
+                  <p className="text-muted-foreground text-sm mb-6">Listado de causas y seguimiento</p>
+
+                  <Button
+                    onClick={(e) => { e.stopPropagation(); handleSelect(v); }}
+                    className="w-full"
+                    disabled={isEditing}
+                  >
+                    Entrar
+                  </Button>
                 </div>
-
-                {editingId === v.id ? (
-                  <div className="flex items-center gap-1 mb-2">
-                    <input
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") confirmEdit(v);
-                        if (e.key === "Escape") setEditingId(null);
-                      }}
-                      autoFocus
-                      className="flex-1 bg-muted/50 text-foreground text-xl font-display font-bold px-2 py-1 rounded-md outline-none border border-border focus:border-primary"
-                    />
-                    <button onClick={() => confirmEdit(v)} className="p-1 text-alert-ok hover:opacity-80">
-                      <Check className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setEditingId(null)} className="p-1 text-alert-urgent hover:opacity-80">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <h2 className="text-2xl font-display font-bold text-foreground mb-1 break-words">{v.nombre}</h2>
-                )}
-
-                <p className="text-muted-foreground text-sm mb-6">Listado de causas y seguimiento</p>
-
-                <Button onClick={() => handleSelect(v)} className="w-full" disabled={editingId === v.id}>
-                  Entrar
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

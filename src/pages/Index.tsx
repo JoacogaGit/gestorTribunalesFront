@@ -1,4 +1,5 @@
-import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import VocaliaSelector from "@/components/VocaliaSelector";
 import VocaliaWorkspace from "@/components/VocaliaWorkspace";
@@ -12,6 +13,14 @@ export default function Index() {
   const { user, loading: authLoading, logout } = useAuth();
   const { vocalia, setVocalia, clearVocalia } = useVocaliaActual();
   const { count, loading: memLoading, refetch } = useMembresias();
+  const navigate = useNavigate();
+
+  // Si hay un token de invitación pendiente y el usuario ya está logueado, redirigir.
+  useEffect(() => {
+    if (!user) return;
+    const t = localStorage.getItem("pending_invitation_token");
+    if (t) { localStorage.removeItem("pending_invitation_token"); navigate(`/invitacion/${t}`, { replace: true }); }
+  }, [user, navigate]);
 
   if (authLoading) {
     return (

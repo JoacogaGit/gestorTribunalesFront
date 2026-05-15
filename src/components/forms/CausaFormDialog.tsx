@@ -428,7 +428,7 @@ export default function CausaFormDialog({
               {mode === "editar" && causaId && (
                 <>
                   <Separator />
-                  <AnotacionesSection causaId={causaId} onMutated={onMutated} />
+                  <AnotacionesSection causaId={causaId} />
                 </>
               )}
 
