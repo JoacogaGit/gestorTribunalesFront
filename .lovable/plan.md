@@ -1,159 +1,58 @@
-# Plan: Soft delete, migración por IA y onboarding de tribunal
+# Cierre de pendientes — Migración / Papelera / Onboarding
 
-## Tarea 1 — Soft delete (papelera de reciclaje)
+Cinco cambios acotados al frontend. No se toca DB, RLS, ni nada ya terminado.
 
-### 1.1 SQL para correr manualmente (NO lo ejecuta Lovable)
+## 1. Fix de tipo en `WizardMigracion.tsx`
 
-Se entrega al usuario en chat para que lo copie al SQL Editor:
+En `handleFile` (línea ~45), `procesar` devuelve `ResultadoIA | null` y se pasa a `handleResultado(r)` que ya hace el discriminated narrowing por `r.modo`. El problema es que `setResultado` espera `ResultadoIADirecto` pero el chequeo está bien escrito. Falta solo asegurar el narrowing: dentro de `handleResultado`, tras `if (r.modo === "mapeo_asistido_requerido") return;`, asignar a una variable tipada explícitamente como `ResultadoIADirecto` antes de pasarla al state (TS no siempre estrecha bien tras early-return por discriminante con union genérico). Cambio mínimo en esa función + tipar `handleResultado` para recibir `ResultadoIA` (no `ResultadoIA | null`).
 
-```sql
-ALTER TABLE public.causas
-  ADD COLUMN borrado_en TIMESTAMPTZ,
-  ADD COLUMN borrado_por UUID REFERENCES public.perfiles(id);
-ALTER TABLE public.sujetos
-  ADD COLUMN borrado_en TIMESTAMPTZ,
-  ADD COLUMN borrado_por UUID REFERENCES public.perfiles(id);
-ALTER TABLE public.eventos
-  ADD COLUMN borrado_en TIMESTAMPTZ,
-  ADD COLUMN borrado_por UUID REFERENCES public.perfiles(id);
+## 2. Cablear Papelera y Wizard en `VocaliaWorkspace.tsx`
 
-CREATE INDEX idx_causas_activos   ON public.causas  (vocalia_id) WHERE borrado_en IS NULL;
-CREATE INDEX idx_sujetos_activos  ON public.sujetos (causa_id)   WHERE borrado_en IS NULL;
-CREATE INDEX idx_eventos_activos  ON public.eventos (causa_id)   WHERE borrado_en IS NULL;
-```
+- Importar `Papelera` y `WizardMigracion`.
+- Agregar entradas en `defaultTitles`: `papelera: "Papelera"`, `migrar: "Migrar causas"`.
+- Render: `{view === "papelera" && esAdmin && tribunalId && <Papelera tribunalId={tribunalId} />}` (con fallback de "sin permisos" igual que `miembros`).
+- Render: `{view === "migrar" && <WizardMigracion vocaliaId={vocaliaId} vocaliaNombre={vocaliaNombre} onDone={() => setView("dashboard")} />}`.
+- Guard en el `useEffect` ya existente: extender la condición a `(view === "miembros" || view === "papelera") && !esAdmin` → redirige y avisa.
 
-Mensaje al usuario: hasta que no se corra el SQL, los hooks seguirán funcionando (las columnas extra son nullables; el filtro `.is("borrado_en", null)` falla suave si no existen → se aplica el filtro recién después de correr la migración). Se documenta este orden.
+## 3. Items en `AppSidebar.tsx`
 
-### 1.2 Filtros en hooks de lectura
+- Importar `Trash2`, `Upload` de lucide-react.
+- Agregar a `defaultNavItems` el item `{ id: "migrar", label: "Migrar causas", icon: Upload }` (visible para todos), insertado al final de la lista principal (antes de calendario o después, consistente con el grupo).
+- Replicar el patrón actual del item "Miembros" (bloque `esAdmin && (() => {...})()`) para renderizar **"Papelera"** con icono `Trash2`, solo cuando `esAdmin`.
 
-A todos los `.select(...)` agregar `.is("borrado_en", null)` (y para joins anidados, ej. `sujetos!inner`, filtrar sujetos también):
+## 4. Disparar `BienvenidaTribunal` desde `WelcomeNoTribunal.tsx`
 
-- `useCausasPorEstado`, `useCausasConSujetoEn`, `useCausasTramite`, `useCausasDashboard`, `useCausasSearch`
-- `useDetenidos` (filtra sujetos y causa embebida)
-- `useDashboardKpis` (cuentas)
-- `useCalendarioEventos`, `useEventosCausa`, `useProximasAnotacionesPorCausa`
+- Agregar estado `mode === "bienvenida"`.
+- En `handleCrearVocalia`, tras success: en vez de llamar `onCreated()` directo, `setMode("bienvenida")` (sin perder `tribunalId`).
+- Render del `mode === "bienvenida"`: usar `<BienvenidaTribunal>` con:
+  - `onMigrar`: llama `onCreated()` y además guarda en `sessionStorage` un flag `justrack:open-migrar=1`.
+  - `onEmpezarDesdeCero`: llama `onCreated()` directamente.
+- En `VocaliaWorkspace` (al montar): `useEffect` que lee ese flag de `sessionStorage`; si está, lo borra y hace `setView("migrar")`. Así el ruteo queda transparente y solo se dispara la primera vez.
+- Los usuarios que se unen con código/token siguen el flujo original (`onCreated()` directo, sin bienvenida).
 
-### 1.3 Mutations de borrado → soft delete
+## 5. Mapeo asistido — Paso 2 del wizard
 
-- `useCausaMutations.ts`: `borrarCausa` ahora hace `UPDATE causas SET borrado_en = now(), borrado_por = userId`. También marca `sujetos` y `eventos` de la causa como borrados (cascada lógica).
-- `useEventoMutations.ts`: `borrarEvento` → `UPDATE` con `borrado_en`/`borrado_por`.
-- Para sujetos sueltos: si hay `borrarSujeto` en algún hook, mismo patrón.
+Cuando la edge function devuelve `modo: "mapeo_asistido_requerido"` con `columnas_detectadas` y `campos_disponibles`:
 
-### 1.4 Pantalla Papelera (solo admins)
+- Nuevo state `mapeo: ResultadoIAMapeo | null` y `archivoCache: ArchivoParseado | null` (guardado en `handleFile` antes de invocar IA, para poder reusarlo en el reintento).
+- En `handleResultado`, si `r.modo === "mapeo_asistido_requerido"`, setear `mapeo = r` en vez del `toast.warning + return` actual.
+- Render condicional (antes del Paso 3): tabla compacta — una fila por columna detectada, con:
+  - Índice + 2-3 valores muestra (`muestra`).
+  - Hipótesis de la IA (texto chico, gris).
+  - `Select` (shadcn) con `campos_disponibles` + "(ignorar)".
+- Botón **"Reprocesar con mi mapeo"**: arma `Record<string, string>` (`indice → campo`), invoca `procesar(vocaliaId, vocaliaNombre, archivoCache, mapeo)`, pasa por `handleResultado`. Si la IA vuelve a pedir mapeo, se queda en este paso con un toast de error.
+- Botón secundario **"Descartar y reintentar"** vuelve al Paso 1.
+- Loading state en botones durante el reintento.
 
-- `AppSidebar.tsx`: nuevo item `Papelera` (icono `Trash2`) condicionado a `esAdmin`, debajo de "Miembros del tribunal".
-- `VocaliaWorkspace.tsx`: registrar `view === "papelera"` (con redirect si no es admin, igual que miembros).
-- Nuevo componente `src/components/Papelera.tsx` con `Tabs` (Causas / Sujetos / Eventos).
-- Nuevos hooks: `useBorrados.ts` que expone `useCausasBorradas(vocaliaId)`, `useSujetosBorrados(vocaliaId)`, `useEventosBorrados(vocaliaId)`. Cada uno trae con join a `perfiles` para el nombre del que borró.
-- Cada fila: título, `borrado_en` formateado, "borrado por X", botón **Restaurar** con `AlertDialog` que ejecuta `UPDATE ... SET borrado_en = NULL, borrado_por = NULL`.
-- Sin botón de borrado definitivo (fuera de scope).
+## Archivos modificados
 
-## Tarea 2 — Onboarding post-creación de tribunal
+- `src/components/WizardMigracion.tsx` — fix tipo + paso 2 mapeo asistido.
+- `src/components/VocaliaWorkspace.tsx` — views `papelera` + `migrar`, guard admin, autoabrir tras bienvenida.
+- `src/components/AppSidebar.tsx` — items `Migrar causas` (todos) + `Papelera` (admin).
+- `src/components/WelcomeNoTribunal.tsx` — nuevo `mode: "bienvenida"` integrando `BienvenidaTribunal`.
 
-### 2.1 Pantalla de bienvenida
+## Fuera de alcance
 
-- Nuevo componente `src/components/BienvenidaTribunal.tsx`.
-- Se dispara después de `crear_tribunal` (en el flujo actual de `VocaliaSelector` / `WelcomeNoTribunal`): tras la primera vocalía creada, en lugar de entrar directo al workspace, se muestra esta pantalla.
-- Estado nuevo (`flagBienvenidaPendiente`) guardado en `localStorage` por `tribunal_id` para no repetirla.
-- Contenido: título "Tu gestión de causas inteligente empieza acá", subtítulo cálido, descripción de migración, dos CTAs:
-  - Primario: "🚀 Migrar mis causas existentes" → entra al workspace con `view = "migrar"`.
-  - Secundario: "Empezar desde cero" → `view = "dashboard"`.
-- Footer recordando que se puede migrar después desde el sidebar.
-
-### 2.2 Item permanente "Migrar causas" en sidebar
-
-- En `AppSidebar.tsx` agregar item `Migrar causas` (icono `Upload`) visible para todos los miembros.
-- `VocaliaWorkspace.tsx`: `view === "migrar"` renderiza `<WizardMigracion vocaliaId={...} vocaliaNombre={...} />`.
-
-## Tarea 3 — Wizard de migración por IA
-
-### 3.1 Infraestructura
-
-**Dependencias frontend**:
-```
-bun add xlsx papaparse mammoth
-```
-
-**Parseo (`src/lib/parseMigracionFile.ts`)**:
-- Detecta extensión y devuelve `{ tipo, pestanas: [{ nombre, filas: string[][] | string }] }`.
-- Excel: SheetJS, todas las hojas → matriz de celdas.
-- CSV: papaparse.
-- DOCX: mammoth (`extractRawText`) → una única "pestaña" con texto.
-- TXT: lectura directa → texto plano.
-- Límite 10 MB.
-
-**Edge function `supabase/functions/procesar-migracion/index.ts`**:
-- `verify_jwt = false` en `config.toml`; validar JWT en código vía `supabase.auth.getClaims(token)`.
-- Valida que el usuario es miembro de la vocalía (`es_miembro_de_vocalia` RPC con cliente service-role autenticado como el user, o consulta a `miembros_tribunal` join `vocalias`).
-- Llama a Anthropic:
-  - `POST https://api.anthropic.com/v1/messages`
-  - Headers: `x-api-key: ANTHROPIC_API_KEY`, `anthropic-version: 2023-06-01`, `content-type: application/json`.
-  - Body: `{ model: "claude-sonnet-4-5", max_tokens: 16000, system: SYSTEM_PROMPT, messages: [{ role:"user", content: "Migrar a vocalía: ...\nArchivo de tipo ...\nContenido:\n" + JSON.stringify(payload) }] }`.
-- Reparación de JSON: extrae primer `{ ... }` balanceado; si falla, devuelve `{ ok:false, error:"json_invalido", raw }`.
-- Errores: `no_api_key` (sin secret), `forbidden` (no miembro de vocalía), `payload_too_large`.
-- Constante `SYSTEM_PROMPT` con el texto completo del rol de Claude (literal del enunciado).
-- Devuelve `{ ok:true, resultado: <json IA> }`.
-
-**Secret**: pedir `ANTHROPIC_API_KEY` vía `add_secret`.
-
-**Almacenamiento**: respuesta cruda vive en `useState` del wizard. Nada se persiste hasta confirmar.
-
-### 3.2 Wizard (`src/components/WizardMigracion.tsx`)
-
-Componente con `step: 1 | 2 | 3 | 4` y `useReducer` para el estado IA.
-
-**Paso 1 — Subida**:
-- Header `Migrar causas a {vocaliaNombre}` + aviso de vocalía destino.
-- Dropzone (drag & drop nativo) + `<input type="file">`. Acepta `.xlsx,.xls,.csv,.docx,.txt`.
-- Loader con copy "Nuestra IA está leyendo e interpretando tu archivo…".
-- Al recibir respuesta: si `modo === "mapeo_asistido_requerido"` → Paso 2; si `modo === "procesamiento_directo"` → Paso 3.
-
-**Paso 2 — Mapeo asistido**:
-- Tabla con `columnas_detectadas`: cada columna muestra muestras + `<Select>` con `campos_disponibles` para mapear.
-- Botón "Reintentar con este mapeo" → re-invoca la edge function con `mapeo_manual: { 0: "expediente_nro", ... }` adjunto al payload. La edge function lo agrega como contexto adicional al user message.
-
-**Paso 3 — Revisión**:
-- Encabezado con 6 contadores grandes (`Card` por cada uno) + chip-list de `pestanas_procesadas`.
-- Lista de causas: `Collapsible` por causa, borde izquierdo color según `confianza` (`verde` = `--alert-ok`, `amarillo` = ámbar, `rojo` = `--alert-urgent`).
-- Header: checkbox de inclusión, expediente, carátula, badges (estado, tipo proceso), conteo de sujetos/eventos.
-- Expandido: inputs editables (`Input`/`Textarea`/`Select`) para todos los campos de causa, lista de sujetos y eventos con sus campos. `notas_ia` en banner si está.
-- Sección "Filas rojas no procesables": tabla con `razon`, `datos_crudos`, botón "Crear causa manualmente" que abre `<CausaFormDialog>` precargado con lo que se pudo inferir.
-- Footer fijo: "Vas a cargar N causas, M sujetos, K eventos en {vocalia}" + `Cargar todo` + `Descartar`.
-
-**Paso 4 — Carga**:
-- `AlertDialog` de confirmación.
-- Inserción: como Supabase JS no expone transacciones cliente-side, se usa una RPC nueva opcional o se hace inserción secuencial con rollback manual:
-  - Insertar causas con `select()` para recuperar `id` real, mapear por `id_temporal`.
-  - Insertar sujetos con `causa_id` mapeado.
-  - Insertar eventos con `causa_id` mapeado.
-  - Si falla en cualquier paso: borrar (hard delete) los registros ya creados en este batch (no soft, son recién creados).
-- Pantalla de éxito con resumen y botón "Ir al dashboard".
-
-## Archivos
-
-**Creados**
-- `src/components/Papelera.tsx`
-- `src/components/BienvenidaTribunal.tsx`
-- `src/components/WizardMigracion.tsx` (+ sub-componentes `WizardPasoSubida`, `WizardPasoMapeo`, `WizardPasoRevision`, `WizardPasoExito` en el mismo archivo o en `src/components/migracion/`)
-- `src/hooks/useBorrados.ts`
-- `src/hooks/useRestaurar.ts`
-- `src/hooks/useMigracion.ts` (invoca edge function + ejecuta inserts finales)
-- `src/lib/parseMigracionFile.ts`
-- `supabase/functions/procesar-migracion/index.ts`
-
-**Editados**
-- `src/components/AppSidebar.tsx` (items Papelera + Migrar causas)
-- `src/components/VocaliaWorkspace.tsx` (views `papelera` y `migrar`, guard admin para papelera)
-- `src/components/VocaliaSelector.tsx` o `WelcomeNoTribunal.tsx` (disparo de pantalla de bienvenida tras crear tribunal)
-- Todos los hooks de lectura listados en 1.2
-- `src/hooks/useCausaMutations.ts`, `src/hooks/useEventoMutations.ts`
-- `supabase/config.toml` (registrar función `procesar-migracion`)
-
-**Secret a pedir**: `ANTHROPIC_API_KEY`.
-
-## Notas
-
-- El SQL de soft delete lo corre el usuario manualmente; Lovable solo lo entrega.
-- El filtro `.is("borrado_en", null)` se agrega de una sola vez en cada hook; antes de que existan las columnas Supabase responde con error → se aclara al usuario que primero corra el SQL.
-- RLS existente cubre todo (insert/update/delete sobre causas/sujetos/eventos chequea membresía de vocalía). El soft delete es un `UPDATE`, igual permitido.
-- Coherencia visual: se reutilizan `Card`, `Button`, `Tabs`, `Collapsible`, `AlertDialog`, `Badge` y tokens semánticos existentes.
+- Nada de DB / RLS / edge functions.
+- Nada en hooks ya cableados.
+- Sin tocar `Papelera.tsx`, `BienvenidaTribunal.tsx`, `useMigracion.ts`, `procesar-migracion/index.ts` (ya están listos).
