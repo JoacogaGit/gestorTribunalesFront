@@ -73,6 +73,20 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     onCreated();
   };
 
+  if (mode === "bienvenida") {
+    return (
+      <BienvenidaTribunal
+        onMigrar={() => {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("justrack:open-migrar", "1");
+          }
+          onCreated();
+        }}
+        onEmpezarDesdeCero={onCreated}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">
       <div className="absolute inset-0 -z-10 bg-gradient-surface" />
