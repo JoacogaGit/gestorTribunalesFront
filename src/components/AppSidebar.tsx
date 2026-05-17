@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Upload, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { VocaliaRow } from "@/hooks/useVocalias";
 
@@ -12,6 +12,7 @@ const defaultNavItems = [
   { id: "recursos", label: "Recursos", icon: Users },
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },
   { id: "calendario", label: "Calendario / Alertas", icon: Calendar },
+  { id: "migrar", label: "Migrar causas", icon: Upload },
 ];
 
 export interface CustomBoard {
@@ -112,11 +113,15 @@ export default function AppSidebar({
           );
         })}
 
-        {esAdmin && (() => {
-          const isActive = active === "miembros";
+        {esAdmin && ([
+          { id: "miembros", label: "Miembros del tribunal", icon: UserCog },
+          { id: "papelera", label: "Papelera", icon: Trash2 },
+        ]).map((item) => {
+          const isActive = active === item.id;
           return (
             <button
-              onClick={() => onNavigate("miembros")}
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
               className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
@@ -124,11 +129,11 @@ export default function AppSidebar({
               }`}
             >
               {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
-              <UserCog className={`w-4 h-4 ${isActive ? "text-sidebar-primary" : ""}`} />
-              Miembros del tribunal
+              <item.icon className={`w-4 h-4 ${isActive ? "text-sidebar-primary" : ""}`} />
+              {item.label}
             </button>
           );
-        })()}
+        })}
 
         {customBoards.length > 0 && (
           <div className="pt-4 pb-1">

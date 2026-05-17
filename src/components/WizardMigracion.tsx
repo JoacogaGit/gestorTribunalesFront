@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { parseMigracionFile } from "@/lib/parseMigracionFile";
-import { CausaIA, ResultadoIA, ResultadoIADirecto, useMigracion } from "@/hooks/useMigracion";
+import { parseMigracionFile, ArchivoParseado } from "@/lib/parseMigracionFile";
+import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
 
 interface Props {
   vocaliaId: string | null;
