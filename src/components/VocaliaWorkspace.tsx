@@ -25,6 +25,8 @@ import { useVocalias } from "@/hooks/useVocalias";
 import { supabase } from "@/integrations/supabase/client";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
+import Papelera from "@/components/Papelera";
+import WizardMigracion from "@/components/WizardMigracion";
 
 interface RemoteListSectionProps {
   loading: boolean;
@@ -190,13 +192,22 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
   const { esAdmin } = useRolTribunal(tribunalId);
 
-  // Si un no-admin intenta entrar a "miembros", redirigir.
+  // Si un no-admin intenta entrar a "miembros" o "papelera", redirigir.
   useEffect(() => {
-    if (view === "miembros" && !esAdmin) {
+    if ((view === "miembros" || view === "papelera") && !esAdmin) {
       toast.error("No tenés permisos para ver esta sección");
       setView("dashboard");
     }
   }, [view, esAdmin]);
+
+  // Si venimos de la bienvenida con flag de migrar, abrimos el wizard una sola vez.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("justrack:open-migrar") === "1") {
+      sessionStorage.removeItem("justrack:open-migrar");
+      setView("migrar");
+    }
+  }, []);
 
   const defaultTitles: Record<string, string> = {
     dashboard: `Panel General — ${vocaliaNombre}`,
@@ -208,6 +219,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
     miembros: "Miembros del tribunal",
+    papelera: "Papelera",
+    migrar: "Migrar causas",
   };
 
   const title = defaultTitles[view] || customBoards.find((b) => b.id === view)?.label || "Tablero";
@@ -468,6 +481,19 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <p className="text-sm text-muted-foreground">No tenés permisos para ver esta sección.</p>
               </div>
+            )}
+            {view === "papelera" && esAdmin && vocaliaId && <Papelera vocaliaId={vocaliaId} />}
+            {view === "papelera" && !esAdmin && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-sm text-muted-foreground">No tenés permisos para ver esta sección.</p>
+              </div>
+            )}
+            {view === "migrar" && (
+              <WizardMigracion
+                vocaliaId={vocaliaId}
+                vocaliaNombre={vocaliaNombre}
+                onDone={() => setView("dashboard")}
+              />
             )}
 
             {view.startsWith("custom-") && (
