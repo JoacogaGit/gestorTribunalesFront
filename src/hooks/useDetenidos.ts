@@ -22,7 +22,9 @@ export function useDetenidos(vocaliaId: string | null) {
       .from("sujetos")
       .select("*, causas!inner(*)")
       .eq("situacion_libertad", "detenido")
-      .eq("causas.vocalia_id", vocaliaId);
+      .eq("causas.vocalia_id", vocaliaId)
+      .is("borrado_en", null)
+      .is("causas.borrado_en", null);
 
     if (error) {
       setError(error.message);
