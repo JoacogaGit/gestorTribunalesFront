@@ -25,6 +25,9 @@ const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
 export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Props) {
   const { loading, error, procesar, cargarEnBD } = useMigracion();
   const [resultado, setResultado] = useState<ResultadoIADirecto | null>(null);
+  const [mapeo, setMapeo] = useState<ResultadoIAMapeo | null>(null);
+  const [archivoCache, setArchivoCache] = useState<ArchivoParseado | null>(null);
+  const [seleccionMapeo, setSeleccionMapeo] = useState<Record<number, string>>({});
   const [filename, setFilename] = useState<string>("");
   const [editable, setEditable] = useState<CausaIA[]>([]);
   const [incluir, setIncluir] = useState<Record<string, boolean>>({});
@@ -43,6 +46,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
     setFilename(file.name);
     try {
       const parsed = await parseMigracionFile(file);
+      setArchivoCache(parsed);
       const r = await procesar(vocaliaId, vocaliaNombre, parsed);
       handleResultado(r);
     } catch (e) {
@@ -53,15 +57,38 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
   const handleResultado = (r: ResultadoIA | null) => {
     if (!r) return;
     if (r.modo === "mapeo_asistido_requerido") {
-      toast.warning("La IA no pudo detectar las columnas. Mostrando datos crudos para revisión manual.");
-      // Para mantener el alcance acotado: en este caso permitimos reintentar.
+      setMapeo(r);
+      const inicial: Record<number, string> = {};
+      r.columnas_detectadas.forEach((c) => { inicial[c.indice] = "(ignorar)"; });
+      setSeleccionMapeo(inicial);
       return;
     }
-    setResultado(r);
-    setEditable(r.causas);
+    const directo: ResultadoIADirecto = r;
+    setMapeo(null);
+    setResultado(directo);
+    setEditable(directo.causas);
     const inc: Record<string, boolean> = {};
-    r.causas.forEach((c) => { inc[c.id_temporal] = c.confianza !== "rojo"; });
+    directo.causas.forEach((c) => { inc[c.id_temporal] = c.confianza !== "rojo"; });
     setIncluir(inc);
+  };
+
+  const handleReprocesar = async () => {
+    if (!archivoCache) return;
+    const mapeoManual: Record<string, string> = {};
+    Object.entries(seleccionMapeo).forEach(([idx, campo]) => {
+      if (campo && campo !== "(ignorar)") mapeoManual[idx] = campo;
+    });
+    if (Object.keys(mapeoManual).length === 0) {
+      toast.error("Asigná al menos una columna.");
+      return;
+    }
+    const r = await procesar(vocaliaId, vocaliaNombre, archivoCache, mapeoManual);
+    if (r && r.modo === "mapeo_asistido_requerido") {
+      toast.error("La IA sigue sin poder procesar. Revisá el mapeo.");
+      setMapeo(r);
+      return;
+    }
+    handleResultado(r);
   };
 
   const handleCargar = async () => {
