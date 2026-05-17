@@ -71,6 +71,7 @@ export type Database = {
           modificado_por: string | null
           otros_intervinientes: string | null
           querella: string | null
+          tipo_proceso: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           updated_at: string | null
           vocalia_id: string
@@ -89,6 +90,7 @@ export type Database = {
           modificado_por?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
+          tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           updated_at?: string | null
           vocalia_id: string
@@ -107,6 +109,7 @@ export type Database = {
           modificado_por?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
+          tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           updated_at?: string | null
           vocalia_id?: string
@@ -394,6 +397,7 @@ export type Database = {
           updated_at: string | null
           vencimiento_pena: string | null
           vencimiento_pp: string | null
+          vencimiento_sjp: string | null
         }
         Insert: {
           causa_id: string
@@ -412,6 +416,7 @@ export type Database = {
           updated_at?: string | null
           vencimiento_pena?: string | null
           vencimiento_pp?: string | null
+          vencimiento_sjp?: string | null
         }
         Update: {
           causa_id?: string
@@ -430,6 +435,7 @@ export type Database = {
           updated_at?: string | null
           vencimiento_pena?: string | null
           vencimiento_pp?: string | null
+          vencimiento_sjp?: string | null
         }
         Relationships: [
           {
@@ -541,6 +547,7 @@ export type Database = {
         | "rebelde"
         | "probation"
         | "condenado"
+      tipo_proceso_enum: "unipersonal" | "colegiado"
       tipo_recurso_enum: "casacion" | "rex" | "queja_corte"
     }
     CompositeTypes: {
@@ -679,6 +686,7 @@ export const Constants = {
         "probation",
         "condenado",
       ],
+      tipo_proceso_enum: ["unipersonal", "colegiado"],
       tipo_recurso_enum: ["casacion", "rex", "queja_corte"],
     },
   },
