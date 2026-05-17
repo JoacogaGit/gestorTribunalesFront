@@ -24,7 +24,8 @@ export function useEventosCausa(causaId: string | null | undefined) {
     const { data, error: e } = await supabase
       .from("eventos")
       .select("id, causa_id, titulo, descripcion, fecha_hora, tipo_evento, completado, created_at")
-      .eq("causa_id", causaId);
+      .eq("causa_id", causaId)
+      .is("borrado_en", null);
     if (e) {
       setError(e.message);
       setEventos([]);

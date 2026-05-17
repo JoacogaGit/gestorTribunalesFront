@@ -22,7 +22,8 @@ export function useProximasAnotacionesPorCausa(causaIds: string[]) {
     const { data, error } = await supabase
       .from("eventos")
       .select("id, causa_id, titulo, fecha_hora, created_at")
-      .in("causa_id", ids);
+      .in("causa_id", ids)
+      .is("borrado_en", null);
     if (error || !data) { setLoading(false); return; }
 
     const now = Date.now();

@@ -25,28 +25,36 @@ export function useCalendarioEventos(vocaliaId: string | null) {
       const [evtRes, ppRes, penaRes, prescRes] = await Promise.all([
         supabase
           .from("eventos")
-          .select(`id,titulo,descripcion,fecha_hora,tipo_evento,causa_id,sujeto_id, causas!inner(${CAUSA_COLS})`)
+          .select(`id,titulo,descripcion,fecha_hora,tipo_evento,causa_id,sujeto_id, causas!inner(${CAUSA_COLS},borrado_en)`)
           .not("fecha_hora", "is", null)
           .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId),
+          .eq("causas.vocalia_id", vocaliaId)
+          .is("borrado_en", null)
+          .is("causas.borrado_en", null),
         supabase
           .from("sujetos")
-          .select(`id,nombre_completo,causa_id,vencimiento_pp, causas!inner(${CAUSA_COLS})`)
+          .select(`id,nombre_completo,causa_id,vencimiento_pp, causas!inner(${CAUSA_COLS},borrado_en)`)
           .not("vencimiento_pp", "is", null)
           .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId),
+          .eq("causas.vocalia_id", vocaliaId)
+          .is("borrado_en", null)
+          .is("causas.borrado_en", null),
         supabase
           .from("sujetos")
-          .select(`id,nombre_completo,causa_id,vencimiento_pena, causas!inner(${CAUSA_COLS})`)
+          .select(`id,nombre_completo,causa_id,vencimiento_pena, causas!inner(${CAUSA_COLS},borrado_en)`)
           .not("vencimiento_pena", "is", null)
           .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId),
+          .eq("causas.vocalia_id", vocaliaId)
+          .is("borrado_en", null)
+          .is("causas.borrado_en", null),
         supabase
           .from("sujetos")
-          .select(`id,nombre_completo,causa_id,prescripcion_fecha, causas!inner(${CAUSA_COLS})`)
+          .select(`id,nombre_completo,causa_id,prescripcion_fecha, causas!inner(${CAUSA_COLS},borrado_en)`)
           .not("prescripcion_fecha", "is", null)
           .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId),
+          .eq("causas.vocalia_id", vocaliaId)
+          .is("borrado_en", null)
+          .is("causas.borrado_en", null),
       ]);
 
       const firstErr = [evtRes, ppRes, penaRes, prescRes].find((r) => r.error)?.error;
