@@ -72,7 +72,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       return;
     }
     const r = await cargarEnBD(vocaliaId, seleccionadas);
-    if (!r.ok) {
+    if ("error" in r) {
       toast.error(r.error);
       return;
     }
