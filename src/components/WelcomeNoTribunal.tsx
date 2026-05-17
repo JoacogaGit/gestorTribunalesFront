@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import BienvenidaTribunal from "@/components/BienvenidaTribunal";
 
 interface Props {
   onCreated: () => void;
 }
 
-type Mode = "menu" | "crear" | "codigo" | "token" | "vocalia";
+type Mode = "menu" | "crear" | "codigo" | "token" | "vocalia" | "bienvenida";
 
 export default function WelcomeNoTribunal({ onCreated }: Props) {
   const { logout } = useAuth();
@@ -49,7 +50,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     setLoading(false);
     if (error) { toast.error("No se pudo crear la vocalía."); return; }
     toast.success("Vocalía creada");
-    onCreated();
+    setMode("bienvenida");
   };
 
   const handleUnirseCodigo = async (e: React.FormEvent) => {
@@ -71,6 +72,20 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     toast.success("Invitación aceptada");
     onCreated();
   };
+
+  if (mode === "bienvenida") {
+    return (
+      <BienvenidaTribunal
+        onMigrar={() => {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("justrack:open-migrar", "1");
+          }
+          onCreated();
+        }}
+        onEmpezarDesdeCero={onCreated}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">

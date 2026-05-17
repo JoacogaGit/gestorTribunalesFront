@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { parseMigracionFile } from "@/lib/parseMigracionFile";
-import { CausaIA, ResultadoIA, ResultadoIADirecto, useMigracion } from "@/hooks/useMigracion";
+import { parseMigracionFile, ArchivoParseado } from "@/lib/parseMigracionFile";
+import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
 
 interface Props {
   vocaliaId: string | null;
@@ -24,6 +25,9 @@ const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
 export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Props) {
   const { loading, error, procesar, cargarEnBD } = useMigracion();
   const [resultado, setResultado] = useState<ResultadoIADirecto | null>(null);
+  const [mapeo, setMapeo] = useState<ResultadoIAMapeo | null>(null);
+  const [archivoCache, setArchivoCache] = useState<ArchivoParseado | null>(null);
+  const [seleccionMapeo, setSeleccionMapeo] = useState<Record<number, string>>({});
   const [filename, setFilename] = useState<string>("");
   const [editable, setEditable] = useState<CausaIA[]>([]);
   const [incluir, setIncluir] = useState<Record<string, boolean>>({});
@@ -42,6 +46,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
     setFilename(file.name);
     try {
       const parsed = await parseMigracionFile(file);
+      setArchivoCache(parsed);
       const r = await procesar(vocaliaId, vocaliaNombre, parsed);
       handleResultado(r);
     } catch (e) {
@@ -52,15 +57,38 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
   const handleResultado = (r: ResultadoIA | null) => {
     if (!r) return;
     if (r.modo === "mapeo_asistido_requerido") {
-      toast.warning("La IA no pudo detectar las columnas. Mostrando datos crudos para revisión manual.");
-      // Para mantener el alcance acotado: en este caso permitimos reintentar.
+      setMapeo(r);
+      const inicial: Record<number, string> = {};
+      r.columnas_detectadas.forEach((c) => { inicial[c.indice] = "(ignorar)"; });
+      setSeleccionMapeo(inicial);
       return;
     }
-    setResultado(r);
-    setEditable(r.causas);
+    const directo: ResultadoIADirecto = r;
+    setMapeo(null);
+    setResultado(directo);
+    setEditable(directo.causas);
     const inc: Record<string, boolean> = {};
-    r.causas.forEach((c) => { inc[c.id_temporal] = c.confianza !== "rojo"; });
+    directo.causas.forEach((c) => { inc[c.id_temporal] = c.confianza !== "rojo"; });
     setIncluir(inc);
+  };
+
+  const handleReprocesar = async () => {
+    if (!archivoCache) return;
+    const mapeoManual: Record<string, string> = {};
+    Object.entries(seleccionMapeo).forEach(([idx, campo]) => {
+      if (campo && campo !== "(ignorar)") mapeoManual[idx] = campo;
+    });
+    if (Object.keys(mapeoManual).length === 0) {
+      toast.error("Asigná al menos una columna.");
+      return;
+    }
+    const r = await procesar(vocaliaId, vocaliaNombre, archivoCache, mapeoManual);
+    if (r && r.modo === "mapeo_asistido_requerido") {
+      toast.error("La IA sigue sin poder procesar. Revisá el mapeo.");
+      setMapeo(r);
+      return;
+    }
+    handleResultado(r);
   };
 
   const handleCargar = async () => {
@@ -71,17 +99,88 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       return;
     }
     const r = await cargarEnBD(vocaliaId, seleccionadas);
-    if (r.ok) {
-      setExito(r.inserted);
-      toast.success("Migración completada");
-    } else {
+    if ("error" in r) {
       toast.error(r.error);
+      return;
     }
+    setExito(r.inserted);
+    toast.success("Migración completada");
   };
 
   const handleDescartar = () => {
     setResultado(null); setEditable([]); setIncluir({}); setFilename("");
+    setMapeo(null); setSeleccionMapeo({}); setArchivoCache(null);
   };
+
+  // PASO 2 — Mapeo asistido
+  if (mapeo) {
+    return (
+      <div className="max-w-4xl pb-24">
+        <Alert className="mb-6">
+          <AlertTriangle className="w-4 h-4" />
+          <AlertTitle>Mapeo asistido</AlertTitle>
+          <AlertDescription>
+            La IA no pudo detectar automáticamente las columnas. Asigná a cada columna del archivo el campo que le corresponde y volvé a procesar.
+          </AlertDescription>
+        </Alert>
+        {mapeo.razon && (
+          <p className="text-xs text-muted-foreground mb-4">{mapeo.razon}</p>
+        )}
+        <div className="space-y-2">
+          {mapeo.columnas_detectadas.map((col) => (
+            <Card key={col.indice} className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-[80px_1fr_240px] gap-3 items-center">
+                <div className="text-xs">
+                  <p className="font-mono font-semibold">Col #{col.indice}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Hipótesis IA: <span className="text-foreground">{col.hipotesis || "—"}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {col.muestra.slice(0, 3).map((m, i) => (
+                      <Badge key={i} variant="secondary" className="text-[10px] font-mono truncate max-w-[200px]">
+                        {m}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <Select
+                  value={seleccionMapeo[col.indice] ?? "(ignorar)"}
+                  onValueChange={(v) => setSeleccionMapeo((m) => ({ ...m, [col.indice]: v }))}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="(ignorar)">(Ignorar columna)</SelectItem>
+                    {mapeo.campos_disponibles.map((campo) => (
+                      <SelectItem key={campo} value={campo}>{campo}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="fixed bottom-0 left-56 right-0 bg-card/95 backdrop-blur border-t border-border p-4 flex items-center justify-between gap-4 z-30">
+          <p className="text-xs text-muted-foreground">
+            Asigná los campos que correspondan y reprocesá. Las columnas en "(Ignorar)" no se usan.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDescartar} disabled={loading}>
+              <Trash2 className="w-4 h-4 mr-1.5" /> Descartar
+            </Button>
+            <Button onClick={handleReprocesar} disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Reprocesar con mi mapeo
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // PASO 4 — éxito
   if (exito) {
