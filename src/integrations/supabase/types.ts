@@ -59,6 +59,8 @@ export type Database = {
       causas: {
         Row: {
           actor_civil: string | null
+          borrado_en: string | null
+          borrado_por: string | null
           campos_personalizados: Json | null
           caratula: string | null
           causa_conexa_id: string | null
@@ -78,6 +80,8 @@ export type Database = {
         }
         Insert: {
           actor_civil?: string | null
+          borrado_en?: string | null
+          borrado_por?: string | null
           campos_personalizados?: Json | null
           caratula?: string | null
           causa_conexa_id?: string | null
@@ -97,6 +101,8 @@ export type Database = {
         }
         Update: {
           actor_civil?: string | null
+          borrado_en?: string | null
+          borrado_por?: string | null
           campos_personalizados?: Json | null
           caratula?: string | null
           causa_conexa_id?: string | null
@@ -115,6 +121,13 @@ export type Database = {
           vocalia_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "causas_borrado_por_fkey"
+            columns: ["borrado_por"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "causas_causa_conexa_id_fkey"
             columns: ["causa_conexa_id"]
@@ -190,6 +203,8 @@ export type Database = {
       }
       eventos: {
         Row: {
+          borrado_en: string | null
+          borrado_por: string | null
           causa_id: string
           completado: boolean | null
           creado_por: string | null
@@ -204,6 +219,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          borrado_en?: string | null
+          borrado_por?: string | null
           causa_id: string
           completado?: boolean | null
           creado_por?: string | null
@@ -218,6 +235,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          borrado_en?: string | null
+          borrado_por?: string | null
           causa_id?: string
           completado?: boolean | null
           creado_por?: string | null
@@ -232,6 +251,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "eventos_borrado_por_fkey"
+            columns: ["borrado_por"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "eventos_causa_id_fkey"
             columns: ["causa_id"]
@@ -381,6 +407,8 @@ export type Database = {
       }
       sujetos: {
         Row: {
+          borrado_en: string | null
+          borrado_por: string | null
           causa_id: string
           creado_por: string | null
           created_at: string | null
@@ -400,6 +428,8 @@ export type Database = {
           vencimiento_sjp: string | null
         }
         Insert: {
+          borrado_en?: string | null
+          borrado_por?: string | null
           causa_id: string
           creado_por?: string | null
           created_at?: string | null
@@ -419,6 +449,8 @@ export type Database = {
           vencimiento_sjp?: string | null
         }
         Update: {
+          borrado_en?: string | null
+          borrado_por?: string | null
           causa_id?: string
           creado_por?: string | null
           created_at?: string | null
@@ -438,6 +470,13 @@ export type Database = {
           vencimiento_sjp?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sujetos_borrado_por_fkey"
+            columns: ["borrado_por"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sujetos_causa_id_fkey"
             columns: ["causa_id"]
