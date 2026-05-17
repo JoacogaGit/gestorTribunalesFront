@@ -86,11 +86,14 @@ export function useCausaMutations() {
   ): Promise<{ ok: true } | { ok: false; error: string }> => {
     setSaving(true);
     try {
-      const { error: evErr } = await supabase.from("eventos").delete().eq("causa_id", id);
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id ?? null;
+      const patch = { borrado_en: new Date().toISOString(), borrado_por: uid } as never;
+      const { error: evErr } = await supabase.from("eventos").update(patch).eq("causa_id", id).is("borrado_en", null);
       if (evErr) return { ok: false, error: `Eventos: ${evErr.message}` };
-      const { error: suErr } = await supabase.from("sujetos").delete().eq("causa_id", id);
+      const { error: suErr } = await supabase.from("sujetos").update(patch).eq("causa_id", id).is("borrado_en", null);
       if (suErr) return { ok: false, error: `Imputados: ${suErr.message}` };
-      const { error: caErr } = await supabase.from("causas").delete().eq("id", id);
+      const { error: caErr } = await supabase.from("causas").update(patch).eq("id", id);
       if (caErr) return { ok: false, error: caErr.message };
       return { ok: true };
     } finally {
@@ -111,7 +114,9 @@ export function useCausaMutations() {
   }, []);
 
   const borrarSujeto = useCallback(async (id: string) => {
-    const { error } = await supabase.from("sujetos").delete().eq("id", id);
+    const { data: userRes } = await supabase.auth.getUser();
+    const patch = { borrado_en: new Date().toISOString(), borrado_por: userRes.user?.id ?? null } as never;
+    const { error } = await supabase.from("sujetos").update(patch).eq("id", id);
     return error ? { ok: false as const, error: error.message } : { ok: true as const };
   }, []);
 

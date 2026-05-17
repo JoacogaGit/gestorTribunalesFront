@@ -57,7 +57,9 @@ export function useEventoMutations() {
   const borrarEvento = useCallback(async (id: string): Promise<Result> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from("eventos").delete().eq("id", id);
+      const { data: userRes } = await supabase.auth.getUser();
+      const patch = { borrado_en: new Date().toISOString(), borrado_por: userRes.user?.id ?? null } as never;
+      const { error } = await supabase.from("eventos").update(patch).eq("id", id);
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();
       return { ok: true };
