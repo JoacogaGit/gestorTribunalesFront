@@ -35,11 +35,11 @@ function Section({ tabla, items, loading, error, refetch, labelSingular }: Secti
     setBusyId(id);
     const r = await restaurar(tabla, id);
     setBusyId(null);
-    if (r.ok) {
+    if (r.ok === true) {
       toast.success(`${labelSingular} restaurado`);
       refetch();
     } else {
-      toast.error(`No se pudo restaurar: ${r.error}`);
+      toast.error(`No se pudo restaurar: ${(r as { error: string }).error}`);
     }
   };
 
