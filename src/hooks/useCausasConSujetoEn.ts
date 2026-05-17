@@ -20,9 +20,11 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
     // Paso 1: ids de causas (de esta vocalía) con al menos un sujeto en esa situación.
     const { data: matches, error: e1 } = await supabase
       .from("sujetos")
-      .select("causa_id, causas!inner(vocalia_id)")
+      .select("causa_id, causas!inner(vocalia_id,borrado_en)")
       .eq("situacion_libertad", situacion)
-      .eq("causas.vocalia_id", vocaliaId);
+      .eq("causas.vocalia_id", vocaliaId)
+      .is("borrado_en", null)
+      .is("causas.borrado_en", null);
 
     if (e1) {
       setError(e1.message); setCausas([]); setLoading(false); return;
@@ -38,6 +40,7 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
       .select("*, sujetos(*)")
       .in("id", ids)
       .eq("vocalia_id", vocaliaId)
+      .is("borrado_en", null)
       .order("created_at", { ascending: false });
 
     if (e2) {

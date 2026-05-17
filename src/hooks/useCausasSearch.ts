@@ -35,6 +35,7 @@ export function useCausasSearch(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .select("id, expediente_nro, caratula, vocalias!inner(id, nombre, tribunal_id)" as any)
         .eq("vocalias.tribunal_id", tribunalId)
+        .is("borrado_en", null)
         .ilike("expediente_nro", `%${q}%`)
         .limit(5);
       if (excludeCausaId) qb = qb.neq("id", excludeCausaId);
