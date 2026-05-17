@@ -109,7 +109,78 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
 
   const handleDescartar = () => {
     setResultado(null); setEditable([]); setIncluir({}); setFilename("");
+    setMapeo(null); setSeleccionMapeo({}); setArchivoCache(null);
   };
+
+  // PASO 2 — Mapeo asistido
+  if (mapeo) {
+    return (
+      <div className="max-w-4xl pb-24">
+        <Alert className="mb-6">
+          <AlertTriangle className="w-4 h-4" />
+          <AlertTitle>Mapeo asistido</AlertTitle>
+          <AlertDescription>
+            La IA no pudo detectar automáticamente las columnas. Asigná a cada columna del archivo el campo que le corresponde y volvé a procesar.
+          </AlertDescription>
+        </Alert>
+        {mapeo.razon && (
+          <p className="text-xs text-muted-foreground mb-4">{mapeo.razon}</p>
+        )}
+        <div className="space-y-2">
+          {mapeo.columnas_detectadas.map((col) => (
+            <Card key={col.indice} className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-[80px_1fr_240px] gap-3 items-center">
+                <div className="text-xs">
+                  <p className="font-mono font-semibold">Col #{col.indice}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Hipótesis IA: <span className="text-foreground">{col.hipotesis || "—"}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {col.muestra.slice(0, 3).map((m, i) => (
+                      <Badge key={i} variant="secondary" className="text-[10px] font-mono truncate max-w-[200px]">
+                        {m}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <Select
+                  value={seleccionMapeo[col.indice] ?? "(ignorar)"}
+                  onValueChange={(v) => setSeleccionMapeo((m) => ({ ...m, [col.indice]: v }))}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="(ignorar)">(Ignorar columna)</SelectItem>
+                    {mapeo.campos_disponibles.map((campo) => (
+                      <SelectItem key={campo} value={campo}>{campo}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="fixed bottom-0 left-56 right-0 bg-card/95 backdrop-blur border-t border-border p-4 flex items-center justify-between gap-4 z-30">
+          <p className="text-xs text-muted-foreground">
+            Asigná los campos que correspondan y reprocesá. Las columnas en "(Ignorar)" no se usan.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDescartar} disabled={loading}>
+              <Trash2 className="w-4 h-4 mr-1.5" /> Descartar
+            </Button>
+            <Button onClick={handleReprocesar} disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Reprocesar con mi mapeo
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // PASO 4 — éxito
   if (exito) {
