@@ -201,16 +201,24 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "bad_request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Validar membresía con service-role.
+    // Validar membresía con service-role: vocalía -> tribunal -> miembro.
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: voc, error: vocErr } = await admin
       .from("vocalias")
-      .select("id, tribunal_id, miembros_tribunal:miembros_tribunal!inner(usuario_id)")
+      .select("id, tribunal_id")
       .eq("id", vocalia_id)
-      .eq("miembros_tribunal.usuario_id", userId)
       .maybeSingle();
     if (vocErr || !voc) {
-      return new Response(JSON.stringify({ ok: false, error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "vocalia_no_encontrada" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { data: miembro, error: miembroErr } = await admin
+      .from("miembros_tribunal")
+      .select("id")
+      .eq("tribunal_id", voc.tribunal_id)
+      .eq("usuario_id", userId)
+      .maybeSingle();
+    if (miembroErr || !miembro) {
+      return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "no_es_miembro" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
