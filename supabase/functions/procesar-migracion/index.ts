@@ -194,12 +194,17 @@ Deno.serve(async (req) => {
     if (!body || typeof body !== "object") {
       return new Response(JSON.stringify({ ok: false, error: "bad_request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const { vocalia_id, vocalia_nombre, archivo, mapeo_manual } = body as {
-      vocalia_id?: string; vocalia_nombre?: string; archivo?: unknown; mapeo_manual?: Record<string, string>;
+    const { vocalia_id, vocalia_nombre, archivo, mapeo_manual, pestana } = body as {
+      vocalia_id?: string; vocalia_nombre?: string; archivo?: Record<string, unknown>; mapeo_manual?: Record<string, string>;
+      pestana?: { nombre: string; contenido: unknown };
     };
     if (!vocalia_id || !archivo) {
       return new Response(JSON.stringify({ ok: false, error: "bad_request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // Si viene una pestaña puntual, reemplazamos el array de pestañas por una sola.
+    const archivoEfectivo: Record<string, unknown> = pestana
+      ? { ...archivo, pestanas: [pestana] }
+      : archivo;
 
     // Validar membresía con service-role: vocalía -> tribunal -> miembro.
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
