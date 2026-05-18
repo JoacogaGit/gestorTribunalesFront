@@ -272,26 +272,47 @@ Deno.serve(async (req) => {
       (mapeo_manual ? `Mapeo manual provisto por el usuario (índice de columna → campo): ${JSON.stringify(mapeo_manual)}. ` : "") +
       `Contenido:\n${userPayload}`;
 
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 16000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMsg }],
-      }),
+    const anthropicBody = JSON.stringify({
+      model: "claude-sonnet-4-5",
+      max_tokens: 16000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMsg }],
     });
+    const estimatedTokens = Math.ceil((SYSTEM_PROMPT.length + userMsg.length) / 4);
+    const anthropicStart = Date.now();
+    console.log("procesar-migracion:anthropic_before", { timestamp: anthropicStart, estimated_tokens: estimatedTokens, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort("anthropic_timeout"), 45_000);
+    let anthropicRes: Response;
+    try {
+      anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: anthropicBody,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const isTimeout = controller.signal.aborted;
+      console.log("procesar-migracion:error", { tipo: isTimeout ? "anthropic_timeout" : "anthropic_fetch_error", message: error instanceof Error ? error.message : String(error), pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+      if (isTimeout) {
+        return new Response(JSON.stringify({ ok: false, error: "anthropic_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!anthropicRes.ok) {
       const errText = await anthropicRes.text();
+      console.log("procesar-migracion:error", { tipo: "anthropic_http_error", status: anthropicRes.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
       return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: errText.slice(0, 500) }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const anthropicJson = await anthropicRes.json();
+    console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, response_bytes: byteLength(JSON.stringify(anthropicJson)), pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
     const rawText: string = (anthropicJson?.content?.[0]?.text ?? "").trim();
     const parsed = extractJson(rawText);
     if (!parsed) {
