@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Upload, Loader2, FileWarning, CheckCircle2, AlertTriangle, XCircle, Trash2, ArrowRight, Sparkles, FileSpreadsheet, FileText, Wand2, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, Loader2, FileWarning, CheckCircle2, AlertTriangle, XCircle, Trash2, ArrowRight, Sparkles, FileSpreadsheet, FileText, Wand2, ShieldCheck, RotateCcw, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
@@ -7,13 +7,41 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { parseMigracionFile, ArchivoParseado } from "@/lib/parseMigracionFile";
+import { parseMigracionFile, ArchivoParseado, PestanaParseada } from "@/lib/parseMigracionFile";
 import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
 import { deduplicarCausas } from "@/lib/deduplicarCausas";
+import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
+
+type EstadoLote = "pendiente" | "procesando" | "ok" | "error";
+interface LoteTrabajo {
+  id: string;
+  pestana: string;
+  nro_lote: number;
+  total_lotes: number;
+  contenido: string[][];
+  filas: number;
+  estado: EstadoLote;
+  errorCode?: string;
+  errorMsg?: string;
+}
+
+const ADAPTIVE_ERRORS = new Set(["worker_resource_limit", "anthropic_timeout"]);
+const ERROR_LABELS: Record<string, string> = {
+  anthropic_timeout: "timeout de Anthropic",
+  worker_resource_limit: "límite de recursos",
+  payload_too_large: "payload demasiado grande",
+  no_api_key: "falta API key",
+  forbidden: "sin permisos",
+  json_invalido: "respuesta inválida de la IA",
+  ai_error: "error de IA",
+  mapeo_requerido: "requiere mapeo asistido",
+  unknown: "error desconocido",
+};
+const labelError = (code?: string) => ERROR_LABELS[code || "unknown"] || code || "error";
+const lsKey = (vocaliaId: string) => `migracion_v1_${vocaliaId}`;
 
 interface Props {
   vocaliaId: string | null;
