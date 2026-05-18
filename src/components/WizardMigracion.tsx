@@ -178,7 +178,132 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
   const handleDescartar = () => {
     setResultado(null); setEditable([]); setIncluir({}); setFilename("");
     setMapeo(null); setSeleccionMapeo({}); setArchivoCache(null);
+    setPestanasDetectadas([]); setSeleccionPestanas({}); setProgreso([]);
+    setResultadosOk([]); setPestanasFallidas([]); setProcesando(false);
   };
+
+  // PASO 1.5 — Progreso multi-pestaña
+  if (procesando || (progreso.length > 0 && !resultado && !mapeo)) {
+    const completos = progreso.filter((p) => p.estado === "ok").length;
+    const fallidos = progreso.filter((p) => p.estado === "error").length;
+    const enCurso = progreso.find((p) => p.estado === "procesando");
+    const terminado = !procesando;
+    return (
+      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-2xl">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4">
+              {terminado ? <CheckCircle2 className="w-7 h-7 text-accent" /> : <Loader2 className="w-7 h-7 text-accent animate-spin" />}
+            </div>
+            <h2 className="font-display text-2xl font-bold mb-2">
+              {terminado ? "Procesamiento terminado" : "Procesando pestañas"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {terminado
+                ? `${completos} de ${progreso.length} pestañas listas${fallidos > 0 ? ` · ${fallidos} con error` : ""}.`
+                : enCurso
+                  ? `Procesando "${enCurso.pestana}"… esto puede tardar unos segundos por pestaña.`
+                  : "Iniciando…"}
+            </p>
+          </div>
+          <Card className="p-4 space-y-2">
+            {progreso.map((p, i) => (
+              <div key={p.pestana} className="flex items-center gap-3 text-sm">
+                <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                  {p.estado === "ok" && <CheckCircle2 className="w-5 h-5 text-alert-ok" />}
+                  {p.estado === "procesando" && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
+                  {p.estado === "error" && <XCircle className="w-5 h-5 text-alert-urgent" />}
+                  {p.estado === "pendiente" && <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />}
+                </div>
+                <span className="font-mono text-xs text-muted-foreground w-16 shrink-0">{i + 1} de {progreso.length}</span>
+                <span className="flex-1 truncate font-medium">{p.pestana}</span>
+                {p.error && <span className="text-xs text-alert-urgent truncate max-w-[200px]">{p.error}</span>}
+              </div>
+            ))}
+          </Card>
+          {terminado && pestanasFallidas.length > 0 && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="w-4 h-4" />
+              <AlertTitle>Algunas pestañas fallaron</AlertTitle>
+              <AlertDescription className="text-xs">
+                Podés reintentar solo las pestañas con error, o continuar con las {resultadosOk.length} que sí se procesaron.
+              </AlertDescription>
+            </Alert>
+          )}
+          {terminado && (
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={handleDescartar} disabled={procesando}>
+                <Trash2 className="w-4 h-4 mr-1.5" /> Descartar
+              </Button>
+              {pestanasFallidas.length > 0 && (
+                <Button variant="outline" onClick={handleReintentarFallidas} disabled={procesando}>
+                  Reintentar fallidas ({pestanasFallidas.length})
+                </Button>
+              )}
+              {resultadosOk.length > 0 && (
+                <Button onClick={handleContinuarConOk} disabled={procesando}>
+                  Continuar a revisión <ArrowRight className="w-4 h-4 ml-1.5" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // PASO 1.4 — Selección de pestañas (solo si hay más de una)
+  if (pestanasDetectadas.length > 1 && !resultado && !mapeo && progreso.length === 0) {
+    const seleccionadas = pestanasDetectadas.filter((p) => seleccionPestanas[p.nombre]).length;
+    return (
+      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-2xl">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4">
+              <FileSpreadsheet className="w-7 h-7 text-accent" />
+            </div>
+            <h2 className="font-display text-2xl font-bold mb-2">Elegí qué pestañas procesar</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Detectamos {pestanasDetectadas.length} pestañas en <span className="font-mono">{filename}</span>. Vamos a procesarlas
+              de a una para evitar timeouts. Después unificamos los datos.
+            </p>
+          </div>
+          <Card className="p-2">
+            <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/60 mb-1 text-xs">
+              <span className="text-muted-foreground">{seleccionadas} de {pestanasDetectadas.length} seleccionadas</span>
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => {
+                  const s: Record<string, boolean> = {}; pestanasDetectadas.forEach((p) => { s[p.nombre] = true; }); setSeleccionPestanas(s);
+                }}>Todas</Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSeleccionPestanas({})}>Ninguna</Button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              {pestanasDetectadas.map((p) => (
+                <label key={p.nombre} className="flex items-center gap-3 px-2 py-2 rounded hover:bg-muted/40 cursor-pointer">
+                  <Checkbox
+                    checked={!!seleccionPestanas[p.nombre]}
+                    onCheckedChange={(v) => setSeleccionPestanas((m) => ({ ...m, [p.nombre]: !!v }))}
+                  />
+                  <span className="flex-1 text-sm font-medium truncate">{p.nombre}</span>
+                  <Badge variant="secondary" className="text-[10px]">{p.filas} filas</Badge>
+                </label>
+              ))}
+            </div>
+          </Card>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={handleDescartar}>
+              <Trash2 className="w-4 h-4 mr-1.5" /> Cancelar
+            </Button>
+            <Button onClick={handleProcesarSeleccion} disabled={seleccionadas === 0 || loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Procesar {seleccionadas} pestaña{seleccionadas === 1 ? "" : "s"} <ArrowRight className="w-4 h-4 ml-1.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // PASO 2 — Mapeo asistido
   if (mapeo) {
