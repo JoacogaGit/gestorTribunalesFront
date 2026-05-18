@@ -170,6 +170,19 @@ function extractJson(raw: string): unknown | null {
   try { return JSON.parse(trimmed.slice(start, end + 1)); } catch { return null; }
 }
 
+function byteLength(value: string): number {
+  return new TextEncoder().encode(value).length;
+}
+
+function countRows(pestana?: { contenido: unknown }): number {
+  const contenido = pestana?.contenido;
+  if (typeof contenido === "string") return contenido.split("\n").filter((l) => l.trim()).length;
+  if (Array.isArray(contenido)) {
+    return contenido.filter((row) => Array.isArray(row) && row.some((cell) => String(cell ?? "").trim() !== "")).length;
+  }
+  return 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -197,10 +210,24 @@ Deno.serve(async (req) => {
     const { vocalia_id, vocalia_nombre, archivo, mapeo_manual, pestana } = body as {
       vocalia_id?: string; vocalia_nombre?: string; archivo?: Record<string, unknown>; mapeo_manual?: Record<string, string>;
       pestana?: { nombre: string; contenido: unknown };
+      lote_info?: { pestana?: string; nro_lote?: number; total_lotes?: number; filas?: number };
     };
     if (!vocalia_id || !archivo) {
       return new Response(JSON.stringify({ ok: false, error: "bad_request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const loteInfo = (body as { lote_info?: { pestana?: string; nro_lote?: number; total_lotes?: number; filas?: number } }).lote_info;
+    const payloadText = JSON.stringify(body);
+    const pestanaLog = loteInfo?.pestana ?? pestana?.nombre ?? "archivo_completo";
+    const nroLote = loteInfo?.nro_lote ?? 1;
+    const totalLotes = loteInfo?.total_lotes ?? 1;
+    const filasLote = loteInfo?.filas ?? countRows(pestana);
+    console.log("procesar-migracion:start", {
+      payload_bytes: byteLength(payloadText),
+      filas_lote: filasLote,
+      pestana: pestanaLog,
+      nro_lote: nroLote,
+      total_lotes: totalLotes,
+    });
     // Si viene una pestaña puntual, reemplazamos el array de pestañas por una sola.
     const archivoEfectivo: Record<string, unknown> = pestana
       ? { ...archivo, pestanas: [pestana] }
@@ -245,34 +272,57 @@ Deno.serve(async (req) => {
       (mapeo_manual ? `Mapeo manual provisto por el usuario (índice de columna → campo): ${JSON.stringify(mapeo_manual)}. ` : "") +
       `Contenido:\n${userPayload}`;
 
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 16000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMsg }],
-      }),
+    const anthropicBody = JSON.stringify({
+      model: "claude-sonnet-4-5",
+      max_tokens: 16000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMsg }],
     });
+    const estimatedTokens = Math.ceil((SYSTEM_PROMPT.length + userMsg.length) / 4);
+    const anthropicStart = Date.now();
+    console.log("procesar-migracion:anthropic_before", { timestamp: anthropicStart, estimated_tokens: estimatedTokens, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort("anthropic_timeout"), 45_000);
+    let anthropicRes: Response;
+    try {
+      anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: anthropicBody,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const isTimeout = controller.signal.aborted;
+      console.log("procesar-migracion:error", { tipo: isTimeout ? "anthropic_timeout" : "anthropic_fetch_error", message: error instanceof Error ? error.message : String(error), pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+      if (isTimeout) {
+        return new Response(JSON.stringify({ ok: false, error: "anthropic_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!anthropicRes.ok) {
       const errText = await anthropicRes.text();
+      console.log("procesar-migracion:error", { tipo: "anthropic_http_error", status: anthropicRes.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
       return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: errText.slice(0, 500) }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const anthropicJson = await anthropicRes.json();
+    console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, response_bytes: byteLength(JSON.stringify(anthropicJson)), pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
     const rawText: string = (anthropicJson?.content?.[0]?.text ?? "").trim();
     const parsed = extractJson(rawText);
     if (!parsed) {
+      console.log("procesar-migracion:error", { tipo: "json_invalido", pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
       return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: rawText.slice(0, 2000) }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ ok: true, resultado: parsed }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
+    console.log("procesar-migracion:error", { tipo: "server_error", message: e instanceof Error ? e.message : String(e) });
     return new Response(JSON.stringify({ ok: false, error: "server_error", detail: e instanceof Error ? e.message : String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

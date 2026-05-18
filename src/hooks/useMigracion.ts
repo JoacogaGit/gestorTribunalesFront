@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ArchivoParseado } from "@/lib/parseMigracionFile";
+import { dividirPestanaEnLotes } from "@/lib/dividirEnLotes";
 
 export interface CausaIA {
   id_temporal: string;
@@ -119,24 +120,36 @@ export function useMigracion() {
         }
         onProgress?.({ pestana: nombre, indice: i, total, estado: "procesando" });
         try {
-          const { data, error } = await supabase.functions.invoke("procesar-migracion", {
-            body: { vocalia_id: vocaliaId, vocalia_nombre: vocaliaNombre, archivo: archivoMeta, pestana: pest },
-          });
-          if (error) throw new Error(error.message);
-          if (!data?.ok) {
-            const msg = data?.error === "no_api_key" ? "Falta configurar la API key de IA."
-              : data?.error === "forbidden" ? "No tenés permisos sobre esta vocalía."
-              : data?.error === "payload_too_large" ? "Pestaña demasiado grande."
-              : data?.error === "json_invalido" ? "La IA devolvió un formato inválido."
-              : data?.error === "ai_error" ? "Error consultando a la IA."
-              : "No se pudo procesar la pestaña.";
-            throw new Error(msg);
+          const resultadosLote: { pestana: string; resultado: ResultadoIADirecto }[] = [];
+          const lotes = dividirPestanaEnLotes(pest);
+          for (const lote of lotes) {
+            const { data, error } = await supabase.functions.invoke("procesar-migracion", {
+              body: {
+                vocalia_id: vocaliaId,
+                vocalia_nombre: vocaliaNombre,
+                archivo: archivoMeta,
+                pestana: lote.pestana,
+                lote_info: { pestana: nombre, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas },
+              },
+            });
+            if (error) throw new Error(error.message);
+            if (!data?.ok) {
+              const msg = data?.error === "no_api_key" ? "Falta configurar la API key de IA."
+                : data?.error === "forbidden" ? "No tenés permisos sobre esta vocalía."
+                : data?.error === "payload_too_large" ? "Pestaña demasiado grande."
+                : data?.error === "json_invalido" ? "La IA devolvió un formato inválido."
+                : data?.error === "anthropic_timeout" ? `La IA tardó demasiado en responder (lote ${lote.nro_lote}/${lote.total_lotes}).`
+                : data?.error === "ai_error" ? "Error consultando a la IA."
+                : "No se pudo procesar la pestaña.";
+              throw new Error(msg);
+            }
+            const r = data.resultado as ResultadoIA;
+            if (r.modo !== "procesamiento_directo") {
+              throw new Error("La pestaña requiere mapeo asistido (no soportado por pestaña).");
+            }
+            resultadosLote.push({ pestana: `${nombre} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r });
           }
-          const r = data.resultado as ResultadoIA;
-          if (r.modo !== "procesamiento_directo") {
-            throw new Error("La pestaña requiere mapeo asistido (no soportado por pestaña).");
-          }
-          ok.push({ pestana: nombre, resultado: r });
+          ok.push(...resultadosLote);
           onProgress?.({ pestana: nombre, indice: i, total, estado: "ok" });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Error desconocido";
