@@ -301,6 +301,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       return;
     }
     setExito(r.inserted);
+    limpiarLS();
     toast.success("Migración completada");
   };
 
