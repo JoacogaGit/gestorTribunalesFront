@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, Loader2, FileWarning, CheckCircle2, AlertTriangle, XCircle, Trash2, ArrowRight } from "lucide-react";
+import { Upload, Loader2, FileWarning, CheckCircle2, AlertTriangle, XCircle, Trash2, ArrowRight, Sparkles, FileSpreadsheet, FileText, Wand2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
@@ -362,54 +362,107 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
 
   // PASO 1 — Subida
   return (
-    <div className="max-w-2xl">
-      <Alert className="mb-6">
-        <AlertTriangle className="w-4 h-4" />
-        <AlertTitle>Vocalía destino: {vocaliaNombre}</AlertTitle>
-        <AlertDescription>
-          Los datos se cargarán en la vocalía "{vocaliaNombre}". Si querés cargarlos en otra, cambiá de vocalía antes de continuar.
-        </AlertDescription>
-      </Alert>
-
-      <Card
-        className="p-10 border-dashed border-2 text-center cursor-pointer hover:bg-muted/30 transition-colors"
-        onDragOver={(e) => { e.preventDefault(); }}
-        onDrop={(e) => {
-          e.preventDefault();
-          const file = e.dataTransfer.files[0];
-          if (file) handleFile(file);
-        }}
-        onClick={() => document.getElementById("wizard-file-input")?.click()}
-      >
-        <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-        <p className="font-semibold mb-1">Arrastrá tu archivo o hacé click para seleccionar</p>
-        <p className="text-xs text-muted-foreground mb-4">Formatos: .xlsx, .xls, .csv, .docx, .txt (máx 10 MB)</p>
-        <Button type="button" variant="outline" disabled={loading}>
-          {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando…</> : "Seleccionar archivo"}
-        </Button>
-        <input
-          id="wizard-file-input"
-          type="file"
-          accept={ACCEPT}
-          className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-        />
-      </Card>
-
-      {loading && (
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 inline-block mr-2 animate-spin" />
-          Nuestra IA está leyendo e interpretando tu archivo… esto puede tardar 30-90 segundos.
-          {filename && <p className="mt-1 text-xs">{filename}</p>}
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-2xl">
+        {/* Encabezado */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
+            <Sparkles className="w-7 h-7 text-accent" />
+          </div>
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">
+            Migrá tus causas en minutos
+          </h1>
+          <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
+            Subí tu planilla o documento de trabajo y nuestra IA va a leerlo, interpretarlo y
+            organizarlo en <span className="text-foreground font-medium">{vocaliaNombre}</span>.
+            Vos solo revisás y confirmás.
+          </p>
         </div>
-      )}
 
-      {error && (
-        <Alert variant="destructive" className="mt-6">
-          <AlertTitle>Algo falló</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+        {/* Drop zone */}
+        <Card
+          className="relative p-10 border-dashed border-2 text-center cursor-pointer transition-all hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[var(--shadow-elevated)] group"
+          onDragOver={(e) => { e.preventDefault(); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+          }}
+          onClick={() => document.getElementById("wizard-file-input")?.click()}
+        >
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted group-hover:bg-accent/10 transition-colors mb-4">
+            <Upload className="w-7 h-7 text-muted-foreground group-hover:text-accent transition-colors" />
+          </div>
+          <p className="font-display text-lg font-semibold mb-1">
+            Arrastrá tu archivo acá
+          </p>
+          <p className="text-sm text-muted-foreground mb-5">
+            o hacé click para seleccionarlo desde tu equipo
+          </p>
+          <Button type="button" variant="default" disabled={loading} className="shadow-[var(--shadow-soft)]">
+            {loading ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando…</>
+            ) : (
+              <><Upload className="w-4 h-4 mr-2" /> Seleccionar archivo</>
+            )}
+          </Button>
+          <div className="flex items-center justify-center gap-4 mt-6 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><FileSpreadsheet className="w-3.5 h-3.5" /> Excel · CSV</span>
+            <span className="w-1 h-1 rounded-full bg-border" />
+            <span className="inline-flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Word · TXT</span>
+            <span className="w-1 h-1 rounded-full bg-border" />
+            <span>máx 10 MB</span>
+          </div>
+          <input
+            id="wizard-file-input"
+            type="file"
+            accept={ACCEPT}
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+          />
+        </Card>
+
+        {/* Cómo funciona */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6">
+          {[
+            { icon: Upload, title: "1. Subís", desc: "Tu planilla, lista de causas o documento de trabajo." },
+            { icon: Wand2, title: "2. La IA interpreta", desc: "Detecta causas, sujetos, fechas y estados." },
+            { icon: ShieldCheck, title: "3. Revisás y cargás", desc: "Editás lo que haga falta y confirmás la carga." },
+          ].map((s) => (
+            <div key={s.title} className="p-4 rounded-lg border border-border/60 bg-card/50">
+              <div className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-2">
+                <s.icon className="w-4 h-4" />
+              </div>
+              <p className="text-sm font-semibold mb-0.5">{s.title}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Aviso vocalía destino */}
+        <Alert className="mt-6 border-accent/30 bg-accent/5">
+          <AlertTriangle className="w-4 h-4 text-accent" />
+          <AlertTitle className="text-sm">Vocalía destino: {vocaliaNombre}</AlertTitle>
+          <AlertDescription className="text-xs">
+            Todo se va a cargar acá. Si querés usar otra vocalía, cambiala desde el selector antes de subir el archivo.
+          </AlertDescription>
         </Alert>
-      )}
+
+        {loading && (
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 inline-block mr-2 animate-spin" />
+            Nuestra IA está leyendo tu archivo… esto puede tardar 30-90 segundos.
+            {filename && <p className="mt-1 text-xs font-mono">{filename}</p>}
+          </div>
+        )}
+
+        {error && (
+          <Alert variant="destructive" className="mt-6">
+            <AlertTitle>Algo falló</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+      </div>
     </div>
   );
 }
