@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { parseMigracionFile, ArchivoParseado } from "@/lib/parseMigracionFile";
 import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
+import { deduplicarCausas } from "@/lib/deduplicarCausas";
 
 interface Props {
   vocaliaId: string | null;
