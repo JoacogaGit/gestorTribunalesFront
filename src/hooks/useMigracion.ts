@@ -207,5 +207,5 @@ export function useMigracion() {
     } finally { setLoading(false); }
   }, []);
 
-  return { loading, error, procesar, cargarEnBD };
+  return { loading, error, procesar, procesarPorPestanas, cargarEnBD };
 }
