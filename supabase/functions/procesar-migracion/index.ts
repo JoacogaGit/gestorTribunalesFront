@@ -210,10 +210,24 @@ Deno.serve(async (req) => {
     const { vocalia_id, vocalia_nombre, archivo, mapeo_manual, pestana } = body as {
       vocalia_id?: string; vocalia_nombre?: string; archivo?: Record<string, unknown>; mapeo_manual?: Record<string, string>;
       pestana?: { nombre: string; contenido: unknown };
+      lote_info?: { pestana?: string; nro_lote?: number; total_lotes?: number; filas?: number };
     };
     if (!vocalia_id || !archivo) {
       return new Response(JSON.stringify({ ok: false, error: "bad_request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const loteInfo = (body as { lote_info?: { pestana?: string; nro_lote?: number; total_lotes?: number; filas?: number } }).lote_info;
+    const payloadText = JSON.stringify(body);
+    const pestanaLog = loteInfo?.pestana ?? pestana?.nombre ?? "archivo_completo";
+    const nroLote = loteInfo?.nro_lote ?? 1;
+    const totalLotes = loteInfo?.total_lotes ?? 1;
+    const filasLote = loteInfo?.filas ?? countRows(pestana);
+    console.log("procesar-migracion:start", {
+      payload_bytes: byteLength(payloadText),
+      filas_lote: filasLote,
+      pestana: pestanaLog,
+      nro_lote: nroLote,
+      total_lotes: totalLotes,
+    });
     // Si viene una pestaña puntual, reemplazamos el array de pestañas por una sola.
     const archivoEfectivo: Record<string, unknown> = pestana
       ? { ...archivo, pestanas: [pestana] }
