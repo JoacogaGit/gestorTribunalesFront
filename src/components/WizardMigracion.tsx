@@ -736,6 +736,34 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
           </p>
         </div>
 
+        {pendingResume && (
+          <Card className="p-4 mb-5 border-accent/40 bg-accent/5">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
+                <History className="w-4 h-4 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold mb-0.5">Tenés una migración en progreso</p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-mono">{pendingResume.filename || "archivo sin nombre"}</span> ·
+                  {" "}{pendingResume.resultadosOk.length} lote(s) ya procesados ·
+                  {" "}{new Date(pendingResume.timestamp).toLocaleString()}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" onClick={handleRetomar}>
+                    Retomar revisión <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleDescartarResume}>
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Descartar y empezar de nuevo
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+
+
         {/* Drop zone */}
         <Card
           className="relative p-10 border-dashed border-2 text-center cursor-pointer transition-all hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[var(--shadow-elevated)] group"
