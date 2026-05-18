@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ArchivoParseado } from "@/lib/parseMigracionFile";
-import { dividirPestanaEnLotes } from "@/lib/dividirEnLotes";
+import { ArchivoParseado, PestanaParseada } from "@/lib/parseMigracionFile";
 
 export interface CausaIA {
   id_temporal: string;
@@ -62,6 +61,24 @@ export interface ResultadoIAMapeo {
 }
 export type ResultadoIA = ResultadoIADirecto | ResultadoIAMapeo;
 
+export interface LoteResultado {
+  ok: boolean;
+  resultado?: ResultadoIADirecto;
+  errorCode?: string;
+  errorMsg?: string;
+}
+
+function detectarErrorCodigo(invokeErr: unknown, dataErr?: string): string {
+  if (invokeErr) {
+    const msg = String((invokeErr as { message?: string })?.message || invokeErr).toLowerCase();
+    if (msg.includes("resource") || msg.includes("546") || msg.includes("worker")) return "worker_resource_limit";
+    if (msg.includes("timeout") || msg.includes("504") || msg.includes("aborted")) return "anthropic_timeout";
+    if (msg.includes("payload") || msg.includes("413")) return "payload_too_large";
+    return "ai_error";
+  }
+  return dataErr || "unknown";
+}
+
 export function useMigracion() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,72 +110,40 @@ export function useMigracion() {
     } finally { setLoading(false); }
   }, []);
 
-  /** Procesa N pestañas secuencialmente. Llama onProgress en cada paso. */
-  const procesarPorPestanas = useCallback(async (
+  /** Procesa un único lote. Devuelve códigos de error normalizados para reintentos adaptativos. */
+  const procesarUnLote = useCallback(async (
     vocaliaId: string,
     vocaliaNombre: string,
-    archivo: ArchivoParseado,
-    pestanasSeleccionadas: string[],
-    onProgress?: (info: { pestana: string; indice: number; total: number; estado: "procesando" | "ok" | "error"; error?: string }) => void,
-  ): Promise<{
-    ok: { pestana: string; resultado: ResultadoIADirecto }[];
-    fallidas: { pestana: string; error: string }[];
-  }> => {
-    setLoading(true); setError(null);
-    const ok: { pestana: string; resultado: ResultadoIADirecto }[] = [];
-    const fallidas: { pestana: string; error: string }[] = [];
-    const archivoMeta: ArchivoParseado = { ...archivo, pestanas: [] };
-    const total = pestanasSeleccionadas.length;
+    archivoMeta: ArchivoParseado,
+    pestana: PestanaParseada,
+    loteInfo: { pestana: string; nro_lote: number; total_lotes: number; filas: number },
+  ): Promise<LoteResultado> => {
     try {
-      for (let i = 0; i < pestanasSeleccionadas.length; i++) {
-        const nombre = pestanasSeleccionadas[i];
-        const pest = archivo.pestanas.find((p) => p.nombre === nombre);
-        if (!pest) {
-          fallidas.push({ pestana: nombre, error: "Pestaña no encontrada en el archivo." });
-          onProgress?.({ pestana: nombre, indice: i, total, estado: "error", error: "Pestaña no encontrada." });
-          continue;
-        }
-        onProgress?.({ pestana: nombre, indice: i, total, estado: "procesando" });
-        try {
-          const resultadosLote: { pestana: string; resultado: ResultadoIADirecto }[] = [];
-          const lotes = dividirPestanaEnLotes(pest);
-          for (const lote of lotes) {
-            const { data, error } = await supabase.functions.invoke("procesar-migracion", {
-              body: {
-                vocalia_id: vocaliaId,
-                vocalia_nombre: vocaliaNombre,
-                archivo: archivoMeta,
-                pestana: lote.pestana,
-                lote_info: { pestana: nombre, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas },
-              },
-            });
-            if (error) throw new Error(error.message);
-            if (!data?.ok) {
-              const msg = data?.error === "no_api_key" ? "Falta configurar la API key de IA."
-                : data?.error === "forbidden" ? "No tenés permisos sobre esta vocalía."
-                : data?.error === "payload_too_large" ? "Pestaña demasiado grande."
-                : data?.error === "json_invalido" ? "La IA devolvió un formato inválido."
-                : data?.error === "anthropic_timeout" ? `La IA tardó demasiado en responder (lote ${lote.nro_lote}/${lote.total_lotes}).`
-                : data?.error === "ai_error" ? "Error consultando a la IA."
-                : "No se pudo procesar la pestaña.";
-              throw new Error(msg);
-            }
-            const r = data.resultado as ResultadoIA;
-            if (r.modo !== "procesamiento_directo") {
-              throw new Error("La pestaña requiere mapeo asistido (no soportado por pestaña).");
-            }
-            resultadosLote.push({ pestana: `${nombre} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r });
-          }
-          ok.push(...resultadosLote);
-          onProgress?.({ pestana: nombre, indice: i, total, estado: "ok" });
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : "Error desconocido";
-          fallidas.push({ pestana: nombre, error: msg });
-          onProgress?.({ pestana: nombre, indice: i, total, estado: "error", error: msg });
-        }
+      const { data, error: invokeErr } = await supabase.functions.invoke("procesar-migracion", {
+        body: {
+          vocalia_id: vocaliaId,
+          vocalia_nombre: vocaliaNombre,
+          archivo: archivoMeta,
+          pestana,
+          lote_info: loteInfo,
+        },
+      });
+      if (invokeErr) {
+        const code = detectarErrorCodigo(invokeErr);
+        return { ok: false, errorCode: code, errorMsg: (invokeErr as { message?: string })?.message };
       }
-      return { ok, fallidas };
-    } finally { setLoading(false); }
+      if (!data?.ok) {
+        return { ok: false, errorCode: data?.error || "unknown", errorMsg: data?.error };
+      }
+      const r = data.resultado as ResultadoIA;
+      if (r.modo !== "procesamiento_directo") {
+        return { ok: false, errorCode: "mapeo_requerido", errorMsg: "La pestaña requiere mapeo asistido." };
+      }
+      return { ok: true, resultado: r };
+    } catch (e) {
+      const code = detectarErrorCodigo(e);
+      return { ok: false, errorCode: code, errorMsg: e instanceof Error ? e.message : "error" };
+    }
   }, []);
 
   const cargarEnBD = useCallback(async (
@@ -210,7 +195,6 @@ export function useMigracion() {
       }
       return { ok: true, inserted: { causas: insertedCausaIds.length, sujetos: sujetosCount, eventos: eventosCount } };
     } catch (e) {
-      // Rollback hard delete
       if (insertedEventoIds.length) await supabase.from("eventos").delete().in("id", insertedEventoIds);
       if (insertedSujetoIds.length) await supabase.from("sujetos").delete().in("id", insertedSujetoIds);
       if (insertedCausaIds.length) await supabase.from("causas").delete().in("id", insertedCausaIds);
@@ -220,5 +204,5 @@ export function useMigracion() {
     } finally { setLoading(false); }
   }, []);
 
-  return { loading, error, procesar, procesarPorPestanas, cargarEnBD };
+  return { loading, error, procesar, procesarUnLote, cargarEnBD };
 }
