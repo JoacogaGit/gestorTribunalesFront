@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Upload, Trash2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
-import appIcon from "@/assets/app-icon.png";
 
 const defaultNavItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
