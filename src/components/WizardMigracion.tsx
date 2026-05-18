@@ -24,7 +24,7 @@ interface Props {
 const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
 
 export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Props) {
-  const { loading, error, procesar, cargarEnBD } = useMigracion();
+  const { loading, error, procesar, procesarPorPestanas, cargarEnBD } = useMigracion();
   const [resultado, setResultado] = useState<ResultadoIADirecto | null>(null);
   const [mapeo, setMapeo] = useState<ResultadoIAMapeo | null>(null);
   const [archivoCache, setArchivoCache] = useState<ArchivoParseado | null>(null);
@@ -33,6 +33,13 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
   const [editable, setEditable] = useState<CausaIA[]>([]);
   const [incluir, setIncluir] = useState<Record<string, boolean>>({});
   const [exito, setExito] = useState<{ causas: number; sujetos: number; eventos: number } | null>(null);
+  // Multi-pestaña
+  const [pestanasDetectadas, setPestanasDetectadas] = useState<{ nombre: string; filas: number }[]>([]);
+  const [seleccionPestanas, setSeleccionPestanas] = useState<Record<string, boolean>>({});
+  const [progreso, setProgreso] = useState<{ pestana: string; estado: "pendiente" | "procesando" | "ok" | "error"; error?: string }[]>([]);
+  const [procesando, setProcesando] = useState(false);
+  const [resultadosOk, setResultadosOk] = useState<{ pestana: string; resultado: ResultadoIADirecto }[]>([]);
+  const [pestanasFallidas, setPestanasFallidas] = useState<{ pestana: string; error: string }[]>([]);
 
   if (!vocaliaId) {
     return (
@@ -43,16 +50,76 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
     );
   }
 
+  const contarFilas = (p: ArchivoParseado["pestanas"][number]): number => {
+    if (typeof p.contenido === "string") return p.contenido.split("\n").filter((l) => l.trim()).length;
+    return p.contenido.filter((r) => r.some((c) => (c ?? "").toString().trim() !== "")).length;
+  };
+
   const handleFile = async (file: File) => {
     setFilename(file.name);
     try {
       const parsed = await parseMigracionFile(file);
       setArchivoCache(parsed);
-      const r = await procesar(vocaliaId, vocaliaNombre, parsed);
-      handleResultado(r);
+      const detectadas = parsed.pestanas.map((p) => ({ nombre: p.nombre, filas: contarFilas(p) })).filter((p) => p.filas > 0);
+      if (detectadas.length === 0) {
+        toast.error("El archivo no tiene filas para procesar.");
+        return;
+      }
+      setPestanasDetectadas(detectadas);
+      const sel: Record<string, boolean> = {};
+      detectadas.forEach((p) => { sel[p.nombre] = true; });
+      setSeleccionPestanas(sel);
+      if (detectadas.length === 1) {
+        await ejecutarProcesamiento(parsed, [detectadas[0].nombre]);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo leer el archivo");
     }
+  };
+
+  const ejecutarProcesamiento = async (archivo: ArchivoParseado, nombres: string[], previos: { pestana: string; resultado: ResultadoIADirecto }[] = []) => {
+    setProcesando(true);
+    setPestanasFallidas([]);
+    setProgreso(nombres.map((n) => ({ pestana: n, estado: "pendiente" })));
+    const { ok, fallidas } = await procesarPorPestanas(vocaliaId, vocaliaNombre, archivo, nombres, (info) => {
+      setProgreso((prev) => prev.map((p, i) => i === info.indice ? { pestana: info.pestana, estado: info.estado === "procesando" ? "procesando" : info.estado, error: info.error } : p));
+    });
+    const todosOk = [...previos, ...ok];
+    setResultadosOk(todosOk);
+    setPestanasFallidas(fallidas);
+    setProcesando(false);
+    if (todosOk.length > 0 && fallidas.length === 0) {
+      finalizarConResultados(todosOk);
+    } else if (todosOk.length === 0 && fallidas.length > 0) {
+      toast.error("Ninguna pestaña pudo procesarse. Revisá y reintentá.");
+    }
+  };
+
+  const finalizarConResultados = (lista: { pestana: string; resultado: ResultadoIADirecto }[]) => {
+    const unificado = deduplicarCausas(lista);
+    setResultado(unificado);
+    setEditable(unificado.causas);
+    const inc: Record<string, boolean> = {};
+    unificado.causas.forEach((c) => { inc[c.id_temporal] = c.confianza !== "rojo"; });
+    setIncluir(inc);
+  };
+
+  const handleProcesarSeleccion = async () => {
+    if (!archivoCache) return;
+    const nombres = pestanasDetectadas.filter((p) => seleccionPestanas[p.nombre]).map((p) => p.nombre);
+    if (nombres.length === 0) { toast.error("Elegí al menos una pestaña."); return; }
+    await ejecutarProcesamiento(archivoCache, nombres);
+  };
+
+  const handleReintentarFallidas = async () => {
+    if (!archivoCache) return;
+    const nombres = pestanasFallidas.map((f) => f.pestana);
+    await ejecutarProcesamiento(archivoCache, nombres, resultadosOk);
+  };
+
+  const handleContinuarConOk = () => {
+    if (resultadosOk.length === 0) return;
+    finalizarConResultados(resultadosOk);
   };
 
   const handleResultado = (r: ResultadoIA | null) => {
