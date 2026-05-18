@@ -93,8 +93,8 @@ export default function AppSidebar({
       <aside className={`${collapsed ? "w-16" : "w-56"} shrink-0 bg-gradient-sidebar text-sidebar-foreground flex flex-col min-h-screen border-r border-sidebar-border shadow-elevated transition-[width] duration-200`}>
         <div className={`${collapsed ? "px-2" : "px-5"} py-6`}>
           <div className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} mb-3`}>
-            <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shadow-soft shrink-0 bg-sidebar-accent/40">
-              <img src={appIcon} alt="JusTrack" className="w-full h-full object-cover" />
+            <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center shadow-soft shrink-0">
+              <Scale className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
             {!collapsed && (
               <div className="flex flex-col leading-tight">
