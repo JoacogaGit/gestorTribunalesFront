@@ -194,12 +194,17 @@ Deno.serve(async (req) => {
     if (!body || typeof body !== "object") {
       return new Response(JSON.stringify({ ok: false, error: "bad_request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const { vocalia_id, vocalia_nombre, archivo, mapeo_manual } = body as {
-      vocalia_id?: string; vocalia_nombre?: string; archivo?: unknown; mapeo_manual?: Record<string, string>;
+    const { vocalia_id, vocalia_nombre, archivo, mapeo_manual, pestana } = body as {
+      vocalia_id?: string; vocalia_nombre?: string; archivo?: Record<string, unknown>; mapeo_manual?: Record<string, string>;
+      pestana?: { nombre: string; contenido: unknown };
     };
     if (!vocalia_id || !archivo) {
       return new Response(JSON.stringify({ ok: false, error: "bad_request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // Si viene una pestaña puntual, reemplazamos el array de pestañas por una sola.
+    const archivoEfectivo: Record<string, unknown> = pestana
+      ? { ...archivo, pestanas: [pestana] }
+      : archivo;
 
     // Validar membresía con service-role: vocalía -> tribunal -> miembro.
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -226,12 +231,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const userPayload = JSON.stringify(archivo).slice(0, 350_000);
+    const userPayload = JSON.stringify(archivoEfectivo).slice(0, 350_000);
     if (userPayload.length >= 350_000) {
       return new Response(JSON.stringify({ ok: false, error: "payload_too_large" }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const userMsg = `Migrar a vocalía: ${vocalia_nombre ?? ""}. Archivo de tipo ${(archivo as { tipo?: string }).tipo ?? "desconocido"}. ` +
+    const tipoArchivo = (archivo as { tipo?: string }).tipo ?? "desconocido";
+    const nombreArchivo = (archivo as { nombreArchivo?: string }).nombreArchivo ?? "";
+    const headerPestana = pestana
+      ? `Estás procesando ÚNICAMENTE la pestaña "${pestana.nombre}" del archivo "${nombreArchivo}". No infieras nada sobre otras pestañas; solo trabajá con los datos de esta. `
+      : "";
+    const userMsg = `${headerPestana}Migrar a vocalía: ${vocalia_nombre ?? ""}. Archivo de tipo ${tipoArchivo}. ` +
       (mapeo_manual ? `Mapeo manual provisto por el usuario (índice de columna → campo): ${JSON.stringify(mapeo_manual)}. ` : "") +
       `Contenido:\n${userPayload}`;
 

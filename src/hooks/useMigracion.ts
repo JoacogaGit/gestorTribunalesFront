@@ -70,11 +70,12 @@ export function useMigracion() {
     vocaliaNombre: string,
     archivo: ArchivoParseado,
     mapeoManual?: Record<string, string>,
+    pestana?: { nombre: string; contenido: string[][] | string },
   ): Promise<ResultadoIA | null> => {
     setLoading(true); setError(null);
     try {
       const { data, error } = await supabase.functions.invoke("procesar-migracion", {
-        body: { vocalia_id: vocaliaId, vocalia_nombre: vocaliaNombre, archivo, mapeo_manual: mapeoManual },
+        body: { vocalia_id: vocaliaId, vocalia_nombre: vocaliaNombre, archivo, mapeo_manual: mapeoManual, pestana },
       });
       if (error) { setError(error.message); return null; }
       if (!data?.ok) {
@@ -88,6 +89,62 @@ export function useMigracion() {
         return null;
       }
       return data.resultado as ResultadoIA;
+    } finally { setLoading(false); }
+  }, []);
+
+  /** Procesa N pestañas secuencialmente. Llama onProgress en cada paso. */
+  const procesarPorPestanas = useCallback(async (
+    vocaliaId: string,
+    vocaliaNombre: string,
+    archivo: ArchivoParseado,
+    pestanasSeleccionadas: string[],
+    onProgress?: (info: { pestana: string; indice: number; total: number; estado: "procesando" | "ok" | "error"; error?: string }) => void,
+  ): Promise<{
+    ok: { pestana: string; resultado: ResultadoIADirecto }[];
+    fallidas: { pestana: string; error: string }[];
+  }> => {
+    setLoading(true); setError(null);
+    const ok: { pestana: string; resultado: ResultadoIADirecto }[] = [];
+    const fallidas: { pestana: string; error: string }[] = [];
+    const archivoMeta: ArchivoParseado = { ...archivo, pestanas: [] };
+    const total = pestanasSeleccionadas.length;
+    try {
+      for (let i = 0; i < pestanasSeleccionadas.length; i++) {
+        const nombre = pestanasSeleccionadas[i];
+        const pest = archivo.pestanas.find((p) => p.nombre === nombre);
+        if (!pest) {
+          fallidas.push({ pestana: nombre, error: "Pestaña no encontrada en el archivo." });
+          onProgress?.({ pestana: nombre, indice: i, total, estado: "error", error: "Pestaña no encontrada." });
+          continue;
+        }
+        onProgress?.({ pestana: nombre, indice: i, total, estado: "procesando" });
+        try {
+          const { data, error } = await supabase.functions.invoke("procesar-migracion", {
+            body: { vocalia_id: vocaliaId, vocalia_nombre: vocaliaNombre, archivo: archivoMeta, pestana: pest },
+          });
+          if (error) throw new Error(error.message);
+          if (!data?.ok) {
+            const msg = data?.error === "no_api_key" ? "Falta configurar la API key de IA."
+              : data?.error === "forbidden" ? "No tenés permisos sobre esta vocalía."
+              : data?.error === "payload_too_large" ? "Pestaña demasiado grande."
+              : data?.error === "json_invalido" ? "La IA devolvió un formato inválido."
+              : data?.error === "ai_error" ? "Error consultando a la IA."
+              : "No se pudo procesar la pestaña.";
+            throw new Error(msg);
+          }
+          const r = data.resultado as ResultadoIA;
+          if (r.modo !== "procesamiento_directo") {
+            throw new Error("La pestaña requiere mapeo asistido (no soportado por pestaña).");
+          }
+          ok.push({ pestana: nombre, resultado: r });
+          onProgress?.({ pestana: nombre, indice: i, total, estado: "ok" });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Error desconocido";
+          fallidas.push({ pestana: nombre, error: msg });
+          onProgress?.({ pestana: nombre, indice: i, total, estado: "error", error: msg });
+        }
+      }
+      return { ok, fallidas };
     } finally { setLoading(false); }
   }, []);
 
@@ -150,5 +207,5 @@ export function useMigracion() {
     } finally { setLoading(false); }
   }, []);
 
-  return { loading, error, procesar, cargarEnBD };
+  return { loading, error, procesar, procesarPorPestanas, cargarEnBD };
 }

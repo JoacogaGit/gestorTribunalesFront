@@ -1,58 +1,74 @@
-# Cierre de pendientes — Migración / Papelera / Onboarding
+# Migración por pestañas (fix WORKER_RESOURCE_LIMIT)
 
-Cinco cambios acotados al frontend. No se toca DB, RLS, ni nada ya terminado.
+## Objetivo
+Evitar que la edge function `procesar-migracion` se quede sin recursos cuando el Excel tiene muchas filas o muchas pestañas. La solución es invocarla **una vez por pestaña** desde el frontend y deduplicar los resultados localmente.
 
-## 1. Fix de tipo en `WizardMigracion.tsx`
+## Nuevo flujo del wizard
 
-En `handleFile` (línea ~45), `procesar` devuelve `ResultadoIA | null` y se pasa a `handleResultado(r)` que ya hace el discriminated narrowing por `r.modo`. El problema es que `setResultado` espera `ResultadoIADirecto` pero el chequeo está bien escrito. Falta solo asegurar el narrowing: dentro de `handleResultado`, tras `if (r.modo === "mapeo_asistido_requerido") return;`, asignar a una variable tipada explícitamente como `ResultadoIADirecto` antes de pasarla al state (TS no siempre estrecha bien tras early-return por discriminante con union genérico). Cambio mínimo en esa función + tipar `handleResultado` para recibir `ResultadoIA` (no `ResultadoIA | null`).
+```
+[1 Subida] → [2 Selección de pestañas*] → [3 Procesamiento pestaña x pestaña] → [4 Revisión] → [5 Éxito]
+                       *se saltea si hay 1 sola pestaña
+```
 
-## 2. Cablear Papelera y Wizard en `VocaliaWorkspace.tsx`
+## Cambios
 
-- Importar `Papelera` y `WizardMigracion`.
-- Agregar entradas en `defaultTitles`: `papelera: "Papelera"`, `migrar: "Migrar causas"`.
-- Render: `{view === "papelera" && esAdmin && tribunalId && <Papelera tribunalId={tribunalId} />}` (con fallback de "sin permisos" igual que `miembros`).
-- Render: `{view === "migrar" && <WizardMigracion vocaliaId={vocaliaId} vocaliaNombre={vocaliaNombre} onDone={() => setView("dashboard")} />}`.
-- Guard en el `useEffect` ya existente: extender la condición a `(view === "miembros" || view === "papelera") && !esAdmin` → redirige y avisa.
+### A) Edge function `supabase/functions/procesar-migracion/index.ts`
+- El payload pasa a aceptar **una sola pestaña** además del archivo: nuevo campo opcional `pestana` (`{ nombre, contenido }`) que tiene prioridad sobre `archivo.pestanas`.
+- Si viene `pestana`, se arma un `ArchivoParseado` con esa única pestaña antes de enviar a Claude.
+- Se ajusta el `userMsg` para avisar a Claude que está procesando una pestaña específica (`Procesando pestaña "<nombre>" del archivo <nombreArchivo> (tipo <tipo>).`).
+- Sin cambios en el system prompt ni en la validación de membresía.
+- Mantener compatibilidad hacia atrás: si no viene `pestana`, sigue funcionando como hoy.
 
-## 3. Items en `AppSidebar.tsx`
+### B) Hook `src/hooks/useMigracion.ts`
+- Nueva función `procesarPorPestanas(vocaliaId, vocaliaNombre, archivo, opciones)` que:
+  - Recibe la lista de pestañas seleccionadas (nombres) y un callback `onProgress(pestana, indice, total, estado: "procesando" | "ok" | "error")`.
+  - Itera **secuencialmente** llamando a la edge function una vez por pestaña con el payload reducido.
+  - Acumula `ResultadoIADirecto[]` por pestaña exitosa y `{ pestana, error }[]` por las fallidas.
+  - No corta el bucle si una pestaña falla.
+  - Devuelve `{ resultadosPorPestana, fallidas }`.
+- Nueva función `reintentarPestanas(...)` (alias del mismo método con subset) para reintentos puntuales.
+- `procesar` original se mantiene para el caso "archivo de una sola pestaña / mapeo asistido".
 
-- Importar `Trash2`, `Upload` de lucide-react.
-- Agregar a `defaultNavItems` el item `{ id: "migrar", label: "Migrar causas", icon: Upload }` (visible para todos), insertado al final de la lista principal (antes de calendario o después, consistente con el grupo).
-- Replicar el patrón actual del item "Miembros" (bloque `esAdmin && (() => {...})()`) para renderizar **"Papelera"** con icono `Trash2`, solo cuando `esAdmin`.
+### C) Helper nuevo `src/lib/deduplicarCausas.ts`
+- Función `deduplicarCausas(resultados: { pestana: string; resultado: ResultadoIADirecto }[]) : ResultadoIADirecto`.
+- Reglas:
+  - Clave de merge: `expediente_nro` normalizado (trim + lower; si está vacío, no se mergea).
+  - **Jerarquía `estado_causa`**: `terminada` > `recurso` > `tramite`.
+  - **Jerarquía `situacion_libertad` (a nivel sujeto)**: `condenado` > `detenido` > `rebelde` > `probation` > `libre`.
+  - Match de sujetos dentro de una causa por `nombre_completo` normalizado; se fusionan campos.
+  - Para cada campo escalar: gana el valor no nulo; si ambos tienen valor distinto, gana el del registro con **más campos completos** (mayor cantidad de propiedades no nulas).
+  - `observaciones`: se concatenan con separador ` | ` quitando duplicados exactos.
+  - Eventos: dedupe por `(titulo + fecha_hora)`; los distintos se mantienen.
+  - `origen_pestanas`: array con los nombres de las pestañas que aportaron a esa causa.
+  - `confianza`: se recalcula al peor color presente entre las fuentes (rojo > amarillo > verde).
+- Recalcula `resumen` y concatena `filas_rojas` y `pestanas_procesadas`.
 
-## 4. Disparar `BienvenidaTribunal` desde `WelcomeNoTribunal.tsx`
+### D) `src/components/WizardMigracion.tsx`
+- Nuevos estados:
+  - `pestanasDetectadas: { nombre: string; filas: number }[]`
+  - `seleccionPestanas: Record<string, boolean>` (todas en true por defecto)
+  - `progreso: { pestana: string; estado: "pendiente" | "procesando" | "ok" | "error"; error?: string }[]`
+  - `pestanasFallidas: string[]`
+- **Paso 1 (subida)**: tras `parseMigracionFile`, si hay >1 pestaña → ir a **Paso 2 (selección)**. Si hay 1 sola, llamar directo a `procesarPorPestanas` con esa única pestaña.
+- **Paso 2 (selección de pestañas)**: pantalla nueva, listado con checkboxes (nombre + nº de filas), botones "Seleccionar todas / ninguna" y "Procesar pestañas seleccionadas".
+- **Paso 3 (procesamiento)**: lista visual con íconos por pestaña (`Loader2` / `CheckCircle2` / `XCircle`), texto "Procesando 'X' (n de N)…". Al finalizar:
+  - Si hay resultados OK → ejecutar `deduplicarCausas` y pasar a **Paso 4 (revisión)** ya existente.
+  - Si hay fallidas → mostrar banner con botón "Reintentar pestañas fallidas" (vuelve a llamar a `procesarPorPestanas` solo con ese subset y mergea con los previos).
+- **Paso 4 (revisión)**: igual que hoy; muestra `origen_pestanas` como badges adicionales en cada causa cuando vienen de >1 pestaña.
+- Si la respuesta de alguna pestaña es `mapeo_asistido_requerido`, se trata esa pestaña como fallida con mensaje explicativo (no soportamos mapeo asistido por pestaña en esta iteración).
 
-- Agregar estado `mode === "bienvenida"`.
-- En `handleCrearVocalia`, tras success: en vez de llamar `onCreated()` directo, `setMode("bienvenida")` (sin perder `tribunalId`).
-- Render del `mode === "bienvenida"`: usar `<BienvenidaTribunal>` con:
-  - `onMigrar`: llama `onCreated()` y además guarda en `sessionStorage` un flag `justrack:open-migrar=1`.
-  - `onEmpezarDesdeCero`: llama `onCreated()` directamente.
-- En `VocaliaWorkspace` (al montar): `useEffect` que lee ese flag de `sessionStorage`; si está, lo borra y hace `setView("migrar")`. Así el ruteo queda transparente y solo se dispara la primera vez.
-- Los usuarios que se unen con código/token siguen el flujo original (`onCreated()` directo, sin bienvenida).
+### E) Casos borde
+- DOCX / TXT / CSV: tienen 1 sola pestaña → saltean el paso de selección, mismo comportamiento de hoy pero pasando por el nuevo flujo (una sola llamada).
+- Pestañas vacías (0 filas no vacías): se filtran del listado y no se mandan.
+- Si todas las pestañas fallan: mostrar error global con botón "Reintentar todo".
 
-## 5. Mapeo asistido — Paso 2 del wizard
-
-Cuando la edge function devuelve `modo: "mapeo_asistido_requerido"` con `columnas_detectadas` y `campos_disponibles`:
-
-- Nuevo state `mapeo: ResultadoIAMapeo | null` y `archivoCache: ArchivoParseado | null` (guardado en `handleFile` antes de invocar IA, para poder reusarlo en el reintento).
-- En `handleResultado`, si `r.modo === "mapeo_asistido_requerido"`, setear `mapeo = r` en vez del `toast.warning + return` actual.
-- Render condicional (antes del Paso 3): tabla compacta — una fila por columna detectada, con:
-  - Índice + 2-3 valores muestra (`muestra`).
-  - Hipótesis de la IA (texto chico, gris).
-  - `Select` (shadcn) con `campos_disponibles` + "(ignorar)".
-- Botón **"Reprocesar con mi mapeo"**: arma `Record<string, string>` (`indice → campo`), invoca `procesar(vocaliaId, vocaliaNombre, archivoCache, mapeo)`, pasa por `handleResultado`. Si la IA vuelve a pedir mapeo, se queda en este paso con un toast de error.
-- Botón secundario **"Descartar y reintentar"** vuelve al Paso 1.
-- Loading state en botones durante el reintento.
-
-## Archivos modificados
-
-- `src/components/WizardMigracion.tsx` — fix tipo + paso 2 mapeo asistido.
-- `src/components/VocaliaWorkspace.tsx` — views `papelera` + `migrar`, guard admin, autoabrir tras bienvenida.
-- `src/components/AppSidebar.tsx` — items `Migrar causas` (todos) + `Papelera` (admin).
-- `src/components/WelcomeNoTribunal.tsx` — nuevo `mode: "bienvenida"` integrando `BienvenidaTribunal`.
+## Archivos tocados
+- `supabase/functions/procesar-migracion/index.ts` — aceptar `pestana` y ajustar `userMsg`.
+- `src/hooks/useMigracion.ts` — `procesarPorPestanas`, `reintentarPestanas`.
+- `src/lib/deduplicarCausas.ts` — **nuevo**.
+- `src/components/WizardMigracion.tsx` — pasos 2 y 3 nuevos, integración con dedupe y reintentos.
 
 ## Fuera de alcance
-
-- Nada de DB / RLS / edge functions.
-- Nada en hooks ya cableados.
-- Sin tocar `Papelera.tsx`, `BienvenidaTribunal.tsx`, `useMigracion.ts`, `procesar-migracion/index.ts` (ya están listos).
+- Streaming / `EdgeRuntime.waitUntil`.
+- Procesamiento paralelo (a propósito, secuencial).
+- Mapeo asistido por pestaña (queda como mejora futura).
