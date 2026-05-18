@@ -13,7 +13,7 @@ const defaultNavItems = [
   { id: "recursos", label: "Recursos", icon: Users },
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },
   { id: "calendario", label: "Calendario / Alertas", icon: Calendar },
-  { id: "migrar", label: "Migrar causas", icon: Upload },
+  { id: "migrar", label: "Migrar causas", icon: Sparkles },
 ];
 
 export interface CustomBoard {
