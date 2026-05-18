@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, Loader2, FileWarning, CheckCircle2, AlertTriangle, XCircle, Trash2, ArrowRight } from "lucide-react";
+import { Upload, Loader2, FileWarning, CheckCircle2, AlertTriangle, XCircle, Trash2, ArrowRight, Sparkles, FileSpreadsheet, FileText, Wand2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
