@@ -231,12 +231,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const userPayload = JSON.stringify(archivo).slice(0, 350_000);
+    const userPayload = JSON.stringify(archivoEfectivo).slice(0, 350_000);
     if (userPayload.length >= 350_000) {
       return new Response(JSON.stringify({ ok: false, error: "payload_too_large" }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const userMsg = `Migrar a vocalía: ${vocalia_nombre ?? ""}. Archivo de tipo ${(archivo as { tipo?: string }).tipo ?? "desconocido"}. ` +
+    const tipoArchivo = (archivo as { tipo?: string }).tipo ?? "desconocido";
+    const nombreArchivo = (archivo as { nombreArchivo?: string }).nombreArchivo ?? "";
+    const headerPestana = pestana
+      ? `Estás procesando ÚNICAMENTE la pestaña "${pestana.nombre}" del archivo "${nombreArchivo}". No infieras nada sobre otras pestañas; solo trabajá con los datos de esta. `
+      : "";
+    const userMsg = `${headerPestana}Migrar a vocalía: ${vocalia_nombre ?? ""}. Archivo de tipo ${tipoArchivo}. ` +
       (mapeo_manual ? `Mapeo manual provisto por el usuario (índice de columna → campo): ${JSON.stringify(mapeo_manual)}. ` : "") +
       `Contenido:\n${userPayload}`;
 
