@@ -210,7 +210,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       eventos: editable.filter((c) => incluir[c.id_temporal]).reduce((a, c) => a + c.eventos.length, 0),
     };
     return (
-      <div className="max-w-5xl pb-24">
+      <div className="flex flex-col h-[calc(100vh-8rem)] max-w-5xl">
+       <div className="flex-1 overflow-y-auto pr-1 pb-4">
         <p className="text-sm text-muted-foreground mb-4">
           Revisá y editá los datos detectados. Solo se cargarán las causas marcadas.
         </p>
