@@ -170,6 +170,19 @@ function extractJson(raw: string): unknown | null {
   try { return JSON.parse(trimmed.slice(start, end + 1)); } catch { return null; }
 }
 
+function byteLength(value: string): number {
+  return new TextEncoder().encode(value).length;
+}
+
+function countRows(pestana?: { contenido: unknown }): number {
+  const contenido = pestana?.contenido;
+  if (typeof contenido === "string") return contenido.split("\n").filter((l) => l.trim()).length;
+  if (Array.isArray(contenido)) {
+    return contenido.filter((row) => Array.isArray(row) && row.some((cell) => String(cell ?? "").trim() !== "")).length;
+  }
+  return 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
