@@ -52,7 +52,7 @@ interface Props {
 const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
 
 export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Props) {
-  const { loading, error, procesar, procesarPorPestanas, cargarEnBD } = useMigracion();
+  const { loading, error, procesar, procesarUnLote, cargarEnBD } = useMigracion();
   const [resultado, setResultado] = useState<ResultadoIADirecto | null>(null);
   const [mapeo, setMapeo] = useState<ResultadoIAMapeo | null>(null);
   const [archivoCache, setArchivoCache] = useState<ArchivoParseado | null>(null);
@@ -61,13 +61,26 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
   const [editable, setEditable] = useState<CausaIA[]>([]);
   const [incluir, setIncluir] = useState<Record<string, boolean>>({});
   const [exito, setExito] = useState<{ causas: number; sujetos: number; eventos: number } | null>(null);
-  // Multi-pestaña
+  // Multi-pestaña / multi-lote
   const [pestanasDetectadas, setPestanasDetectadas] = useState<{ nombre: string; filas: number }[]>([]);
   const [seleccionPestanas, setSeleccionPestanas] = useState<Record<string, boolean>>({});
-  const [progreso, setProgreso] = useState<{ pestana: string; estado: "pendiente" | "procesando" | "ok" | "error"; error?: string }[]>([]);
+  const [lotes, setLotes] = useState<LoteTrabajo[]>([]);
   const [procesando, setProcesando] = useState(false);
   const [resultadosOk, setResultadosOk] = useState<{ pestana: string; resultado: ResultadoIADirecto }[]>([]);
-  const [pestanasFallidas, setPestanasFallidas] = useState<{ pestana: string; error: string }[]>([]);
+  // Resume desde localStorage
+  const [pendingResume, setPendingResume] = useState<{ filename: string; timestamp: number; resultadosOk: { pestana: string; resultado: ResultadoIADirecto }[] } | null>(null);
+  const cancelarRef = useRef(false);
+
+  // Cargar estado pendiente de localStorage al montar
+  useEffect(() => {
+    if (!vocaliaId) return;
+    try {
+      const raw = localStorage.getItem(lsKey(vocaliaId));
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
+    } catch { /* noop */ }
+  }, [vocaliaId]);
 
   if (!vocaliaId) {
     return (
@@ -77,6 +90,11 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       </Alert>
     );
   }
+
+  const guardarLS = (ok: { pestana: string; resultado: ResultadoIADirecto }[], fn: string) => {
+    try { localStorage.setItem(lsKey(vocaliaId), JSON.stringify({ filename: fn, timestamp: Date.now(), resultadosOk: ok })); } catch { /* noop */ }
+  };
+  const limpiarLS = () => { try { localStorage.removeItem(lsKey(vocaliaId)); } catch { /* noop */ } };
 
   const contarFilas = (p: ArchivoParseado["pestanas"][number]): number => {
     if (typeof p.contenido === "string") return p.contenido.split("\n").filter((l) => l.trim()).length;
@@ -98,28 +116,70 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       detectadas.forEach((p) => { sel[p.nombre] = true; });
       setSeleccionPestanas(sel);
       if (detectadas.length === 1) {
-        await ejecutarProcesamiento(parsed, [detectadas[0].nombre]);
+        const lotesIniciales = construirLotes(parsed, [detectadas[0].nombre]);
+        await ejecutarLotes(parsed, lotesIniciales);
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo leer el archivo");
     }
   };
 
-  const ejecutarProcesamiento = async (archivo: ArchivoParseado, nombres: string[], previos: { pestana: string; resultado: ResultadoIADirecto }[] = []) => {
+  const construirLotes = (archivo: ArchivoParseado, nombres: string[]): LoteTrabajo[] => {
+    const out: LoteTrabajo[] = [];
+    for (const nombre of nombres) {
+      const pest = archivo.pestanas.find((p) => p.nombre === nombre);
+      if (!pest) continue;
+      const subs = dividirPestanaEnLotes(pest);
+      subs.forEach((s, idx) => {
+        out.push({
+          id: `${nombre}::${s.nro_lote}::${idx}::${Math.random().toString(36).slice(2, 8)}`,
+          pestana: nombre,
+          nro_lote: s.nro_lote,
+          total_lotes: s.total_lotes,
+          contenido: s.pestana.contenido as string[][],
+          filas: s.filas,
+          estado: "pendiente",
+        });
+      });
+    }
+    return out;
+  };
+
+  const ejecutarLotes = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
     setProcesando(true);
-    setPestanasFallidas([]);
-    setProgreso(nombres.map((n) => ({ pestana: n, estado: "pendiente" })));
-    const { ok, fallidas } = await procesarPorPestanas(vocaliaId, vocaliaNombre, archivo, nombres, (info) => {
-      setProgreso((prev) => prev.map((p, i) => i === info.indice ? { pestana: info.pestana, estado: info.estado === "procesando" ? "procesando" : info.estado, error: info.error } : p));
-    });
-    const todosOk = [...previos, ...ok];
-    setResultadosOk(todosOk);
-    setPestanasFallidas(fallidas);
+    cancelarRef.current = false;
+    let current = lotesIniciales;
+    setLotes(current);
+    const archivoMeta: ArchivoParseado = { ...archivo, pestanas: [] };
+    const okAcum: { pestana: string; resultado: ResultadoIADirecto }[] = [...resultadosOk];
+
+    for (let i = 0; i < current.length; i++) {
+      if (cancelarRef.current) break;
+      if (current[i].estado !== "pendiente") continue;
+      current = current.map((l, idx) => idx === i ? { ...l, estado: "procesando" as EstadoLote } : l);
+      setLotes(current);
+      const lote = current[i];
+      const pestPayload: PestanaParseada = { nombre: lote.pestana, contenido: lote.contenido };
+      const r = await procesarUnLote(vocaliaId, vocaliaNombre, archivoMeta, pestPayload,
+        { pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas });
+      if (r.ok && r.resultado) {
+        current = current.map((l, idx) => idx === i ? { ...l, estado: "ok" as EstadoLote, errorCode: undefined, errorMsg: undefined } : l);
+        setLotes(current);
+        okAcum.push({ pestana: `${lote.pestana} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r.resultado });
+        setResultadosOk([...okAcum]);
+        guardarLS(okAcum, filename);
+      } else {
+        current = current.map((l, idx) => idx === i ? { ...l, estado: "error" as EstadoLote, errorCode: r.errorCode, errorMsg: r.errorMsg } : l);
+        setLotes(current);
+      }
+    }
     setProcesando(false);
-    if (todosOk.length > 0 && fallidas.length === 0) {
-      finalizarConResultados(todosOk);
-    } else if (todosOk.length === 0 && fallidas.length > 0) {
-      toast.error("Ninguna pestaña pudo procesarse. Revisá y reintentá.");
+    const fallidos = current.filter((l) => l.estado === "error");
+    const oks = current.filter((l) => l.estado === "ok");
+    if (oks.length > 0 && fallidos.length === 0) {
+      finalizarConResultados(okAcum);
+    } else if (oks.length === 0 && fallidos.length > 0) {
+      toast.error("Ningún lote pudo procesarse. Revisá y reintentá.");
     }
   };
 
@@ -136,19 +196,60 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
     if (!archivoCache) return;
     const nombres = pestanasDetectadas.filter((p) => seleccionPestanas[p.nombre]).map((p) => p.nombre);
     if (nombres.length === 0) { toast.error("Elegí al menos una pestaña."); return; }
-    await ejecutarProcesamiento(archivoCache, nombres);
+    const ini = construirLotes(archivoCache, nombres);
+    await ejecutarLotes(archivoCache, ini);
   };
 
-  const handleReintentarFallidas = async () => {
+  const handleReintentarFallidos = async () => {
     if (!archivoCache) return;
-    const nombres = pestanasFallidas.map((f) => f.pestana);
-    await ejecutarProcesamiento(archivoCache, nombres, resultadosOk);
+    const nuevos: LoteTrabajo[] = [];
+    let split = 0, retry = 0;
+    for (const l of lotes) {
+      if (l.estado !== "error") { nuevos.push(l); continue; }
+      if (ADAPTIVE_ERRORS.has(l.errorCode || "") && l.filas > MIN_FILAS_LOTE) {
+        const fakePest: PestanaParseada = { nombre: l.pestana, contenido: l.contenido };
+        const mitades = dividirLoteEnMitades({ pestana: fakePest, nro_lote: l.nro_lote, total_lotes: l.total_lotes, filas: l.filas });
+        if (mitades) {
+          mitades.forEach((m, idx) => {
+            nuevos.push({
+              id: `${l.id}.${idx}`,
+              pestana: l.pestana,
+              nro_lote: l.nro_lote,
+              total_lotes: l.total_lotes,
+              contenido: m.pestana.contenido as string[][],
+              filas: m.filas,
+              estado: "pendiente",
+            });
+          });
+          split++;
+          continue;
+        }
+      }
+      nuevos.push({ ...l, estado: "pendiente", errorCode: undefined, errorMsg: undefined });
+      retry++;
+    }
+    if (split + retry === 0) return;
+    if (split > 0) toast.info(`${split} lote(s) divididos en mitades para reintentar.`);
+    await ejecutarLotes(archivoCache, nuevos);
   };
 
   const handleContinuarConOk = () => {
     if (resultadosOk.length === 0) return;
     finalizarConResultados(resultadosOk);
   };
+
+  const handleRetomar = () => {
+    if (!pendingResume) return;
+    setResultadosOk(pendingResume.resultadosOk);
+    finalizarConResultados(pendingResume.resultadosOk);
+    setFilename(pendingResume.filename);
+    setPendingResume(null);
+  };
+  const handleDescartarResume = () => {
+    limpiarLS();
+    setPendingResume(null);
+  };
+
 
   const handleResultado = (r: ResultadoIA | null) => {
     if (!r) return;
