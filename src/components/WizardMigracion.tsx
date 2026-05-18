@@ -210,7 +210,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       eventos: editable.filter((c) => incluir[c.id_temporal]).reduce((a, c) => a + c.eventos.length, 0),
     };
     return (
-      <div className="max-w-5xl pb-24">
+      <div className="flex flex-col h-[calc(100vh-8rem)] max-w-5xl">
+       <div className="flex-1 overflow-y-auto pr-1 pb-4">
         <p className="text-sm text-muted-foreground mb-4">
           Revisá y editá los datos detectados. Solo se cargarán las causas marcadas.
         </p>
@@ -323,17 +324,19 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
           </div>
         )}
 
-        <div className="fixed bottom-0 left-56 right-0 bg-card/95 backdrop-blur border-t border-border p-4 flex items-center justify-between gap-4 z-30">
+        </div>
+
+        <div className="shrink-0 bg-card/95 backdrop-blur border-t border-border px-4 py-2 flex items-center justify-between gap-4">
           <p className="text-sm">
             Vas a cargar <strong>{totales.causas}</strong> causas, <strong>{totales.sujetos}</strong> sujetos y <strong>{totales.eventos}</strong> eventos en {vocaliaNombre}.
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDescartar} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={handleDescartar} disabled={loading}>
               <Trash2 className="w-4 h-4 mr-1.5" /> Descartar
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button disabled={loading || totales.causas === 0}>
+                <Button size="sm" disabled={loading || totales.causas === 0}>
                   {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Cargar todo en {vocaliaNombre}
                 </Button>
