@@ -316,11 +316,13 @@ Deno.serve(async (req) => {
     const rawText: string = (anthropicJson?.content?.[0]?.text ?? "").trim();
     const parsed = extractJson(rawText);
     if (!parsed) {
+      console.log("procesar-migracion:error", { tipo: "json_invalido", pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
       return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: rawText.slice(0, 2000) }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ ok: true, resultado: parsed }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
+    console.log("procesar-migracion:error", { tipo: "server_error", message: e instanceof Error ? e.message : String(e) });
     return new Response(JSON.stringify({ ok: false, error: "server_error", detail: e instanceof Error ? e.message : String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
