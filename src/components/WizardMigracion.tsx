@@ -14,6 +14,7 @@ import { parseMigracionFile, ArchivoParseado, PestanaParseada } from "@/lib/pars
 import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
 import { deduplicarCausas } from "@/lib/deduplicarCausas";
 import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
+import ProgresoLotes from "@/components/migracion/ProgresoLotes";
 
 type EstadoLote = "pendiente" | "procesando" | "ok" | "error";
 interface LoteTrabajo {
