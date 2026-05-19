@@ -18,6 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useCausaMutations } from "@/hooks/useCausaMutations";
+import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
 
 interface DetenidoRow {
   imputado: Imputado;
@@ -52,6 +53,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   const [search, setSearch] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
+  const { zoom } = useListZoom();
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
@@ -178,7 +180,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
       </div>
       <div className="glass-card rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className={zoomTableClass(zoom)}>
             <TableHeader>
               <TableRow className="bg-muted/30">
                 {visibleColumns.map((col) => (
