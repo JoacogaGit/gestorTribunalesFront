@@ -1,7 +1,7 @@
 import { PestanaParseada } from "@/lib/parseMigracionFile";
 
-export const TAMANO_LOTE = 25;
-export const MIN_FILAS_LOTE = 5;
+export const TAMANO_LOTE = 8;
+export const MIN_FILAS_LOTE = 2;
 
 export interface LotePestana {
   pestana: PestanaParseada;
