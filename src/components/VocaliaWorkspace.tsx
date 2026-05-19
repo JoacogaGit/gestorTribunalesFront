@@ -395,22 +395,24 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "detenidos" && (
-              <RemoteListSection
-                loading={detenidosRemote.loading}
-                error={detenidosRemote.error}
-                isEmpty={detenidosRemote.causas.length === 0}
-                emptyTitle="Sin detenidos"
-                emptyMessage="No hay sujetos en situación 'detenido' en esta vocalía."
-                onRetry={detenidosRemote.refetch}
-              >
-                <DetenidosList
-                  causas={detenidosRemote.causas}
-                  onUpdateCausa={remoteNoop}
-                  onDeleteCausa={remoteNoop}
-                  onCreateCausa={remoteNoop}
-                  onMutated={detenidosRemote.refetch}
-                />
-              </RemoteListSection>
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <RemoteListSection
+                  loading={detenidosRemote.loading}
+                  error={detenidosRemote.error}
+                  isEmpty={detenidosRemote.causas.length === 0}
+                  emptyTitle="Sin detenidos"
+                  emptyMessage="No hay sujetos en situación 'detenido' en esta vocalía."
+                  onRetry={detenidosRemote.refetch}
+                >
+                  <DetenidosList
+                    causas={detenidosRemote.causas}
+                    onUpdateCausa={remoteNoop}
+                    onDeleteCausa={remoteNoop}
+                    onCreateCausa={remoteNoop}
+                    onMutated={detenidosRemote.refetch}
+                  />
+                </RemoteListSection>
+              </div>
             )}
             {view === "rebeldes" && (
               <RemoteListSection
@@ -501,7 +503,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} />}
-            {view === "miembros" && esAdmin && tribunalId && <MiembrosTribunal tribunalId={tribunalId} />}
+            {view === "miembros" && esAdmin && tribunalId && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <MiembrosTribunal tribunalId={tribunalId} />
+              </div>
+            )}
             {view === "miembros" && !esAdmin && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <p className="text-sm text-muted-foreground">No tenés permisos para ver esta sección.</p>
