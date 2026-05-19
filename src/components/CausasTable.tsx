@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useCausaMutations } from "@/hooks/useCausaMutations";
 import { useProximasAnotacionesPorCausa } from "@/hooks/useProximasAnotacionesPorCausa";
 import { getSemaforoText } from "@/lib/eventoMapper";
+import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
@@ -84,6 +85,7 @@ export default function CausasTable({
   const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
+  const { zoom } = useListZoom();
 
   // Próximas anotaciones (eventos con fecha) por causa.
   const causaIds = causas.map((c) => c.id);
@@ -528,7 +530,7 @@ export default function CausasTable({
 
       <div className="elevated-card rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="flex-1 min-h-0 overflow-auto">
-          <table className="w-full caption-bottom text-sm">
+          <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)}`}>
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
               <TableRow className="bg-transparent hover:bg-transparent">
                 {visibleColumns.map((col) => {

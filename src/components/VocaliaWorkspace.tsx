@@ -27,6 +27,7 @@ import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
 import Papelera from "@/components/Papelera";
 import WizardMigracion from "@/components/WizardMigracion";
+import ZoomControl from "@/components/ZoomControl";
 
 interface RemoteListSectionProps {
   loading: boolean;
@@ -107,7 +108,25 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const vocaliaNombre = vocalia?.nombre ?? "—";
   const tribunalId = vocalia?.tribunalId ?? null;
 
-  const [view, setView] = useState<View>("dashboard");
+  const VIEW_LS_KEY = vocaliaId ? `justrack_vista_activa_${vocaliaId}` : null;
+  const readSavedView = (): View => {
+    if (typeof window === "undefined" || !VIEW_LS_KEY) return "dashboard";
+    return localStorage.getItem(VIEW_LS_KEY) || "dashboard";
+  };
+  const [view, setViewState] = useState<View>(readSavedView);
+  const setView = (v: View) => {
+    setViewState(v);
+    if (VIEW_LS_KEY) {
+      try { localStorage.setItem(VIEW_LS_KEY, v); } catch { /* ignore */ }
+    }
+  };
+  // Cuando cambia la vocalía, cargar la última vista guardada para esa vocalía.
+  useEffect(() => {
+    if (!VIEW_LS_KEY) return;
+    const saved = localStorage.getItem(VIEW_LS_KEY) || "dashboard";
+    setViewState(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vocaliaId]);
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
@@ -148,7 +167,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const { vocalias: todasVocalias } = useVocalias();
   const vocaliasTribunal = tribunalId ? todasVocalias.filter((v) => v.tribunal_id === tribunalId) : [];
 
-  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId);
+  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
   const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
@@ -270,7 +289,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               };
               const cur = map[view];
               if (!cur) return null;
-              return <RefreshButton onRefresh={cur.refetch} loading={cur.loading} />;
+              const listViews = ["tramite", "detenidos", "rebeldes", "sjp", "recursos", "terminadas"];
+              return (
+                <>
+                  {listViews.includes(view) && <ZoomControl />}
+                  <RefreshButton onRefresh={cur.refetch} loading={cur.loading} />
+                </>
+              );
             })()}
             <ThemeToggle />
             <UserMenu
