@@ -315,106 +315,21 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
 
   // PASO 1.5 — Progreso por lote
   if (procesando || (lotes.length > 0 && !resultado && !mapeo)) {
-    const completos = lotes.filter((l) => l.estado === "ok").length;
-    const fallidos = lotes.filter((l) => l.estado === "error").length;
-    const enCurso = lotes.find((l) => l.estado === "procesando");
-    const terminado = !procesando;
-    // Agrupar por pestaña para layout más claro
-    const porPestana = lotes.reduce<Record<string, LoteTrabajo[]>>((acc, l) => {
-      (acc[l.pestana] ??= []).push(l); return acc;
-    }, {});
     return (
-      <div className="min-h-[calc(100vh-8rem)] flex justify-center px-4 py-10">
-        <div className="w-full max-w-2xl">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4">
-              {terminado ? <CheckCircle2 className="w-7 h-7 text-accent" /> : <Loader2 className="w-7 h-7 text-accent animate-spin" />}
-            </div>
-            <h2 className="font-display text-2xl font-bold mb-2">
-              {terminado ? "Procesamiento terminado" : "Procesando lotes"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {terminado
-                ? `${completos} de ${lotes.length} lotes listos${fallidos > 0 ? ` · ${fallidos} con error` : ""}.`
-                : enCurso
-                  ? `Procesando lote ${enCurso.nro_lote}/${enCurso.total_lotes} de "${enCurso.pestana}"…`
-                  : "Iniciando…"}
-            </p>
-            {!terminado && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Progreso guardado automáticamente. Si cerrás la pestaña, podés retomar después.
-              </p>
-            )}
-          </div>
-          <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
-            {Object.entries(porPestana).map(([pestana, lts]) => {
-              const okPest = lts.filter((l) => l.estado === "ok").length;
-              const errPest = lts.filter((l) => l.estado === "error").length;
-              return (
-                <Card key={pestana} className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold truncate">{pestana}</p>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {okPest}/{lts.length} ok{errPest > 0 ? ` · ${errPest} err` : ""}
-                    </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {lts.map((l) => (
-                      <div key={l.id} className="text-sm">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                            {l.estado === "ok" && <CheckCircle2 className="w-4 h-4 text-alert-ok" />}
-                            {l.estado === "procesando" && <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />}
-                            {l.estado === "error" && <XCircle className="w-4 h-4 text-alert-urgent" />}
-                            {l.estado === "pendiente" && <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />}
-                          </div>
-                          <span className="text-xs font-mono text-muted-foreground">
-                            Lote {l.nro_lote}/{l.total_lotes}
-                          </span>
-                          <span className="text-xs text-muted-foreground">· {l.filas} filas</span>
-                        </div>
-                        {l.estado === "error" && (
-                          <p className="ml-6 text-xs text-alert-urgent mt-0.5">
-                            {labelError(l.errorCode)}{l.errorMsg && l.errorMsg !== l.errorCode ? ` — ${l.errorMsg}` : ""}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-          {terminado && fallidos > 0 && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTriangle className="w-4 h-4" />
-              <AlertTitle>Algunos lotes fallaron</AlertTitle>
-              <AlertDescription className="text-xs">
-                Podés reintentar solo los lotes con error (los adaptativos se van a dividir en mitades automáticamente, mínimo {MIN_FILAS_LOTE} filas por lote), o continuar con los {completos} lotes que sí se procesaron.
-              </AlertDescription>
-            </Alert>
-          )}
-          {terminado && (
-            <div className="mt-4 flex flex-wrap justify-end gap-2">
-              <Button variant="outline" onClick={handleDescartar} disabled={procesando}>
-                <Trash2 className="w-4 h-4 mr-1.5" /> Descartar
-              </Button>
-              {fallidos > 0 && (
-                <Button variant="outline" onClick={handleReintentarFallidos} disabled={procesando}>
-                  <RotateCcw className="w-4 h-4 mr-1.5" /> Reintentar fallidos ({fallidos})
-                </Button>
-              )}
-              {completos > 0 && (
-                <Button onClick={handleContinuarConOk} disabled={procesando}>
-                  Continuar a revisión <ArrowRight className="w-4 h-4 ml-1.5" />
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <ProgresoLotes
+        lotes={lotes}
+        procesando={procesando}
+        filename={filename}
+        completos={lotes.filter((l) => l.estado === "ok").length}
+        fallidos={lotes.filter((l) => l.estado === "error").length}
+        onDescartar={handleDescartar}
+        onReintentar={handleReintentarFallidos}
+        onContinuar={handleContinuarConOk}
+        labelError={labelError}
+      />
     );
   }
+
 
   // PASO 1.4 — Selección de pestañas (solo si hay más de una)
   if (pestanasDetectadas.length > 1 && !resultado && !mapeo && lotes.length === 0) {
