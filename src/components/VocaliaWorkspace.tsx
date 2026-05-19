@@ -289,7 +289,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               };
               const cur = map[view];
               if (!cur) return null;
-              return <RefreshButton onRefresh={cur.refetch} loading={cur.loading} />;
+              const listViews = ["tramite", "detenidos", "rebeldes", "sjp", "recursos", "terminadas"];
+              return (
+                <>
+                  {listViews.includes(view) && <ZoomControl />}
+                  <RefreshButton onRefresh={cur.refetch} loading={cur.loading} />
+                </>
+              );
             })()}
             <ThemeToggle />
             <UserMenu
