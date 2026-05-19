@@ -69,6 +69,7 @@ export type Database = {
           created_at: string | null
           estado_causa: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro: string
+          fecha_ingreso: string | null
           id: string
           modificado_por: string | null
           otros_intervinientes: string | null
@@ -90,6 +91,7 @@ export type Database = {
           created_at?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro: string
+          fecha_ingreso?: string | null
           id?: string
           modificado_por?: string | null
           otros_intervinientes?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           created_at?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro?: string
+          fecha_ingreso?: string | null
           id?: string
           modificado_por?: string | null
           otros_intervinientes?: string | null
