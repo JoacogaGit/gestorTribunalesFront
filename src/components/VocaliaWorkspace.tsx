@@ -503,7 +503,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} />}
-            {view === "miembros" && esAdmin && tribunalId && <MiembrosTribunal tribunalId={tribunalId} />}
+            {view === "miembros" && esAdmin && tribunalId && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <MiembrosTribunal tribunalId={tribunalId} />
+              </div>
+            )}
             {view === "miembros" && !esAdmin && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <p className="text-sm text-muted-foreground">No tenés permisos para ver esta sección.</p>
