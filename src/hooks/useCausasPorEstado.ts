@@ -3,10 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI, DbEstadoCausa } from "@/lib/causaMapper";
 
-export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | null) {
+interface Options {
+  /** Excluir causas que tengan al menos un sujeto con alguna de estas situaciones (valores DB). */
+  excluirSituaciones?: string[];
+}
+
+export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | null, options: Options = {}) {
   const [causas, setCausas] = useState<Causa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const excluirKey = (options.excluirSituaciones ?? []).slice().sort().join(",");
 
   const fetchData = useCallback(async () => {
     if (!vocaliaId) { setCausas([]); setLoading(false); return; }
@@ -25,10 +32,19 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
       setCausas([]);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setCausas((data as any[]).map(dbCausaToUI));
+      let rows = data as any[];
+      const excl = excluirKey ? excluirKey.split(",") : [];
+      if (excl.length > 0) {
+        rows = rows.filter((r) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const sujetos = (r.sujetos as any[]) || [];
+          return !sujetos.some((s) => s.borrado_en == null && excl.includes(s.situacion_libertad));
+        });
+      }
+      setCausas(rows.map(dbCausaToUI));
     }
     setLoading(false);
-  }, [estado, vocaliaId]);
+  }, [estado, vocaliaId, excluirKey]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
