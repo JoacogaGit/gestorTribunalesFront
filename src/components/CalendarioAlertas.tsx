@@ -132,7 +132,7 @@ export default function CalendarioAlertas({ vocaliaId }: { vocaliaId: string | n
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-full overflow-y-auto pr-1">
       <div className="flex items-start gap-6">
         {/* Left column */}
         <div className="shrink-0 w-[320px] space-y-4">
