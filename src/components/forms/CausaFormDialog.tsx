@@ -47,6 +47,8 @@ function emptyCausa(): CausaInput {
     caratula: "",
     estado_causa: "tramite",
     tipo_recurso: null,
+    tipo_proceso: null,
+    fecha_ingreso: null,
     querella: "",
     actor_civil: "",
     otros_intervinientes: "",
