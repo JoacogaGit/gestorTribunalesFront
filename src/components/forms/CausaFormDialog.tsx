@@ -366,6 +366,28 @@ export default function CausaFormDialog({
                       </Select>
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Tipo de proceso</Label>
+                    <Select
+                      value={causa.tipo_proceso ?? "__none__"}
+                      onValueChange={(v) => updateCausa({ tipo_proceso: v === "__none__" ? null : (v as "unipersonal" | "colegiado") })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">—</SelectItem>
+                        <SelectItem value="unipersonal">Unipersonal (UNIP)</SelectItem>
+                        <SelectItem value="colegiado">Colegiado (COL)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Fecha de ingreso (354)</Label>
+                    <Input
+                      type="date"
+                      value={causa.fecha_ingreso ?? ""}
+                      onChange={(e) => updateCausa({ fecha_ingreso: e.target.value || null })}
+                    />
+                  </div>
                 </div>
               </section>
 
