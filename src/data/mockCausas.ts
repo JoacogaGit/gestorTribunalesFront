@@ -33,6 +33,8 @@ export interface AdjuntoPDF {
   data: string;
 }
 
+export type TipoProceso = "unipersonal" | "colegiado";
+
 export interface Causa {
   id: string;
   numero: string;
@@ -44,6 +46,10 @@ export interface Causa {
   fechaInicio: string;
   fechaElevacion?: string;
   fechaRadicacion?: string;
+  /** Fecha de ingreso (354). ISO YYYY-MM-DD. */
+  fechaIngreso?: string | null;
+  /** Tipo de proceso: UNIP/COL. */
+  tipoProceso?: TipoProceso | null;
   fechaPrescripcion: string;
   fechasPrescripcionExtra?: { fecha: string; label?: string }[];
   fechaVencimientoPP?: string;

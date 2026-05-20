@@ -381,6 +381,44 @@ export type Database = {
           },
         ]
       }
+      migracion_pendientes: {
+        Row: {
+          archivo_origen: string | null
+          created_at: string
+          datos_crudos: string
+          id: string
+          razon: string | null
+          sujeto_propuesto: Json | null
+          vocalia_id: string
+        }
+        Insert: {
+          archivo_origen?: string | null
+          created_at?: string
+          datos_crudos: string
+          id?: string
+          razon?: string | null
+          sujeto_propuesto?: Json | null
+          vocalia_id: string
+        }
+        Update: {
+          archivo_origen?: string | null
+          created_at?: string
+          datos_crudos?: string
+          id?: string
+          razon?: string | null
+          sujeto_propuesto?: Json | null
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migracion_pendientes_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfiles: {
         Row: {
           created_at: string | null

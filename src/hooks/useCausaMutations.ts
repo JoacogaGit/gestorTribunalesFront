@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import {
-  DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso,
+  DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso, DbTipoProceso,
 } from "@/lib/causaMapper";
 
 export interface CausaInput {
@@ -10,6 +10,8 @@ export interface CausaInput {
   caratula: string | null;
   estado_causa: DbEstadoCausa;
   tipo_recurso: DbTipoRecurso;
+  tipo_proceso?: DbTipoProceso;
+  fecha_ingreso?: string | null;
   querella: string | null;
   actor_civil: string | null;
   otros_intervinientes: string | null;

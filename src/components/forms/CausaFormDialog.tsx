@@ -47,6 +47,8 @@ function emptyCausa(): CausaInput {
     caratula: "",
     estado_causa: "tramite",
     tipo_recurso: null,
+    tipo_proceso: null,
+    fecha_ingreso: null,
     querella: "",
     actor_civil: "",
     otros_intervinientes: "",
@@ -123,6 +125,10 @@ export default function CausaFormDialog({
             caratula: data.caratula ?? "",
             estado_causa: data.estado_causa as DbEstadoCausa,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            tipo_proceso: ((data as any).tipo_proceso ?? null) as "unipersonal" | "colegiado" | null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fecha_ingreso: (data as any).fecha_ingreso ?? null,
             querella: data.querella ?? "",
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",
@@ -360,6 +366,28 @@ export default function CausaFormDialog({
                       </Select>
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Tipo de proceso</Label>
+                    <Select
+                      value={causa.tipo_proceso ?? "__none__"}
+                      onValueChange={(v) => updateCausa({ tipo_proceso: v === "__none__" ? null : (v as "unipersonal" | "colegiado") })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">—</SelectItem>
+                        <SelectItem value="unipersonal">Unipersonal (UNIP)</SelectItem>
+                        <SelectItem value="colegiado">Colegiado (COL)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Fecha de ingreso (354)</Label>
+                    <Input
+                      type="date"
+                      value={causa.fecha_ingreso ?? ""}
+                      onChange={(e) => updateCausa({ fecha_ingreso: e.target.value || null })}
+                    />
+                  </div>
                 </div>
               </section>
 

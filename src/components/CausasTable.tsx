@@ -190,6 +190,23 @@ export default function CausasTable({
     { key: "estado", label: "Estado", cellClass: "text-xs text-foreground whitespace-nowrap", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
     {
+      key: "tipoProceso", label: "Tipo",
+      headClass: "whitespace-nowrap w-12 text-center",
+      cellClass: "text-[10px] text-center font-semibold whitespace-nowrap",
+      sortValue: (c) => c.tipoProceso || "",
+      render: (c) => {
+        if (!c.tipoProceso) return <span className="text-muted-foreground">—</span>;
+        const label = c.tipoProceso === "unipersonal" ? "UNIP" : "COL";
+        return <span className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80">{label}</span>;
+      },
+    },
+    {
+      key: "fechaIngreso", label: "Fecha 354", headClass: "whitespace-nowrap",
+      cellClass: "text-xs text-muted-foreground whitespace-nowrap",
+      sortValue: (c) => c.fechaIngreso ? new Date(c.fechaIngreso).getTime() : Number.MAX_SAFE_INTEGER,
+      render: (c) => c.fechaIngreso ? fmtDate(c.fechaIngreso) : <span className="text-muted-foreground/60">—</span>,
+    },
+    {
       key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
       sortValue: (c) => {
         const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
@@ -466,6 +483,11 @@ export default function CausasTable({
           </div>
         )}
         <div className="flex items-center gap-2 ml-auto">
+          {onCreateCausa && (
+            <Button size="sm" onClick={handleCreate} className="shadow-sm">
+              <Plus className="w-3.5 h-3.5 mr-1" /> Nueva causa
+            </Button>
+          )}
           {sortBy && (
             <button
               onClick={() => setSortBy(null)}
@@ -533,6 +555,7 @@ export default function CausasTable({
           <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)}`}>
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
               <TableRow className="bg-transparent hover:bg-transparent">
+                <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60 w-10 text-right pr-2">#</TableHead>
                 {visibleColumns.map((col) => {
                   const isSorted = sortBy?.key === col.key;
                   const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
@@ -555,10 +578,11 @@ export default function CausasTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((c) => (
+              {sorted.map((c, idx) => (
                 <ContextMenu key={c.id}>
                   <ContextMenuTrigger asChild>
                     <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(c)}>
+                      <TableCell className="text-right pr-2 text-[11px] tabular-nums text-muted-foreground/70 w-10">{idx + 1}</TableCell>
                       {visibleColumns.map((col) => (
                         <TableCell key={col.key} className={col.cellClass}>{col.render(c)}</TableCell>
                       ))}
@@ -604,14 +628,14 @@ export default function CausasTable({
               ))}
               {sorted.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={visibleColumns.length} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={visibleColumns.length + 1} className="text-center text-muted-foreground py-8">
                     {search ? "Sin resultados" : "Sin causas en esta categoría"}
                   </TableCell>
                 </TableRow>
               )}
               {(onCreateCausa || onImportCausa) && !search && (
                 <TableRow className="bg-muted/10">
-                  <TableCell colSpan={visibleColumns.length} className="py-2">
+                  <TableCell colSpan={visibleColumns.length + 1} className="py-2">
                     <div className="flex items-center justify-center gap-2">
                       {onCreateCausa && (
                         <button onClick={handleCreate} className="flex items-center gap-1.5 text-xs text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md border border-dashed border-primary/40">
