@@ -628,14 +628,14 @@ export default function CausasTable({
               ))}
               {sorted.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={visibleColumns.length} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={visibleColumns.length + 1} className="text-center text-muted-foreground py-8">
                     {search ? "Sin resultados" : "Sin causas en esta categoría"}
                   </TableCell>
                 </TableRow>
               )}
               {(onCreateCausa || onImportCausa) && !search && (
                 <TableRow className="bg-muted/10">
-                  <TableCell colSpan={visibleColumns.length} className="py-2">
+                  <TableCell colSpan={visibleColumns.length + 1} className="py-2">
                     <div className="flex items-center justify-center gap-2">
                       {onCreateCausa && (
                         <button onClick={handleCreate} className="flex items-center gap-1.5 text-xs text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md border border-dashed border-primary/40">
