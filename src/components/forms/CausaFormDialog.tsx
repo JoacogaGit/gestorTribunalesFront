@@ -125,6 +125,10 @@ export default function CausaFormDialog({
             caratula: data.caratula ?? "",
             estado_causa: data.estado_causa as DbEstadoCausa,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            tipo_proceso: ((data as any).tipo_proceso ?? null) as "unipersonal" | "colegiado" | null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fecha_ingreso: (data as any).fecha_ingreso ?? null,
             querella: data.querella ?? "",
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",
