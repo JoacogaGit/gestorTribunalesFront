@@ -483,6 +483,11 @@ export default function CausasTable({
           </div>
         )}
         <div className="flex items-center gap-2 ml-auto">
+          {onCreateCausa && (
+            <Button size="sm" onClick={handleCreate} className="shadow-sm">
+              <Plus className="w-3.5 h-3.5 mr-1" /> Nueva causa
+            </Button>
+          )}
           {sortBy && (
             <button
               onClick={() => setSortBy(null)}
