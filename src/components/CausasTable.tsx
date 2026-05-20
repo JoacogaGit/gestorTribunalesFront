@@ -555,6 +555,7 @@ export default function CausasTable({
           <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)}`}>
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
               <TableRow className="bg-transparent hover:bg-transparent">
+                <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60 w-10 text-right pr-2">#</TableHead>
                 {visibleColumns.map((col) => {
                   const isSorted = sortBy?.key === col.key;
                   const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
@@ -577,10 +578,11 @@ export default function CausasTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((c) => (
+              {sorted.map((c, idx) => (
                 <ContextMenu key={c.id}>
                   <ContextMenuTrigger asChild>
                     <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(c)}>
+                      <TableCell className="text-right pr-2 text-[11px] tabular-nums text-muted-foreground/70 w-10">{idx + 1}</TableCell>
                       {visibleColumns.map((col) => (
                         <TableCell key={col.key} className={col.cellClass}>{col.render(c)}</TableCell>
                       ))}
