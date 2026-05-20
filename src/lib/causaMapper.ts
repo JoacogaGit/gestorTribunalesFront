@@ -43,12 +43,16 @@ export type DbSujeto = {
   causa_id: string;
 };
 
+export type DbTipoProceso = "unipersonal" | "colegiado" | null;
+
 export type DbCausa = {
   id: string;
   expediente_nro: string;
   caratula: string | null;
   estado_causa: DbEstadoCausa;
   tipo_recurso: DbTipoRecurso;
+  tipo_proceso: DbTipoProceso;
+  fecha_ingreso: string | null;
   vocalia_id: string;
   created_at: string | null;
   querella: string | null;
