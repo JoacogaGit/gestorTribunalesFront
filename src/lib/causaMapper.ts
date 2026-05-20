@@ -127,6 +127,8 @@ export function dbCausaToUI(row: DbCausa): Causa {
     imputados,
     estadoCausa: mapEstadoCausa(row.estado_causa, row.tipo_recurso),
     fechaInicio: (row.created_at ?? new Date().toISOString()).slice(0, 10),
+    fechaIngreso: row.fecha_ingreso ?? null,
+    tipoProceso: row.tipo_proceso ?? null,
     fechaPrescripcion: firstNonNull(sujetos.map((s) => s.prescripcion_fecha)) ?? "",
     fechaVencimientoPP: firstNonNull(sujetos.map((s) => s.vencimiento_pp)),
     otrosIntervinientes: otros.length ? otros : undefined,
