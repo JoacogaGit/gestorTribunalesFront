@@ -190,6 +190,23 @@ export default function CausasTable({
     { key: "estado", label: "Estado", cellClass: "text-xs text-foreground whitespace-nowrap", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
     {
+      key: "tipoProceso", label: "Tipo",
+      headClass: "whitespace-nowrap w-12 text-center",
+      cellClass: "text-[10px] text-center font-semibold whitespace-nowrap",
+      sortValue: (c) => c.tipoProceso || "",
+      render: (c) => {
+        if (!c.tipoProceso) return <span className="text-muted-foreground">—</span>;
+        const label = c.tipoProceso === "unipersonal" ? "UNIP" : "COL";
+        return <span className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80">{label}</span>;
+      },
+    },
+    {
+      key: "fechaIngreso", label: "Fecha 354", headClass: "whitespace-nowrap",
+      cellClass: "text-xs text-muted-foreground whitespace-nowrap",
+      sortValue: (c) => c.fechaIngreso ? new Date(c.fechaIngreso).getTime() : Number.MAX_SAFE_INTEGER,
+      render: (c) => c.fechaIngreso ? fmtDate(c.fechaIngreso) : <span className="text-muted-foreground/60">—</span>,
+    },
+    {
       key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
       sortValue: (c) => {
         const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
