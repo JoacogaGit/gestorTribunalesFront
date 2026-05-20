@@ -180,7 +180,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const dashCausas = (() => {
     const all = dashCausasRemote.causas;
     switch (dashFilter) {
-      case "tramite": return all.filter((c) => c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio");
+      case "tramite": return all.filter((c) =>
+        (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
+        !c.imputados.some((i) => i.estadoLibertad === "Rebelde" || i.estadoLibertad === "SJP"));
       case "detenidos": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Detenido"));
       case "rebeldes": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
       case "sjp": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP"));
