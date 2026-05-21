@@ -166,6 +166,7 @@ export function useMigracion() {
           estado_causa: c.estado_causa,
           tipo_recurso: c.tipo_recurso,
           tipo_proceso: c.tipo_proceso ?? null,
+          fecha_ingreso: c.fecha_ingreso ?? null,
           querella: c.querella,
           actor_civil: c.actor_civil,
           otros_intervinientes: c.otros_intervinientes,
