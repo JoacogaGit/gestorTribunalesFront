@@ -570,6 +570,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             }
             aria-hidden={view !== "migrar"}
           >
+            {view === "migrar" && <PendientesRevision vocaliaId={vocaliaId} />}
             <WizardMigracion
               vocaliaId={vocaliaId}
               vocaliaNombre={vocaliaNombre}
