@@ -63,7 +63,7 @@ interface Props {
 
 const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
 
-export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Props) {
+export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onStatusChange }: Props) {
   const { loading, error, procesar, procesarUnLote, cargarEnBD } = useMigracion();
   const [resultado, setResultado] = useState<ResultadoIADirecto | null>(null);
   const [mapeo, setMapeo] = useState<ResultadoIAMapeo | null>(null);
