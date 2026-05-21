@@ -26,8 +26,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
 import Papelera from "@/components/Papelera";
-import WizardMigracion from "@/components/WizardMigracion";
+import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
 import ZoomControl from "@/components/ZoomControl";
+import { Loader2, CheckCircle2 } from "lucide-react";
 
 interface RemoteListSectionProps {
   loading: boolean;
