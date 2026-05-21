@@ -44,10 +44,21 @@ const ERROR_LABELS: Record<string, string> = {
 const labelError = (code?: string) => ERROR_LABELS[code || "unknown"] || code || "error";
 const lsKey = (vocaliaId: string) => `migracion_v1_${vocaliaId}`;
 
+export interface MigracionStatus {
+  activa: boolean;
+  procesando: boolean;
+  totalLotes: number;
+  lotesOk: number;
+  lotesError: number;
+  hasResultado: boolean;
+  hasExito: boolean;
+}
+
 interface Props {
   vocaliaId: string | null;
   vocaliaNombre: string;
   onDone?: () => void;
+  onStatusChange?: (s: MigracionStatus) => void;
 }
 
 const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
