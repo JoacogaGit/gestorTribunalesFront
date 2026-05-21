@@ -11,7 +11,7 @@ import RefreshButton from "@/components/RefreshButton";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Inbox, RefreshCw } from "lucide-react";
+import { Filter, X, Inbox, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
@@ -26,7 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
 import Papelera from "@/components/Papelera";
-import WizardMigracion from "@/components/WizardMigracion";
+import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
 import ZoomControl from "@/components/ZoomControl";
 
 interface RemoteListSectionProps {
@@ -130,6 +130,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
+  const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
 
   const navigateToCausa = async (causaId: string) => {
     const { data, error } = await supabase
@@ -279,6 +280,26 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {migracionStatus?.activa && view !== "migrar" && (
+              <button
+                type="button"
+                onClick={() => setView("migrar")}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+                title="Ir a la migración en curso"
+              >
+                {migracionStatus.procesando ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Migración en curso… {migracionStatus.lotesOk}/{migracionStatus.totalLotes}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3 h-3" />
+                    Migración lista
+                  </>
+                )}
+              </button>
+            )}
             {(() => {
               const map: Record<string, { refetch: () => void; loading: boolean } | undefined> = {
                 dashboard: { refetch: () => { dashboardKpis.refetch(); dashCausasRemote.refetch(); }, loading: dashboardKpis.loading || dashCausasRemote.loading },
@@ -521,15 +542,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <p className="text-sm text-muted-foreground">No tenés permisos para ver esta sección.</p>
               </div>
             )}
-            {view === "migrar" && (
-              <div className="flex-1 min-h-0 overflow-y-auto -mx-6 lg:-mx-8 px-6 lg:px-8">
-                <WizardMigracion
-                  vocaliaId={vocaliaId}
-                  vocaliaNombre={vocaliaNombre}
-                  onDone={() => setView("dashboard")}
-                />
-              </div>
-            )}
+            {/* La vista "migrar" se renderiza siempre montada fuera de AnimatePresence
+                para que la migración siga corriendo aunque el usuario cambie de vista. */}
 
             {view.startsWith("custom-") && (
               <CausasTable
@@ -542,6 +556,27 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* Wizard de migración SIEMPRE montado mientras haya vocalía seleccionada.
+            Se oculta visualmente cuando la vista activa no es "migrar", pero su
+            estado interno y los lotes en curso se preservan. */}
+        {vocaliaId && (
+          <div
+            className={
+              view === "migrar"
+                ? "flex-1 min-h-0 overflow-y-auto -mx-6 lg:-mx-8 px-6 lg:px-8"
+                : "hidden"
+            }
+            aria-hidden={view !== "migrar"}
+          >
+            <WizardMigracion
+              vocaliaId={vocaliaId}
+              vocaliaNombre={vocaliaNombre}
+              onDone={() => setView("dashboard")}
+              onStatusChange={setMigracionStatus}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

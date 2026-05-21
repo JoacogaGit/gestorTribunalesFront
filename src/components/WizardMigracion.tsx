@@ -44,15 +44,26 @@ const ERROR_LABELS: Record<string, string> = {
 const labelError = (code?: string) => ERROR_LABELS[code || "unknown"] || code || "error";
 const lsKey = (vocaliaId: string) => `migracion_v1_${vocaliaId}`;
 
+export interface MigracionStatus {
+  activa: boolean;
+  procesando: boolean;
+  totalLotes: number;
+  lotesOk: number;
+  lotesError: number;
+  hasResultado: boolean;
+  hasExito: boolean;
+}
+
 interface Props {
   vocaliaId: string | null;
   vocaliaNombre: string;
   onDone?: () => void;
+  onStatusChange?: (s: MigracionStatus) => void;
 }
 
 const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
 
-export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Props) {
+export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onStatusChange }: Props) {
   const { loading, error, procesar, procesarUnLote, cargarEnBD } = useMigracion();
   const [resultado, setResultado] = useState<ResultadoIADirecto | null>(null);
   const [mapeo, setMapeo] = useState<ResultadoIAMapeo | null>(null);
@@ -82,6 +93,23 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone }: Pr
       if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
     } catch { /* noop */ }
   }, [vocaliaId]);
+
+  // Reportar status al padre
+  useEffect(() => {
+    if (!onStatusChange) return;
+    const lotesOk = lotes.filter((l) => l.estado === "ok").length;
+    const lotesError = lotes.filter((l) => l.estado === "error").length;
+    const activa = procesando || lotes.length > 0 || !!resultado || !!exito;
+    onStatusChange({
+      activa,
+      procesando,
+      totalLotes: lotes.length,
+      lotesOk,
+      lotesError,
+      hasResultado: !!resultado,
+      hasExito: !!exito,
+    });
+  }, [procesando, lotes, resultado, exito, onStatusChange]);
 
   if (!vocaliaId) {
     return (
