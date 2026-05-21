@@ -525,7 +525,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 />
               </RemoteListSection>
             )}
-            {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} />}
+            {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} />}
             {view === "miembros" && esAdmin && tribunalId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                 <MiembrosTribunal tribunalId={tribunalId} />
