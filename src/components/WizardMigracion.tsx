@@ -94,6 +94,23 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     } catch { /* noop */ }
   }, [vocaliaId]);
 
+  // Reportar status al padre
+  useEffect(() => {
+    if (!onStatusChange) return;
+    const lotesOk = lotes.filter((l) => l.estado === "ok").length;
+    const lotesError = lotes.filter((l) => l.estado === "error").length;
+    const activa = procesando || lotes.length > 0 || !!resultado || !!exito;
+    onStatusChange({
+      activa,
+      procesando,
+      totalLotes: lotes.length,
+      lotesOk,
+      lotesError,
+      hasResultado: !!resultado,
+      hasExito: !!exito,
+    });
+  }, [procesando, lotes, resultado, exito, onStatusChange]);
+
   if (!vocaliaId) {
     return (
       <Alert>
