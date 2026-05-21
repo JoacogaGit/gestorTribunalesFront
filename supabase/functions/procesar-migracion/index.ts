@@ -16,6 +16,7 @@ Tabla "causas":
 - estado_causa (ENUM): "tramite" | "recurso" | "terminada"
 - tipo_recurso (ENUM, solo si estado="recurso"): "casacion" | "rex" | "queja_corte"
 - tipo_proceso (ENUM, opcional): "unipersonal" | "colegiado" | null
+- fecha_ingreso (DATE, opcional): fecha de ingreso de la causa al tribunal en formato ISO "YYYY-MM-DD". Mapear desde columnas tipo "Fecha 354", "Elevación", "Fecha elevación", "Elevación a juicio", "Ingreso", "Fecha ingreso". Normalizar formato "DD/MM/YYYY" → "YYYY-MM-DD".
 - querella, actor_civil, otros_intervinientes, causa_conexa_texto: TEXT opcionales.
 
 Tabla "sujetos":
