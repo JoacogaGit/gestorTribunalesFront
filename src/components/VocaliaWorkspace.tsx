@@ -542,15 +542,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <p className="text-sm text-muted-foreground">No tenés permisos para ver esta sección.</p>
               </div>
             )}
-            {view === "migrar" && (
-              <div className="flex-1 min-h-0 overflow-y-auto -mx-6 lg:-mx-8 px-6 lg:px-8">
-                <WizardMigracion
-                  vocaliaId={vocaliaId}
-                  vocaliaNombre={vocaliaNombre}
-                  onDone={() => setView("dashboard")}
-                />
-              </div>
-            )}
+            {/* La vista "migrar" se renderiza siempre montada fuera de AnimatePresence
+                para que la migración siga corriendo aunque el usuario cambie de vista. */}
 
             {view.startsWith("custom-") && (
               <CausasTable
@@ -563,6 +556,27 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* Wizard de migración SIEMPRE montado mientras haya vocalía seleccionada.
+            Se oculta visualmente cuando la vista activa no es "migrar", pero su
+            estado interno y los lotes en curso se preservan. */}
+        {vocaliaId && (
+          <div
+            className={
+              view === "migrar"
+                ? "flex-1 min-h-0 overflow-y-auto -mx-6 lg:-mx-8 px-6 lg:px-8"
+                : "hidden"
+            }
+            aria-hidden={view !== "migrar"}
+          >
+            <WizardMigracion
+              vocaliaId={vocaliaId}
+              vocaliaNombre={vocaliaNombre}
+              onDone={() => setView("dashboard")}
+              onStatusChange={setMigracionStatus}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
