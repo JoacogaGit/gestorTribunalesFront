@@ -9,6 +9,7 @@ export interface CausaIA {
   estado_causa: "tramite" | "recurso" | "terminada";
   tipo_recurso: "casacion" | "rex" | "queja_corte" | null;
   tipo_proceso?: "unipersonal" | "colegiado" | null;
+  fecha_ingreso?: string | null;
   querella: string | null;
   actor_civil: string | null;
   otros_intervinientes: string | null;
