@@ -9,6 +9,7 @@ export interface CausaIA {
   estado_causa: "tramite" | "recurso" | "terminada";
   tipo_recurso: "casacion" | "rex" | "queja_corte" | null;
   tipo_proceso?: "unipersonal" | "colegiado" | null;
+  fecha_ingreso?: string | null;
   querella: string | null;
   actor_civil: string | null;
   otros_intervinientes: string | null;
@@ -165,6 +166,7 @@ export function useMigracion() {
           estado_causa: c.estado_causa,
           tipo_recurso: c.tipo_recurso,
           tipo_proceso: c.tipo_proceso ?? null,
+          fecha_ingreso: c.fecha_ingreso ?? null,
           querella: c.querella,
           actor_civil: c.actor_civil,
           otros_intervinientes: c.otros_intervinientes,

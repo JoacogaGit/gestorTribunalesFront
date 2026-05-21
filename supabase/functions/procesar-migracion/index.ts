@@ -16,6 +16,7 @@ Tabla "causas":
 - estado_causa (ENUM): "tramite" | "recurso" | "terminada"
 - tipo_recurso (ENUM, solo si estado="recurso"): "casacion" | "rex" | "queja_corte"
 - tipo_proceso (ENUM, opcional): "unipersonal" | "colegiado" | null
+- fecha_ingreso (DATE, opcional): fecha de ingreso de la causa al tribunal en formato ISO "YYYY-MM-DD". Mapear desde columnas tipo "Fecha 354", "Elevación", "Fecha elevación", "Elevación a juicio", "Ingreso", "Fecha ingreso". Normalizar formato "DD/MM/YYYY" → "YYYY-MM-DD".
 - querella, actor_civil, otros_intervinientes, causa_conexa_texto: TEXT opcionales.
 
 Tabla "sujetos":
@@ -140,7 +141,7 @@ Modo "procesamiento_directo":
   "modo": "procesamiento_directo",
   "resumen": { "total_filas_origen": 0, "causas_detectadas": 0, "sujetos_detectados": 0, "eventos_detectados": 0, "verdes": 0, "amarillos": 0, "rojos": 0 },
   "pestanas_procesadas": ["..."],
-  "causas": [ { "id_temporal": "causa-1", "expediente_nro": "12345/2023", "caratula": "PEREZ, Juan", "estado_causa": "tramite", "tipo_recurso": null, "tipo_proceso": "colegiado", "querella": null, "actor_civil": null, "otros_intervinientes": null, "causa_conexa_texto": null, "confianza": "verde", "notas_ia": "", "origen_pestanas": ["..."], "sujetos": [ { "nombre_completo": "PEREZ, Juan", "delito": "...", "situacion_libertad": "detenido", "defensor": "DPO 14", "lugar_alojamiento": "CPF I", "fecha_detencion": "2024-03-15", "prescripcion_fecha": null, "vencimiento_pp": "2025-09-15", "vencimiento_pena": null, "vencimiento_sjp": null, "observaciones": "" } ], "eventos": [ { "titulo": "Juicio fijado", "descripcion": null, "fecha_hora": "2026-05-08T00:00:00", "tipo_evento": "juicio" } ] } ],
+  "causas": [ { "id_temporal": "causa-1", "expediente_nro": "12345/2023", "caratula": "PEREZ, Juan", "estado_causa": "tramite", "tipo_recurso": null, "tipo_proceso": "colegiado", "fecha_ingreso": "2024-02-10", "querella": null, "actor_civil": null, "otros_intervinientes": null, "causa_conexa_texto": null, "confianza": "verde", "notas_ia": "", "origen_pestanas": ["..."], "sujetos": [ { "nombre_completo": "PEREZ, Juan", "delito": "...", "situacion_libertad": "detenido", "defensor": "DPO 14", "lugar_alojamiento": "CPF I", "fecha_detencion": "2024-03-15", "prescripcion_fecha": null, "vencimiento_pp": "2025-09-15", "vencimiento_pena": null, "vencimiento_sjp": null, "observaciones": "" } ], "eventos": [ { "titulo": "Juicio fijado", "descripcion": null, "fecha_hora": "2026-05-08T00:00:00", "tipo_evento": "juicio" } ] } ],
   "filas_rojas": [ { "fila_origen": "<referencia>", "razon": "<explicación>", "datos_crudos": "<lo que había>", "sujeto_propuesto": null } ]
 }
 
@@ -149,7 +150,7 @@ Modo "mapeo_asistido_requerido":
   "modo": "mapeo_asistido_requerido",
   "razon": "<por qué>",
   "columnas_detectadas": [ { "indice": 0, "muestra": ["..."], "hipotesis": "..." } ],
-  "campos_disponibles": ["expediente_nro", "nombre_completo", "delito", "situacion_libertad", "defensor", "lugar_alojamiento", "fecha_detencion", "prescripcion_fecha", "vencimiento_pp", "vencimiento_pena", "vencimiento_sjp", "observaciones", "querella", "actor_civil", "otros_intervinientes", "causa_conexa_texto"]
+  "campos_disponibles": ["expediente_nro", "fecha_ingreso", "tipo_proceso", "nombre_completo", "delito", "situacion_libertad", "defensor", "lugar_alojamiento", "fecha_detencion", "prescripcion_fecha", "vencimiento_pp", "vencimiento_pena", "vencimiento_sjp", "observaciones", "querella", "actor_civil", "otros_intervinientes", "causa_conexa_texto"]
 }
 
 REGLAS FINALES:

@@ -329,6 +329,23 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       toast.error(r.error);
       return;
     }
+    // Insertar filas rojas (no procesables) en migracion_pendientes para revisión manual
+    try {
+      const todasFilasRojas = [
+        ...(resultado.filas_rojas || []),
+        ...resultadosOk.flatMap((ok) => ok.resultado.filas_rojas || []),
+      ];
+      if (todasFilasRojas.length > 0) {
+        const payload = todasFilasRojas.map((f) => ({
+          vocalia_id: vocaliaId,
+          datos_crudos: f.datos_crudos || "",
+          razon: f.razon || null,
+          archivo_origen: filename || null,
+        }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (await import("@/integrations/supabase/client")).supabase.from("migracion_pendientes").insert(payload as any);
+      }
+    } catch { /* noop: la carga principal ya fue exitosa */ }
     setExito(r.inserted);
     limpiarLS();
     toast.success("Migración completada");
