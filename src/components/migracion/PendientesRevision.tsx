@@ -63,7 +63,11 @@ export default function PendientesRevision({ vocaliaId, onMutated }: Props) {
                       size="sm"
                       variant="default"
                       className="h-7 text-xs"
-                      onClick={() => setCrear({ open: true, observaciones: `Importado desde "${it.archivo_origen ?? "archivo"}":\n${it.datos_crudos}` })}
+                      onClick={() => {
+                        navigator.clipboard.writeText(it.datos_crudos).catch(() => { /* noop */ });
+                        toast.info("Datos copiados al portapapeles. Pegalos en observaciones si los necesitás.");
+                        setCrear({ open: true });
+                      }}
                     >
                       <Plus className="w-3 h-3 mr-1" /> Crear causa
                     </Button>
