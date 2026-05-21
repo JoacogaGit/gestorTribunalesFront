@@ -83,16 +83,24 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
 
   const renderEvento = (e: CalendarEvento, i: number, isPast = false) => {
     const Icon = tipoIcons[e.tipo] ?? Scale;
+    const clickable = !!onOpenCausa && !!e.causaId;
     return (
       <div
         key={e.id + i}
-        className={`rounded-md p-3 border-l-4 flex items-center gap-3 ${getSemaforoBg(e.fecha)} ${isPast ? "opacity-70" : ""}`}
+        onClick={() => { if (clickable) onOpenCausa!(e.causaId); }}
+        role={clickable ? "button" : undefined}
+        tabIndex={clickable ? 0 : undefined}
+        onKeyDown={(ev) => {
+          if (!clickable) return;
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onOpenCausa!(e.causaId); }
+        }}
+        className={`rounded-md p-3 border-l-4 flex items-center gap-3 ${getSemaforoBg(e.fecha)} ${isPast ? "opacity-70" : ""} ${clickable ? "cursor-pointer hover:bg-primary/5 transition-colors" : ""}`}
       >
         <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getSemaforoDot(e.fecha)}`} />
         <Icon className="w-4 h-4 shrink-0 text-foreground/70" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-foreground truncate">{e.titulo}</span>
+            <span className={`text-xs font-semibold text-foreground truncate ${isPast ? "line-through" : ""}`}>{e.titulo}</span>
             {e.hora && <span className="text-[10px] text-muted-foreground">{e.hora} hs</span>}
             {isPast && <span className="text-[10px] font-bold text-alert-urgent">VENCIDO</span>}
           </div>
@@ -103,7 +111,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
         </div>
         <span className="text-xs font-mono text-muted-foreground shrink-0">{fmtDate(e.fecha)}</span>
         <button
-          onClick={() => dismiss(e)}
+          onClick={(ev) => { ev.stopPropagation(); dismiss(e); }}
           className="p-1 text-muted-foreground hover:text-alert-urgent transition-colors shrink-0"
           title="Descartar alerta"
         >
