@@ -28,7 +28,12 @@ const STORAGE_KEY = "calendario-dismissed-v2";
 const FILTER_KEY = "calendario-tipos-ocultos-v2";
 const TIPOS: CalendarTipo[] = ["evento", "vencimiento_pp", "vencimiento_pena", "prescripcion"];
 
-export default function CalendarioAlertas({ vocaliaId }: { vocaliaId: string | null }) {
+interface Props {
+  vocaliaId: string | null;
+  onOpenCausa?: (causaId: string) => void;
+}
+
+export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
   const { eventos, loading, error, refetch } = useCalendarioEventos(vocaliaId);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
