@@ -183,6 +183,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
           <Table className={zoomTableClass(zoom)}>
             <TableHeader>
               <TableRow className="bg-muted/30">
+                <TableHead className="w-10 text-center text-muted-foreground">#</TableHead>
                 {visibleColumns.map((col) => (
                   <TableHead key={col.key} className={col.headClass}>{col.label}</TableHead>
                 ))}
@@ -193,6 +194,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
                 <ContextMenu key={`${r.causa.id}-${i}`}>
                   <ContextMenuTrigger asChild>
                     <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(r.causa)}>
+                      <TableCell className="text-center text-xs text-muted-foreground tabular-nums">{i + 1}</TableCell>
                       {visibleColumns.map((col) => (
                         <TableCell key={col.key} className={col.cellClass}>{col.render(r)}</TableCell>
                       ))}
@@ -216,12 +218,12 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={visibleColumns.length} className="text-center text-muted-foreground py-8">Sin detenidos</TableCell>
+                  <TableCell colSpan={visibleColumns.length + 1} className="text-center text-muted-foreground py-8">Sin detenidos</TableCell>
                 </TableRow>
               )}
               {onCreateCausa && !search && (
                 <TableRow className="bg-muted/10">
-                  <TableCell colSpan={visibleColumns.length} className="py-2 text-center">
+                  <TableCell colSpan={visibleColumns.length + 1} className="py-2 text-center">
                     <button onClick={handleCreate} className="inline-flex items-center gap-1.5 text-xs text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md border border-dashed border-primary/40">
                       <Plus className="w-3.5 h-3.5" /> Nueva causa con detenido
                     </button>
