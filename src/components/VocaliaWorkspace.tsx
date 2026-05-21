@@ -27,6 +27,7 @@ import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
 import Papelera from "@/components/Papelera";
 import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
+import PendientesRevision from "@/components/migracion/PendientesRevision";
 import ZoomControl from "@/components/ZoomControl";
 
 interface RemoteListSectionProps {
