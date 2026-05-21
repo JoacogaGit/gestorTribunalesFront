@@ -94,7 +94,6 @@ export default function PendientesRevision({ vocaliaId, onMutated }: Props) {
         open={crear.open}
         onOpenChange={(o) => setCrear((s) => ({ ...s, open: o }))}
         mode="crear"
-        initialObservaciones={crear.observaciones}
         onMutated={() => { refetch(); onMutated?.(); }}
       />
     </>
