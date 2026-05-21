@@ -130,6 +130,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [customBoards, setCustomBoards] = useState<CustomBoard[]>([]);
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
+  const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
 
   const navigateToCausa = async (causaId: string) => {
     const { data, error } = await supabase
