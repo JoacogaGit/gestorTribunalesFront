@@ -446,6 +446,38 @@ export type Database = {
         }
         Relationships: []
       }
+      prescripciones: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          fecha: string
+          id: string
+          sujeto_id: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          fecha: string
+          id?: string
+          sujeto_id: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          fecha?: string
+          id?: string
+          sujeto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescripciones_sujeto_id_fkey"
+            columns: ["sujeto_id"]
+            isOneToOne: false
+            referencedRelation: "sujetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sujetos: {
         Row: {
           borrado_en: string | null
