@@ -39,7 +39,7 @@ export default function EventoDetailDialog({ evento, onClose, onOpenCausa, onMut
   const handleUpdate = async (v: EventoInput) => {
     if (!eventoId) return;
     const r = await actualizarEvento(eventoId, v);
-    if (!r.ok) { toast.error(r.error); return; }
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Evento actualizado");
     setEditing(false);
     onMutated?.();
@@ -49,7 +49,7 @@ export default function EventoDetailDialog({ evento, onClose, onOpenCausa, onMut
   const handleDelete = async () => {
     if (!eventoId) return;
     const r = await borrarEvento(eventoId);
-    if (!r.ok) { toast.error(r.error); return; }
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Evento eliminado");
     setConfirmDelete(false);
     onMutated?.();
