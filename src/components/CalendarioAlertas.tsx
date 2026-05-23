@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCalendarioEventos } from "@/hooks/useCalendarioEventos";
 import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSemaforoDot } from "@/lib/eventoMapper";
 import RefreshButton from "@/components/RefreshButton";
+import EventoDetailDialog from "@/components/EventoDetailDialog";
 
 const tipoIcons: Record<CalendarTipo, typeof Clock> = {
   evento: CalIcon,
@@ -37,6 +38,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
   const { eventos, loading, error, refetch } = useCalendarioEventos(vocaliaId);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [openEvento, setOpenEvento] = useState<CalendarEvento | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try { return new Set<string>(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch { return new Set(); }
   });
@@ -82,37 +84,37 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
   const eventDates = new Set(visibles.map((e) => new Date(e.fecha).toDateString()));
 
   const renderEvento = (e: CalendarEvento, i: number, isPast = false) => {
-    const Icon = tipoIcons[e.tipo] ?? Scale;
-    const clickable = !!onOpenCausa && !!e.causaId;
+    const Icon = isPast ? Clock : (tipoIcons[e.tipo] ?? Scale);
     return (
       <div
         key={e.id + i}
-        onClick={() => { if (clickable) onOpenCausa!(e.causaId); }}
-        role={clickable ? "button" : undefined}
-        tabIndex={clickable ? 0 : undefined}
+        onClick={() => setOpenEvento(e)}
+        role="button"
+        tabIndex={0}
         onKeyDown={(ev) => {
-          if (!clickable) return;
-          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onOpenCausa!(e.causaId); }
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setOpenEvento(e); }
         }}
-        className={`rounded-md p-3 border-l-4 flex items-center gap-3 ${getSemaforoBg(e.fecha)} ${isPast ? "opacity-70" : ""} ${clickable ? "cursor-pointer hover:bg-primary/5 transition-colors" : ""}`}
+        className={`rounded-md p-3 border-l-4 flex items-start gap-3 ${getSemaforoBg(e.fecha)} ${isPast ? "opacity-80 grayscale-[0.3]" : ""} cursor-pointer hover:brightness-110 transition`}
       >
-        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getSemaforoDot(e.fecha)}`} />
-        <Icon className="w-4 h-4 shrink-0 text-foreground/70" />
+        <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1.5 ${getSemaforoDot(e.fecha)}`} />
+        <Icon className="w-4 h-4 shrink-0 mt-0.5 opacity-80" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-semibold text-foreground truncate ${isPast ? "line-through" : ""}`}>{e.titulo}</span>
-            {e.hora && <span className="text-[10px] text-muted-foreground">{e.hora} hs</span>}
-            {isPast && <span className="text-[10px] font-bold text-alert-urgent">VENCIDO</span>}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold">{e.titulo}</span>
+            {e.hora && <span className="text-[10px] opacity-75">{e.hora} hs</span>}
+            {isPast && <span className="text-[10px] font-bold bg-foreground/10 px-1.5 py-0.5 rounded">PASADO</span>}
           </div>
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="text-xs opacity-80 break-words">
             {e.causaNumero} — {e.causaCaratula}
-            {e.descripcion ? ` — ${e.descripcion}` : ""}
           </p>
+          {e.descripcion && (
+            <p className="text-[11px] opacity-75 mt-0.5 break-words">{e.descripcion}</p>
+          )}
         </div>
-        <span className="text-xs font-mono text-muted-foreground shrink-0">{fmtDate(e.fecha)}</span>
+        <span className="text-xs font-mono opacity-75 shrink-0 whitespace-nowrap">{fmtDate(e.fecha)}</span>
         <button
           onClick={(ev) => { ev.stopPropagation(); dismiss(e); }}
-          className="p-1 text-muted-foreground hover:text-alert-urgent transition-colors shrink-0"
+          className="p-1 opacity-60 hover:opacity-100 transition shrink-0"
           title="Descartar alerta"
         >
           <X className="w-3.5 h-3.5" />
@@ -248,6 +250,12 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
           </div>
         </div>
       </div>
+      <EventoDetailDialog
+        evento={openEvento}
+        onClose={() => setOpenEvento(null)}
+        onOpenCausa={(id) => { onOpenCausa?.(id); }}
+        onMutated={refetch}
+      />
     </div>
   );
 }
