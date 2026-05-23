@@ -28,6 +28,7 @@ export default function PendientesRevision({ vocaliaId, onMutated }: Props) {
 
   return (
     <>
+      <div id="pendientes-revision-anchor" className="scroll-mt-6" />
       <Card className="mb-6 border-alert-urgent/30 bg-alert-urgent/5">
         <button
           type="button"
