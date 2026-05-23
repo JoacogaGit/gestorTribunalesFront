@@ -502,6 +502,12 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   // PASO 4 — éxito
   if (exito) {
+    const totalRojas = (resultado?.filas_rojas?.length || 0)
+      + resultadosOk.reduce((a, ok) => a + (ok.resultado.filas_rojas?.length || 0), 0);
+    const scrollToPendientes = () => {
+      const el = document.getElementById("pendientes-revision-anchor");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
     return (
       <div className="max-w-2xl">
         <Card className="p-8 text-center">
@@ -516,6 +522,32 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
             Ir al panel <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </Card>
+        {totalRojas > 0 && (
+          <div className="mt-5 rounded-lg border-2 border-orange-500 bg-orange-500/15 p-5 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-orange-900 dark:text-orange-200 mb-1">
+                  ⚠️ {totalRojas} {totalRojas === 1 ? "causa no pudo migrarse automáticamente" : "causas no pudieron migrarse automáticamente"}
+                </h3>
+                <p className="text-sm text-orange-900/90 dark:text-orange-100/90 mb-3">
+                  Revisalas en la sección <strong>"Pendientes de revisión manual"</strong> más abajo
+                  para cargarlas manualmente o descartarlas.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={scrollToPendientes}
+                >
+                  Ver pendientes <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -688,13 +720,21 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
             <Sparkles className="w-7 h-7 text-accent" />
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">
-            Migrá tus causas en minutos
+            Bienvenido a la migración asistida
           </h1>
-          <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            Subí tu planilla o documento de trabajo y nuestra IA va a leerlo, interpretarlo y
-            organizarlo en <span className="text-foreground font-medium">{vocaliaNombre}</span>.
-            Vos solo revisás y confirmás.
+          <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            Cargá tu planilla y dejá que la IA haga el trabajo pesado. Vos solo revisás los resultados
+            y confirmás qué cargar en <span className="text-foreground font-medium">{vocaliaNombre}</span>.
+            Es seguro, rápido y reversible.
           </p>
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 mt-4">
+            <Badge variant="secondary" className="text-[10px]">.xlsx</Badge>
+            <Badge variant="secondary" className="text-[10px]">.xls</Badge>
+            <Badge variant="secondary" className="text-[10px]">.csv</Badge>
+            <Badge variant="secondary" className="text-[10px]">.docx</Badge>
+            <Badge variant="secondary" className="text-[10px]">.txt</Badge>
+            <span className="text-[10px] text-muted-foreground">· máx 10 MB</span>
+          </div>
         </div>
 
         {pendingResume && (
@@ -769,11 +809,12 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
         </Card>
 
         {/* Cómo funciona */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-6">
           {[
-            { icon: Upload, title: "1. Subís", desc: "Tu planilla, lista de causas o documento de trabajo." },
-            { icon: Wand2, title: "2. La IA interpreta", desc: "Detecta causas, sujetos, fechas y estados." },
-            { icon: ShieldCheck, title: "3. Revisás y cargás", desc: "Editás lo que haga falta y confirmás la carga." },
+            { icon: Upload, title: "1. Subís", desc: "Tu planilla, lista de causas o documento de trabajo. No importa el formato exacto." },
+            { icon: Wand2, title: "2. La IA interpreta", desc: "Detecta causas, sujetos, fechas, estados y los organiza según el esquema de JusTrack." },
+            { icon: ShieldCheck, title: "3. Revisás", desc: "Editás lo que haga falta, marcás qué incluir y qué descartar. Las dudosas quedan marcadas." },
+            { icon: CheckCircle2, title: "4. Cargás", desc: "Confirmás y todo queda guardado en la vocalía. Las filas que no pudieron procesarse quedan para revisión manual." },
           ].map((s) => (
             <div key={s.title} className="p-4 rounded-lg border border-border/60 bg-card/50">
               <div className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-2">

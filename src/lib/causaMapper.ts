@@ -41,6 +41,7 @@ export type DbSujeto = {
   observaciones: string | null;
   lugar_alojamiento: string | null;
   causa_id: string;
+  created_at?: string | null;
 };
 
 export type DbTipoProceso = "unipersonal" | "colegiado" | null;
@@ -105,7 +106,12 @@ function firstNonNull<T>(values: (T | null | undefined)[]): T | undefined {
 }
 
 export function dbCausaToUI(row: DbCausa): Causa {
-  const sujetos = row.sujetos ?? [];
+  // Ordenar sujetos: el más nuevo primero (created_at DESC).
+  const sujetos = (row.sujetos ?? []).slice().sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
+  });
   const imputados = sujetos.length > 0
     ? sujetos.map(mapSujeto)
     : [{

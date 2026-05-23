@@ -136,7 +136,11 @@ export default function CausaFormDialog({
             causa_conexa_id: data.causa_conexa_id ?? null,
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const list: any[] = data.sujetos ?? [];
+          const list: any[] = (data.sujetos ?? []).slice().sort((a: any, b: any) => {
+            const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return tb - ta;
+          });
           setSujetos(list.map((s) => ({
             _localKey: s.id,
             id: s.id,
@@ -164,7 +168,7 @@ export default function CausaFormDialog({
   const updateSujeto = (key: string, patch: Partial<SujetoInput>) =>
     setSujetos((arr) => arr.map((s) => s._localKey === key ? { ...s, ...patch } : s));
 
-  const addSujeto = () => setSujetos((arr) => [...arr, emptySujeto()]);
+  const addSujeto = () => setSujetos((arr) => [emptySujeto(), ...arr]);
 
   const removeSujetoLocal = (key: string) => {
     setSujetos((arr) => {
@@ -297,15 +301,24 @@ export default function CausaFormDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="font-display text-lg">
-              {mode === "crear" ? "Nueva causa" : "Editar causa"}
-              {causa.expediente_nro && mode === "editar" && (
-                <span className="ml-2 text-sm font-mono text-muted-foreground">N° {causa.expediente_nro}</span>
-              )}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-card border-border p-0">
+          <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3">
+            <DialogHeader className="flex-1 min-w-0">
+              <DialogTitle className="font-display text-lg truncate">
+                {mode === "crear" ? "Nueva causa" : "Editar causa"}
+                {causa.expediente_nro && mode === "editar" && (
+                  <span className="ml-2 text-sm font-mono text-muted-foreground">N° {causa.expediente_nro}</span>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            {mode === "editar" && !loading && (
+              <Button type="button" size="sm" onClick={handleSubmit} disabled={muts.saving}>
+                {muts.saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+                Guardar cambios
+              </Button>
+            )}
+          </div>
+          <div className="px-6 pb-6 pt-2">
 
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground gap-2 text-sm">
@@ -491,6 +504,7 @@ export default function CausaFormDialog({
               </div>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -93,47 +93,49 @@ export function getCaratula(causa: Causa): string {
   return `${causa.imputados[0].nombre} y otros`;
 }
 
-export type ProximityLevel = "vencido" | "critico" | "urgente" | "proximo" | "lejano";
+export type ProximityLevel = "vencido" | "critico" | "urgente" | "proximo" | "medio" | "lejano";
 
+// Escala unificada con eventoMapper: ≤4d (incluye vencidos) | 5-10 | 11-20 | 21-30 | 31-60 | 60+.
 export function getProximityLevel(fecha: string): ProximityLevel {
   const diff = (new Date(fecha).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (diff < 0) return "vencido";
-  if (diff < 15) return "critico";
-  if (diff < 45) return "urgente";
-  if (diff < 120) return "proximo";
+  if (diff <= 4) return "vencido";
+  if (diff <= 10) return "critico";
+  if (diff <= 20) return "urgente";
+  if (diff <= 30) return "proximo";
+  if (diff <= 60) return "medio";
   return "lejano";
 }
 
 export function getProximityColor(fecha: string): string {
-  const level = getProximityLevel(fecha);
-  switch (level) {
-    case "vencido": return "text-alert-urgent font-bold";
+  switch (getProximityLevel(fecha)) {
+    case "vencido": return "text-red-600 font-bold";
     case "critico": return "text-red-500 font-semibold";
-    case "urgente": return "text-orange-500 font-semibold";
-    case "proximo": return "text-amber-500";
-    case "lejano": return "text-emerald-500";
+    case "urgente": return "text-orange-600 font-semibold";
+    case "proximo": return "text-orange-500";
+    case "medio": return "text-yellow-600";
+    case "lejano": return "text-green-600";
   }
 }
 
 export function getProximityBg(fecha: string): string {
-  const level = getProximityLevel(fecha);
-  switch (level) {
-    case "vencido": return "bg-alert-urgent/20 border-l-alert-urgent";
-    case "critico": return "bg-red-500/10 border-l-red-500";
-    case "urgente": return "bg-orange-500/10 border-l-orange-500";
-    case "proximo": return "bg-amber-500/10 border-l-amber-500";
-    case "lejano": return "bg-emerald-500/10 border-l-emerald-500";
+  switch (getProximityLevel(fecha)) {
+    case "vencido": return "bg-red-600/80 text-white border-l-red-700";
+    case "critico": return "bg-red-400/70 text-white border-l-red-500";
+    case "urgente": return "bg-orange-500/70 text-white border-l-orange-600";
+    case "proximo": return "bg-orange-300/70 text-orange-950 border-l-orange-400";
+    case "medio": return "bg-yellow-400/70 text-yellow-950 border-l-yellow-500";
+    case "lejano": return "bg-green-500/30 text-foreground border-l-green-600";
   }
 }
 
 export function getProximityDot(fecha: string): string {
-  const level = getProximityLevel(fecha);
-  switch (level) {
-    case "vencido": return "bg-alert-urgent";
-    case "critico": return "bg-red-500";
+  switch (getProximityLevel(fecha)) {
+    case "vencido": return "bg-red-600";
+    case "critico": return "bg-red-400";
     case "urgente": return "bg-orange-500";
-    case "proximo": return "bg-amber-500";
-    case "lejano": return "bg-emerald-500";
+    case "proximo": return "bg-orange-300";
+    case "medio": return "bg-yellow-400";
+    case "lejano": return "bg-green-500";
   }
 }
 

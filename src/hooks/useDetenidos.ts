@@ -24,7 +24,8 @@ export function useDetenidos(vocaliaId: string | null) {
       .eq("situacion_libertad", "detenido")
       .eq("causas.vocalia_id", vocaliaId)
       .is("borrado_en", null)
-      .is("causas.borrado_en", null);
+      .is("causas.borrado_en", null)
+      .order("created_at", { ascending: false });
 
     if (error) {
       setError(error.message);
