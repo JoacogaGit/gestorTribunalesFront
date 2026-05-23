@@ -24,44 +24,48 @@ export const CALENDAR_TIPO_LABEL: Record<CalendarTipo, string> = {
 };
 
 // ===== Semáforo cromático (usa tokens semánticos del design system) =====
-export type SemaforoBucket = "vencido" | "muy_urgente" | "urgente" | "medio" | "lejano";
+export type SemaforoBucket = "vencido" | "muy_urgente" | "urgente" | "medio" | "lejano" | "lejano_ok";
 
 export function getSemaforoBucket(fecha: string): SemaforoBucket {
   const d = (new Date(fecha).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (d <= 0) return "vencido";
-  if (d <= 7) return "muy_urgente";
-  if (d <= 30) return "urgente";
-  if (d <= 60) return "medio";
-  return "lejano";
+  if (d <= 4) return "vencido";       // incluye vencidos y 0-4d → rojo potente
+  if (d <= 10) return "muy_urgente";  // 5-10d
+  if (d <= 20) return "urgente";      // 11-20d → naranja fuerte
+  if (d <= 30) return "medio";        // 21-30d → naranja claro
+  if (d <= 60) return "lejano";       // 31-60d → amarillo
+  return "lejano_ok";
 }
 
 export function getSemaforoBg(fecha: string): string {
   switch (getSemaforoBucket(fecha)) {
-    case "vencido": return "bg-alert-urgent/25 border-l-alert-urgent";
-    case "muy_urgente": return "bg-alert-warning/25 border-l-alert-warning";
-    case "urgente": return "bg-alert-warning/10 border-l-alert-warning/70";
-    case "medio": return "bg-gold/15 border-l-gold";
-    case "lejano": return "bg-alert-ok/15 border-l-alert-ok";
+    case "vencido": return "bg-red-600/90 text-white border-l-red-700";
+    case "muy_urgente": return "bg-red-400/80 text-white border-l-red-500";
+    case "urgente": return "bg-orange-500/80 text-white border-l-orange-600";
+    case "medio": return "bg-orange-300/70 text-orange-950 border-l-orange-400";
+    case "lejano": return "bg-yellow-400/70 text-yellow-950 border-l-yellow-500";
+    case "lejano_ok": return "bg-green-500/30 text-foreground border-l-green-600";
   }
 }
 
 export function getSemaforoDot(fecha: string): string {
   switch (getSemaforoBucket(fecha)) {
-    case "vencido": return "bg-alert-urgent";
-    case "muy_urgente": return "bg-alert-warning";
-    case "urgente": return "bg-alert-warning/70";
-    case "medio": return "bg-gold";
-    case "lejano": return "bg-alert-ok";
+    case "vencido": return "bg-red-600";
+    case "muy_urgente": return "bg-red-400";
+    case "urgente": return "bg-orange-500";
+    case "medio": return "bg-orange-300";
+    case "lejano": return "bg-yellow-400";
+    case "lejano_ok": return "bg-green-500";
   }
 }
 
 export function getSemaforoText(fecha: string): string {
   switch (getSemaforoBucket(fecha)) {
-    case "vencido": return "text-alert-urgent font-bold";
-    case "muy_urgente": return "text-alert-warning font-semibold";
-    case "urgente": return "text-alert-warning";
-    case "medio": return "text-gold";
-    case "lejano": return "text-alert-ok";
+    case "vencido": return "text-red-600 font-bold";
+    case "muy_urgente": return "text-red-500 font-semibold";
+    case "urgente": return "text-orange-600 font-semibold";
+    case "medio": return "text-orange-500";
+    case "lejano": return "text-yellow-600";
+    case "lejano_ok": return "text-green-600";
   }
 }
 
