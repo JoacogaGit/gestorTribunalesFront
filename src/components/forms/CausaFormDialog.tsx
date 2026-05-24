@@ -146,6 +146,8 @@ export default function CausaFormDialog({
             otros_intervinientes: data.otros_intervinientes ?? "",
             causa_conexa_texto: data.causa_conexa_texto ?? "",
             causa_conexa_id: data.causa_conexa_id ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            link_externo: (data as any).link_externo ?? "",
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list: any[] = (data.sujetos ?? []).slice().sort((a: any, b: any) => {
@@ -153,6 +155,20 @@ export default function CausaFormDialog({
             const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
             return tb - ta;
           });
+          // Traer prescripciones de todos los sujetos persistidos
+          const sujetoIds = list.map((s) => s.id).filter(Boolean);
+          let prescByID: Record<string, PrescripcionDraftUI[]> = {};
+          if (sujetoIds.length > 0) {
+            try {
+              const rows = await fetchPrescripcionesDeSujetos(sujetoIds);
+              prescByID = rows.reduce<Record<string, PrescripcionDraftUI[]>>((acc, r) => {
+                (acc[r.sujeto_id] ||= []).push({
+                  _key: r.id, id: r.id, fecha: r.fecha, descripcion: r.descripcion ?? "",
+                });
+                return acc;
+              }, {});
+            } catch { /* noop: si falla, dejamos vacío */ }
+          }
           setSujetos(list.map((s) => ({
             _localKey: s.id,
             id: s.id,
@@ -166,6 +182,7 @@ export default function CausaFormDialog({
             vencimiento_pp: s.vencimiento_pp ?? null,
             vencimiento_pena: s.vencimiento_pena ?? null,
             observaciones: s.observaciones ?? "",
+            prescripciones: prescByID[s.id] ?? [],
           })));
         }
         setLoading(false);
