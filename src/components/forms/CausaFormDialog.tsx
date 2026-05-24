@@ -35,10 +35,19 @@ interface Props {
   onMutated?: () => void;
 }
 
+interface PrescripcionDraftUI {
+  _key: string;
+  id?: string;
+  fecha: string;
+  descripcion: string;
+}
+
 interface SujetoState extends SujetoInput {
   _localKey: string;
   /** marca para borrar al guardar (sólo modo editar) */
   _markedForDelete?: boolean;
+  /** Fechas de prescripción adicionales (tabla prescripciones). */
+  prescripciones?: PrescripcionDraftUI[];
 }
 
 function emptyCausa(): CausaInput {
@@ -54,6 +63,7 @@ function emptyCausa(): CausaInput {
     otros_intervinientes: "",
     causa_conexa_texto: "",
     causa_conexa_id: null,
+    link_externo: "",
   };
 }
 
@@ -70,6 +80,7 @@ function emptySujeto(situacion: DbSituacionLibertad = "libre"): SujetoState {
     vencimiento_pp: null,
     vencimiento_pena: null,
     observaciones: "",
+    prescripciones: [],
   };
 }
 
