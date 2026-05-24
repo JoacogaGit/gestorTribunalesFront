@@ -463,6 +463,7 @@ export default function CausaFormDialog({
                     <p className="text-[10px] text-muted-foreground">
                       Buscá por N° de expediente. Elegí una sugerencia para vincular o dejá texto libre.
                     </p>
+                  </div>
                   <div className="space-y-1.5 col-span-2">
                     <Label className="text-xs flex items-center gap-1.5">
                       <ExternalLink className="w-3 h-3" /> Link externo (expediente / drive / etc.)
@@ -474,7 +475,6 @@ export default function CausaFormDialog({
                       placeholder="https://..."
                     />
                   </div>
-                </div>
                 </CollapsibleContent>
               </Collapsible>
 
