@@ -243,7 +243,7 @@ export default function CausaFormDialog({
     // Filtrar sujetos completamente vacíos (no se persisten).
     const sujetosFiltrados = visibleSujetos.filter((s) => !isSujetoEmpty(s));
     const sujetosPayload: SujetoInput[] = sujetosFiltrados.map((s) => {
-      const { _localKey, _markedForDelete, ...rest } = s;
+      const { _localKey, _markedForDelete, prescripciones: _p, ...rest } = s;
       const cleaned = nullify({
         ...rest,
         nombre_completo: rest.nombre_completo.trim(),
