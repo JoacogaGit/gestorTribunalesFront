@@ -17,6 +17,7 @@ export interface CausaInput {
   otros_intervinientes: string | null;
   causa_conexa_texto: string | null;
   causa_conexa_id: string | null;
+  link_externo?: string | null;
 }
 
 export interface SujetoInput {

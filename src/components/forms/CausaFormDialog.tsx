@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ExternalLink, Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
+import { fetchPrescripcionesDeSujetos } from "@/hooks/usePrescripciones";
 import {
   DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso,
   ESTADOS_CAUSA_DB, SITUACIONES_LIBERTAD, TIPOS_RECURSO,
@@ -35,10 +36,19 @@ interface Props {
   onMutated?: () => void;
 }
 
+interface PrescripcionDraftUI {
+  _key: string;
+  id?: string;
+  fecha: string;
+  descripcion: string;
+}
+
 interface SujetoState extends SujetoInput {
   _localKey: string;
   /** marca para borrar al guardar (sólo modo editar) */
   _markedForDelete?: boolean;
+  /** Fechas de prescripción adicionales (tabla prescripciones). */
+  prescripciones?: PrescripcionDraftUI[];
 }
 
 function emptyCausa(): CausaInput {
@@ -54,6 +64,7 @@ function emptyCausa(): CausaInput {
     otros_intervinientes: "",
     causa_conexa_texto: "",
     causa_conexa_id: null,
+    link_externo: "",
   };
 }
 
@@ -70,6 +81,7 @@ function emptySujeto(situacion: DbSituacionLibertad = "libre"): SujetoState {
     vencimiento_pp: null,
     vencimiento_pena: null,
     observaciones: "",
+    prescripciones: [],
   };
 }
 
@@ -134,6 +146,8 @@ export default function CausaFormDialog({
             otros_intervinientes: data.otros_intervinientes ?? "",
             causa_conexa_texto: data.causa_conexa_texto ?? "",
             causa_conexa_id: data.causa_conexa_id ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            link_externo: (data as any).link_externo ?? "",
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list: any[] = (data.sujetos ?? []).slice().sort((a: any, b: any) => {
@@ -141,6 +155,20 @@ export default function CausaFormDialog({
             const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
             return tb - ta;
           });
+          // Traer prescripciones de todos los sujetos persistidos
+          const sujetoIds = list.map((s) => s.id).filter(Boolean);
+          let prescByID: Record<string, PrescripcionDraftUI[]> = {};
+          if (sujetoIds.length > 0) {
+            try {
+              const rows = await fetchPrescripcionesDeSujetos(sujetoIds);
+              prescByID = rows.reduce<Record<string, PrescripcionDraftUI[]>>((acc, r) => {
+                (acc[r.sujeto_id] ||= []).push({
+                  _key: r.id, id: r.id, fecha: r.fecha, descripcion: r.descripcion ?? "",
+                });
+                return acc;
+              }, {});
+            } catch { /* noop: si falla, dejamos vacío */ }
+          }
           setSujetos(list.map((s) => ({
             _localKey: s.id,
             id: s.id,
@@ -154,6 +182,7 @@ export default function CausaFormDialog({
             vencimiento_pp: s.vencimiento_pp ?? null,
             vencimiento_pena: s.vencimiento_pena ?? null,
             observaciones: s.observaciones ?? "",
+            prescripciones: prescByID[s.id] ?? [],
           })));
         }
         setLoading(false);
@@ -165,7 +194,7 @@ export default function CausaFormDialog({
   const visibleSujetos = useMemo(() => sujetos.filter((s) => !s._markedForDelete), [sujetos]);
 
   const updateCausa = (patch: Partial<CausaInput>) => setCausa((c) => ({ ...c, ...patch }));
-  const updateSujeto = (key: string, patch: Partial<SujetoInput>) =>
+  const updateSujeto = (key: string, patch: Partial<SujetoState>) =>
     setSujetos((arr) => arr.map((s) => s._localKey === key ? { ...s, ...patch } : s));
 
   const addSujeto = () => setSujetos((arr) => [emptySujeto(), ...arr]);
@@ -184,7 +213,8 @@ export default function CausaFormDialog({
   const isSujetoEmpty = (s: SujetoState) => {
     return !s.nombre_completo.trim() && !s.delito && !s.defensor && !s.fecha_detencion
       && !s.lugar_alojamiento && !s.prescripcion_fecha && !s.vencimiento_pp
-      && !s.vencimiento_pena && !s.observaciones && s.situacion_libertad === "libre";
+      && !s.vencimiento_pena && !s.observaciones && s.situacion_libertad === "libre"
+      && (s.prescripciones?.length ?? 0) === 0;
   };
 
   const validate = (): string | null => {
@@ -213,7 +243,7 @@ export default function CausaFormDialog({
     // Filtrar sujetos completamente vacíos (no se persisten).
     const sujetosFiltrados = visibleSujetos.filter((s) => !isSujetoEmpty(s));
     const sujetosPayload: SujetoInput[] = sujetosFiltrados.map((s) => {
-      const { _localKey, _markedForDelete, ...rest } = s;
+      const { _localKey, _markedForDelete, prescripciones: _p, ...rest } = s;
       const cleaned = nullify({
         ...rest,
         nombre_completo: rest.nombre_completo.trim(),
@@ -433,6 +463,17 @@ export default function CausaFormDialog({
                     <p className="text-[10px] text-muted-foreground">
                       Buscá por N° de expediente. Elegí una sugerencia para vincular o dejá texto libre.
                     </p>
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <ExternalLink className="w-3 h-3" /> Link externo (expediente / drive / etc.)
+                    </Label>
+                    <Input
+                      type="url"
+                      value={causa.link_externo ?? ""}
+                      onChange={(e) => updateCausa({ link_externo: e.target.value })}
+                      placeholder="https://..."
+                    />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
