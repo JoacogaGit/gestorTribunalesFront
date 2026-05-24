@@ -78,8 +78,12 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
 
   const now = Date.now();
   const futuros = visibles.filter((e) => new Date(e.fecha).getTime() >= now && matchesSearch(e) && matchesDate(e));
-  const pasados = visibles.filter((e) => new Date(e.fecha).getTime() < now && matchesSearch(e) && matchesDate(e))
+  const pasadosTodos = visibles.filter((e) => new Date(e.fecha).getTime() < now && matchesSearch(e) && matchesDate(e))
     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+  // Si el usuario seleccionó una fecha pasada, mostramos sus eventos en el panel principal en gris.
+  const selectedIsPast = !!selectedDate && selectedDate.getTime() < new Date(new Date().toDateString()).getTime();
+  const pasadosDelDiaSeleccionado = selectedIsPast ? pasadosTodos : [];
+  const pasados = pasadosTodos;
 
   const eventDates = new Set(visibles.map((e) => new Date(e.fecha).toDateString()));
 
@@ -234,8 +238,16 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
           </div>
 
           <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-1">
-            {futuros.map((e, i) => renderEvento(e, i, false))}
-            {futuros.length === 0 && (
+            {selectedIsPast && pasadosDelDiaSeleccionado.length > 0 && (
+              <>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground px-1">
+                  Eventos del {selectedDate?.toLocaleDateString("es-AR")} (pasados)
+                </p>
+                {pasadosDelDiaSeleccionado.map((e, i) => renderEvento(e, i, true))}
+              </>
+            )}
+            {!selectedIsPast && futuros.map((e, i) => renderEvento(e, i, false))}
+            {((selectedIsPast && pasadosDelDiaSeleccionado.length === 0) || (!selectedIsPast && futuros.length === 0)) && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center mb-3">
                   <Inbox className="w-5 h-5 text-muted-foreground" />
