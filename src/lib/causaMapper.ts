@@ -42,6 +42,8 @@ export type DbSujeto = {
   lugar_alojamiento: string | null;
   causa_id: string;
   created_at?: string | null;
+  /** Fechas de prescripción adicionales (tabla prescripciones). */
+  prescripciones?: { id: string; fecha: string; descripcion: string | null }[];
 };
 
 export type DbTipoProceso = "unipersonal" | "colegiado" | null;
@@ -61,6 +63,7 @@ export type DbCausa = {
   otros_intervinientes: string | null;
   causa_conexa_texto: string | null;
   causa_conexa_id: string | null;
+  link_externo: string | null;
   sujetos?: DbSujeto[];
 };
 
