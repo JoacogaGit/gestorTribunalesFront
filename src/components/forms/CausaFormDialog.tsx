@@ -194,7 +194,7 @@ export default function CausaFormDialog({
   const visibleSujetos = useMemo(() => sujetos.filter((s) => !s._markedForDelete), [sujetos]);
 
   const updateCausa = (patch: Partial<CausaInput>) => setCausa((c) => ({ ...c, ...patch }));
-  const updateSujeto = (key: string, patch: Partial<SujetoInput>) =>
+  const updateSujeto = (key: string, patch: Partial<SujetoState>) =>
     setSujetos((arr) => arr.map((s) => s._localKey === key ? { ...s, ...patch } : s));
 
   const addSujeto = () => setSujetos((arr) => [emptySujeto(), ...arr]);
@@ -213,7 +213,8 @@ export default function CausaFormDialog({
   const isSujetoEmpty = (s: SujetoState) => {
     return !s.nombre_completo.trim() && !s.delito && !s.defensor && !s.fecha_detencion
       && !s.lugar_alojamiento && !s.prescripcion_fecha && !s.vencimiento_pp
-      && !s.vencimiento_pena && !s.observaciones && s.situacion_libertad === "libre";
+      && !s.vencimiento_pena && !s.observaciones && s.situacion_libertad === "libre"
+      && (s.prescripciones?.length ?? 0) === 0;
   };
 
   const validate = (): string | null => {
