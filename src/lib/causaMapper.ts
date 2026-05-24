@@ -128,6 +128,17 @@ export function dbCausaToUI(row: DbCausa): Causa {
   if (row.actor_civil) otros.push({ rol: "Actor civil", nombre: row.actor_civil });
   if (row.otros_intervinientes) otros.push({ rol: "Otros", nombre: row.otros_intervinientes });
 
+  // Recolectar todas las fechas de prescripción de todos los sujetos (campo legacy + tabla nueva).
+  const todasPrescripciones: { fecha: string; label?: string }[] = [];
+  for (const s of sujetos) {
+    if (s.prescripcion_fecha) todasPrescripciones.push({ fecha: s.prescripcion_fecha, label: s.nombre_completo });
+    (s.prescripciones ?? []).forEach((p) => {
+      todasPrescripciones.push({ fecha: p.fecha, label: p.descripcion || s.nombre_completo });
+    });
+  }
+  todasPrescripciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+  const [prescripcionPrincipal, ...prescripcionExtras] = todasPrescripciones;
+
   return {
     id: row.id,
     numero: row.expediente_nro,
@@ -138,12 +149,14 @@ export function dbCausaToUI(row: DbCausa): Causa {
     fechaInicio: (row.created_at ?? new Date().toISOString()).slice(0, 10),
     fechaIngreso: row.fecha_ingreso ?? null,
     tipoProceso: row.tipo_proceso ?? null,
-    fechaPrescripcion: firstNonNull(sujetos.map((s) => s.prescripcion_fecha)) ?? "",
+    fechaPrescripcion: prescripcionPrincipal?.fecha ?? "",
+    fechasPrescripcionExtra: prescripcionExtras.length > 0 ? prescripcionExtras : undefined,
     fechaVencimientoPP: firstNonNull(sujetos.map((s) => s.vencimiento_pp)),
     otrosIntervinientes: otros.length ? otros : undefined,
     causasConexas: row.causa_conexa_texto ? [row.causa_conexa_texto] : undefined,
     causaConexaId: row.causa_conexa_id ?? null,
     causaConexaTexto: row.causa_conexa_texto ?? null,
+    link: row.link_externo ?? undefined,
     vocalia: 1,
   };
 }
