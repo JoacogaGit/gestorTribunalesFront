@@ -78,8 +78,12 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
 
   const now = Date.now();
   const futuros = visibles.filter((e) => new Date(e.fecha).getTime() >= now && matchesSearch(e) && matchesDate(e));
-  const pasados = visibles.filter((e) => new Date(e.fecha).getTime() < now && matchesSearch(e) && matchesDate(e))
+  const pasadosTodos = visibles.filter((e) => new Date(e.fecha).getTime() < now && matchesSearch(e) && matchesDate(e))
     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+  // Si el usuario seleccionó una fecha pasada, mostramos sus eventos en el panel principal en gris.
+  const selectedIsPast = !!selectedDate && selectedDate.getTime() < new Date(new Date().toDateString()).getTime();
+  const pasadosDelDiaSeleccionado = selectedIsPast ? pasadosTodos : [];
+  const pasados = pasadosTodos;
 
   const eventDates = new Set(visibles.map((e) => new Date(e.fecha).toDateString()));
 
