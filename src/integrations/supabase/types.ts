@@ -71,6 +71,7 @@ export type Database = {
           expediente_nro: string
           fecha_ingreso: string | null
           id: string
+          link_externo: string | null
           modificado_por: string | null
           otros_intervinientes: string | null
           querella: string | null
@@ -93,6 +94,7 @@ export type Database = {
           expediente_nro: string
           fecha_ingreso?: string | null
           id?: string
+          link_externo?: string | null
           modificado_por?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
@@ -115,6 +117,7 @@ export type Database = {
           expediente_nro?: string
           fecha_ingreso?: string | null
           id?: string
+          link_externo?: string | null
           modificado_por?: string | null
           otros_intervinientes?: string | null
           querella?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.causas ADD COLUMN IF NOT EXISTS link_externo TEXT;
