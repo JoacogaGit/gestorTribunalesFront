@@ -261,6 +261,15 @@ export default function CausaFormDialog({
     if (mode === "crear") {
       const res = await muts.crearCausa(causaP, sujetosP);
       if (res.ok !== true) { setErrorMsg(res.error); return; }
+      // Sync prescripciones para cada sujeto recién creado.
+      const sujetosToSync = visibleSujetos.filter((s) => !isSujetoEmpty(s));
+      for (let i = 0; i < sujetosToSync.length; i++) {
+        const newId = res.sujetoIds[i];
+        const drafts = (sujetosToSync[i].prescripciones ?? []).filter((p) => p.fecha).map<PrescripcionDraft>((p) => ({
+          fecha: p.fecha, descripcion: p.descripcion?.trim() || null,
+        }));
+        if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
+      }
       toast.success("Causa creada");
       onMutated?.();
       onOpenChange(false);
@@ -283,12 +292,22 @@ export default function CausaFormDialog({
     for (let i = 0; i < sujetosToSync.length; i++) {
       const draft = sujetosToSync[i];
       const payload = sujetosP[i];
+      let sujetoId: string | undefined = draft.id;
       if (draft.id) {
         const r = await muts.actualizarSujeto(draft.id, payload);
         if (r.ok !== true) { setErrorMsg(`Error al guardar imputado: ${r.error}`); return; }
       } else {
         const r = await muts.crearSujeto(causaId, payload);
         if (r.ok !== true) { setErrorMsg(`Error al crear imputado: ${r.error}`); return; }
+        sujetoId = r.id;
+      }
+      // Sincronizar prescripciones de este sujeto
+      if (sujetoId) {
+        const drafts = (draft.prescripciones ?? []).filter((p) => p.fecha).map<PrescripcionDraft>((p) => ({
+          id: p.id, fecha: p.fecha, descripcion: p.descripcion?.trim() || null,
+        }));
+        const psync = await syncPrescripcionesSujeto(sujetoId, drafts);
+        if (psync.ok !== true) { setErrorMsg(`Error al guardar prescripciones: ${psync.error}`); return; }
       }
     }
     toast.success("Cambios guardados");
