@@ -186,12 +186,28 @@ export function useMigracion() {
         insertedCausaIds.push(causaRow.id);
 
         if (c.sujetos.length > 0) {
-          const payload = c.sujetos.map((s) => ({ ...s, causa_id: causaRow.id }));
+          const payload = c.sujetos.map((s) => {
+            const { prescripciones: _p, ...rest } = s;
+            return { ...rest, causa_id: causaRow.id };
+          });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: sjRows, error: sjErr } = await supabase.from("sujetos").insert(payload as any).select("id");
           if (sjErr) throw new Error(`Sujetos de ${c.expediente_nro}: ${sjErr.message}`);
-          sjRows?.forEach((r) => insertedSujetoIds.push(r.id));
+          (sjRows ?? []).forEach((r) => insertedSujetoIds.push(r.id));
           sujetosCount += c.sujetos.length;
+          // Insertar prescripciones de cada sujeto.
+          const prescPayload: { sujeto_id: string; fecha: string; descripcion: string | null }[] = [];
+          (sjRows ?? []).forEach((r, idx) => {
+            const sj = c.sujetos[idx];
+            const list = sj?.prescripciones ?? [];
+            for (const p of list) {
+              if (p.fecha) prescPayload.push({ sujeto_id: r.id, fecha: p.fecha, descripcion: p.descripcion ?? null });
+            }
+          });
+          if (prescPayload.length > 0) {
+            const { error: pErr } = await supabase.from("prescripciones").insert(prescPayload);
+            if (pErr) throw new Error(`Prescripciones de ${c.expediente_nro}: ${pErr.message}`);
+          }
         }
         if (c.eventos.length > 0) {
           const payload = c.eventos.map((e) => ({ ...e, causa_id: causaRow.id }));
