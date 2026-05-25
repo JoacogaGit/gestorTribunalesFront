@@ -27,7 +27,8 @@ Tabla "sujetos":
 - delito (TEXT): descripción completa, no truncar.
 - situacion_libertad (ENUM, requerido): "libre" | "detenido" | "rebelde" | "probation" | "condenado".
 - defensor (TEXT): texto libre.
-- lugar_alojamiento, fecha_detencion, prescripcion_fecha, vencimiento_pp, vencimiento_pena, vencimiento_sjp, observaciones: opcionales.
+- lugar_alojamiento, fecha_detencion, vencimiento_pp, vencimiento_pena, vencimiento_sjp, observaciones: opcionales.
+- prescripciones (ARRAY de objetos {fecha, descripcion}): un sujeto puede tener varias fechas de prescripción (una por delito o supuesto). Si en los datos aparece una sola, devolver un array con un único objeto. Si aparecen varias (ej. "PRESCRIBE 12/03/2027 (hurto); 04/08/2029 (lesiones)"), devolver una entrada por cada una con su descripción asociada. Si no hay ninguna, devolver array vacío [].
 
 Tabla "eventos":
 - titulo (TEXT, requerido), descripcion, fecha_hora (TIMESTAMP), tipo_evento.
@@ -99,7 +100,7 @@ D) FECHAS:
 - Convertir a ISO YYYY-MM-DD.
 
 E) EXTRACCIÓN DESDE TEXTO LIBRE:
-- "PRESCRIBE X/X/X" → prescripcion_fecha.
+- "PRESCRIBE X/X/X" → entrada en array prescripciones con fecha y descripción si está disponible.
 - "VENCE X/X/X":
   * Contexto PP/prisión preventiva → vencimiento_pp.
   * Contexto pena/condena → vencimiento_pena.
@@ -141,7 +142,7 @@ Modo "procesamiento_directo":
   "modo": "procesamiento_directo",
   "resumen": { "total_filas_origen": 0, "causas_detectadas": 0, "sujetos_detectados": 0, "eventos_detectados": 0, "verdes": 0, "amarillos": 0, "rojos": 0 },
   "pestanas_procesadas": ["..."],
-  "causas": [ { "id_temporal": "causa-1", "expediente_nro": "12345/2023", "caratula": "PEREZ, Juan", "estado_causa": "tramite", "tipo_recurso": null, "tipo_proceso": "colegiado", "fecha_ingreso": "2024-02-10", "querella": null, "actor_civil": null, "otros_intervinientes": null, "causa_conexa_texto": null, "confianza": "verde", "notas_ia": "", "origen_pestanas": ["..."], "sujetos": [ { "nombre_completo": "PEREZ, Juan", "delito": "...", "situacion_libertad": "detenido", "defensor": "DPO 14", "lugar_alojamiento": "CPF I", "fecha_detencion": "2024-03-15", "prescripcion_fecha": null, "vencimiento_pp": "2025-09-15", "vencimiento_pena": null, "vencimiento_sjp": null, "observaciones": "" } ], "eventos": [ { "titulo": "Juicio fijado", "descripcion": null, "fecha_hora": "2026-05-08T00:00:00", "tipo_evento": "juicio" } ] } ],
+  "causas": [ { "id_temporal": "causa-1", "expediente_nro": "12345/2023", "caratula": "PEREZ, Juan", "estado_causa": "tramite", "tipo_recurso": null, "tipo_proceso": "colegiado", "fecha_ingreso": "2024-02-10", "querella": null, "actor_civil": null, "otros_intervinientes": null, "causa_conexa_texto": null, "confianza": "verde", "notas_ia": "", "origen_pestanas": ["..."], "sujetos": [ { "nombre_completo": "PEREZ, Juan", "delito": "...", "situacion_libertad": "detenido", "defensor": "DPO 14", "lugar_alojamiento": "CPF I", "fecha_detencion": "2024-03-15", "prescripciones": [ { "fecha": "2030-09-15", "descripcion": "hurto" } ], "vencimiento_pp": "2025-09-15", "vencimiento_pena": null, "vencimiento_sjp": null, "observaciones": "" } ], "eventos": [ { "titulo": "Juicio fijado", "descripcion": null, "fecha_hora": "2026-05-08T00:00:00", "tipo_evento": "juicio" } ] } ],
   "filas_rojas": [ { "fila_origen": "<referencia>", "razon": "<explicación>", "datos_crudos": "<lo que había>", "sujeto_propuesto": null } ]
 }
 
@@ -150,7 +151,7 @@ Modo "mapeo_asistido_requerido":
   "modo": "mapeo_asistido_requerido",
   "razon": "<por qué>",
   "columnas_detectadas": [ { "indice": 0, "muestra": ["..."], "hipotesis": "..." } ],
-  "campos_disponibles": ["expediente_nro", "fecha_ingreso", "tipo_proceso", "nombre_completo", "delito", "situacion_libertad", "defensor", "lugar_alojamiento", "fecha_detencion", "prescripcion_fecha", "vencimiento_pp", "vencimiento_pena", "vencimiento_sjp", "observaciones", "querella", "actor_civil", "otros_intervinientes", "causa_conexa_texto"]
+  "campos_disponibles": ["expediente_nro", "fecha_ingreso", "tipo_proceso", "nombre_completo", "delito", "situacion_libertad", "defensor", "lugar_alojamiento", "fecha_detencion", "prescripciones", "vencimiento_pp", "vencimiento_pena", "vencimiento_sjp", "observaciones", "querella", "actor_civil", "otros_intervinientes", "causa_conexa_texto"]
 }
 
 REGLAS FINALES:

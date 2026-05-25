@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Causa, getProximityColor, Imputado } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Search, Copy, Plus, ChevronDown, Trash2, Pencil, Loader2 } from "lucide-react";
+import { Search, Copy, Plus, ChevronDown, Trash2, Pencil, Loader2, ExternalLink } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -70,7 +70,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
     {
       key: "numero", label: "N° Causa", cellClass: "font-mono text-xs font-semibold",
       render: (r) => r.causa.link
-        ? <a href={r.causa.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">{r.causa.numero}</a>
+        ? <a href={r.causa.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline inline-flex items-center gap-1">{r.causa.numero}<ExternalLink className="w-3 h-3" /></a>
         : <span className="text-primary">{r.causa.numero}</span>,
     },
     { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[200px] truncate", render: (r) => r.causa.delito },

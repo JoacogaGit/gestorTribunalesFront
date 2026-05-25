@@ -98,6 +98,24 @@ export type DbSujetoFechaRow = {
   causas: DbCausaJoin | DbCausaJoin[] | null;
 };
 
+export type DbPrescripcionRow = {
+  id: string;
+  fecha: string;
+  descripcion: string | null;
+  sujeto_id: string;
+  sujetos: {
+    id: string;
+    nombre_completo: string;
+    causa_id: string;
+    causas: DbCausaJoin | DbCausaJoin[] | null;
+  } | {
+    id: string;
+    nombre_completo: string;
+    causa_id: string;
+    causas: DbCausaJoin | DbCausaJoin[] | null;
+  }[] | null;
+};
+
 function pickCausa(c: DbCausaJoin | DbCausaJoin[] | null): DbCausaJoin | null {
   if (!c) return null;
   return Array.isArray(c) ? c[0] ?? null : c;
@@ -149,5 +167,25 @@ export function mapSujetoFechaToCalendar(
     causaNumero: causa.expediente_nro,
     causaCaratula: caratulaOf(causa),
     sujetoId: row.id,
+  };
+}
+
+export function mapPrescripcionToCalendar(row: DbPrescripcionRow): CalendarEvento | null {
+  if (!row.fecha) return null;
+  const sujeto = Array.isArray(row.sujetos) ? row.sujetos[0] : row.sujetos;
+  if (!sujeto) return null;
+  const causa = pickCausa(sujeto.causas);
+  if (!causa) return null;
+  const titulo = `Prescripción — ${sujeto.nombre_completo}`;
+  return {
+    id: `prescripcion-multi-${row.id}`,
+    fecha: row.fecha,
+    titulo,
+    descripcion: row.descripcion ?? undefined,
+    tipo: "prescripcion",
+    causaId: causa.id,
+    causaNumero: causa.expediente_nro,
+    causaCaratula: caratulaOf(causa),
+    sujetoId: sujeto.id,
   };
 }

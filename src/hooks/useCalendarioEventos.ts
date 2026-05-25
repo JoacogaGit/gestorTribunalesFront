@@ -4,8 +4,10 @@ import {
   CalendarEvento,
   DbEventoRow,
   DbSujetoFechaRow,
+  DbPrescripcionRow,
   mapDbEventoToCalendar,
   mapSujetoFechaToCalendar,
+  mapPrescripcionToCalendar,
 } from "@/lib/eventoMapper";
 import { useEventosChanged } from "@/lib/eventosBus";
 
@@ -22,7 +24,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
     setLoading(true);
     setError(null);
     try {
-      const [evtRes, ppRes, penaRes, prescRes] = await Promise.all([
+      const [evtRes, ppRes, penaRes, prescRes, prescMultiRes] = await Promise.all([
         supabase
           .from("eventos")
           .select(`id,titulo,descripcion,fecha_hora,tipo_evento,causa_id,sujeto_id, causas!inner(${CAUSA_COLS},borrado_en)`)
@@ -55,9 +57,16 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
           .is("causas.borrado_en", null),
+        supabase
+          .from("prescripciones")
+          .select(`id,fecha,descripcion,sujeto_id, sujetos!inner(id,nombre_completo,causa_id, causas!inner(${CAUSA_COLS},borrado_en))`)
+          .in("sujetos.causas.estado_causa", ACTIVOS)
+          .eq("sujetos.causas.vocalia_id", vocaliaId)
+          .is("sujetos.borrado_en", null)
+          .is("sujetos.causas.borrado_en", null),
       ]);
 
-      const firstErr = [evtRes, ppRes, penaRes, prescRes].find((r) => r.error)?.error;
+      const firstErr = [evtRes, ppRes, penaRes, prescRes, prescMultiRes].find((r) => r.error)?.error;
       if (firstErr) throw new Error(firstErr.message);
 
       const merged: CalendarEvento[] = [
@@ -68,6 +77,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           mapSujetoFechaToCalendar(r, "vencimiento_pena", "vencimiento_pena", "Vence Pena")),
         ...((prescRes.data ?? []) as unknown as DbSujetoFechaRow[]).map((r) =>
           mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
+        ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[]).map(mapPrescripcionToCalendar),
       ].filter((e): e is CalendarEvento => e !== null)
        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 

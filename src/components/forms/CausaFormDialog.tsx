@@ -15,7 +15,7 @@ import { ChevronDown, ExternalLink, Loader2, Plus, Trash2, X } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
-import { fetchPrescripcionesDeSujetos } from "@/hooks/usePrescripciones";
+import { fetchPrescripcionesDeSujetos, syncPrescripcionesSujeto, PrescripcionDraft } from "@/hooks/usePrescripciones";
 import {
   DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso,
   ESTADOS_CAUSA_DB, SITUACIONES_LIBERTAD, TIPOS_RECURSO,
@@ -261,6 +261,15 @@ export default function CausaFormDialog({
     if (mode === "crear") {
       const res = await muts.crearCausa(causaP, sujetosP);
       if (res.ok !== true) { setErrorMsg(res.error); return; }
+      // Sync prescripciones para cada sujeto recién creado.
+      const sujetosToSync = visibleSujetos.filter((s) => !isSujetoEmpty(s));
+      for (let i = 0; i < sujetosToSync.length; i++) {
+        const newId = res.sujetoIds[i];
+        const drafts = (sujetosToSync[i].prescripciones ?? []).filter((p) => p.fecha).map<PrescripcionDraft>((p) => ({
+          fecha: p.fecha, descripcion: p.descripcion?.trim() || null,
+        }));
+        if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
+      }
       toast.success("Causa creada");
       onMutated?.();
       onOpenChange(false);
@@ -283,12 +292,22 @@ export default function CausaFormDialog({
     for (let i = 0; i < sujetosToSync.length; i++) {
       const draft = sujetosToSync[i];
       const payload = sujetosP[i];
+      let sujetoId: string | undefined = draft.id;
       if (draft.id) {
         const r = await muts.actualizarSujeto(draft.id, payload);
         if (r.ok !== true) { setErrorMsg(`Error al guardar imputado: ${r.error}`); return; }
       } else {
         const r = await muts.crearSujeto(causaId, payload);
         if (r.ok !== true) { setErrorMsg(`Error al crear imputado: ${r.error}`); return; }
+        sujetoId = r.id;
+      }
+      // Sincronizar prescripciones de este sujeto
+      if (sujetoId) {
+        const drafts = (draft.prescripciones ?? []).filter((p) => p.fecha).map<PrescripcionDraft>((p) => ({
+          id: p.id, fecha: p.fecha, descripcion: p.descripcion?.trim() || null,
+        }));
+        const psync = await syncPrescripcionesSujeto(sujetoId, drafts);
+        if (psync.ok !== true) { setErrorMsg(`Error al guardar prescripciones: ${psync.error}`); return; }
       }
     }
     toast.success("Cambios guardados");
@@ -501,6 +520,7 @@ export default function CausaFormDialog({
                       key={s._localKey}
                       sujeto={s}
                       onChange={(patch) => updateSujeto(s._localKey, patch)}
+                      onPrescripcionesChange={(prescripciones) => updateSujeto(s._localKey, { prescripciones })}
                       onRemove={() => confirmRemoveSujeto(s)}
                     />
                   ))}
@@ -628,10 +648,25 @@ export default function CausaFormDialog({
 interface SujetoCardProps {
   sujeto: SujetoState;
   onChange: (patch: Partial<SujetoInput>) => void;
+  onPrescripcionesChange: (prescripciones: PrescripcionDraftUI[]) => void;
   onRemove: () => void;
 }
 
-function SujetoCard({ sujeto, onChange, onRemove }: SujetoCardProps) {
+function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: SujetoCardProps) {
+  const prescripciones = sujeto.prescripciones ?? [];
+  const addPrescripcion = () => {
+    onPrescripcionesChange([
+      ...prescripciones,
+      { _key: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, fecha: "", descripcion: "" },
+    ]);
+  };
+  const updatePrescripcion = (key: string, patch: Partial<PrescripcionDraftUI>) => {
+    onPrescripcionesChange(prescripciones.map((p) => p._key === key ? { ...p, ...patch } : p));
+  };
+  const removePrescripcion = (key: string) => {
+    onPrescripcionesChange(prescripciones.filter((p) => p._key !== key));
+  };
+
   return (
     <div className="bg-muted/40 rounded-md p-3 space-y-3 border border-border/60">
       <div className="flex items-start gap-2">
@@ -699,7 +734,7 @@ function SujetoCard({ sujeto, onChange, onRemove }: SujetoCardProps) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Prescripción</Label>
+            <Label className="text-xs">Prescripción principal</Label>
             <Input
               type="date"
               value={sujeto.prescripcion_fecha ?? ""}
@@ -713,6 +748,43 @@ function SujetoCard({ sujeto, onChange, onRemove }: SujetoCardProps) {
               onChange={(e) => onChange({ observaciones: e.target.value })}
               rows={2}
             />
+          </div>
+
+          {/* Prescripciones adicionales */}
+          <div className="col-span-2 space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Otras prescripciones ({prescripciones.length})
+              </Label>
+              <Button type="button" size="sm" variant="outline" onClick={addPrescripcion} className="h-7 px-2 text-xs">
+                <Plus className="w-3 h-3 mr-1" /> Agregar
+              </Button>
+            </div>
+            {prescripciones.length === 0 && (
+              <p className="text-[11px] text-muted-foreground italic">Sin prescripciones adicionales.</p>
+            )}
+            {prescripciones.map((p) => (
+              <div key={p._key} className="grid grid-cols-[140px_1fr_auto] gap-2 items-start">
+                <Input
+                  type="date"
+                  value={p.fecha}
+                  onChange={(e) => updatePrescripcion(p._key, { fecha: e.target.value })}
+                />
+                <Input
+                  value={p.descripcion}
+                  onChange={(e) => updatePrescripcion(p._key, { descripcion: e.target.value })}
+                  placeholder="Descripción (opcional)"
+                />
+                <button
+                  type="button"
+                  onClick={() => removePrescripcion(p._key)}
+                  className="text-muted-foreground hover:text-destructive p-2"
+                  title="Quitar"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
         <button

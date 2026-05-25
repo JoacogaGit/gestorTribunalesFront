@@ -42,7 +42,7 @@ export function useCausaMutations() {
   const crearCausa = useCallback(async (
     causa: CausaInput,
     sujetos: SujetoInput[],
-  ): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
+  ): Promise<{ ok: true; id: string; sujetoIds: string[] } | { ok: false; error: string }> => {
     if (!vocalia) return { ok: false, error: "No hay vocalía seleccionada." };
     setSaving(true);
     try {
@@ -55,16 +55,18 @@ export function useCausaMutations() {
         return { ok: false, error: causaErr?.message || "No se pudo crear la causa." };
       }
       const causaId = causaData.id;
+      let sujetoIds: string[] = [];
       if (sujetos.length > 0) {
         const payload = sujetos.map(({ id: _omit, ...s }) => ({ ...s, causa_id: causaId }));
-        const { error: sujErr } = await supabase.from("sujetos").insert(payload);
+        const { data: sjRows, error: sujErr } = await supabase.from("sujetos").insert(payload).select("id");
         if (sujErr) {
           // Rollback manual
           await supabase.from("causas").delete().eq("id", causaId);
           return { ok: false, error: `Error al guardar imputados: ${sujErr.message}` };
         }
+        sujetoIds = (sjRows ?? []).map((r) => r.id as string);
       }
-      return { ok: true, id: causaId };
+      return { ok: true, id: causaId, sujetoIds };
     } finally {
       setSaving(false);
     }
@@ -106,8 +108,8 @@ export function useCausaMutations() {
 
   const crearSujeto = useCallback(async (causaId: string, sujeto: SujetoInput) => {
     const { id: _o, ...rest } = sujeto;
-    const { error } = await supabase.from("sujetos").insert({ ...rest, causa_id: causaId });
-    return error ? { ok: false as const, error: error.message } : { ok: true as const };
+    const { data, error } = await supabase.from("sujetos").insert({ ...rest, causa_id: causaId }).select("id").single();
+    return error || !data ? { ok: false as const, error: error?.message || "Error" } : { ok: true as const, id: data.id as string };
   }, []);
 
   const actualizarSujeto = useCallback(async (id: string, sujeto: SujetoInput) => {
