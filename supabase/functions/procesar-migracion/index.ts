@@ -151,7 +151,7 @@ Modo "mapeo_asistido_requerido":
   "modo": "mapeo_asistido_requerido",
   "razon": "<por qué>",
   "columnas_detectadas": [ { "indice": 0, "muestra": ["..."], "hipotesis": "..." } ],
-  "campos_disponibles": ["expediente_nro", "fecha_ingreso", "tipo_proceso", "nombre_completo", "delito", "situacion_libertad", "defensor", "lugar_alojamiento", "fecha_detencion", "prescripcion_fecha", "vencimiento_pp", "vencimiento_pena", "vencimiento_sjp", "observaciones", "querella", "actor_civil", "otros_intervinientes", "causa_conexa_texto"]
+  "campos_disponibles": ["expediente_nro", "fecha_ingreso", "tipo_proceso", "nombre_completo", "delito", "situacion_libertad", "defensor", "lugar_alojamiento", "fecha_detencion", "prescripciones", "vencimiento_pp", "vencimiento_pena", "vencimiento_sjp", "observaciones", "querella", "actor_civil", "otros_intervinientes", "causa_conexa_texto"]
 }
 
 REGLAS FINALES:
