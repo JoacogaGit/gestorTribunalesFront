@@ -100,7 +100,7 @@ D) FECHAS:
 - Convertir a ISO YYYY-MM-DD.
 
 E) EXTRACCIÓN DESDE TEXTO LIBRE:
-- "PRESCRIBE X/X/X" → prescripcion_fecha.
+- "PRESCRIBE X/X/X" → entrada en array prescripciones con fecha y descripción si está disponible.
 - "VENCE X/X/X":
   * Contexto PP/prisión preventiva → vencimiento_pp.
   * Contexto pena/condena → vencimiento_pena.
