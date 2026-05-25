@@ -98,6 +98,24 @@ export type DbSujetoFechaRow = {
   causas: DbCausaJoin | DbCausaJoin[] | null;
 };
 
+export type DbPrescripcionRow = {
+  id: string;
+  fecha: string;
+  descripcion: string | null;
+  sujeto_id: string;
+  sujetos: {
+    id: string;
+    nombre_completo: string;
+    causa_id: string;
+    causas: DbCausaJoin | DbCausaJoin[] | null;
+  } | {
+    id: string;
+    nombre_completo: string;
+    causa_id: string;
+    causas: DbCausaJoin | DbCausaJoin[] | null;
+  }[] | null;
+};
+
 function pickCausa(c: DbCausaJoin | DbCausaJoin[] | null): DbCausaJoin | null {
   if (!c) return null;
   return Array.isArray(c) ? c[0] ?? null : c;
