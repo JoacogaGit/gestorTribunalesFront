@@ -520,6 +520,7 @@ export default function CausaFormDialog({
                       key={s._localKey}
                       sujeto={s}
                       onChange={(patch) => updateSujeto(s._localKey, patch)}
+                      onPrescripcionesChange={(prescripciones) => updateSujeto(s._localKey, { prescripciones })}
                       onRemove={() => confirmRemoveSujeto(s)}
                     />
                   ))}
