@@ -20,6 +20,10 @@ export interface CausaIA {
   sujetos: SujetoIA[];
   eventos: EventoIA[];
 }
+export interface PrescripcionIA {
+  fecha: string;
+  descripcion: string | null;
+}
 export interface SujetoIA {
   nombre_completo: string;
   delito: string | null;
@@ -27,7 +31,10 @@ export interface SujetoIA {
   defensor: string | null;
   lugar_alojamiento: string | null;
   fecha_detencion: string | null;
-  prescripcion_fecha: string | null;
+  /** Legacy: solo se usa si no viene `prescripciones`. */
+  prescripcion_fecha?: string | null;
+  /** Nuevo: array de prescripciones (una por delito/supuesto). */
+  prescripciones?: PrescripcionIA[];
   vencimiento_pp: string | null;
   vencimiento_pena: string | null;
   vencimiento_sjp: string | null;
