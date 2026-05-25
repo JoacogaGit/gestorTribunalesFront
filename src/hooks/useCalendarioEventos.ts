@@ -4,8 +4,10 @@ import {
   CalendarEvento,
   DbEventoRow,
   DbSujetoFechaRow,
+  DbPrescripcionRow,
   mapDbEventoToCalendar,
   mapSujetoFechaToCalendar,
+  mapPrescripcionToCalendar,
 } from "@/lib/eventoMapper";
 import { useEventosChanged } from "@/lib/eventosBus";
 
