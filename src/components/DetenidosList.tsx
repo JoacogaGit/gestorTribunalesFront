@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Causa, getProximityColor, Imputado } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Search, Copy, Plus, ChevronDown, Trash2, Pencil, Loader2 } from "lucide-react";
+import { Search, Copy, Plus, ChevronDown, Trash2, Pencil, Loader2, ExternalLink } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
