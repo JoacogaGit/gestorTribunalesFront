@@ -108,8 +108,8 @@ export function useCausaMutations() {
 
   const crearSujeto = useCallback(async (causaId: string, sujeto: SujetoInput) => {
     const { id: _o, ...rest } = sujeto;
-    const { error } = await supabase.from("sujetos").insert({ ...rest, causa_id: causaId });
-    return error ? { ok: false as const, error: error.message } : { ok: true as const };
+    const { data, error } = await supabase.from("sujetos").insert({ ...rest, causa_id: causaId }).select("id").single();
+    return error || !data ? { ok: false as const, error: error?.message || "Error" } : { ok: true as const, id: data.id as string };
   }, []);
 
   const actualizarSujeto = useCallback(async (id: string, sujeto: SujetoInput) => {
