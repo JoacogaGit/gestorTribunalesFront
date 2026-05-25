@@ -42,7 +42,7 @@ export function useCausaMutations() {
   const crearCausa = useCallback(async (
     causa: CausaInput,
     sujetos: SujetoInput[],
-  ): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
+  ): Promise<{ ok: true; id: string; sujetoIds: string[] } | { ok: false; error: string }> => {
     if (!vocalia) return { ok: false, error: "No hay vocalía seleccionada." };
     setSaving(true);
     try {
@@ -55,16 +55,18 @@ export function useCausaMutations() {
         return { ok: false, error: causaErr?.message || "No se pudo crear la causa." };
       }
       const causaId = causaData.id;
+      let sujetoIds: string[] = [];
       if (sujetos.length > 0) {
         const payload = sujetos.map(({ id: _omit, ...s }) => ({ ...s, causa_id: causaId }));
-        const { error: sujErr } = await supabase.from("sujetos").insert(payload);
+        const { data: sjRows, error: sujErr } = await supabase.from("sujetos").insert(payload).select("id");
         if (sujErr) {
           // Rollback manual
           await supabase.from("causas").delete().eq("id", causaId);
           return { ok: false, error: `Error al guardar imputados: ${sujErr.message}` };
         }
+        sujetoIds = (sjRows ?? []).map((r) => r.id as string);
       }
-      return { ok: true, id: causaId };
+      return { ok: true, id: causaId, sujetoIds };
     } finally {
       setSaving(false);
     }
