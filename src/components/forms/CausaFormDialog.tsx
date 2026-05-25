@@ -648,10 +648,25 @@ export default function CausaFormDialog({
 interface SujetoCardProps {
   sujeto: SujetoState;
   onChange: (patch: Partial<SujetoInput>) => void;
+  onPrescripcionesChange: (prescripciones: PrescripcionDraftUI[]) => void;
   onRemove: () => void;
 }
 
-function SujetoCard({ sujeto, onChange, onRemove }: SujetoCardProps) {
+function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: SujetoCardProps) {
+  const prescripciones = sujeto.prescripciones ?? [];
+  const addPrescripcion = () => {
+    onPrescripcionesChange([
+      ...prescripciones,
+      { _key: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, fecha: "", descripcion: "" },
+    ]);
+  };
+  const updatePrescripcion = (key: string, patch: Partial<PrescripcionDraftUI>) => {
+    onPrescripcionesChange(prescripciones.map((p) => p._key === key ? { ...p, ...patch } : p));
+  };
+  const removePrescripcion = (key: string) => {
+    onPrescripcionesChange(prescripciones.filter((p) => p._key !== key));
+  };
+
   return (
     <div className="bg-muted/40 rounded-md p-3 space-y-3 border border-border/60">
       <div className="flex items-start gap-2">
@@ -719,7 +734,7 @@ function SujetoCard({ sujeto, onChange, onRemove }: SujetoCardProps) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Prescripción</Label>
+            <Label className="text-xs">Prescripción principal</Label>
             <Input
               type="date"
               value={sujeto.prescripcion_fecha ?? ""}
@@ -733,6 +748,43 @@ function SujetoCard({ sujeto, onChange, onRemove }: SujetoCardProps) {
               onChange={(e) => onChange({ observaciones: e.target.value })}
               rows={2}
             />
+          </div>
+
+          {/* Prescripciones adicionales */}
+          <div className="col-span-2 space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Otras prescripciones ({prescripciones.length})
+              </Label>
+              <Button type="button" size="sm" variant="outline" onClick={addPrescripcion} className="h-7 px-2 text-xs">
+                <Plus className="w-3 h-3 mr-1" /> Agregar
+              </Button>
+            </div>
+            {prescripciones.length === 0 && (
+              <p className="text-[11px] text-muted-foreground italic">Sin prescripciones adicionales.</p>
+            )}
+            {prescripciones.map((p) => (
+              <div key={p._key} className="grid grid-cols-[140px_1fr_auto] gap-2 items-start">
+                <Input
+                  type="date"
+                  value={p.fecha}
+                  onChange={(e) => updatePrescripcion(p._key, { fecha: e.target.value })}
+                />
+                <Input
+                  value={p.descripcion}
+                  onChange={(e) => updatePrescripcion(p._key, { descripcion: e.target.value })}
+                  placeholder="Descripción (opcional)"
+                />
+                <button
+                  type="button"
+                  onClick={() => removePrescripcion(p._key)}
+                  className="text-muted-foreground hover:text-destructive p-2"
+                  title="Quitar"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
         <button
