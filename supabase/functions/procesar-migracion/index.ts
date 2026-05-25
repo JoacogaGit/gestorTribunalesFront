@@ -27,7 +27,8 @@ Tabla "sujetos":
 - delito (TEXT): descripción completa, no truncar.
 - situacion_libertad (ENUM, requerido): "libre" | "detenido" | "rebelde" | "probation" | "condenado".
 - defensor (TEXT): texto libre.
-- lugar_alojamiento, fecha_detencion, prescripcion_fecha, vencimiento_pp, vencimiento_pena, vencimiento_sjp, observaciones: opcionales.
+- lugar_alojamiento, fecha_detencion, vencimiento_pp, vencimiento_pena, vencimiento_sjp, observaciones: opcionales.
+- prescripciones (ARRAY de objetos {fecha, descripcion}): un sujeto puede tener varias fechas de prescripción (una por delito o supuesto). Si en los datos aparece una sola, devolver un array con un único objeto. Si aparecen varias (ej. "PRESCRIBE 12/03/2027 (hurto); 04/08/2029 (lesiones)"), devolver una entrada por cada una con su descripción asociada. Si no hay ninguna, devolver array vacío [].
 
 Tabla "eventos":
 - titulo (TEXT, requerido), descripcion, fecha_hora (TIMESTAMP), tipo_evento.
