@@ -172,7 +172,7 @@ export default function CausasTable({
       cellClass: "text-sm font-medium text-foreground max-w-[220px] truncate",
       sortValue: (c) => getCaratula(c),
       render: (c) => c.link
-        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline">{getCaratula(c)}</a>
+        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-center gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a>
         : getCaratula(c),
     },
     { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", sortValue: (c) => c.delito, render: (c) => c.delito },
