@@ -433,7 +433,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   // PASO 2 — Mapeo asistido
   if (mapeo) {
     return (
-      <div className="max-w-4xl pb-24">
+      <div className="max-w-4xl pb-24 mx-auto">
         <Alert className="mb-6">
           <AlertTriangle className="w-4 h-4" />
           <AlertTitle>Mapeo asistido</AlertTitle>
@@ -509,7 +509,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     };
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-2xl mx-auto">
         <Card className="p-8 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-alert-ok/15 flex items-center justify-center mb-4">
             <CheckCircle2 className="w-7 h-7 text-alert-ok" />
@@ -560,7 +560,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       eventos: editable.filter((c) => incluir[c.id_temporal]).reduce((a, c) => a + c.eventos.length, 0),
     };
     return (
-      <div className="flex flex-col h-[calc(100vh-8rem)] max-w-5xl">
+      <div className="flex flex-col h-[calc(100vh-8rem)] max-w-5xl mx-auto">
        <div className="flex-1 overflow-y-auto pr-1 pb-4">
         <p className="text-sm text-muted-foreground mb-4">
           Revisá y editá los datos detectados. Solo se cargarán las causas marcadas.

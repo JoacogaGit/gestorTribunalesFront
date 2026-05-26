@@ -121,7 +121,7 @@ export default function Papelera({ vocaliaId }: Props) {
   const eventos = useEventosBorrados(vocaliaId);
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl overflow-y-auto max-h-[calc(100vh-12rem)]">
       <p className="text-sm text-muted-foreground mb-6">
         Los elementos borrados se conservan acá. Podés restaurarlos en cualquier momento.
       </p>

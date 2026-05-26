@@ -93,7 +93,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
         )}
 
         {!loading && !error && vocalias.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {vocalias.map((v) => {
               const isEditing = editingId === v.id;
               const cardClick = () => { if (!isEditing) handleSelect(v); };
@@ -102,13 +102,13 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                 if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(v); }
               };
               return (
-                <div
+              <div
                   key={v.id}
                   role="button"
                   tabIndex={isEditing ? -1 : 0}
                   onClick={cardClick}
                   onKeyDown={cardKey}
-                  className={`glass-card rounded-xl p-8 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 group focus:outline-none focus:ring-2 focus:ring-primary/40 ${isEditing ? "cursor-default" : "cursor-pointer"}`}
+                  className={`glass-card rounded-xl p-8 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 group focus:outline-none focus:ring-2 focus:ring-primary/40 w-full md:w-[calc((100%-3rem)/3)] shrink-0 ${isEditing ? "cursor-default" : "cursor-pointer"}`}
                 >
                   <div className="flex items-start justify-between mb-5">
                     <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
