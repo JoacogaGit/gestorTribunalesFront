@@ -108,15 +108,18 @@ export function useTribunalDetalleSuperadmin(tribunalId: string | undefined) {
       if (!tRes.data) throw new Error("Tribunal no encontrado");
 
       const vocaliaIds = (vRes.data ?? []).map((v) => v.id);
-      const [causasRes, eventosRes, perfilesRes] = await Promise.all([
-        vocaliaIds.length
-          ? supabase.from("causas").select("id, vocalia_id").in("vocalia_id", vocaliaIds).is("borrado_en", null)
-          : Promise.resolve({ data: [], error: null } as const),
-        vocaliaIds.length
+      const causasRes = vocaliaIds.length
+        ? await supabase.from("causas").select("id, vocalia_id").in("vocalia_id", vocaliaIds).is("borrado_en", null)
+        : ({ data: [], error: null } as const);
+      if (causasRes.error) throw causasRes.error;
+
+      const causaIds = (causasRes.data ?? []).map((c) => c.id);
+      const [eventosRes, perfilesRes] = await Promise.all([
+        causaIds.length
           ? supabase
               .from("eventos")
-              .select("id, causa_id, fecha_hora, causas!inner(vocalia_id)")
-              .in("causas.vocalia_id", vocaliaIds)
+              .select("id, causa_id, fecha_hora")
+              .in("causa_id", causaIds)
               .gte("fecha_hora", ahora)
               .lte("fecha_hora", en30)
               .is("borrado_en", null)
@@ -125,7 +128,6 @@ export function useTribunalDetalleSuperadmin(tribunalId: string | undefined) {
           ? supabase.from("perfiles").select("id, nombre_completo, email").in("id", (mRes.data ?? []).map((m) => m.usuario_id))
           : Promise.resolve({ data: [], error: null } as const),
       ]);
-      if (causasRes.error) throw causasRes.error;
       if (eventosRes.error) throw eventosRes.error;
       if (perfilesRes.error) throw perfilesRes.error;
 
