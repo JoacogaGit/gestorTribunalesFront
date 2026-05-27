@@ -5,6 +5,7 @@ import VocaliaSelector from "@/components/VocaliaSelector";
 import VocaliaWorkspace from "@/components/VocaliaWorkspace";
 import WelcomeNoTribunal from "@/components/WelcomeNoTribunal";
 import ThemeToggle from "@/components/ThemeToggle";
+import SuperadminBanner from "@/components/SuperadminBanner";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import { useAuth } from "@/context/AuthContext";
 import { useMembresias } from "@/hooks/useMembresias";
@@ -46,6 +47,7 @@ export default function Index() {
   if (count === 0) {
     return (
       <>
+        <SuperadminBanner />
         <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
         <WelcomeNoTribunal onCreated={refetch} />
       </>
@@ -54,6 +56,7 @@ export default function Index() {
 
   return (
     <>
+      <SuperadminBanner />
       {showFloatingToggle && (
         <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
       )}

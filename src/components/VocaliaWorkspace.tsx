@@ -8,6 +8,7 @@ import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
 import ThemeToggle from "@/components/ThemeToggle";
 import RefreshButton from "@/components/RefreshButton";
+import SuperadminLink from "@/components/SuperadminLink";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -321,6 +322,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 </>
               );
             })()}
+            <SuperadminLink variant="compact" />
             <ThemeToggle />
             <UserMenu
               email={user.email}

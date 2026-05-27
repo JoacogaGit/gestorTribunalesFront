@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { VocaliaActual } from "@/context/VocaliaContext";
 import RefreshButton from "@/components/RefreshButton";
+import SuperadminLink from "@/components/SuperadminLink";
 
 interface Props {
   onSelect: (v: VocaliaActual) => void;
@@ -47,6 +48,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-4xl w-full">
         <div className="flex justify-end items-center gap-1 mb-4">
+          <SuperadminLink />
           <RefreshButton onRefresh={refetch} loading={loading} label="Actualizar vocalías" />
           <Button variant="ghost" size="sm" onClick={onLogout}>
             <LogOut className="w-4 h-4 mr-1.5" />
