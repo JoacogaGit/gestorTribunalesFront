@@ -5,6 +5,7 @@ import VocaliaSelector from "@/components/VocaliaSelector";
 import VocaliaWorkspace from "@/components/VocaliaWorkspace";
 import WelcomeNoTribunal from "@/components/WelcomeNoTribunal";
 import ThemeToggle from "@/components/ThemeToggle";
+import SuperadminBanner from "@/components/SuperadminBanner";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import { useAuth } from "@/context/AuthContext";
 import { useMembresias } from "@/hooks/useMembresias";
