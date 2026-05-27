@@ -139,7 +139,7 @@ export function useTribunalDetalleSuperadmin(tribunalId: string | undefined) {
       });
 
       const eventosPorVocalia = new Map<string, number>();
-      (eventosRes.data ?? []).forEach((e: { causa_id: string }) => {
+      (eventosRes.data ?? []).forEach((e) => {
         const vId = causaToVocalia.get(e.causa_id);
         if (!vId) return;
         eventosPorVocalia.set(vId, (eventosPorVocalia.get(vId) ?? 0) + 1);
