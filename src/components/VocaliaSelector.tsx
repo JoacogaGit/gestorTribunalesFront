@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { VocaliaActual } from "@/context/VocaliaContext";
 import RefreshButton from "@/components/RefreshButton";
+import SuperadminLink from "@/components/SuperadminLink";
 
 interface Props {
   onSelect: (v: VocaliaActual) => void;
