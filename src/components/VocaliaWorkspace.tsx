@@ -322,6 +322,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 </>
               );
             })()}
+            <SuperadminLink variant="compact" />
             <ThemeToggle />
             <UserMenu
               email={user.email}
