@@ -37,8 +37,10 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
       if (excl.length > 0) {
         rows = rows.filter((r) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const sujetos = (r.sujetos as any[]) || [];
-          return !sujetos.some((s) => s.borrado_en == null && excl.includes(s.situacion_libertad));
+          const sujetos = ((r.sujetos as any[]) || []).filter((s) => s.borrado_en == null);
+          if (sujetos.length === 0) return true;
+          // Mantener la causa si al menos un sujeto NO está en una de las situaciones excluidas.
+          return sujetos.some((s) => !excl.includes(s.situacion_libertad));
         });
       }
       setCausas(rows.map(dbCausaToUI));
