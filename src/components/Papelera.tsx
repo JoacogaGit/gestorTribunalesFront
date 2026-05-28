@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Inbox, Undo2, Loader2, RefreshCw } from "lucide-react";
+import { Trash2, Undo2, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import EmptyState from "@/components/EmptyState";
 import {
   BorradoBase,
   restaurar,
