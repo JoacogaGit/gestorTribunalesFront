@@ -70,13 +70,15 @@ function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, 
   }
   if (isEmpty) {
     return (
-      <EmptyState
-        icon={Scale}
-        title={emptyTitle}
-        subtitle={emptyMessage}
-        actionLabel={onCreateCausa ? "+ Crear primera causa" : undefined}
-        onAction={onCreateCausa}
-      />
+      <div className="flex-1 flex flex-col min-h-0">
+        <EmptyState
+          icon={Scale}
+          title={emptyTitle}
+          subtitle={emptyMessage}
+          actionLabel={onCreateCausa ? "+ Crear primera causa" : undefined}
+          onAction={onCreateCausa}
+        />
+      </div>
     );
   }
   return <>{children}</>;
