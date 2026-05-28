@@ -9,10 +9,12 @@ import UserMenu from "@/components/UserMenu";
 import ThemeToggle from "@/components/ThemeToggle";
 import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
+import EmptyState from "@/components/EmptyState";
+import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Inbox, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
@@ -38,10 +40,11 @@ interface RemoteListSectionProps {
   emptyTitle: string;
   emptyMessage?: string;
   onRetry: () => void;
+  onCreateCausa?: () => void;
   children: React.ReactNode;
 }
 
-function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, onRetry, children }: RemoteListSectionProps) {
+function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, onRetry, onCreateCausa, children }: RemoteListSectionProps) {
   if (loading) {
     return (
       <div className="space-y-3">
@@ -67,18 +70,13 @@ function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, 
   }
   if (isEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center mb-4">
-          <Inbox className="w-6 h-6 text-muted-foreground" />
-        </div>
-        <h3 className="font-display text-lg font-semibold text-foreground">{emptyTitle}</h3>
-        {emptyMessage && (
-          <p className="text-sm text-muted-foreground mt-1 max-w-sm">{emptyMessage}</p>
-        )}
-        <Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Recargar
-        </Button>
-      </div>
+      <EmptyState
+        icon={Scale}
+        title={emptyTitle}
+        subtitle={emptyMessage}
+        actionLabel={onCreateCausa ? "+ Crear primera causa" : undefined}
+        onAction={onCreateCausa}
+      />
     );
   }
   return <>{children}</>;
