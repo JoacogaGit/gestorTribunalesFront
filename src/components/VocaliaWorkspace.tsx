@@ -378,9 +378,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   loading={dashCausasRemote.loading}
                   error={dashCausasRemote.error}
                   isEmpty={dashCausas.length === 0}
-                  emptyTitle="Sin causas en esta vocalía"
-                  emptyMessage="Cuando se carguen causas activas (en trámite o con recurso), van a aparecer acá."
+                  emptyTitle="Todavía no hay causas cargadas en esta vocalía"
+                  emptyMessage="Empezá creando la primera causa para gestionarla acá."
                   onRetry={dashCausasRemote.refetch}
+                  onCreateCausa={() => setShowCreateCausa(true)}
                 >
                   <CausasTable
                     causas={dashCausas}
@@ -402,9 +403,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={tramiteRemote.loading}
                 error={tramiteRemote.error}
                 isEmpty={tramiteRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage='Cuando se carguen causas con estado "trámite" en esta vocalía, van a aparecer acá.'
+                emptyTitle="Todavía no hay causas en trámite"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={tramiteRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={tramiteRemote.causas}
@@ -425,9 +427,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   loading={detenidosRemote.loading}
                   error={detenidosRemote.error}
                   isEmpty={detenidosRemote.causas.length === 0}
-                  emptyTitle="Sin detenidos"
-                  emptyMessage="No hay sujetos en situación 'detenido' en esta vocalía."
+                  emptyTitle="Todavía no hay detenidos en esta vocalía"
+                  emptyMessage="Empezá creando la primera causa con un detenido."
                   onRetry={detenidosRemote.refetch}
+                  onCreateCausa={() => setShowCreateCausa(true)}
                 >
                   <DetenidosList
                     causas={detenidosRemote.causas}
@@ -444,9 +447,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={rebeldesRemote.loading}
                 error={rebeldesRemote.error}
                 isEmpty={rebeldesRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con sujetos en situación de rebeldía."
+                emptyTitle="Todavía no hay rebeldes en esta vocalía"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={rebeldesRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={rebeldesRemote.causas}
@@ -466,9 +470,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={sjpRemote.loading}
                 error={sjpRemote.error}
                 isEmpty={sjpRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con sujetos en probation."
+                emptyTitle="Todavía no hay causas con SJP"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={sjpRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={sjpRemote.causas}
@@ -488,9 +493,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={recursosRemote.loading}
                 error={recursosRemote.error}
                 isEmpty={recursosRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con estado 'recurso'."
+                emptyTitle="Todavía no hay causas con recurso"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={recursosRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={recursosRemote.causas}
@@ -510,8 +516,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={terminadasRemote.loading}
                 error={terminadasRemote.error}
                 isEmpty={terminadasRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con estado 'terminada'."
+                emptyTitle="Todavía no hay causas terminadas"
+                emptyMessage="Las causas terminadas aparecerán acá cuando cambies el estado de una causa existente."
                 onRetry={terminadasRemote.refetch}
               >
                 <CausasTable
