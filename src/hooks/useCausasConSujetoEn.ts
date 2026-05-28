@@ -46,8 +46,16 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
     if (e2) {
       setError(e2.message); setCausas([]);
     } else {
+      // Mostrar la causa pero conservando SOLO los sujetos que están en la situación pedida,
+      // para destacarlos como protagonistas (mismo patrón que useDetenidos).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setCausas((data as any[]).map(dbCausaToUI));
+      const rows = (data as any[]).map((r) => ({
+        ...r,
+        sujetos: ((r.sujetos as any[]) || []).filter(
+          (s) => s.borrado_en == null && s.situacion_libertad === situacion,
+        ),
+      }));
+      setCausas(rows.map(dbCausaToUI));
     }
     setLoading(false);
   }, [situacion, vocaliaId]);
