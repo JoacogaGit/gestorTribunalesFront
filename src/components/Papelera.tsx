@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Inbox, Undo2, Loader2, RefreshCw } from "lucide-react";
+import { Trash2, Undo2, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import EmptyState from "@/components/EmptyState";
 import {
   BorradoBase,
   restaurar,
@@ -65,12 +66,11 @@ function Section({ tabla, items, loading, error, refetch, labelSingular }: Secti
   }
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center mb-3">
-          <Inbox className="w-5 h-5 text-muted-foreground" />
-        </div>
-        <p className="text-sm text-muted-foreground">No hay {labelSingular.toLowerCase()}s en la papelera.</p>
-      </div>
+      <EmptyState
+        icon={Trash2}
+        title={`No hay ${labelSingular.toLowerCase()}s en la papelera`}
+        subtitle="Los elementos borrados aparecerán acá."
+      />
     );
   }
 

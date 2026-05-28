@@ -9,10 +9,12 @@ import UserMenu from "@/components/UserMenu";
 import ThemeToggle from "@/components/ThemeToggle";
 import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
+import EmptyState from "@/components/EmptyState";
+import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Inbox, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
@@ -38,10 +40,11 @@ interface RemoteListSectionProps {
   emptyTitle: string;
   emptyMessage?: string;
   onRetry: () => void;
+  onCreateCausa?: () => void;
   children: React.ReactNode;
 }
 
-function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, onRetry, children }: RemoteListSectionProps) {
+function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, onRetry, onCreateCausa, children }: RemoteListSectionProps) {
   if (loading) {
     return (
       <div className="space-y-3">
@@ -67,17 +70,14 @@ function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, 
   }
   if (isEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center mb-4">
-          <Inbox className="w-6 h-6 text-muted-foreground" />
-        </div>
-        <h3 className="font-display text-lg font-semibold text-foreground">{emptyTitle}</h3>
-        {emptyMessage && (
-          <p className="text-sm text-muted-foreground mt-1 max-w-sm">{emptyMessage}</p>
-        )}
-        <Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Recargar
-        </Button>
+      <div className="flex-1 flex flex-col min-h-0">
+        <EmptyState
+          icon={Scale}
+          title={emptyTitle}
+          subtitle={emptyMessage}
+          actionLabel={onCreateCausa ? "+ Crear primera causa" : undefined}
+          onAction={onCreateCausa}
+        />
       </div>
     );
   }
@@ -133,6 +133,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [dashFilter, setDashFilter] = useState<DashboardFilter>("all");
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
   const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
+  const [showCreateCausa, setShowCreateCausa] = useState(false);
 
   const navigateToCausa = async (causaId: string) => {
     const { data, error } = await supabase
@@ -379,9 +380,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   loading={dashCausasRemote.loading}
                   error={dashCausasRemote.error}
                   isEmpty={dashCausas.length === 0}
-                  emptyTitle="Sin causas en esta vocalía"
-                  emptyMessage="Cuando se carguen causas activas (en trámite o con recurso), van a aparecer acá."
+                  emptyTitle="Todavía no hay causas cargadas en esta vocalía"
+                  emptyMessage="Empezá creando la primera causa para gestionarla acá."
                   onRetry={dashCausasRemote.refetch}
+                  onCreateCausa={() => setShowCreateCausa(true)}
                 >
                   <CausasTable
                     causas={dashCausas}
@@ -403,9 +405,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={tramiteRemote.loading}
                 error={tramiteRemote.error}
                 isEmpty={tramiteRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage='Cuando se carguen causas con estado "trámite" en esta vocalía, van a aparecer acá.'
+                emptyTitle="Todavía no hay causas en trámite"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={tramiteRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={tramiteRemote.causas}
@@ -426,9 +429,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   loading={detenidosRemote.loading}
                   error={detenidosRemote.error}
                   isEmpty={detenidosRemote.causas.length === 0}
-                  emptyTitle="Sin detenidos"
-                  emptyMessage="No hay sujetos en situación 'detenido' en esta vocalía."
+                  emptyTitle="Todavía no hay detenidos en esta vocalía"
+                  emptyMessage="Empezá creando la primera causa con un detenido."
                   onRetry={detenidosRemote.refetch}
+                  onCreateCausa={() => setShowCreateCausa(true)}
                 >
                   <DetenidosList
                     causas={detenidosRemote.causas}
@@ -445,9 +449,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={rebeldesRemote.loading}
                 error={rebeldesRemote.error}
                 isEmpty={rebeldesRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con sujetos en situación de rebeldía."
+                emptyTitle="Todavía no hay rebeldes en esta vocalía"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={rebeldesRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={rebeldesRemote.causas}
@@ -467,9 +472,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={sjpRemote.loading}
                 error={sjpRemote.error}
                 isEmpty={sjpRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con sujetos en probation."
+                emptyTitle="Todavía no hay causas con SJP"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={sjpRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={sjpRemote.causas}
@@ -489,9 +495,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={recursosRemote.loading}
                 error={recursosRemote.error}
                 isEmpty={recursosRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con estado 'recurso'."
+                emptyTitle="Todavía no hay causas con recurso"
+                emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={recursosRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
                   causas={recursosRemote.causas}
@@ -511,8 +518,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={terminadasRemote.loading}
                 error={terminadasRemote.error}
                 isEmpty={terminadasRemote.causas.length === 0}
-                emptyTitle="Sin causas en esta categoría"
-                emptyMessage="No hay causas con estado 'terminada'."
+                emptyTitle="Todavía no hay causas terminadas"
+                emptyMessage="Las causas terminadas aparecerán acá cuando cambies el estado de una causa existente."
                 onRetry={terminadasRemote.refetch}
               >
                 <CausasTable
@@ -582,6 +589,21 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </div>
         )}
       </main>
+      <CausaFormDialog
+        open={showCreateCausa}
+        onOpenChange={setShowCreateCausa}
+        mode="crear"
+        onMutated={() => {
+          dashCausasRemote.refetch();
+          tramiteRemote.refetch();
+          detenidosRemote.refetch();
+          rebeldesRemote.refetch();
+          sjpRemote.refetch();
+          recursosRemote.refetch();
+          terminadasRemote.refetch();
+          dashboardKpis.refetch();
+        }}
+      />
     </div>
   );
 }
