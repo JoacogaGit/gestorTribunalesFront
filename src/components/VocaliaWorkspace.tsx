@@ -587,6 +587,21 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </div>
         )}
       </main>
+      <CausaFormDialog
+        open={showCreateCausa}
+        onOpenChange={setShowCreateCausa}
+        mode="crear"
+        onMutated={() => {
+          dashCausasRemote.refetch();
+          tramiteRemote.refetch();
+          detenidosRemote.refetch();
+          rebeldesRemote.refetch();
+          sjpRemote.refetch();
+          recursosRemote.refetch();
+          terminadasRemote.refetch();
+          dashboardKpis.refetch();
+        }}
+      />
     </div>
   );
 }
