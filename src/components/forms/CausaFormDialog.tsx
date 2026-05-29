@@ -23,6 +23,7 @@ import {
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
+import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
 type Mode = "crear" | "editar";
 
