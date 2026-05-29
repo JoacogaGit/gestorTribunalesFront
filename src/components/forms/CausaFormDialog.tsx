@@ -386,7 +386,7 @@ export default function CausaFormDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-card border-border p-0">
           <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3">
             <DialogHeader className="flex-1 min-w-0">
