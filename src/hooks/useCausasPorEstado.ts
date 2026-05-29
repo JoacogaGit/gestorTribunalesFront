@@ -25,6 +25,7 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
       .eq("estado_causa", estado)
       .eq("vocalia_id", vocaliaId)
       .is("borrado_en", null)
+      .is("sujetos.borrado_en", null)
       .order("created_at", { ascending: false });
 
     if (error) {
