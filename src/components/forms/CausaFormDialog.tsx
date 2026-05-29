@@ -23,6 +23,7 @@ import {
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
+import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
 type Mode = "crear" | "editar";
 
@@ -109,16 +110,25 @@ export default function CausaFormDialog({
   );
   const [openExtras, setOpenExtras] = useState(false);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
+  // Clave de borrador local (por modo + causa)
+  const draftKey = `causa-form:${mode}:${causaId ?? "new"}`;
 
   // Cargar datos en modo editar
   useEffect(() => {
     if (!open) return;
     if (mode === "crear") {
-      setCausa(emptyCausa());
-      setSujetos(initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []);
+      const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
+      if (draft?.causa) {
+        setCausa(draft.causa);
+        setSujetos(draft.sujetos ?? []);
+      } else {
+        setCausa(emptyCausa());
+        setSujetos(initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []);
+      }
       setErrorMsg(null);
       return;
     }
+
     if (mode === "editar" && causaId) {
       let cancelled = false;
       setLoading(true);
@@ -185,12 +195,22 @@ export default function CausaFormDialog({
             observaciones: s.observaciones ?? "",
             prescripciones: prescByID[s.id] ?? [],
           })));
+          // Si había un borrador local más reciente con cambios no guardados, restaurarlo encima.
+          const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
+          if (draft?.causa) {
+            setCausa(draft.causa);
+            if (draft.sujetos) setSujetos(draft.sujetos);
+          }
         }
         setLoading(false);
       })();
       return () => { cancelled = true; };
     }
-  }, [open, mode, causaId, initialSujetoSituacion]);
+  }, [open, mode, causaId, initialSujetoSituacion, draftKey]);
+
+  // Persistencia local con debounce mientras el modal está abierto y no está cargando.
+  useFormDraft(draftKey, { causa, sujetos }, open && !loading);
+
 
   const visibleSujetos = useMemo(() => sujetos.filter((s) => !s._markedForDelete), [sujetos]);
 
@@ -272,10 +292,13 @@ export default function CausaFormDialog({
         if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
       }
       toast.success("Causa creada");
+      clearDraft(draftKey);
       onMutated?.();
       onOpenChange(false);
       return;
     }
+
+
 
     // editar: causa + diferencias de sujetos
     if (!causaId) return;
@@ -317,8 +340,10 @@ export default function CausaFormDialog({
       }
     }
     toast.success("Cambios guardados");
+    clearDraft(draftKey);
     onMutated?.();
     onOpenChange(false);
+
   };
 
   const handleSubmit = async () => {
@@ -336,13 +361,19 @@ export default function CausaFormDialog({
 
   const handleDeleteCausa = async () => {
     if (!causaId) return;
-    const r = await muts.borrarCausa(causaId);
-    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Causa eliminada");
+    clearDraft(draftKey);
     setConfirmDeleteCausa(false);
     onMutated?.();
     onOpenChange(false);
   };
+
+  const handleOpenChange = (o: boolean) => {
+    if (!o) clearDraft(draftKey);
+    onOpenChange(o);
+  };
+
+
 
   const confirmRemoveSujeto = (s: SujetoState) => {
     if (!s.id) {
@@ -355,7 +386,7 @@ export default function CausaFormDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-card border-border p-0">
           <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3">
             <DialogHeader className="flex-1 min-w-0">
@@ -560,7 +591,7 @@ export default function CausaFormDialog({
                   </Button>
                 ) : <span />}
                 <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={muts.saving}>
+                  <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={muts.saving}>
                     Cancelar
                   </Button>
                   <Button type="button" onClick={handleSubmit} disabled={muts.saving}>

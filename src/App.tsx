@@ -16,7 +16,15 @@ import { VocaliaProvider } from "@/context/VocaliaContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { SuperadminModeProvider } from "@/context/SuperadminModeContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
