@@ -340,8 +340,10 @@ export default function CausaFormDialog({
       }
     }
     toast.success("Cambios guardados");
+    clearDraft(draftKey);
     onMutated?.();
     onOpenChange(false);
+
   };
 
   const handleSubmit = async () => {
