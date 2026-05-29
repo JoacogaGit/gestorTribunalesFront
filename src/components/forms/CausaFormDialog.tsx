@@ -298,7 +298,7 @@ export default function CausaFormDialog({
       return;
     }
 
-    }
+
 
     // editar: causa + diferencias de sujetos
     if (!causaId) return;
