@@ -18,7 +18,15 @@ import { SuperadminModeProvider } from "@/context/SuperadminModeContext";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
