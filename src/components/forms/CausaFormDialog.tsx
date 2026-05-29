@@ -195,12 +195,22 @@ export default function CausaFormDialog({
             observaciones: s.observaciones ?? "",
             prescripciones: prescByID[s.id] ?? [],
           })));
+          // Si había un borrador local más reciente con cambios no guardados, restaurarlo encima.
+          const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
+          if (draft?.causa) {
+            setCausa(draft.causa);
+            if (draft.sujetos) setSujetos(draft.sujetos);
+          }
         }
         setLoading(false);
       })();
       return () => { cancelled = true; };
     }
-  }, [open, mode, causaId, initialSujetoSituacion]);
+  }, [open, mode, causaId, initialSujetoSituacion, draftKey]);
+
+  // Persistencia local con debounce mientras el modal está abierto y no está cargando.
+  useFormDraft(draftKey, { causa, sujetos }, open && !loading);
+
 
   const visibleSujetos = useMemo(() => sujetos.filter((s) => !s._markedForDelete), [sujetos]);
 
