@@ -127,6 +127,7 @@ export default function CausaFormDialog({
           .from("causas")
           .select("*, sujetos(*)")
           .eq("id", causaId)
+          .is("sujetos.borrado_en", null)
           .single();
         if (cancelled) return;
         if (error || !data) {
@@ -285,7 +286,12 @@ export default function CausaFormDialog({
     const toDelete = sujetos.filter((s) => s._markedForDelete && s.id);
     for (const s of toDelete) {
       const r = await muts.borrarSujeto(s.id!);
-      if (r.ok !== true) { setErrorMsg(`Error al borrar imputado: ${r.error}`); return; }
+      if (r.ok !== true) {
+        const msg = `Error al borrar imputado: ${r.error}`;
+        setErrorMsg(msg);
+        toast.error(msg);
+        return;
+      }
     }
     // Procesar visibles no vacíos (alineados con sujetosP)
     const sujetosToSync = visibleSujetos.filter((s) => !isSujetoEmpty(s));

@@ -22,6 +22,7 @@ export function useCausasDashboard(vocaliaId: string | null) {
       .eq("vocalia_id", vocaliaId)
       .in("estado_causa", ACTIVOS)
       .is("borrado_en", null)
+      .is("sujetos.borrado_en", null)
       .order("created_at", { ascending: false });
     if (error) {
       setError(error.message);
