@@ -591,7 +591,7 @@ export default function CausaFormDialog({
                   </Button>
                 ) : <span />}
                 <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={muts.saving}>
+                  <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={muts.saving}>
                     Cancelar
                   </Button>
                   <Button type="button" onClick={handleSubmit} disabled={muts.saving}>
