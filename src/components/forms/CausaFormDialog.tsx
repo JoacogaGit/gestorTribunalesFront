@@ -127,6 +127,7 @@ export default function CausaFormDialog({
           .from("causas")
           .select("*, sujetos(*)")
           .eq("id", causaId)
+          .is("sujetos.borrado_en", null)
           .single();
         if (cancelled) return;
         if (error || !data) {
