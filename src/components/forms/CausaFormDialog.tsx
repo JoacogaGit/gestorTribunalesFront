@@ -292,9 +292,12 @@ export default function CausaFormDialog({
         if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
       }
       toast.success("Causa creada");
+      clearDraft(draftKey);
       onMutated?.();
       onOpenChange(false);
       return;
+    }
+
     }
 
     // editar: causa + diferencias de sujetos
