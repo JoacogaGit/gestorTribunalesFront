@@ -16,8 +16,6 @@ import { VocaliaProvider } from "@/context/VocaliaContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { SuperadminModeProvider } from "@/context/SuperadminModeContext";
 
-const queryClient = new QueryClient();
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -27,6 +25,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
