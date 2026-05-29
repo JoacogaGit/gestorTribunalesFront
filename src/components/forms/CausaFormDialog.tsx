@@ -110,16 +110,25 @@ export default function CausaFormDialog({
   );
   const [openExtras, setOpenExtras] = useState(false);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
+  // Clave de borrador local (por modo + causa)
+  const draftKey = `causa-form:${mode}:${causaId ?? "new"}`;
 
   // Cargar datos en modo editar
   useEffect(() => {
     if (!open) return;
     if (mode === "crear") {
-      setCausa(emptyCausa());
-      setSujetos(initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []);
+      const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
+      if (draft?.causa) {
+        setCausa(draft.causa);
+        setSujetos(draft.sujetos ?? []);
+      } else {
+        setCausa(emptyCausa());
+        setSujetos(initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []);
+      }
       setErrorMsg(null);
       return;
     }
+
     if (mode === "editar" && causaId) {
       let cancelled = false;
       setLoading(true);
