@@ -361,13 +361,19 @@ export default function CausaFormDialog({
 
   const handleDeleteCausa = async () => {
     if (!causaId) return;
-    const r = await muts.borrarCausa(causaId);
-    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Causa eliminada");
+    clearDraft(draftKey);
     setConfirmDeleteCausa(false);
     onMutated?.();
     onOpenChange(false);
   };
+
+  const handleOpenChange = (o: boolean) => {
+    if (!o) clearDraft(draftKey);
+    onOpenChange(o);
+  };
+
+
 
   const confirmRemoveSujeto = (s: SujetoState) => {
     if (!s.id) {
