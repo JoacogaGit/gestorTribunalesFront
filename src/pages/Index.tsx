@@ -13,7 +13,7 @@ import { useMembresias } from "@/hooks/useMembresias";
 export default function Index() {
   const { user, loading: authLoading, logout } = useAuth();
   const { vocalia, setVocalia, clearVocalia } = useVocaliaActual();
-  const { count, loading: memLoading, refetch } = useMembresias();
+  const { count, isLoading: memLoading, refetch } = useMembresias();
   const navigate = useNavigate();
 
   // Si hay un token de invitación pendiente y el usuario ya está logueado, redirigir.
