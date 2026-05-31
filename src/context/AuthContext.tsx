@@ -37,13 +37,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // 1) Listener primero
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
+      const newUser = toAuthUser(sess?.user);
       setSession(sess);
-      setUser(toAuthUser(sess?.user));
+      setUser((prev) => {
+        // Mantener la MISMA referencia si el usuario no cambió (evita re-renders
+        // en cascada por TOKEN_REFRESHED al volver de otra pestaña).
+        if (prev?.id === newUser?.id && prev?.email === newUser?.email) {
+          return prev;
+        }
+        return newUser;
+      });
     });
     // 2) Luego getSession
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setUser(toAuthUser(data.session?.user));
+      const newUser = toAuthUser(data.session?.user);
+      setUser((prev) => {
+        if (prev?.id === newUser?.id && prev?.email === newUser?.email) return prev;
+        return newUser;
+      });
       setLoading(false);
     });
     return () => sub.subscription.unsubscribe();

@@ -13,7 +13,7 @@ import { useMembresias } from "@/hooks/useMembresias";
 export default function Index() {
   const { user, loading: authLoading, logout } = useAuth();
   const { vocalia, setVocalia, clearVocalia } = useVocaliaActual();
-  const { count, loading: memLoading, refetch } = useMembresias();
+  const { count, isLoading: memLoading, refetch } = useMembresias();
   const navigate = useNavigate();
 
   // Si hay un token de invitación pendiente y el usuario ya está logueado, redirigir.
@@ -36,7 +36,9 @@ export default function Index() {
   const showFloatingToggle = !vocalia;
   const handleLogout = () => { clearVocalia(); logout(); };
 
-  if (memLoading || count === null) {
+  // Loader global SÓLO en la primera carga. Un refetch en background no debe
+  // desmontar el workspace (perdería el estado de modales abiertos).
+  if (memLoading && count === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
