@@ -36,7 +36,9 @@ export default function Index() {
   const showFloatingToggle = !vocalia;
   const handleLogout = () => { clearVocalia(); logout(); };
 
-  if (memLoading || count === null) {
+  // Loader global SÓLO en la primera carga. Un refetch en background no debe
+  // desmontar el workspace (perdería el estado de modales abiertos).
+  if (memLoading && count === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
