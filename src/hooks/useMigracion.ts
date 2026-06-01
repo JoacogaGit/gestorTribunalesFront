@@ -157,15 +157,38 @@ export function useMigracion() {
   const cargarEnBD = useCallback(async (
     vocaliaId: string,
     causas: CausaIA[],
-  ): Promise<{ ok: true; inserted: { causas: number; sujetos: number; eventos: number } } | { ok: false; error: string }> => {
+  ): Promise<
+    | { ok: true; inserted: { causas: number; sujetos: number; eventos: number }; omitidas: { expediente_nro: string; caratula: string | null }[] }
+    | { ok: false; error: string }
+  > => {
     setLoading(true); setError(null);
     const insertedCausaIds: string[] = [];
     const insertedSujetoIds: string[] = [];
     const insertedEventoIds: string[] = [];
+    const omitidas: { expediente_nro: string; caratula: string | null }[] = [];
+    const norm = (s: string | null | undefined) => String(s ?? "").trim().toLowerCase();
+    const keyOf = (exp: string | null | undefined, car: string | null | undefined) => `${norm(exp)}||${norm(car)}`;
     try {
+      // Anti-duplicado: traer causas existentes (no borradas) de la vocalía.
+      const { data: existentes, error: existErr } = await supabase
+        .from("causas")
+        .select("expediente_nro, caratula")
+        .eq("vocalia_id", vocaliaId)
+        .is("borrado_en", null);
+      if (existErr) throw new Error(`No se pudo verificar duplicados: ${existErr.message}`);
+      const existingKeys = new Set<string>();
+      (existentes ?? []).forEach((r) => existingKeys.add(keyOf(r.expediente_nro, r.caratula)));
+
       let sujetosCount = 0;
       let eventosCount = 0;
       for (const c of causas) {
+        const k = keyOf(c.expediente_nro, c.caratula);
+        if (existingKeys.has(k)) {
+          omitidas.push({ expediente_nro: c.expediente_nro, caratula: c.caratula });
+          continue;
+        }
+        existingKeys.add(k);
+
         const causaPayload = {
           vocalia_id: vocaliaId,
           expediente_nro: c.expediente_nro,
@@ -195,7 +218,6 @@ export function useMigracion() {
           if (sjErr) throw new Error(`Sujetos de ${c.expediente_nro}: ${sjErr.message}`);
           (sjRows ?? []).forEach((r) => insertedSujetoIds.push(r.id));
           sujetosCount += c.sujetos.length;
-          // Insertar prescripciones de cada sujeto.
           const prescPayload: { sujeto_id: string; fecha: string; descripcion: string | null }[] = [];
           (sjRows ?? []).forEach((r, idx) => {
             const sj = c.sujetos[idx];
@@ -218,7 +240,7 @@ export function useMigracion() {
           eventosCount += c.eventos.length;
         }
       }
-      return { ok: true, inserted: { causas: insertedCausaIds.length, sujetos: sujetosCount, eventos: eventosCount } };
+      return { ok: true, inserted: { causas: insertedCausaIds.length, sujetos: sujetosCount, eventos: eventosCount }, omitidas };
     } catch (e) {
       if (insertedEventoIds.length) await supabase.from("eventos").delete().in("id", insertedEventoIds);
       if (insertedSujetoIds.length) await supabase.from("sujetos").delete().in("id", insertedSujetoIds);
@@ -228,6 +250,7 @@ export function useMigracion() {
       return { ok: false, error: msg };
     } finally { setLoading(false); }
   }, []);
+
 
   return { loading, error, procesar, procesarUnLote, cargarEnBD };
 }
