@@ -830,10 +830,11 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   // PASO 1 — Subida
   return (
-    <div className="px-4 py-6">
+    <div className="min-h-[calc(100vh-12rem)] flex flex-col justify-center px-4 py-6">
       <div className="w-full max-w-2xl mx-auto">
         {/* Encabezado */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
+
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
             <Sparkles className="w-7 h-7 text-accent" />
           </div>
