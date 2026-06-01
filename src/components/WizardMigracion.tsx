@@ -81,9 +81,34 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   const [lotes, setLotes] = useState<LoteTrabajo[]>([]);
   const [procesando, setProcesando] = useState(false);
   const [resultadosOk, setResultadosOk] = useState<{ pestana: string; resultado: ResultadoIADirecto }[]>([]);
+  const [omitidas, setOmitidas] = useState<{ expediente_nro: string; caratula: string | null }[]>([]);
+  // Confirmación previa al inicio (aviso obligatorio).
+  const [confirmacionPendiente, setConfirmacionPendiente] = useState<{ archivo: ArchivoParseado; lotes: LoteTrabajo[] } | null>(null);
+  const [confirmacionOk, setConfirmacionOk] = useState(false);
   // Resume desde localStorage
   const [pendingResume, setPendingResume] = useState<{ filename: string; timestamp: number; resultadosOk: { pestana: string; resultado: ResultadoIADirecto }[] } | null>(null);
   const cancelarRef = useRef(false);
+
+  // Detección de pestaña en background mientras procesa (solo log).
+  useEffect(() => {
+    if (!procesando) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onVis = () => {
+      if (document.hidden) {
+        timer = setTimeout(() => {
+          console.warn("[migración] La pestaña lleva >30s en background mientras la migración está en curso. Esto puede ralentizar el procesamiento.");
+        }, 30000);
+      } else if (timer) {
+        clearTimeout(timer); timer = null;
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      if (timer) clearTimeout(timer);
+    };
+  }, [procesando]);
+
 
   // Cargar estado pendiente de localStorage al montar
   useEffect(() => {
