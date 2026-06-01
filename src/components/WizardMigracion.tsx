@@ -410,8 +410,52 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   };
 
 
+  // PASO 1.45 — Aviso obligatorio antes de comenzar
+  if (confirmacionPendiente && !procesando) {
+    const totalLotes = confirmacionPendiente.lotes.length;
+    const totalFilas = confirmacionPendiente.lotes.reduce((a, l) => a + l.filas, 0);
+    const minutos = Math.max(1, Math.round((totalLotes * 30) / 60));
+    return (
+      <div className="min-h-[calc(100vh-12rem)] flex flex-col justify-center px-4 py-6">
+        <div className="w-full max-w-2xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 mb-4">
+              <AlertTriangle className="w-7 h-7 text-amber-500" />
+            </div>
+            <h2 className="font-display text-2xl font-bold mb-2">Antes de empezar la migración</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Vamos a procesar <strong>{totalLotes}</strong> lote{totalLotes === 1 ? "" : "s"} ({totalFilas} filas). Tardará aproximadamente <strong>{minutos} minuto{minutos === 1 ? "" : "s"}</strong>.
+            </p>
+          </div>
+          <Card className="p-5 space-y-3">
+            <p className="text-sm font-semibold">Tené en cuenta:</p>
+            <ul className="space-y-2.5 text-sm text-foreground/90">
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span><strong>No cierres esta pestaña</strong> hasta que termine. Si la cerrás, vas a poder retomar pero perderás tiempo.</span></li>
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Podés <strong>seguir usando la app en otras pestañas</strong>. La migración corre en esta.</span></li>
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Si <strong>cambiás de pestaña por mucho tiempo</strong>, el navegador puede ralentizar el proceso.</span></li>
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Las causas <strong>ya existentes en {vocaliaNombre} serán omitidas</strong> automáticamente para evitar duplicados.</span></li>
+            </ul>
+            <label className="flex items-start gap-2.5 pt-2 cursor-pointer">
+              <Checkbox checked={confirmacionOk} onCheckedChange={(v) => setConfirmacionOk(!!v)} className="mt-0.5" />
+              <span className="text-sm">Entendido. Voy a dejar esta pestaña abierta hasta que termine.</span>
+            </label>
+          </Card>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={handleDescartar}>
+              <Trash2 className="w-4 h-4 mr-1.5" /> Cancelar
+            </Button>
+            <Button onClick={handleConfirmarComienzo} disabled={!confirmacionOk}>
+              Comenzar migración <ArrowRight className="w-4 h-4 ml-1.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // PASO 1.5 — Progreso por lote
   if (procesando || (lotes.length > 0 && !resultado && !mapeo)) {
+
     return (
       <ProgresoLotes
         lotes={lotes}
