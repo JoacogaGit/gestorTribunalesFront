@@ -285,26 +285,18 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {migracionStatus?.activa && view !== "migrar" && (
+            {migracionStatus?.activa && view !== "migrar" && !migracionStatus.procesando && (
               <button
                 type="button"
                 onClick={() => setView("migrar")}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
-                title="Ir a la migración en curso"
+                title="Ir a la migración"
               >
-                {migracionStatus.procesando ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Migración en curso… {migracionStatus.lotesOk}/{migracionStatus.totalLotes}
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-3 h-3" />
-                    Migración lista
-                  </>
-                )}
+                <CheckCircle2 className="w-3 h-3" />
+                {migracionStatus.hasExito ? "Migración lista" : "Migración pendiente"}
               </button>
             )}
+
             {(() => {
               const map: Record<string, { refetch: () => void; loading: boolean } | undefined> = {
                 dashboard: { refetch: () => { dashboardKpis.refetch(); dashCausasRemote.refetch(); }, loading: dashboardKpis.loading || dashCausasRemote.loading },
