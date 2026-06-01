@@ -391,8 +391,13 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       }
     } catch { /* noop: la carga principal ya fue exitosa */ }
     setExito(r.inserted);
+    setOmitidas(r.omitidas || []);
     limpiarLS();
-    toast.success("Migración completada");
+    if ((r.omitidas?.length || 0) > 0) {
+      toast.success(`Migración completada. Se omitieron ${r.omitidas.length} causa(s) duplicada(s).`);
+    } else {
+      toast.success("Migración completada");
+    }
   };
 
   const handleDescartar = () => {
@@ -400,8 +405,10 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setMapeo(null); setSeleccionMapeo({}); setArchivoCache(null);
     setPestanasDetectadas([]); setSeleccionPestanas({}); setLotes([]);
     setResultadosOk([]); setProcesando(false);
+    setConfirmacionPendiente(null); setConfirmacionOk(false); setOmitidas([]);
     limpiarLS();
   };
+
 
   // PASO 1.5 — Progreso por lote
   if (procesando || (lotes.length > 0 && !resultado && !mapeo)) {
