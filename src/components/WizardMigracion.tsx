@@ -254,13 +254,24 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setIncluir(inc);
   };
 
-  const handleProcesarSeleccion = async () => {
+  const handleProcesarSeleccion = () => {
     if (!archivoCache) return;
     const nombres = pestanasDetectadas.filter((p) => seleccionPestanas[p.nombre]).map((p) => p.nombre);
     if (nombres.length === 0) { toast.error("Elegí al menos una pestaña."); return; }
     const ini = construirLotes(archivoCache, nombres);
-    await ejecutarLotes(archivoCache, ini);
+    setConfirmacionOk(false);
+    setConfirmacionPendiente({ archivo: archivoCache, lotes: ini });
   };
+
+  const handleConfirmarComienzo = async () => {
+    if (!confirmacionPendiente) return;
+    const { archivo, lotes: ini } = confirmacionPendiente;
+    setConfirmacionPendiente(null);
+    setConfirmacionOk(false);
+    await ejecutarLotes(archivo, ini);
+  };
+
+
 
   const handleReintentarFallidos = async () => {
     if (!archivoCache) return;
