@@ -31,6 +31,8 @@ import MiembrosTribunal from "@/components/MiembrosTribunal";
 import Papelera from "@/components/Papelera";
 import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
+import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
+
 import ZoomControl from "@/components/ZoomControl";
 
 interface RemoteListSectionProps {
