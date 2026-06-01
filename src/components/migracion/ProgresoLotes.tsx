@@ -143,10 +143,11 @@ export default function ProgresoLotes({
         </Card>
 
         {!terminado && (
-          <p className="text-[11px] text-center text-muted-foreground mb-3">
-            Tu progreso se guarda automáticamente. Si cerrás esta pestaña, vas a poder retomarlo.
+          <p className="text-xs text-center font-semibold text-alert-urgent mb-3">
+            ⚠ NO cierres esta pestaña hasta que termine. Tu progreso se guarda, pero perderás tiempo.
           </p>
         )}
+
 
         {/* Cards por pestaña */}
         <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 -mr-1">

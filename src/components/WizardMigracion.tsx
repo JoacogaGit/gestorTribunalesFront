@@ -50,9 +50,11 @@ export interface MigracionStatus {
   totalLotes: number;
   lotesOk: number;
   lotesError: number;
+  loteActual: number; // 1-indexed; 0 si no hay
   hasResultado: boolean;
   hasExito: boolean;
 }
+
 
 interface Props {
   vocaliaId: string | null;
@@ -79,9 +81,34 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   const [lotes, setLotes] = useState<LoteTrabajo[]>([]);
   const [procesando, setProcesando] = useState(false);
   const [resultadosOk, setResultadosOk] = useState<{ pestana: string; resultado: ResultadoIADirecto }[]>([]);
+  const [omitidas, setOmitidas] = useState<{ expediente_nro: string; caratula: string | null }[]>([]);
+  // Confirmación previa al inicio (aviso obligatorio).
+  const [confirmacionPendiente, setConfirmacionPendiente] = useState<{ archivo: ArchivoParseado; lotes: LoteTrabajo[] } | null>(null);
+  const [confirmacionOk, setConfirmacionOk] = useState(false);
   // Resume desde localStorage
   const [pendingResume, setPendingResume] = useState<{ filename: string; timestamp: number; resultadosOk: { pestana: string; resultado: ResultadoIADirecto }[] } | null>(null);
   const cancelarRef = useRef(false);
+
+  // Detección de pestaña en background mientras procesa (solo log).
+  useEffect(() => {
+    if (!procesando) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onVis = () => {
+      if (document.hidden) {
+        timer = setTimeout(() => {
+          console.warn("[migración] La pestaña lleva >30s en background mientras la migración está en curso. Esto puede ralentizar el procesamiento.");
+        }, 30000);
+      } else if (timer) {
+        clearTimeout(timer); timer = null;
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      if (timer) clearTimeout(timer);
+    };
+  }, [procesando]);
+
 
   // Cargar estado pendiente de localStorage al montar
   useEffect(() => {
@@ -99,6 +126,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     if (!onStatusChange) return;
     const lotesOk = lotes.filter((l) => l.estado === "ok").length;
     const lotesError = lotes.filter((l) => l.estado === "error").length;
+    const idxProc = lotes.findIndex((l) => l.estado === "procesando");
+    const loteActual = idxProc >= 0 ? idxProc + 1 : (procesando ? Math.min(lotesOk + lotesError + 1, lotes.length) : 0);
     const activa = procesando || lotes.length > 0 || !!resultado || !!exito;
     onStatusChange({
       activa,
@@ -106,9 +135,11 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       totalLotes: lotes.length,
       lotesOk,
       lotesError,
+      loteActual,
       hasResultado: !!resultado,
       hasExito: !!exito,
     });
+
   }, [procesando, lotes, resultado, exito, onStatusChange]);
 
   if (!vocaliaId) {
@@ -146,8 +177,10 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       setSeleccionPestanas(sel);
       if (detectadas.length === 1) {
         const lotesIniciales = construirLotes(parsed, [detectadas[0].nombre]);
-        await ejecutarLotes(parsed, lotesIniciales);
+        setConfirmacionOk(false);
+        setConfirmacionPendiente({ archivo: parsed, lotes: lotesIniciales });
       }
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo leer el archivo");
     }
@@ -221,13 +254,24 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setIncluir(inc);
   };
 
-  const handleProcesarSeleccion = async () => {
+  const handleProcesarSeleccion = () => {
     if (!archivoCache) return;
     const nombres = pestanasDetectadas.filter((p) => seleccionPestanas[p.nombre]).map((p) => p.nombre);
     if (nombres.length === 0) { toast.error("Elegí al menos una pestaña."); return; }
     const ini = construirLotes(archivoCache, nombres);
-    await ejecutarLotes(archivoCache, ini);
+    setConfirmacionOk(false);
+    setConfirmacionPendiente({ archivo: archivoCache, lotes: ini });
   };
+
+  const handleConfirmarComienzo = async () => {
+    if (!confirmacionPendiente) return;
+    const { archivo, lotes: ini } = confirmacionPendiente;
+    setConfirmacionPendiente(null);
+    setConfirmacionOk(false);
+    await ejecutarLotes(archivo, ini);
+  };
+
+
 
   const handleReintentarFallidos = async () => {
     if (!archivoCache) return;
@@ -347,8 +391,13 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       }
     } catch { /* noop: la carga principal ya fue exitosa */ }
     setExito(r.inserted);
+    setOmitidas(r.omitidas || []);
     limpiarLS();
-    toast.success("Migración completada");
+    if ((r.omitidas?.length || 0) > 0) {
+      toast.success(`Migración completada. Se omitieron ${r.omitidas.length} causa(s) duplicada(s).`);
+    } else {
+      toast.success("Migración completada");
+    }
   };
 
   const handleDescartar = () => {
@@ -356,11 +405,57 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setMapeo(null); setSeleccionMapeo({}); setArchivoCache(null);
     setPestanasDetectadas([]); setSeleccionPestanas({}); setLotes([]);
     setResultadosOk([]); setProcesando(false);
+    setConfirmacionPendiente(null); setConfirmacionOk(false); setOmitidas([]);
     limpiarLS();
   };
 
+
+  // PASO 1.45 — Aviso obligatorio antes de comenzar
+  if (confirmacionPendiente && !procesando) {
+    const totalLotes = confirmacionPendiente.lotes.length;
+    const totalFilas = confirmacionPendiente.lotes.reduce((a, l) => a + l.filas, 0);
+    const minutos = Math.max(1, Math.round((totalLotes * 30) / 60));
+    return (
+      <div className="min-h-[calc(100vh-12rem)] flex flex-col justify-center px-4 py-6">
+        <div className="w-full max-w-2xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 mb-4">
+              <AlertTriangle className="w-7 h-7 text-amber-500" />
+            </div>
+            <h2 className="font-display text-2xl font-bold mb-2">Antes de empezar la migración</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Vamos a procesar <strong>{totalLotes}</strong> lote{totalLotes === 1 ? "" : "s"} ({totalFilas} filas). Tardará aproximadamente <strong>{minutos} minuto{minutos === 1 ? "" : "s"}</strong>.
+            </p>
+          </div>
+          <Card className="p-5 space-y-3">
+            <p className="text-sm font-semibold">Tené en cuenta:</p>
+            <ul className="space-y-2.5 text-sm text-foreground/90">
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span><strong>No cierres esta pestaña</strong> hasta que termine. Si la cerrás, vas a poder retomar pero perderás tiempo.</span></li>
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Podés <strong>seguir usando la app en otras pestañas</strong>. La migración corre en esta.</span></li>
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Si <strong>cambiás de pestaña por mucho tiempo</strong>, el navegador puede ralentizar el proceso.</span></li>
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Las causas <strong>ya existentes en {vocaliaNombre} serán omitidas</strong> automáticamente para evitar duplicados.</span></li>
+            </ul>
+            <label className="flex items-start gap-2.5 pt-2 cursor-pointer">
+              <Checkbox checked={confirmacionOk} onCheckedChange={(v) => setConfirmacionOk(!!v)} className="mt-0.5" />
+              <span className="text-sm">Entendido. Voy a dejar esta pestaña abierta hasta que termine.</span>
+            </label>
+          </Card>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={handleDescartar}>
+              <Trash2 className="w-4 h-4 mr-1.5" /> Cancelar
+            </Button>
+            <Button onClick={handleConfirmarComienzo} disabled={!confirmacionOk}>
+              Comenzar migración <ArrowRight className="w-4 h-4 ml-1.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // PASO 1.5 — Progreso por lote
   if (procesando || (lotes.length > 0 && !resultado && !mapeo)) {
+
     return (
       <ProgresoLotes
         lotes={lotes}
@@ -516,12 +611,35 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           </div>
           <h2 className="text-2xl font-display font-bold mb-2">¡Migración completada!</h2>
           <p className="text-muted-foreground mb-6">
-            Se cargaron <strong>{exito.causas} causas</strong>, <strong>{exito.sujetos} sujetos</strong> y <strong>{exito.eventos} eventos</strong> en {vocaliaNombre}.
+            Se cargaron <strong>{exito.causas} causas nuevas</strong>, <strong>{exito.sujetos} sujetos</strong> y <strong>{exito.eventos} eventos</strong> en {vocaliaNombre}.
+            {omitidas.length > 0 && (
+              <> {" "}<span className="text-amber-600 dark:text-amber-400">Se omitieron <strong>{omitidas.length}</strong> causa{omitidas.length === 1 ? "" : "s"} duplicada{omitidas.length === 1 ? "" : "s"}.</span></>
+            )}
           </p>
           <Button onClick={() => { setExito(null); handleDescartar(); onDone?.(); }}>
             Ir al panel <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </Card>
+        {omitidas.length > 0 && (
+          <Collapsible>
+            <Card className="mt-4 p-4 border-amber-500/40 bg-amber-500/5">
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold w-full text-left">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                Causas omitidas por duplicado ({omitidas.length})
+                <span className="ml-auto text-xs text-muted-foreground">Ver detalle</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3 space-y-1.5 max-h-64 overflow-y-auto">
+                {omitidas.map((o, i) => (
+                  <div key={i} className="text-xs p-2 rounded bg-background/60 border border-border/40">
+                    <span className="font-mono font-semibold">{o.expediente_nro || "(sin nº)"}</span>
+                    {o.caratula && <span className="text-muted-foreground"> · {o.caratula}</span>}
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
+
         {totalRojas > 0 && (
           <div className="mt-5 rounded-lg border-2 border-orange-500 bg-orange-500/15 p-5 shadow-lg">
             <div className="flex items-start gap-3">
@@ -712,10 +830,11 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   // PASO 1 — Subida
   return (
-    <div className="px-4 py-6">
+    <div className="min-h-[calc(100vh-12rem)] flex flex-col justify-center px-4 py-6">
       <div className="w-full max-w-2xl mx-auto">
         {/* Encabezado */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
+
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
             <Sparkles className="w-7 h-7 text-accent" />
           </div>
