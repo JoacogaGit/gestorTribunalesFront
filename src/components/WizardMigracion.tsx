@@ -50,9 +50,11 @@ export interface MigracionStatus {
   totalLotes: number;
   lotesOk: number;
   lotesError: number;
+  loteActual: number; // 1-indexed; 0 si no hay
   hasResultado: boolean;
   hasExito: boolean;
 }
+
 
 interface Props {
   vocaliaId: string | null;
