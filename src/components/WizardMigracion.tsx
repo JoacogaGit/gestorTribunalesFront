@@ -101,6 +101,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     if (!onStatusChange) return;
     const lotesOk = lotes.filter((l) => l.estado === "ok").length;
     const lotesError = lotes.filter((l) => l.estado === "error").length;
+    const idxProc = lotes.findIndex((l) => l.estado === "procesando");
+    const loteActual = idxProc >= 0 ? idxProc + 1 : (procesando ? Math.min(lotesOk + lotesError + 1, lotes.length) : 0);
     const activa = procesando || lotes.length > 0 || !!resultado || !!exito;
     onStatusChange({
       activa,
@@ -108,9 +110,11 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       totalLotes: lotes.length,
       lotesOk,
       lotesError,
+      loteActual,
       hasResultado: !!resultado,
       hasExito: !!exito,
     });
+
   }, [procesando, lotes, resultado, exito, onStatusChange]);
 
   if (!vocaliaId) {
