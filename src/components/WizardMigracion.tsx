@@ -611,12 +611,35 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           </div>
           <h2 className="text-2xl font-display font-bold mb-2">¡Migración completada!</h2>
           <p className="text-muted-foreground mb-6">
-            Se cargaron <strong>{exito.causas} causas</strong>, <strong>{exito.sujetos} sujetos</strong> y <strong>{exito.eventos} eventos</strong> en {vocaliaNombre}.
+            Se cargaron <strong>{exito.causas} causas nuevas</strong>, <strong>{exito.sujetos} sujetos</strong> y <strong>{exito.eventos} eventos</strong> en {vocaliaNombre}.
+            {omitidas.length > 0 && (
+              <> {" "}<span className="text-amber-600 dark:text-amber-400">Se omitieron <strong>{omitidas.length}</strong> causa{omitidas.length === 1 ? "" : "s"} duplicada{omitidas.length === 1 ? "" : "s"}.</span></>
+            )}
           </p>
           <Button onClick={() => { setExito(null); handleDescartar(); onDone?.(); }}>
             Ir al panel <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </Card>
+        {omitidas.length > 0 && (
+          <Collapsible>
+            <Card className="mt-4 p-4 border-amber-500/40 bg-amber-500/5">
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold w-full text-left">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                Causas omitidas por duplicado ({omitidas.length})
+                <span className="ml-auto text-xs text-muted-foreground">Ver detalle</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3 space-y-1.5 max-h-64 overflow-y-auto">
+                {omitidas.map((o, i) => (
+                  <div key={i} className="text-xs p-2 rounded bg-background/60 border border-border/40">
+                    <span className="font-mono font-semibold">{o.expediente_nro || "(sin nº)"}</span>
+                    {o.caratula && <span className="text-muted-foreground"> · {o.caratula}</span>}
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
+
         {totalRojas > 0 && (
           <div className="mt-5 rounded-lg border-2 border-orange-500 bg-orange-500/15 p-5 shadow-lg">
             <div className="flex items-start gap-3">
