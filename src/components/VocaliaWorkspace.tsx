@@ -14,7 +14,7 @@ import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Scale, RefreshCw, Loader2, CheckCircle2 } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, CheckCircle2 } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
