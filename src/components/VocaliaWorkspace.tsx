@@ -328,7 +328,16 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </div>
         </div>
 
+        {migracionStatus && view !== "migrar" && (
+          <MigracionFloatingBanner
+            status={migracionStatus}
+            vocaliaNombre={vocaliaNombre}
+            onVerMigracion={() => setView("migrar")}
+          />
+        )}
+
         <AnimatePresence mode="wait">
+
           <motion.div
             key={view}
             initial={{ opacity: 0, y: 8 }}
