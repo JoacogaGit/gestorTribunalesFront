@@ -177,8 +177,10 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       setSeleccionPestanas(sel);
       if (detectadas.length === 1) {
         const lotesIniciales = construirLotes(parsed, [detectadas[0].nombre]);
-        await ejecutarLotes(parsed, lotesIniciales);
+        setConfirmacionOk(false);
+        setConfirmacionPendiente({ archivo: parsed, lotes: lotesIniciales });
       }
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo leer el archivo");
     }
