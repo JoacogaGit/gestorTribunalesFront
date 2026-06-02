@@ -457,17 +457,27 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   if (procesando || (lotes.length > 0 && !resultado && !mapeo)) {
 
     return (
-      <ProgresoLotes
-        lotes={lotes}
-        procesando={procesando}
-        filename={filename}
-        completos={lotes.filter((l) => l.estado === "ok").length}
-        fallidos={lotes.filter((l) => l.estado === "error").length}
-        onDescartar={handleDescartar}
-        onReintentar={handleReintentarFallidos}
-        onContinuar={handleContinuarConOk}
-        labelError={labelError}
-      />
+      <>
+        {error && (
+          <div className="max-w-2xl mx-auto px-4 pt-4">
+            <Alert variant="destructive">
+              <AlertTitle>Algo falló</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+        <ProgresoLotes
+          lotes={lotes}
+          procesando={procesando}
+          filename={filename}
+          completos={lotes.filter((l) => l.estado === "ok").length}
+          fallidos={lotes.filter((l) => l.estado === "error").length}
+          onDescartar={handleDescartar}
+          onReintentar={handleReintentarFallidos}
+          onContinuar={handleContinuarConOk}
+          labelError={labelError}
+        />
+      </>
     );
   }
 
