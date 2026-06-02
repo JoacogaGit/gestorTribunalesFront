@@ -15,6 +15,7 @@ import SuperadminTribunalDetail from "./pages/SuperadminTribunalDetail";
 import { VocaliaProvider } from "@/context/VocaliaContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { SuperadminModeProvider } from "@/context/SuperadminModeContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
