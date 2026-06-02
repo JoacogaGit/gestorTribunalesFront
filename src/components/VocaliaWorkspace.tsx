@@ -32,6 +32,7 @@ import Papelera from "@/components/Papelera";
 import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 import ZoomControl from "@/components/ZoomControl";
 
