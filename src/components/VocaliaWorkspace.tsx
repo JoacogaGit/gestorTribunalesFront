@@ -583,12 +583,18 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             aria-hidden={view !== "migrar"}
           >
             {view === "migrar" && <PendientesRevision vocaliaId={vocaliaId} />}
-            <WizardMigracion
-              vocaliaId={vocaliaId}
-              vocaliaNombre={vocaliaNombre}
-              onDone={() => setView("dashboard")}
-              onStatusChange={setMigracionStatus}
-            />
+            <ErrorBoundary
+              scope="local"
+              title="Error en la migración"
+              message="Hubo un problema en el asistente de migración. Tus lotes procesados están guardados — podés reintentar sin perderlos."
+            >
+              <WizardMigracion
+                vocaliaId={vocaliaId}
+                vocaliaNombre={vocaliaNombre}
+                onDone={() => setView("dashboard")}
+                onStatusChange={setMigracionStatus}
+              />
+            </ErrorBoundary>
           </div>
         )}
       </main>
