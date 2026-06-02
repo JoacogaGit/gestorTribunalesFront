@@ -457,17 +457,27 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   if (procesando || (lotes.length > 0 && !resultado && !mapeo)) {
 
     return (
-      <ProgresoLotes
-        lotes={lotes}
-        procesando={procesando}
-        filename={filename}
-        completos={lotes.filter((l) => l.estado === "ok").length}
-        fallidos={lotes.filter((l) => l.estado === "error").length}
-        onDescartar={handleDescartar}
-        onReintentar={handleReintentarFallidos}
-        onContinuar={handleContinuarConOk}
-        labelError={labelError}
-      />
+      <>
+        {error && (
+          <div className="max-w-2xl mx-auto px-4 pt-4">
+            <Alert variant="destructive">
+              <AlertTitle>Algo falló</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+        <ProgresoLotes
+          lotes={lotes}
+          procesando={procesando}
+          filename={filename}
+          completos={lotes.filter((l) => l.estado === "ok").length}
+          fallidos={lotes.filter((l) => l.estado === "error").length}
+          onDescartar={handleDescartar}
+          onReintentar={handleReintentarFallidos}
+          onContinuar={handleContinuarConOk}
+          labelError={labelError}
+        />
+      </>
     );
   }
 
@@ -680,6 +690,12 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return (
       <div className="flex flex-col h-[calc(100vh-8rem)] max-w-5xl mx-auto">
        <div className="flex-1 overflow-y-auto pr-1 pb-4">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTitle>Algo falló</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         <p className="text-sm text-muted-foreground mb-4">
           Revisá y editá los datos detectados. Solo se cargarán las causas marcadas.
         </p>

@@ -114,7 +114,18 @@ export function useMigracion() {
         setError(msg);
         return null;
       }
-      return data.resultado as ResultadoIA;
+      const res = data.resultado as ResultadoIA;
+      if (res?.modo === "procesamiento_directo") {
+        res.causas = (res.causas ?? []).map((c) => ({
+          ...c,
+          sujetos: (c.sujetos ?? []).map((s) => ({ ...s, prescripciones: s.prescripciones ?? [] })),
+          eventos: c.eventos ?? [],
+          origen_pestanas: c.origen_pestanas ?? [],
+        }));
+        res.filas_rojas = res.filas_rojas ?? [];
+        res.pestanas_procesadas = res.pestanas_procesadas ?? [];
+      }
+      return res;
     } finally { setLoading(false); }
   }, []);
 
@@ -147,6 +158,18 @@ export function useMigracion() {
       if (r.modo !== "procesamiento_directo") {
         return { ok: false, errorCode: "mapeo_requerido", errorMsg: "La pestaña requiere mapeo asistido." };
       }
+      // Normalización defensiva: la IA puede omitir arrays vacíos.
+      r.causas = (r.causas ?? []).map((c) => ({
+        ...c,
+        sujetos: (c.sujetos ?? []).map((s) => ({
+          ...s,
+          prescripciones: s.prescripciones ?? [],
+        })),
+        eventos: c.eventos ?? [],
+        origen_pestanas: c.origen_pestanas ?? [],
+      }));
+      r.filas_rojas = r.filas_rojas ?? [];
+      r.pestanas_procesadas = r.pestanas_procesadas ?? [];
       return { ok: true, resultado: r };
     } catch (e) {
       const code = detectarErrorCodigo(e);

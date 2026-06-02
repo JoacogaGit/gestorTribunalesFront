@@ -16,14 +16,24 @@ export function dividirPestanaEnLotes(pestana: PestanaParseada, tamanoLote = TAM
   }
 
   const filas = pestana.contenido.filter((r) => r.some((c) => String(c ?? "").trim() !== ""));
-  if (filas.length <= tamanoLote) {
-    return [{ pestana: { ...pestana, contenido: filas }, nro_lote: 1, total_lotes: 1, filas: filas.length }];
+  // Contrato unificado: `contenido` SIEMPRE incluye encabezado como primera fila,
+  // `filas` SIEMPRE cuenta sólo filas de datos (excluyendo encabezado).
+  if (filas.length === 0) {
+    return [{ pestana: { ...pestana, contenido: [] }, nro_lote: 1, total_lotes: 1, filas: 0 }];
   }
-
   const encabezado = filas[0];
   const datos = filas.slice(1);
-  const totalLotes = Math.ceil(datos.length / tamanoLote);
 
+  if (datos.length <= tamanoLote) {
+    return [{
+      pestana: { ...pestana, contenido: [encabezado, ...datos] },
+      nro_lote: 1,
+      total_lotes: 1,
+      filas: datos.length,
+    }];
+  }
+
+  const totalLotes = Math.ceil(datos.length / tamanoLote);
   return Array.from({ length: totalLotes }, (_, idx) => {
     const chunk = datos.slice(idx * tamanoLote, (idx + 1) * tamanoLote);
     return {

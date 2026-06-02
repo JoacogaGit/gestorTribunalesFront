@@ -32,6 +32,7 @@ import Papelera from "@/components/Papelera";
 import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 import ZoomControl from "@/components/ZoomControl";
 
@@ -583,12 +584,18 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             aria-hidden={view !== "migrar"}
           >
             {view === "migrar" && <PendientesRevision vocaliaId={vocaliaId} />}
-            <WizardMigracion
-              vocaliaId={vocaliaId}
-              vocaliaNombre={vocaliaNombre}
-              onDone={() => setView("dashboard")}
-              onStatusChange={setMigracionStatus}
-            />
+            <ErrorBoundary
+              scope="local"
+              title="Error en la migración"
+              message="Hubo un problema en el asistente de migración. Tus lotes procesados están guardados — podés reintentar sin perderlos."
+            >
+              <WizardMigracion
+                vocaliaId={vocaliaId}
+                vocaliaNombre={vocaliaNombre}
+                onDone={() => setView("dashboard")}
+                onStatusChange={setMigracionStatus}
+              />
+            </ErrorBoundary>
           </div>
         )}
       </main>
