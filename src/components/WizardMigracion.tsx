@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { parseMigracionFile, ArchivoParseado, PestanaParseada } from "@/lib/parseMigracionFile";
 import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
 import { deduplicarCausas } from "@/lib/deduplicarCausas";
+import { normalizarCausa } from "@/lib/normalizarCausa";
 import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
 import ProgresoLotes from "@/components/migracion/ProgresoLotes";
 
@@ -313,8 +314,17 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   const handleRetomar = () => {
     if (!pendingResume) return;
-    setResultadosOk(pendingResume.resultadosOk);
-    finalizarConResultados(pendingResume.resultadosOk);
+    // Re-normalizar causas rehidratadas desde localStorage: versiones anteriores
+    // podían haber guardado campos escalares como objetos, lo que rompía el render.
+    const normalizados = pendingResume.resultadosOk.map((ok) => ({
+      ...ok,
+      resultado: {
+        ...ok.resultado,
+        causas: (ok.resultado.causas ?? []).map((c) => normalizarCausa(c)),
+      },
+    }));
+    setResultadosOk(normalizados);
+    finalizarConResultados(normalizados);
     setFilename(pendingResume.filename);
     setPendingResume(null);
   };

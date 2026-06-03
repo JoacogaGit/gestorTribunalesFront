@@ -32,6 +32,23 @@ function pickScalar<T>(a: T, b: T, aCount: number, bCount: number): T {
   return bCount > aCount ? b : a;
 }
 
+function mergePrescripciones(
+  a: SujetoIA["prescripciones"],
+  b: SujetoIA["prescripciones"],
+): SujetoIA["prescripciones"] {
+  const out: NonNullable<SujetoIA["prescripciones"]> = [];
+  const seen = new Set<string>();
+  const add = (p: { fecha: string; descripcion: string | null }) => {
+    const key = `${(p.fecha ?? "").trim()}||${(p.descripcion ?? "").trim().toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(p);
+  };
+  (a ?? []).forEach(add);
+  (b ?? []).forEach(add);
+  return out;
+}
+
 function mergeSujetos(a: SujetoIA, b: SujetoIA): SujetoIA {
   const ac = countFilled(a as unknown as Record<string, unknown>);
   const bc = countFilled(b as unknown as Record<string, unknown>);
@@ -44,6 +61,7 @@ function mergeSujetos(a: SujetoIA, b: SujetoIA): SujetoIA {
     lugar_alojamiento: pickScalar(a.lugar_alojamiento, b.lugar_alojamiento, ac, bc),
     fecha_detencion: pickScalar(a.fecha_detencion, b.fecha_detencion, ac, bc),
     prescripcion_fecha: pickScalar(a.prescripcion_fecha, b.prescripcion_fecha, ac, bc),
+    prescripciones: mergePrescripciones(a.prescripciones, b.prescripciones),
     vencimiento_pp: pickScalar(a.vencimiento_pp, b.vencimiento_pp, ac, bc),
     vencimiento_pena: pickScalar(a.vencimiento_pena, b.vencimiento_pena, ac, bc),
     vencimiento_sjp: pickScalar(a.vencimiento_sjp, b.vencimiento_sjp, ac, bc),
