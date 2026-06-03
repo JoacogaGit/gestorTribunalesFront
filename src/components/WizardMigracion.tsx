@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { parseMigracionFile, ArchivoParseado, PestanaParseada } from "@/lib/parseMigracionFile";
 import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
 import { deduplicarCausas } from "@/lib/deduplicarCausas";
+import { normalizarCausa } from "@/lib/normalizarCausa";
 import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
 import ProgresoLotes from "@/components/migracion/ProgresoLotes";
 
