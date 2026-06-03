@@ -117,12 +117,7 @@ export function useMigracion() {
       }
       const res = data.resultado as ResultadoIA;
       if (res?.modo === "procesamiento_directo") {
-        res.causas = (res.causas ?? []).map((c) => ({
-          ...c,
-          sujetos: (c.sujetos ?? []).map((s) => ({ ...s, prescripciones: s.prescripciones ?? [] })),
-          eventos: c.eventos ?? [],
-          origen_pestanas: c.origen_pestanas ?? [],
-        }));
+        res.causas = (res.causas ?? []).map((c) => normalizarCausa(c));
         res.filas_rojas = res.filas_rojas ?? [];
         res.pestanas_procesadas = res.pestanas_procesadas ?? [];
       }
