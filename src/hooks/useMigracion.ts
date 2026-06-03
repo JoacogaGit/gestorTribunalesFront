@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ArchivoParseado, PestanaParseada } from "@/lib/parseMigracionFile";
+import { normalizarCausa } from "@/lib/normalizarCausa";
 
 export interface CausaIA {
   id_temporal: string;
