@@ -154,16 +154,9 @@ export function useMigracion() {
       if (r.modo !== "procesamiento_directo") {
         return { ok: false, errorCode: "mapeo_requerido", errorMsg: "La pestaña requiere mapeo asistido." };
       }
-      // Normalización defensiva: la IA puede omitir arrays vacíos.
-      r.causas = (r.causas ?? []).map((c) => ({
-        ...c,
-        sujetos: (c.sujetos ?? []).map((s) => ({
-          ...s,
-          prescripciones: s.prescripciones ?? [],
-        })),
-        eventos: c.eventos ?? [],
-        origen_pestanas: c.origen_pestanas ?? [],
-      }));
+      // Normalización defensiva: garantiza que todo campo escalar sea string|null
+      // (nunca objeto) para evitar React error #31 al renderizar.
+      r.causas = (r.causas ?? []).map((c) => normalizarCausa(c));
       r.filas_rojas = r.filas_rojas ?? [];
       r.pestanas_procesadas = r.pestanas_procesadas ?? [];
       return { ok: true, resultado: r };
