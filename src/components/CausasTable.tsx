@@ -137,6 +137,31 @@ export default function CausasTable({
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
+  const { user } = useAuth();
+
+  // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
+  const [localColors, setLocalColors] = useState<Record<string, string | null>>({});
+  const colorOf = (c: Causa): string | null =>
+    c.id in localColors ? localColors[c.id] : (c.colorDestacado ?? null);
+
+  const handleSetColor = async (c: Causa, nuevoColor: string | null) => {
+    const previo = colorOf(c);
+    setLocalColors((m) => ({ ...m, [c.id]: nuevoColor }));
+    const { error } = await supabase
+      .from("causas")
+      .update({ color_destacado: nuevoColor })
+      .eq("id", c.id);
+    if (error) {
+      // Revertir
+      setLocalColors((m) => ({ ...m, [c.id]: previo }));
+      toast.error(`No se pudo guardar el color: ${error.message}`);
+      return;
+    }
+    onUpdateCausa?.({ ...c, colorDestacado: nuevoColor });
+  };
+
+  // Sensor de drag (distance 5 permite que el click siga funcionando para ordenar).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Próximas anotaciones (eventos con fecha) por causa.
   const causaIds = causas.map((c) => c.id);
