@@ -1,0 +1,1 @@
+ALTER TABLE public.causas ADD COLUMN IF NOT EXISTS color_destacado TEXT NULL;
