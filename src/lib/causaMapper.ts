@@ -64,6 +64,7 @@ export type DbCausa = {
   causa_conexa_texto: string | null;
   causa_conexa_id: string | null;
   link_externo: string | null;
+  color_destacado: string | null;
   sujetos?: DbSujeto[];
 };
 
