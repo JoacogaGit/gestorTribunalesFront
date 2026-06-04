@@ -750,6 +750,32 @@ export default function CausasTable({
                       </ContextMenuSub>
                     )}
                     <ContextMenuSeparator />
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger className="text-xs">
+                        <Palette className="w-3.5 h-3.5 mr-2" /> Pintar fila
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        <div className="grid grid-cols-4 gap-1.5 p-2">
+                          {PALETA_COLORES.map((p) => (
+                            <button
+                              key={p.hex}
+                              type="button"
+                              title={p.label}
+                              onClick={() => handleSetColor(c, p.hex)}
+                              className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${rowColor === p.hex ? "border-foreground" : "border-border/50"}`}
+                              style={{ backgroundColor: p.hex }}
+                              aria-label={`Pintar ${p.label}`}
+                            />
+                          ))}
+                        </div>
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    {rowColor && (
+                      <ContextMenuItem onSelect={() => handleSetColor(c, null)} className="text-xs">
+                        <Eraser className="w-3.5 h-3.5 mr-2" /> Quitar color
+                      </ContextMenuItem>
+                    )}
+                    <ContextMenuSeparator />
                     <ContextMenuItem
                       onSelect={() => setConfirmDelete(c)}
                       className="text-xs text-alert-urgent focus:text-alert-urgent"
@@ -758,7 +784,8 @@ export default function CausasTable({
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
-              ))}
+                );
+              })}
               {sorted.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={visibleColumns.length + 1} className="text-center text-muted-foreground py-8">
