@@ -856,7 +856,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   // PASO 1 — Subida
   return (
-    <div className="min-h-[calc(100vh-12rem)] flex flex-col justify-center px-4 py-6">
+    <div className="min-h-[calc(100vh-12rem)] flex flex-col items-center justify-center px-4 py-6">
       <div className="w-full max-w-2xl mx-auto">
         {/* Encabezado */}
         <div className="text-center mb-6">

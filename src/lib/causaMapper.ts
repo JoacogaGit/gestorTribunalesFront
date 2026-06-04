@@ -64,6 +64,7 @@ export type DbCausa = {
   causa_conexa_texto: string | null;
   causa_conexa_id: string | null;
   link_externo: string | null;
+  color_destacado: string | null;
   sujetos?: DbSujeto[];
 };
 
@@ -157,6 +158,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
     causaConexaId: row.causa_conexa_id ?? null,
     causaConexaTexto: row.causa_conexa_texto ?? null,
     link: row.link_externo ?? undefined,
+    colorDestacado: row.color_destacado ?? null,
     vocalia: 1,
   };
 }

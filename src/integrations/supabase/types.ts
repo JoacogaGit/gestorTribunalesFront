@@ -65,6 +65,7 @@ export type Database = {
           caratula: string | null
           causa_conexa_id: string | null
           causa_conexa_texto: string | null
+          color_destacado: string | null
           creado_por: string | null
           created_at: string | null
           estado_causa: Database["public"]["Enums"]["estado_causa_enum"]
@@ -88,6 +89,7 @@ export type Database = {
           caratula?: string | null
           causa_conexa_id?: string | null
           causa_conexa_texto?: string | null
+          color_destacado?: string | null
           creado_por?: string | null
           created_at?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
@@ -111,6 +113,7 @@ export type Database = {
           caratula?: string | null
           causa_conexa_id?: string | null
           causa_conexa_texto?: string | null
+          color_destacado?: string | null
           creado_por?: string | null
           created_at?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]

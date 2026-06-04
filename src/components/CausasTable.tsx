@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2 } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -25,6 +25,57 @@ import { useCausaMutations } from "@/hooks/useCausaMutations";
 import { useProximasAnotacionesPorCausa } from "@/hooks/useProximasAnotacionesPorCausa";
 import { getSemaforoText } from "@/lib/eventoMapper";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, horizontalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+const PALETA_COLORES: { hex: string; label: string }[] = [
+  { hex: "#FCA5A5", label: "Rojo" },
+  { hex: "#FDBA74", label: "Naranja" },
+  { hex: "#FCD34D", label: "Amarillo" },
+  { hex: "#86EFAC", label: "Verde" },
+  { hex: "#7DD3FC", label: "Celeste" },
+  { hex: "#93C5FD", label: "Azul" },
+  { hex: "#C4B5FD", label: "Violeta" },
+  { hex: "#F9A8D4", label: "Rosa" },
+];
+
+function SortableHead({
+  id, children, className, onClick, title,
+}: {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  title?: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    cursor: isDragging ? "grabbing" : "grab",
+  };
+  return (
+    <TableHead
+      ref={setNodeRef}
+      style={style}
+      className={className}
+      onClick={onClick}
+      title={title}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </TableHead>
+  );
+}
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
@@ -86,6 +137,31 @@ export default function CausasTable({
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
+  const { user } = useAuth();
+
+  // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
+  const [localColors, setLocalColors] = useState<Record<string, string | null>>({});
+  const colorOf = (c: Causa): string | null =>
+    c.id in localColors ? localColors[c.id] : (c.colorDestacado ?? null);
+
+  const handleSetColor = async (c: Causa, nuevoColor: string | null) => {
+    const previo = colorOf(c);
+    setLocalColors((m) => ({ ...m, [c.id]: nuevoColor }));
+    const { error } = await supabase
+      .from("causas")
+      .update({ color_destacado: nuevoColor })
+      .eq("id", c.id);
+    if (error) {
+      // Revertir
+      setLocalColors((m) => ({ ...m, [c.id]: previo }));
+      toast.error(`No se pudo guardar el color: ${error.message}`);
+      return;
+    }
+    onUpdateCausa?.({ ...c, colorDestacado: nuevoColor });
+  };
+
+  // Sensor de drag (distance 5 permite que el click siga funcionando para ordenar).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Próximas anotaciones (eventos con fecha) por causa.
   const causaIds = causas.map((c) => c.id);
@@ -387,8 +463,50 @@ export default function CausasTable({
   }));
 
   const fullColumns = [...allColumns, ...customColDefs];
-  const visibleColumns = fullColumns.filter((c) => !hiddenCols.has(c.key));
+
+  // ===== Orden personalizado de columnas por usuario (localStorage) =====
+  const columnOrderKey = listKey && user?.id ? `column-order:${listKey}:${user.id}` : null;
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (!columnOrderKey) return [];
+    try { return JSON.parse(localStorage.getItem(columnOrderKey) || "[]"); } catch { return []; }
+  });
+  // Re-cargar si cambia el listKey o el user.
+  useEffect(() => {
+    if (!columnOrderKey) { setColumnOrder([]); return; }
+    try { setColumnOrder(JSON.parse(localStorage.getItem(columnOrderKey) || "[]")); }
+    catch { setColumnOrder([]); }
+  }, [columnOrderKey]);
+
+  const orderedFullColumns = useMemo(() => {
+    if (columnOrder.length === 0) return fullColumns;
+    const byKey = new Map(fullColumns.map((c) => [c.key, c]));
+    const ordered: ColDef[] = [];
+    for (const k of columnOrder) {
+      const col = byKey.get(k);
+      if (col) { ordered.push(col); byKey.delete(k); }
+    }
+    // Append columnas nuevas (no incluidas en el orden guardado) al final.
+    for (const col of fullColumns) if (byKey.has(col.key)) ordered.push(col);
+    return ordered;
+  }, [fullColumns, columnOrder]);
+
+  const visibleColumns = orderedFullColumns.filter((c) => !hiddenCols.has(c.key));
   const displayTitle = customTitle || title;
+
+  const handleDragEndColumn = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const currentOrder = visibleColumns.map((c) => c.key);
+    const oldIdx = currentOrder.indexOf(String(active.id));
+    const newIdx = currentOrder.indexOf(String(over.id));
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reorderedVisible = arrayMove(currentOrder, oldIdx, newIdx);
+    // Construir orden completo: visibles reordenadas + ocultas en su posición original relativa al final.
+    const hiddenKeys = orderedFullColumns.filter((c) => hiddenCols.has(c.key)).map((c) => c.key);
+    const next = [...reorderedVisible, ...hiddenKeys];
+    setColumnOrder(next);
+    if (columnOrderKey) localStorage.setItem(columnOrderKey, JSON.stringify(next));
+  };
 
   const handleHeaderSort = (key: string) => {
     if (sortBy?.key === key) {
@@ -556,35 +674,50 @@ export default function CausasTable({
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
               <TableRow className="bg-transparent hover:bg-transparent">
                 <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60 w-10 text-right pr-2">#</TableHead>
-                {visibleColumns.map((col) => {
-                  const isSorted = sortBy?.key === col.key;
-                  const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
-                  return (
-                    <TableHead
-                      key={col.key}
-                      className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/90 ${col.headClass || ""} ${col.sortValue ? "cursor-pointer select-none hover:text-foreground" : ""}`}
-                      onClick={() => col.sortValue && handleHeaderSort(col.key)}
-                      title={col.sortValue ? "Clic para ordenar" : undefined}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {col.label}
-                        {col.sortValue && (
-                          <SortIcon className={`w-3 h-3 ${isSorted ? "text-primary" : "text-muted-foreground/40"}`} />
-                        )}
-                      </span>
-                    </TableHead>
-                  );
-                })}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEndColumn}
+                >
+                  <SortableContext items={visibleColumns.map((c) => c.key)} strategy={horizontalListSortingStrategy}>
+                    {visibleColumns.map((col) => {
+                      const isSorted = sortBy?.key === col.key;
+                      const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
+                      return (
+                        <SortableHead
+                          key={col.key}
+                          id={col.key}
+                          className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/90 ${col.headClass || ""} ${col.sortValue ? "select-none hover:text-foreground" : ""}`}
+                          onClick={() => col.sortValue && handleHeaderSort(col.key)}
+                          title={col.sortValue ? "Clic para ordenar · Arrastrá para reordenar" : "Arrastrá para reordenar"}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            {col.label}
+                            {col.sortValue && (
+                              <SortIcon className={`w-3 h-3 ${isSorted ? "text-primary" : "text-muted-foreground/40"}`} />
+                            )}
+                          </span>
+                        </SortableHead>
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((c, idx) => (
+              {sorted.map((c, idx) => {
+                const rowColor = colorOf(c);
+                return (
                 <ContextMenu key={c.id}>
                   <ContextMenuTrigger asChild>
-                    <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(c)}>
-                      <TableCell className="text-right pr-2 text-[11px] tabular-nums text-muted-foreground/70 w-10">{idx + 1}</TableCell>
+                    <TableRow
+                      className="cursor-pointer hover:bg-primary/5 transition-colors"
+                      style={rowColor ? { backgroundColor: rowColor, color: "#111827" } : undefined}
+                      onClick={() => setSelected(c)}
+                    >
+                      <TableCell className="text-right pr-2 text-[11px] tabular-nums w-10" style={rowColor ? { color: "inherit", opacity: 0.7 } : undefined}>{idx + 1}</TableCell>
                       {visibleColumns.map((col) => (
-                        <TableCell key={col.key} className={col.cellClass}>{col.render(c)}</TableCell>
+                        <TableCell key={col.key} className={col.cellClass} style={rowColor ? { color: "inherit" } : undefined}>{col.render(c)}</TableCell>
                       ))}
                     </TableRow>
                   </ContextMenuTrigger>
@@ -617,6 +750,32 @@ export default function CausasTable({
                       </ContextMenuSub>
                     )}
                     <ContextMenuSeparator />
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger className="text-xs">
+                        <Palette className="w-3.5 h-3.5 mr-2" /> Pintar fila
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        <div className="grid grid-cols-4 gap-1.5 p-2">
+                          {PALETA_COLORES.map((p) => (
+                            <button
+                              key={p.hex}
+                              type="button"
+                              title={p.label}
+                              onClick={() => handleSetColor(c, p.hex)}
+                              className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${rowColor === p.hex ? "border-foreground" : "border-border/50"}`}
+                              style={{ backgroundColor: p.hex }}
+                              aria-label={`Pintar ${p.label}`}
+                            />
+                          ))}
+                        </div>
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    {rowColor && (
+                      <ContextMenuItem onSelect={() => handleSetColor(c, null)} className="text-xs">
+                        <Eraser className="w-3.5 h-3.5 mr-2" /> Quitar color
+                      </ContextMenuItem>
+                    )}
+                    <ContextMenuSeparator />
                     <ContextMenuItem
                       onSelect={() => setConfirmDelete(c)}
                       className="text-xs text-alert-urgent focus:text-alert-urgent"
@@ -625,7 +784,8 @@ export default function CausasTable({
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
-              ))}
+                );
+              })}
               {sorted.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={visibleColumns.length + 1} className="text-center text-muted-foreground py-8">
