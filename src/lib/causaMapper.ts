@@ -158,6 +158,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
     causaConexaId: row.causa_conexa_id ?? null,
     causaConexaTexto: row.causa_conexa_texto ?? null,
     link: row.link_externo ?? undefined,
+    colorDestacado: row.color_destacado ?? null,
     vocalia: 1,
   };
 }
