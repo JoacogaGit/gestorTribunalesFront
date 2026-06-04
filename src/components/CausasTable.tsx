@@ -463,8 +463,50 @@ export default function CausasTable({
   }));
 
   const fullColumns = [...allColumns, ...customColDefs];
-  const visibleColumns = fullColumns.filter((c) => !hiddenCols.has(c.key));
+
+  // ===== Orden personalizado de columnas por usuario (localStorage) =====
+  const columnOrderKey = listKey && user?.id ? `column-order:${listKey}:${user.id}` : null;
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (!columnOrderKey) return [];
+    try { return JSON.parse(localStorage.getItem(columnOrderKey) || "[]"); } catch { return []; }
+  });
+  // Re-cargar si cambia el listKey o el user.
+  useEffect(() => {
+    if (!columnOrderKey) { setColumnOrder([]); return; }
+    try { setColumnOrder(JSON.parse(localStorage.getItem(columnOrderKey) || "[]")); }
+    catch { setColumnOrder([]); }
+  }, [columnOrderKey]);
+
+  const orderedFullColumns = useMemo(() => {
+    if (columnOrder.length === 0) return fullColumns;
+    const byKey = new Map(fullColumns.map((c) => [c.key, c]));
+    const ordered: ColDef[] = [];
+    for (const k of columnOrder) {
+      const col = byKey.get(k);
+      if (col) { ordered.push(col); byKey.delete(k); }
+    }
+    // Append columnas nuevas (no incluidas en el orden guardado) al final.
+    for (const col of fullColumns) if (byKey.has(col.key)) ordered.push(col);
+    return ordered;
+  }, [fullColumns, columnOrder]);
+
+  const visibleColumns = orderedFullColumns.filter((c) => !hiddenCols.has(c.key));
   const displayTitle = customTitle || title;
+
+  const handleDragEndColumn = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const currentOrder = visibleColumns.map((c) => c.key);
+    const oldIdx = currentOrder.indexOf(String(active.id));
+    const newIdx = currentOrder.indexOf(String(over.id));
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reorderedVisible = arrayMove(currentOrder, oldIdx, newIdx);
+    // Construir orden completo: visibles reordenadas + ocultas en su posición original relativa al final.
+    const hiddenKeys = orderedFullColumns.filter((c) => hiddenCols.has(c.key)).map((c) => c.key);
+    const next = [...reorderedVisible, ...hiddenKeys];
+    setColumnOrder(next);
+    if (columnOrderKey) localStorage.setItem(columnOrderKey, JSON.stringify(next));
+  };
 
   const handleHeaderSort = (key: string) => {
     if (sortBy?.key === key) {
