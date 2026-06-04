@@ -674,35 +674,50 @@ export default function CausasTable({
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
               <TableRow className="bg-transparent hover:bg-transparent">
                 <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60 w-10 text-right pr-2">#</TableHead>
-                {visibleColumns.map((col) => {
-                  const isSorted = sortBy?.key === col.key;
-                  const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
-                  return (
-                    <TableHead
-                      key={col.key}
-                      className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/90 ${col.headClass || ""} ${col.sortValue ? "cursor-pointer select-none hover:text-foreground" : ""}`}
-                      onClick={() => col.sortValue && handleHeaderSort(col.key)}
-                      title={col.sortValue ? "Clic para ordenar" : undefined}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {col.label}
-                        {col.sortValue && (
-                          <SortIcon className={`w-3 h-3 ${isSorted ? "text-primary" : "text-muted-foreground/40"}`} />
-                        )}
-                      </span>
-                    </TableHead>
-                  );
-                })}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEndColumn}
+                >
+                  <SortableContext items={visibleColumns.map((c) => c.key)} strategy={horizontalListSortingStrategy}>
+                    {visibleColumns.map((col) => {
+                      const isSorted = sortBy?.key === col.key;
+                      const SortIcon = !isSorted ? ArrowUpDown : sortBy.dir === "asc" ? ArrowUp : ArrowDown;
+                      return (
+                        <SortableHead
+                          key={col.key}
+                          id={col.key}
+                          className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/90 ${col.headClass || ""} ${col.sortValue ? "select-none hover:text-foreground" : ""}`}
+                          onClick={() => col.sortValue && handleHeaderSort(col.key)}
+                          title={col.sortValue ? "Clic para ordenar · Arrastrá para reordenar" : "Arrastrá para reordenar"}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            {col.label}
+                            {col.sortValue && (
+                              <SortIcon className={`w-3 h-3 ${isSorted ? "text-primary" : "text-muted-foreground/40"}`} />
+                            )}
+                          </span>
+                        </SortableHead>
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((c, idx) => (
+              {sorted.map((c, idx) => {
+                const rowColor = colorOf(c);
+                return (
                 <ContextMenu key={c.id}>
                   <ContextMenuTrigger asChild>
-                    <TableRow className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => setSelected(c)}>
-                      <TableCell className="text-right pr-2 text-[11px] tabular-nums text-muted-foreground/70 w-10">{idx + 1}</TableCell>
+                    <TableRow
+                      className="cursor-pointer hover:bg-primary/5 transition-colors"
+                      style={rowColor ? { backgroundColor: rowColor, color: "#111827" } : undefined}
+                      onClick={() => setSelected(c)}
+                    >
+                      <TableCell className="text-right pr-2 text-[11px] tabular-nums w-10" style={rowColor ? { color: "inherit", opacity: 0.7 } : undefined}>{idx + 1}</TableCell>
                       {visibleColumns.map((col) => (
-                        <TableCell key={col.key} className={col.cellClass}>{col.render(c)}</TableCell>
+                        <TableCell key={col.key} className={col.cellClass} style={rowColor ? { color: "inherit" } : undefined}>{col.render(c)}</TableCell>
                       ))}
                     </TableRow>
                   </ContextMenuTrigger>
