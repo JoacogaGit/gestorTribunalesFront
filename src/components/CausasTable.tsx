@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2 } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -25,6 +25,57 @@ import { useCausaMutations } from "@/hooks/useCausaMutations";
 import { useProximasAnotacionesPorCausa } from "@/hooks/useProximasAnotacionesPorCausa";
 import { getSemaforoText } from "@/lib/eventoMapper";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, horizontalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+const PALETA_COLORES: { hex: string; label: string }[] = [
+  { hex: "#FCA5A5", label: "Rojo" },
+  { hex: "#FDBA74", label: "Naranja" },
+  { hex: "#FCD34D", label: "Amarillo" },
+  { hex: "#86EFAC", label: "Verde" },
+  { hex: "#7DD3FC", label: "Celeste" },
+  { hex: "#93C5FD", label: "Azul" },
+  { hex: "#C4B5FD", label: "Violeta" },
+  { hex: "#F9A8D4", label: "Rosa" },
+];
+
+function SortableHead({
+  id, children, className, onClick, title,
+}: {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  title?: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    cursor: isDragging ? "grabbing" : "grab",
+  };
+  return (
+    <TableHead
+      ref={setNodeRef}
+      style={style}
+      className={className}
+      onClick={onClick}
+      title={title}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </TableHead>
+  );
+}
 
 const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
