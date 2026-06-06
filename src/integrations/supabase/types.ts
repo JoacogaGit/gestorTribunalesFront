@@ -584,6 +584,7 @@ export type Database = {
           codigo_acceso: string | null
           created_at: string | null
           id: string
+          modo: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
           updated_at: string | null
         }
@@ -591,6 +592,7 @@ export type Database = {
           codigo_acceso?: string | null
           created_at?: string | null
           id?: string
+          modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
           updated_at?: string | null
         }
@@ -598,6 +600,7 @@ export type Database = {
           codigo_acceso?: string | null
           created_at?: string | null
           id?: string
+          modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre?: string
           updated_at?: string | null
         }
@@ -657,6 +660,7 @@ export type Database = {
     }
     Enums: {
       estado_causa_enum: "tramite" | "recurso" | "terminada"
+      modo_tribunal_enum: "lista_unica" | "vocalias_separadas"
       rol_global_enum: "superadmin" | "usuario"
       rol_miembro_enum: "admin" | "miembro"
       situacion_libertad_enum:
@@ -795,6 +799,7 @@ export const Constants = {
   public: {
     Enums: {
       estado_causa_enum: ["tramite", "recurso", "terminada"],
+      modo_tribunal_enum: ["lista_unica", "vocalias_separadas"],
       rol_global_enum: ["superadmin", "usuario"],
       rol_miembro_enum: ["admin", "miembro"],
       situacion_libertad_enum: [

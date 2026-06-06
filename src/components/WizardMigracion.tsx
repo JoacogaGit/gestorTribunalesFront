@@ -856,23 +856,21 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   // PASO 1 — Subida
   return (
-    <div className="min-h-[calc(100vh-12rem)] flex flex-col items-center justify-center px-4 py-6">
+    <div className="px-4 pt-8 pb-6">
       <div className="w-full max-w-2xl mx-auto">
         {/* Encabezado */}
-        <div className="text-center mb-6">
-
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
-            <Sparkles className="w-7 h-7 text-accent" />
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
+            <Sparkles className="w-6 h-6 text-accent" />
           </div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">
+          <h1 className="font-display text-3xl font-bold tracking-tight mb-2">
             Bienvenido a la migración asistida
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Cargá tu planilla y dejá que la IA haga el trabajo pesado. Vos solo revisás los resultados
             y confirmás qué cargar en <span className="text-foreground font-medium">{vocaliaNombre}</span>.
-            Es seguro, rápido y reversible.
           </p>
-          <div className="inline-flex flex-wrap items-center justify-center gap-2 mt-4">
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 mt-3">
             <Badge variant="secondary" className="text-[10px]">.xlsx</Badge>
             <Badge variant="secondary" className="text-[10px]">.xls</Badge>
             <Badge variant="secondary" className="text-[10px]">.csv</Badge>
