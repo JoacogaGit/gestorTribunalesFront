@@ -173,7 +173,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
   // Vocalías del tribunal para el switcher en el sidebar.
   const { vocalias: todasVocalias } = useVocalias();
+  const { tribunal } = useTribunal(tribunalId);
+  const modoTribunal = tribunal?.modo ?? "vocalias_separadas";
+  const isListaUnica = modoTribunal === "lista_unica";
   const vocaliasTribunal = tribunalId ? todasVocalias.filter((v) => v.tribunal_id === tribunalId) : [];
+  // En modo lista_unica mostramos el nombre del tribunal en el sidebar en lugar de la vocalía oculta "General".
+  const sidebarLabel = isListaUnica ? (tribunal?.nombre ?? vocaliaNombre) : vocaliaNombre;
 
   const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
