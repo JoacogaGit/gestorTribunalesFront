@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Scale, Building2, KeyRound, Ticket, LogOut, Loader2 } from "lucide-react";
+import { Scale, Building2, KeyRound, Ticket, LogOut, Loader2, List, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,8 @@ interface Props {
   onCreated: () => void;
 }
 
-type Mode = "menu" | "crear" | "codigo" | "token" | "vocalia" | "bienvenida";
+type ModoTribunal = "lista_unica" | "vocalias_separadas";
+type Mode = "menu" | "crear" | "modo" | "codigo" | "token" | "vocalia" | "bienvenida";
 
 export default function WelcomeNoTribunal({ onCreated }: Props) {
   const { logout } = useAuth();
@@ -28,16 +29,49 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   const [codigo, setCodigo] = useState("");
   const [token, setToken] = useState("");
 
-  const handleCrearTribunal = async (e: React.FormEvent) => {
+  const handleContinuarACrear = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tribunalNombre.trim()) return;
+    setMode("modo");
+  };
+
+  const handleElegirModo = async (modoElegido: ModoTribunal) => {
     setLoading(true);
     const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
-    setLoading(false);
-    if (error) { toast.error(error.message || "No se pudo crear el tribunal."); return; }
-    setTribunalId(data as string);
-    setMode("vocalia");
-    toast.success("Tribunal creado");
+    if (error || !data) {
+      setLoading(false);
+      toast.error(error?.message || "No se pudo crear el tribunal.");
+      return;
+    }
+    const newTribunalId = data as string;
+
+    // Persistir el modo elegido
+    const { error: updErr } = await supabase
+      .from("tribunales")
+      .update({ modo: modoElegido })
+      .eq("id", newTribunalId);
+    if (updErr) {
+      setLoading(false);
+      toast.error("Tribunal creado pero no se pudo guardar el modo.");
+      return;
+    }
+
+    setTribunalId(newTribunalId);
+
+    if (modoElegido === "lista_unica") {
+      // Crear vocalía "General" oculta y saltar el paso de vocalía
+      const { error: vErr } = await supabase
+        .from("vocalias")
+        .insert({ tribunal_id: newTribunalId, nombre: "General" });
+      setLoading(false);
+      if (vErr) { toast.error("No se pudo inicializar el tribunal."); return; }
+      toast.success("Tribunal creado");
+      setMode("bienvenida");
+    } else {
+      setLoading(false);
+      toast.success("Tribunal creado");
+      setMode("vocalia");
+    }
   };
 
   const handleCrearVocalia = async (e: React.FormEvent) => {
@@ -128,21 +162,67 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
           )}
 
           {mode === "crear" && (
-            <form onSubmit={handleCrearTribunal} className="space-y-4">
+            <form onSubmit={handleContinuarACrear} className="space-y-4">
               <h3 className="font-display font-semibold text-foreground">Crear tribunal</h3>
               <div className="space-y-1.5">
                 <Label htmlFor="tnombre">Nombre del tribunal</Label>
                 <Input id="tnombre" value={tribunalNombre} onChange={(e) => setTribunalNombre(e.target.value)}
-                  className="h-11" placeholder="Tribunal Oral en lo Criminal Federal Nº 1" required />
+                  className="h-11" placeholder="Tribunal Oral en lo Criminal Federal Nº 1" required autoFocus />
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setMode("menu")} disabled={loading}>Cancelar</Button>
                 <Button type="submit" disabled={loading} className="flex-1">
-                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Crear tribunal
+                  Continuar
                 </Button>
               </div>
             </form>
+          )}
+
+          {mode === "modo" && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display font-semibold text-foreground">¿Cómo trabaja este tribunal?</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Elegí la forma en la que querés organizar las causas. Después podés cambiarla desde configuración.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleElegirModo("vocalias_separadas")}
+                  className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
+                >
+                  <div className="text-2xl mb-2">🏛️</div>
+                  <h4 className="font-display font-semibold text-foreground mb-1">Con vocalías u oficinas separadas</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Cada vocalía tiene sus propias causas. Ideal para tribunales colegiados, estudios con varios abogados.
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleElegirModo("lista_unica")}
+                  className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
+                >
+                  <div className="text-2xl mb-2">📋</div>
+                  <h4 className="font-display font-semibold text-foreground mb-1">Como lista única</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Todas las causas en un solo lugar. Ideal para juzgados unipersonales, defensorías, estudios chicos.
+                  </p>
+                </button>
+              </div>
+              <div className="flex justify-start">
+                <Button type="button" variant="ghost" size="sm" onClick={() => setMode("crear")} disabled={loading}>
+                  <ArrowLeft className="w-4 h-4 mr-1.5" /> Volver
+                </Button>
+              </div>
+              {loading && (
+                <div className="flex items-center justify-center text-xs text-muted-foreground gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Creando tribunal…
+                </div>
+              )}
+            </div>
           )}
 
           {mode === "vocalia" && (
