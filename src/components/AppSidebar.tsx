@@ -35,11 +35,13 @@ interface Props {
   onSwitchVocalia: (v: VocaliaRow) => void;
   onBack: () => void;
   esAdmin?: boolean;
+  modoTribunal?: ModoTribunal;
 }
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
   vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
+  modoTribunal = "vocalias_separadas",
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
