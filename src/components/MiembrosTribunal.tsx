@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2 } from "lucide-react";
+import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2, List, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,8 +10,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useTribunal } from "@/hooks/useTribunal";
+import { useVocalias } from "@/hooks/useVocalias";
 import { useMiembrosTribunal, MiembroRow, RolMiembro } from "@/hooks/useMiembrosTribunal";
 import { useInvitaciones, InvitacionRow } from "@/hooks/useInvitaciones";
 import { useAuth } from "@/context/AuthContext";
