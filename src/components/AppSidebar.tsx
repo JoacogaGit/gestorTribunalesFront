@@ -107,7 +107,21 @@ export default function AppSidebar({
             )}
           </div>
 
-          {!collapsed && (
+          {!collapsed && modoTribunal === "lista_unica" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
+                <span className="truncate flex-1">{vocaliaNombre}</span>
+                <ChevronDown className="w-3 h-3 shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem onSelect={onBack} className="text-xs">
+                  <ArrowLeft className="w-3 h-3 mr-1.5" /> Volver al selector
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {!collapsed && modoTribunal !== "lista_unica" && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
                 <span className="truncate flex-1">{vocaliaNombre}</span>
