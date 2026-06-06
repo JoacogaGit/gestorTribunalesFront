@@ -40,6 +40,30 @@ export default function MiembrosTribunal({ tribunalId }: Props) {
   const { tribunal, loading: tLoading, refetch: refetchTribunal } = useTribunal(tribunalId);
   const miembrosHook = useMiembrosTribunal(tribunalId);
   const invHook = useInvitaciones(tribunalId);
+  const { vocalias: todasVocalias, refetch: refetchVocalias } = useVocalias();
+  const vocaliasDelTribunal = todasVocalias.filter((v) => v.tribunal_id === tribunalId);
+  const cantidadVocalias = vocaliasDelTribunal.length;
+  const modo = tribunal?.modo ?? "vocalias_separadas";
+  const [cambiandoModo, setCambiandoModo] = useState(false);
+
+  const cambiarModoTribunal = async () => {
+    if (!tribunal) return;
+    const nuevoModo = modo === "lista_unica" ? "vocalias_separadas" : "lista_unica";
+    if (nuevoModo === "lista_unica" && cantidadVocalias !== 1) {
+      toast.error("Solo se puede cambiar a lista única si hay una sola vocalía.");
+      return;
+    }
+    setCambiandoModo(true);
+    const { error } = await supabase
+      .from("tribunales")
+      .update({ modo: nuevoModo })
+      .eq("id", tribunal.id);
+    setCambiandoModo(false);
+    if (error) { toast.error("No se pudo cambiar el modo del tribunal."); return; }
+    toast.success(nuevoModo === "lista_unica" ? "Ahora el tribunal trabaja como lista única." : "Ahora el tribunal trabaja con vocalías separadas.");
+    refetchTribunal();
+    refetchVocalias();
+  };
 
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
