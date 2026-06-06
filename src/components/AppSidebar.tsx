@@ -3,6 +3,7 @@ import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
+import type { ModoTribunal } from "@/hooks/useTribunal";
 
 const defaultNavItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
