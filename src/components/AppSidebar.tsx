@@ -3,6 +3,7 @@ import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
+import type { ModoTribunal } from "@/hooks/useTribunal";
 
 const defaultNavItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -34,11 +35,13 @@ interface Props {
   onSwitchVocalia: (v: VocaliaRow) => void;
   onBack: () => void;
   esAdmin?: boolean;
+  modoTribunal?: ModoTribunal;
 }
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
   vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
+  modoTribunal = "vocalias_separadas",
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -104,7 +107,21 @@ export default function AppSidebar({
             )}
           </div>
 
-          {!collapsed && (
+          {!collapsed && modoTribunal === "lista_unica" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
+                <span className="truncate flex-1">{vocaliaNombre}</span>
+                <ChevronDown className="w-3 h-3 shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem onSelect={onBack} className="text-xs">
+                  <ArrowLeft className="w-3 h-3 mr-1.5" /> Volver al selector
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {!collapsed && modoTribunal !== "lista_unica" && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
                 <span className="truncate flex-1">{vocaliaNombre}</span>

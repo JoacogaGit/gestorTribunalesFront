@@ -97,7 +97,11 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
         {!loading && !error && vocalias.length > 0 && (
           <div className="flex flex-wrap justify-center gap-6">
             {vocalias.map((v) => {
+              const isListaUnica = v.tribunal_modo === "lista_unica";
+              const displayName = isListaUnica ? (v.tribunal_nombre || v.nombre) : v.nombre;
+              const subtitle = isListaUnica ? "Listado único de causas" : "Listado de causas y seguimiento";
               const isEditing = editingId === v.id;
+              const canEdit = !isListaUnica;
               const cardClick = () => { if (!isEditing) handleSelect(v); };
               const cardKey = (e: React.KeyboardEvent) => {
                 if (isEditing) return;
@@ -116,7 +120,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                     <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                       <Scale className="w-7 h-7 text-primary" />
                     </div>
-                    {!isEditing && (
+                    {!isEditing && canEdit && (
                       <button
                         onClick={(e) => { e.stopPropagation(); startEdit(v); }}
                         className="p-2 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
@@ -148,10 +152,10 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                       </button>
                     </div>
                   ) : (
-                    <h2 className="text-2xl font-display font-bold text-foreground mb-1 break-words">{v.nombre}</h2>
+                    <h2 className="text-2xl font-display font-bold text-foreground mb-1 break-words">{displayName}</h2>
                   )}
 
-                  <p className="text-muted-foreground text-sm mb-6">Listado de causas y seguimiento</p>
+                  <p className="text-muted-foreground text-sm mb-6">{subtitle}</p>
 
                   <Button
                     onClick={(e) => { e.stopPropagation(); handleSelect(v); }}

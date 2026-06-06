@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2 } from "lucide-react";
+import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2, List, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,8 +10,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useTribunal } from "@/hooks/useTribunal";
+import { useVocalias } from "@/hooks/useVocalias";
 import { useMiembrosTribunal, MiembroRow, RolMiembro } from "@/hooks/useMiembrosTribunal";
 import { useInvitaciones, InvitacionRow } from "@/hooks/useInvitaciones";
 import { useAuth } from "@/context/AuthContext";
@@ -37,6 +40,30 @@ export default function MiembrosTribunal({ tribunalId }: Props) {
   const { tribunal, loading: tLoading, refetch: refetchTribunal } = useTribunal(tribunalId);
   const miembrosHook = useMiembrosTribunal(tribunalId);
   const invHook = useInvitaciones(tribunalId);
+  const { vocalias: todasVocalias, refetch: refetchVocalias } = useVocalias();
+  const vocaliasDelTribunal = todasVocalias.filter((v) => v.tribunal_id === tribunalId);
+  const cantidadVocalias = vocaliasDelTribunal.length;
+  const modo = tribunal?.modo ?? "vocalias_separadas";
+  const [cambiandoModo, setCambiandoModo] = useState(false);
+
+  const cambiarModoTribunal = async () => {
+    if (!tribunal) return;
+    const nuevoModo = modo === "lista_unica" ? "vocalias_separadas" : "lista_unica";
+    if (nuevoModo === "lista_unica" && cantidadVocalias !== 1) {
+      toast.error("Solo se puede cambiar a lista única si hay una sola vocalía.");
+      return;
+    }
+    setCambiandoModo(true);
+    const { error } = await supabase
+      .from("tribunales")
+      .update({ modo: nuevoModo })
+      .eq("id", tribunal.id);
+    setCambiandoModo(false);
+    if (error) { toast.error("No se pudo cambiar el modo del tribunal."); return; }
+    toast.success(nuevoModo === "lista_unica" ? "Ahora el tribunal trabaja como lista única." : "Ahora el tribunal trabaja con vocalías separadas.");
+    refetchTribunal();
+    refetchVocalias();
+  };
 
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
@@ -138,6 +165,52 @@ export default function MiembrosTribunal({ tribunalId }: Props) {
           </div>
         )}
       </section>
+
+      {/* Modo del tribunal */}
+      <section className="rounded-xl border border-border bg-card/60 p-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              {modo === "lista_unica" ? <List className="w-5 h-5 text-primary" /> : <Building2 className="w-5 h-5 text-primary" />}
+            </div>
+            <div>
+              <h3 className="text-sm font-display font-semibold text-foreground">
+                Modo: {modo === "lista_unica" ? "Lista única" : "Vocalías separadas"}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+                {modo === "lista_unica"
+                  ? "Todas las causas viven en un único listado. Ideal para juzgados unipersonales o estudios chicos."
+                  : "Cada vocalía u oficina tiene sus propias causas. Ideal para tribunales colegiados."}
+              </p>
+            </div>
+          </div>
+          {modo === "lista_unica" ? (
+            <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>
+              {cambiandoModo && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Cambiar a modo vocalías separadas
+            </Button>
+          ) : cantidadVocalias === 1 ? (
+            <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>
+              {cambiandoModo && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Cambiar a modo lista única
+            </Button>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button size="sm" variant="outline" disabled>
+                      Cambiar a modo lista única
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Solo si hay una sola vocalía. Eliminá las otras primero.</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </section>
+
 
       {/* Miembros */}
       <section className="space-y-3">

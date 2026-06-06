@@ -856,23 +856,21 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   // PASO 1 — Subida
   return (
-    <div className="min-h-[calc(100vh-12rem)] flex flex-col items-center justify-center px-4 py-6">
+    <div className="px-4 pt-8 pb-6">
       <div className="w-full max-w-2xl mx-auto">
         {/* Encabezado */}
-        <div className="text-center mb-6">
-
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
-            <Sparkles className="w-7 h-7 text-accent" />
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
+            <Sparkles className="w-6 h-6 text-accent" />
           </div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">
+          <h1 className="font-display text-3xl font-bold tracking-tight mb-2">
             Bienvenido a la migración asistida
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Cargá tu planilla y dejá que la IA haga el trabajo pesado. Vos solo revisás los resultados
             y confirmás qué cargar en <span className="text-foreground font-medium">{vocaliaNombre}</span>.
-            Es seguro, rápido y reversible.
           </p>
-          <div className="inline-flex flex-wrap items-center justify-center gap-2 mt-4">
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 mt-3">
             <Badge variant="secondary" className="text-[10px]">.xlsx</Badge>
             <Badge variant="secondary" className="text-[10px]">.xls</Badge>
             <Badge variant="secondary" className="text-[10px]">.csv</Badge>
@@ -912,7 +910,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
         {/* Drop zone */}
         <Card
-          className="relative p-10 border-dashed border-2 text-center cursor-pointer transition-all hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[var(--shadow-elevated)] group"
+          className="relative px-6 py-5 border-dashed border-2 text-center cursor-pointer transition-all hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[var(--shadow-elevated)] group max-h-40"
           onDragOver={(e) => { e.preventDefault(); }}
           onDrop={(e) => {
             e.preventDefault();
@@ -921,29 +919,22 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           }}
           onClick={() => document.getElementById("wizard-file-input")?.click()}
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted group-hover:bg-accent/10 transition-colors mb-4">
-            <Upload className="w-7 h-7 text-muted-foreground group-hover:text-accent transition-colors" />
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted group-hover:bg-accent/10 transition-colors mb-2">
+            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
           </div>
-          <p className="font-display text-lg font-semibold mb-1">
+          <p className="font-display text-sm font-semibold mb-0.5">
             Arrastrá tu archivo acá
           </p>
-          <p className="text-sm text-muted-foreground mb-5">
+          <p className="text-xs text-muted-foreground mb-2">
             o hacé click para seleccionarlo desde tu equipo
           </p>
-          <Button type="button" variant="default" disabled={loading} className="shadow-[var(--shadow-soft)]">
+          <Button type="button" variant="default" size="sm" disabled={loading} className="shadow-[var(--shadow-soft)]">
             {loading ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando…</>
             ) : (
               <><Upload className="w-4 h-4 mr-2" /> Seleccionar archivo</>
             )}
           </Button>
-          <div className="flex items-center justify-center gap-4 mt-6 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><FileSpreadsheet className="w-3.5 h-3.5" /> Excel · CSV</span>
-            <span className="w-1 h-1 rounded-full bg-border" />
-            <span className="inline-flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Word · TXT</span>
-            <span className="w-1 h-1 rounded-full bg-border" />
-            <span>máx 10 MB</span>
-          </div>
           <input
             id="wizard-file-input"
             type="file"

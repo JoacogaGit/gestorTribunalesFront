@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export type ModoTribunal = "lista_unica" | "vocalias_separadas";
+
 export interface TribunalRow {
   id: string;
   nombre: string;
   codigo_acceso: string | null;
+  modo: ModoTribunal;
 }
 
 export function useTribunal(tribunalId: string | null | undefined) {
@@ -17,7 +20,7 @@ export function useTribunal(tribunalId: string | null | undefined) {
     setLoading(true); setError(null);
     const { data, error: e } = await supabase
       .from("tribunales")
-      .select("id, nombre, codigo_acceso")
+      .select("id, nombre, codigo_acceso, modo")
       .eq("id", tribunalId)
       .maybeSingle();
     if (e) setError(e.message);
