@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Scale, Building2, KeyRound, Ticket, LogOut, Loader2, List, ArrowLeft } from "lucide-react";
+import { Scale, Building2, KeyRound, Ticket, LogOut, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
