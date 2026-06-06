@@ -910,7 +910,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
         {/* Drop zone */}
         <Card
-          className="relative p-10 border-dashed border-2 text-center cursor-pointer transition-all hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[var(--shadow-elevated)] group"
+          className="relative px-6 py-5 border-dashed border-2 text-center cursor-pointer transition-all hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[var(--shadow-elevated)] group max-h-40"
           onDragOver={(e) => { e.preventDefault(); }}
           onDrop={(e) => {
             e.preventDefault();
@@ -919,29 +919,22 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           }}
           onClick={() => document.getElementById("wizard-file-input")?.click()}
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted group-hover:bg-accent/10 transition-colors mb-4">
-            <Upload className="w-7 h-7 text-muted-foreground group-hover:text-accent transition-colors" />
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted group-hover:bg-accent/10 transition-colors mb-2">
+            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
           </div>
-          <p className="font-display text-lg font-semibold mb-1">
+          <p className="font-display text-sm font-semibold mb-0.5">
             Arrastrá tu archivo acá
           </p>
-          <p className="text-sm text-muted-foreground mb-5">
+          <p className="text-xs text-muted-foreground mb-2">
             o hacé click para seleccionarlo desde tu equipo
           </p>
-          <Button type="button" variant="default" disabled={loading} className="shadow-[var(--shadow-soft)]">
+          <Button type="button" variant="default" size="sm" disabled={loading} className="shadow-[var(--shadow-soft)]">
             {loading ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando…</>
             ) : (
               <><Upload className="w-4 h-4 mr-2" /> Seleccionar archivo</>
             )}
           </Button>
-          <div className="flex items-center justify-center gap-4 mt-6 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><FileSpreadsheet className="w-3.5 h-3.5" /> Excel · CSV</span>
-            <span className="w-1 h-1 rounded-full bg-border" />
-            <span className="inline-flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Word · TXT</span>
-            <span className="w-1 h-1 rounded-full bg-border" />
-            <span>máx 10 MB</span>
-          </div>
           <input
             id="wizard-file-input"
             type="file"
