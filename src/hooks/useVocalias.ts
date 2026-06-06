@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export type ModoTribunal = "lista_unica" | "vocalias_separadas";
+
 export interface VocaliaRow {
   id: string;
   nombre: string;
   tribunal_id: string;
+  tribunal_nombre: string;
+  tribunal_modo: ModoTribunal;
 }
 
 export function useVocalias() {
@@ -24,8 +28,6 @@ export function useVocalias() {
     }
     const userId = userData.user.id;
 
-    // Filtro explícito por membresía: el selector personal solo muestra
-    // vocalías de tribunales donde el usuario es miembro, incluso si es superadmin.
     const { data: membresias, error: memErr } = await supabase
       .from("miembros_tribunal")
       .select("tribunal_id")
@@ -43,17 +45,41 @@ export function useVocalias() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("vocalias")
-      .select("id, nombre, tribunal_id")
-      .in("tribunal_id", tribunalIds)
-      .order("nombre", { ascending: true });
-    if (error) {
-      setError(error.message);
+    const [{ data: tribsData, error: tribsErr }, { data, error }] = await Promise.all([
+      supabase
+        .from("tribunales")
+        .select("id, nombre, modo")
+        .in("id", tribunalIds),
+      supabase
+        .from("vocalias")
+        .select("id, nombre, tribunal_id")
+        .in("tribunal_id", tribunalIds)
+        .order("nombre", { ascending: true }),
+    ]);
+
+    if (tribsErr || error) {
+      setError((tribsErr || error)!.message);
       setVocalias([]);
-    } else {
-      setVocalias((data ?? []) as VocaliaRow[]);
+      setLoading(false);
+      return;
     }
+
+    const tribsMap = new Map<string, { nombre: string; modo: ModoTribunal }>();
+    (tribsData ?? []).forEach((t: any) => {
+      tribsMap.set(t.id, { nombre: t.nombre, modo: (t.modo as ModoTribunal) ?? "vocalias_separadas" });
+    });
+
+    const enriched: VocaliaRow[] = (data ?? []).map((v: any) => {
+      const t = tribsMap.get(v.tribunal_id);
+      return {
+        id: v.id,
+        nombre: v.nombre,
+        tribunal_id: v.tribunal_id,
+        tribunal_nombre: t?.nombre ?? "",
+        tribunal_modo: t?.modo ?? "vocalias_separadas",
+      };
+    });
+    setVocalias(enriched);
     setLoading(false);
   }, []);
 
@@ -64,7 +90,6 @@ export function useVocalias() {
   const renombrarVocalia = useCallback(async (id: string, nombre: string) => {
     const limpio = nombre.trim();
     if (!limpio) throw new Error("El nombre no puede estar vacío");
-    // Optimista
     setVocalias((prev) => prev.map((v) => (v.id === id ? { ...v, nombre: limpio } : v)));
     const { error } = await supabase.from("vocalias").update({ nombre: limpio }).eq("id", id);
     if (error) {
