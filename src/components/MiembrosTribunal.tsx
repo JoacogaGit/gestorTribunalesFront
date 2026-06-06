@@ -166,6 +166,52 @@ export default function MiembrosTribunal({ tribunalId }: Props) {
         )}
       </section>
 
+      {/* Modo del tribunal */}
+      <section className="rounded-xl border border-border bg-card/60 p-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              {modo === "lista_unica" ? <List className="w-5 h-5 text-primary" /> : <Building2 className="w-5 h-5 text-primary" />}
+            </div>
+            <div>
+              <h3 className="text-sm font-display font-semibold text-foreground">
+                Modo: {modo === "lista_unica" ? "Lista única" : "Vocalías separadas"}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+                {modo === "lista_unica"
+                  ? "Todas las causas viven en un único listado. Ideal para juzgados unipersonales o estudios chicos."
+                  : "Cada vocalía u oficina tiene sus propias causas. Ideal para tribunales colegiados."}
+              </p>
+            </div>
+          </div>
+          {modo === "lista_unica" ? (
+            <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>
+              {cambiandoModo && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Cambiar a modo vocalías separadas
+            </Button>
+          ) : cantidadVocalias === 1 ? (
+            <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>
+              {cambiandoModo && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Cambiar a modo lista única
+            </Button>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button size="sm" variant="outline" disabled>
+                      Cambiar a modo lista única
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Solo si hay una sola vocalía. Eliminá las otras primero.</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </section>
+
+
       {/* Miembros */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
