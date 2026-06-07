@@ -70,15 +70,16 @@ export function useVocalias() {
       tribsMap.set(t.id, { nombre: t.nombre, modo: (t.modo as ModoTribunal) ?? "vocalias_separadas" });
     });
 
-    const enriched: VocaliaRow[] = (data ?? []).map((v: any) => {
+    const enriched: VocaliaRow[] = (data ?? []).flatMap((v: any) => {
       const t = tribsMap.get(v.tribunal_id);
-      return {
+      if (!t) return []; // tribunal archivado / no accesible
+      return [{
         id: v.id,
         nombre: v.nombre,
         tribunal_id: v.tribunal_id,
-        tribunal_nombre: t?.nombre ?? "",
-        tribunal_modo: t?.modo ?? "vocalias_separadas",
-      };
+        tribunal_nombre: t.nombre,
+        tribunal_modo: t.modo,
+      }];
     });
     setVocalias(enriched);
     setLoading(false);
