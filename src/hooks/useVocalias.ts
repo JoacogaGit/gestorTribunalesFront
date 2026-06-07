@@ -48,8 +48,9 @@ export function useVocalias() {
     const [{ data: tribsData, error: tribsErr }, { data, error }] = await Promise.all([
       supabase
         .from("tribunales")
-        .select("id, nombre, modo")
-        .in("id", tribunalIds),
+        .select("id, nombre, modo, eliminado_en")
+        .in("id", tribunalIds)
+        .is("eliminado_en", null),
       supabase
         .from("vocalias")
         .select("id, nombre, tribunal_id")
