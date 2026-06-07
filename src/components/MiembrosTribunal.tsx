@@ -341,6 +341,13 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
         </div>
       </section>
 
+      {/* Zona de peligro */}
+      <AbandonarTribunal
+        tribunalId={tribunalId}
+        onAbandoned={() => onAbandoned?.()}
+      />
+
+
       <InvitarMiembroDialog
         open={openInvitar}
         onOpenChange={(o) => { setOpenInvitar(o); if (!o) invHook.refetch(); }}
