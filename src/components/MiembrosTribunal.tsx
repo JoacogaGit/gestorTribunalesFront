@@ -38,7 +38,7 @@ function diasHasta(d: string | null): number {
   return Math.ceil((new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-export default function MiembrosTribunal({ tribunalId }: Props) {
+export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
   const { user } = useAuth();
   const { tribunal, loading: tLoading, refetch: refetchTribunal } = useTribunal(tribunalId);
   const miembrosHook = useMiembrosTribunal(tribunalId);
