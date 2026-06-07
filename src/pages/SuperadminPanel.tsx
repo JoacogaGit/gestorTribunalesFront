@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Shield, Search, Building2, Users, Folder, Calendar, ArrowRight, Loader2, RefreshCw, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Shield, Search, Building2, Users, Folder, Calendar, ArrowRight, Loader2, RefreshCw, AlertTriangle, ArrowLeft, Trash2, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -9,6 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useEsSuperadmin } from "@/hooks/useEsSuperadmin";
 import { useTribunalesGlobal } from "@/hooks/useSuperadminData";
 import { useSuperadminMode } from "@/context/SuperadminModeContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function SuperadminPanel() {
   const { user, loading: authLoading } = useAuth();
