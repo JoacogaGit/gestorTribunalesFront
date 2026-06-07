@@ -27,7 +27,7 @@ export function useTribunalesGlobal() {
     setError(null);
     try {
       const [tRes, vRes, mRes, cRes] = await Promise.all([
-        supabase.from("tribunales").select("id, nombre, codigo_acceso, created_at").order("nombre"),
+        supabase.from("tribunales").select("id, nombre, codigo_acceso, created_at, eliminado_en, eliminado_por").order("nombre"),
         supabase.from("vocalias").select("id, tribunal_id"),
         supabase.from("miembros_tribunal").select("tribunal_id"),
         supabase.from("causas").select("id, vocalia_id").is("borrado_en", null),
@@ -61,6 +61,8 @@ export function useTribunalesGlobal() {
         nombre: t.nombre,
         codigo_acceso: t.codigo_acceso,
         created_at: t.created_at,
+        eliminado_en: (t as any).eliminado_en ?? null,
+        eliminado_por: (t as any).eliminado_por ?? null,
         vocalias_count: vocaliasPorTribunal.get(t.id) ?? 0,
         miembros_count: miembrosPorTribunal.get(t.id) ?? 0,
         causas_count: causasPorTribunal.get(t.id) ?? 0,
