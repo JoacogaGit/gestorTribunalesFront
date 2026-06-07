@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Shield, Search, Building2, Users, Folder, Calendar, ArrowRight, Loader2, RefreshCw, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Shield, Search, Building2, Users, Folder, Calendar, ArrowRight, Loader2, RefreshCw, AlertTriangle, ArrowLeft, Trash2, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -9,6 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useEsSuperadmin } from "@/hooks/useEsSuperadmin";
 import { useTribunalesGlobal } from "@/hooks/useSuperadminData";
 import { useSuperadminMode } from "@/context/SuperadminModeContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function SuperadminPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -21,11 +23,21 @@ export default function SuperadminPanel() {
   // Al entrar al panel salimos de cualquier modo activo (vista del panel raíz)
   // No mostramos banner aquí.
 
+  const activos = useMemo(() => data.filter((t) => !t.eliminado_en), [data]);
+  const papelera = useMemo(() => data.filter((t) => !!t.eliminado_en), [data]);
+
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return data;
-    return data.filter((t) => t.nombre.toLowerCase().includes(term));
-  }, [data, q]);
+    if (!term) return activos;
+    return activos.filter((t) => t.nombre.toLowerCase().includes(term));
+  }, [activos, q]);
+
+  const restaurar = async (id: string, nombre: string) => {
+    const { error } = await supabase.rpc("restaurar_tribunal", { p_tribunal_id: id });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${nombre} restaurado`);
+    refetch();
+  };
 
   if (authLoading || rolLoading) {
     return (
@@ -171,6 +183,59 @@ export default function SuperadminPanel() {
             </table>
           </div>
         )}
+
+        {/* Papelera */}
+        <section className="mt-12">
+          <div className="flex items-center gap-2 mb-3">
+            <Trash2 className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-lg font-display font-bold tracking-tight">Tribunales en papelera</h2>
+            <span className="text-xs text-muted-foreground ml-2">
+              {papelera.length} {papelera.length === 1 ? "tribunal" : "tribunales"}
+            </span>
+          </div>
+          {papelera.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+              No hay tribunales en la papelera.
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-2.5 font-medium">Tribunal</th>
+                    <th className="text-left px-3 py-2.5 font-medium">Archivado</th>
+                    <th className="text-center px-3 py-2.5 font-medium">Causas</th>
+                    <th className="text-right px-4 py-2.5 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {papelera.map((t) => (
+                    <tr key={t.id} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <Building2 className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{t.nombre}</span>
+                          {t.codigo_acceso && (
+                            <code className="text-[10px] font-mono text-muted-foreground">{t.codigo_acceso}</code>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground">
+                        {t.eliminado_en ? new Date(t.eliminado_en).toLocaleString("es-AR") : "—"}
+                      </td>
+                      <td className="text-center px-3 py-3 tabular-nums text-muted-foreground">{t.causas_count}</td>
+                      <td className="text-right px-4 py-3">
+                        <Button size="sm" variant="outline" onClick={() => restaurar(t.id, t.nombre)} className="gap-1.5">
+                          <RotateCcw className="w-3.5 h-3.5" /> Restaurar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );

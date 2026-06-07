@@ -1,23 +1,65 @@
-import { useState } from "react";
-import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox, Plus, Loader2 } from "lucide-react";
 import { useVocalias, VocaliaRow } from "@/hooks/useVocalias";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { VocaliaActual } from "@/context/VocaliaContext";
 import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
   onSelect: (v: VocaliaActual) => void;
   onLogout: () => void;
 }
 
+interface CreatableTribunal {
+  id: string;
+  nombre: string;
+}
+
 export default function VocaliaSelector({ onSelect, onLogout }: Props) {
+  const { user } = useAuth();
   const { vocalias, loading, error, refetch, renombrarVocalia } = useVocalias();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [adminTribunalIds, setAdminTribunalIds] = useState<Set<string>>(new Set());
+  const [createOpen, setCreateOpen] = useState<CreatableTribunal | null>(null);
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  // Cargar tribunales donde el usuario es admin para mostrar la tarjeta "Crear vocalía"
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user) { setAdminTribunalIds(new Set()); return; }
+      const { data } = await supabase
+        .from("miembros_tribunal")
+        .select("tribunal_id, rol")
+        .eq("usuario_id", user.id)
+        .eq("rol", "admin");
+      if (cancelled) return;
+      setAdminTribunalIds(new Set((data ?? []).map((m) => m.tribunal_id)));
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  // Lista de tribunales donde se puede crear vocalía: admin + modo separado
+  const tribunalesCreables = useMemo<CreatableTribunal[]>(() => {
+    const map = new Map<string, CreatableTribunal>();
+    vocalias.forEach((v) => {
+      if (v.tribunal_modo !== "vocalias_separadas") return;
+      if (!adminTribunalIds.has(v.tribunal_id)) return;
+      if (!map.has(v.tribunal_id)) map.set(v.tribunal_id, { id: v.tribunal_id, nombre: v.tribunal_nombre || "Tribunal" });
+    });
+    return Array.from(map.values());
+  }, [vocalias, adminTribunalIds]);
 
   const startEdit = (v: VocaliaRow) => {
     setEditingId(v.id);
@@ -42,6 +84,25 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
 
   const handleSelect = (v: VocaliaRow) => {
     onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
+  };
+
+  const handleCrear = async () => {
+    if (!createOpen) return;
+    const limpio = nuevoNombre.trim();
+    if (!limpio) { toast.error("Ingresá un nombre"); return; }
+    setCreating(true);
+    const { data, error: e } = await supabase
+      .from("vocalias")
+      .insert({ tribunal_id: createOpen.id, nombre: limpio })
+      .select("id, nombre, tribunal_id")
+      .single();
+    setCreating(false);
+    if (e || !data) { toast.error(e?.message || "No se pudo crear la vocalía"); return; }
+    toast.success("Vocalía creada");
+    setCreateOpen(null);
+    setNuevoNombre("");
+    await refetch();
+    onSelect({ id: data.id, nombre: data.nombre, tribunalId: data.tribunal_id });
   };
 
   return (
@@ -96,6 +157,22 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
 
         {!loading && !error && vocalias.length > 0 && (
           <div className="flex flex-wrap justify-center gap-6">
+            {tribunalesCreables.map((t) => (
+              <button
+                key={`crear-${t.id}`}
+                type="button"
+                onClick={() => { setCreateOpen(t); setNuevoNombre(""); }}
+                className="rounded-xl border-2 border-dashed border-border hover:border-primary/60 bg-card/30 hover:bg-card/60 p-8 text-center transition-all group focus:outline-none focus:ring-2 focus:ring-primary/40 w-full md:w-[calc((100%-3rem)/3)] shrink-0 flex flex-col items-center justify-center min-h-[260px]"
+              >
+                <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
+                  <Plus className="w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+                <h2 className="text-lg font-display font-semibold text-foreground mb-1">Crear vocalía u oficina</h2>
+                {tribunalesCreables.length > 1 && (
+                  <p className="text-xs text-muted-foreground">en {t.nombre}</p>
+                )}
+              </button>
+            ))}
             {vocalias.map((v) => {
               const isListaUnica = v.tribunal_modo === "lista_unica";
               const displayName = isListaUnica ? (v.tribunal_nombre || v.nombre) : v.nombre;
@@ -170,6 +247,37 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
           </div>
         )}
       </div>
+
+      <Dialog open={!!createOpen} onOpenChange={(o) => { if (!o) { setCreateOpen(null); setNuevoNombre(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Crear vocalía u oficina</DialogTitle>
+            <DialogDescription className="text-xs">
+              {createOpen ? `Se va a crear dentro de ${createOpen.nombre}.` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="nuevo-vocalia">Nombre de la vocalía u oficina</Label>
+            <Input
+              id="nuevo-vocalia"
+              value={nuevoNombre}
+              onChange={(e) => setNuevoNombre(e.target.value)}
+              placeholder="Vocalía 2"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") handleCrear(); }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCreateOpen(null); setNuevoNombre(""); }} disabled={creating}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCrear} disabled={creating || !nuevoNombre.trim()}>
+              {creating && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Crear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -21,8 +21,11 @@ import { useAuth } from "@/context/AuthContext";
 import RefreshButton from "@/components/RefreshButton";
 import InvitarMiembroDialog from "@/components/forms/InvitarMiembroDialog";
 
+import AbandonarTribunal from "@/components/AbandonarTribunal";
+
 interface Props {
   tribunalId: string;
+  onAbandoned?: () => void;
 }
 
 function fmtDate(d: string | null) {
@@ -35,7 +38,7 @@ function diasHasta(d: string | null): number {
   return Math.ceil((new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-export default function MiembrosTribunal({ tribunalId }: Props) {
+export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
   const { user } = useAuth();
   const { tribunal, loading: tLoading, refetch: refetchTribunal } = useTribunal(tribunalId);
   const miembrosHook = useMiembrosTribunal(tribunalId);
@@ -337,6 +340,13 @@ export default function MiembrosTribunal({ tribunalId }: Props) {
           </Table>
         </div>
       </section>
+
+      {/* Zona de peligro */}
+      <AbandonarTribunal
+        tribunalId={tribunalId}
+        onAbandoned={() => onAbandoned?.()}
+      />
+
 
       <InvitarMiembroDialog
         open={openInvitar}

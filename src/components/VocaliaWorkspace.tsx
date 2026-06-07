@@ -549,7 +549,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} />}
             {view === "miembros" && esAdmin && tribunalId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-                <MiembrosTribunal tribunalId={tribunalId} />
+                <MiembrosTribunal tribunalId={tribunalId} onAbandoned={onBack} />
               </div>
             )}
             {view === "miembros" && !esAdmin && (

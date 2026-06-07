@@ -583,6 +583,8 @@ export type Database = {
         Row: {
           codigo_acceso: string | null
           created_at: string | null
+          eliminado_en: string | null
+          eliminado_por: string | null
           id: string
           modo: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
@@ -591,6 +593,8 @@ export type Database = {
         Insert: {
           codigo_acceso?: string | null
           created_at?: string | null
+          eliminado_en?: string | null
+          eliminado_por?: string | null
           id?: string
           modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
@@ -599,6 +603,8 @@ export type Database = {
         Update: {
           codigo_acceso?: string | null
           created_at?: string | null
+          eliminado_en?: string | null
+          eliminado_por?: string | null
           id?: string
           modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre?: string
@@ -643,6 +649,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abandonar_tribunal_archivar: {
+        Args: { p_tribunal_id: string }
+        Returns: undefined
+      }
+      abandonar_tribunal_eliminar_todo: {
+        Args: { p_tribunal_id: string }
+        Returns: undefined
+      }
       aceptar_invitacion: { Args: { p_token: string }; Returns: string }
       crear_tribunal: { Args: { p_nombre: string }; Returns: string }
       cuenta_admins_tribunal: {
@@ -656,6 +670,10 @@ export type Database = {
       }
       es_miembro_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_superadmin: { Args: never; Returns: boolean }
+      restaurar_tribunal: {
+        Args: { p_tribunal_id: string }
+        Returns: undefined
+      }
       unirse_por_codigo: { Args: { p_codigo: string }; Returns: string }
     }
     Enums: {

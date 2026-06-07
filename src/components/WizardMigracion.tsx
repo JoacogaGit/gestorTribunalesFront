@@ -426,7 +426,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     const totalFilas = confirmacionPendiente.lotes.reduce((a, l) => a + l.filas, 0);
     const minutos = Math.max(1, Math.round((totalLotes * 30) / 60));
     return (
-      <div className="min-h-[calc(100vh-12rem)] flex flex-col justify-center px-4 py-6">
+      <div className="px-4 pt-8 pb-6">
         <div className="w-full max-w-2xl mx-auto">
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 mb-4">
