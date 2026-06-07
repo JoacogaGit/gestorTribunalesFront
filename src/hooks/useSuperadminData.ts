@@ -6,6 +6,8 @@ export interface TribunalGlobalRow {
   nombre: string;
   codigo_acceso: string | null;
   created_at: string | null;
+  eliminado_en: string | null;
+  eliminado_por: string | null;
   vocalias_count: number;
   miembros_count: number;
   causas_count: number;
