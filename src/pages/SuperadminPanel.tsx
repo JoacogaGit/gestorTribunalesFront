@@ -23,11 +23,21 @@ export default function SuperadminPanel() {
   // Al entrar al panel salimos de cualquier modo activo (vista del panel raíz)
   // No mostramos banner aquí.
 
+  const activos = useMemo(() => data.filter((t) => !t.eliminado_en), [data]);
+  const papelera = useMemo(() => data.filter((t) => !!t.eliminado_en), [data]);
+
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return data;
-    return data.filter((t) => t.nombre.toLowerCase().includes(term));
-  }, [data, q]);
+    if (!term) return activos;
+    return activos.filter((t) => t.nombre.toLowerCase().includes(term));
+  }, [activos, q]);
+
+  const restaurar = async (id: string, nombre: string) => {
+    const { error } = await supabase.rpc("restaurar_tribunal", { p_tribunal_id: id });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${nombre} restaurado`);
+    refetch();
+  };
 
   if (authLoading || rolLoading) {
     return (
