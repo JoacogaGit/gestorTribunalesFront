@@ -21,8 +21,11 @@ import { useAuth } from "@/context/AuthContext";
 import RefreshButton from "@/components/RefreshButton";
 import InvitarMiembroDialog from "@/components/forms/InvitarMiembroDialog";
 
+import AbandonarTribunal from "@/components/AbandonarTribunal";
+
 interface Props {
   tribunalId: string;
+  onAbandoned?: () => void;
 }
 
 function fmtDate(d: string | null) {
