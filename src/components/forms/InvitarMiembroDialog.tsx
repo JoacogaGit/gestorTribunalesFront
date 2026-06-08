@@ -14,16 +14,18 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   tribunalId: string;
+  /** Si se pasa, fuerza el rol y oculta el selector. Útil para "invitar a un nuevo admin" desde Abandonar tribunal. */
+  forceRol?: RolInvitacion;
 }
 
 const schema = z.object({
   email: z.string().trim().email("Email inválido").max(255),
 });
 
-export default function InvitarMiembroDialog({ open, onOpenChange, tribunalId }: Props) {
+export default function InvitarMiembroDialog({ open, onOpenChange, tribunalId, forceRol }: Props) {
   const inv = useInvitaciones(tribunalId);
   const [email, setEmail] = useState("");
-  const [rol, setRol] = useState<RolInvitacion>("miembro");
+  const [rol, setRol] = useState<RolInvitacion>(forceRol ?? "miembro");
   const [enviarMail, setEnviarMail] = useState(true);
   const [resultado, setResultado] = useState<{
     link: string;
@@ -34,7 +36,7 @@ export default function InvitarMiembroDialog({ open, onOpenChange, tribunalId }:
   const [copied, setCopied] = useState(false);
 
   const reset = () => {
-    setEmail(""); setRol("miembro"); setEnviarMail(true); setResultado(null); setCopied(false);
+    setEmail(""); setRol(forceRol ?? "miembro"); setEnviarMail(true); setResultado(null); setCopied(false);
   };
 
   const handleClose = (o: boolean) => {
@@ -84,19 +86,25 @@ export default function InvitarMiembroDialog({ open, onOpenChange, tribunalId }:
                 value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="rol">Rol</Label>
-              <Select value={rol} onValueChange={(v) => setRol(v as RolInvitacion)}>
-                <SelectTrigger id="rol"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="miembro">Miembro</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-[11px] text-muted-foreground">
-                Los admins pueden invitar a otros miembros, cambiar roles y eliminar miembros.
-              </p>
-            </div>
+            {forceRol ? (
+              <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
+                Esta persona será invitada como <strong>{forceRol === "admin" ? "Admin" : "Miembro"}</strong> del tribunal.
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="rol">Rol</Label>
+                <Select value={rol} onValueChange={(v) => setRol(v as RolInvitacion)}>
+                  <SelectTrigger id="rol"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="miembro">Miembro</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Los admins pueden invitar a otros miembros, cambiar roles y eliminar miembros.
+                </p>
+              </div>
+            )}
 
             <div className="flex items-start gap-2 pt-2">
               <Checkbox id="enviarMail" checked={enviarMail} onCheckedChange={(v) => setEnviarMail(!!v)} />
