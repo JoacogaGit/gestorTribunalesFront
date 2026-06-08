@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, LogOut, UserCircle2, Mail, Settings } from "lucide-react";
+import { User, LogOut, UserCircle2, Mail, Settings, DoorOpen } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
@@ -15,9 +15,11 @@ interface Props {
   name: string;
   onLogout: () => void;
   onUpdateProfile?: (data: { name: string; email: string }) => void;
+  /** Si está presente, muestra "Abandonar tribunal" en el menú. Lo dispara cualquier miembro (admin o no). */
+  onAbandonarTribunal?: () => void;
 }
 
-export default function UserMenu({ email, name, onLogout, onUpdateProfile }: Props) {
+export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal }: Props) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
@@ -59,6 +61,14 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile }: Pro
           <DropdownMenuItem onSelect={() => toast.info("Próximamente")} className="gap-2">
             <Settings className="w-4 h-4" /> Preferencias
           </DropdownMenuItem>
+          {onAbandonarTribunal && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={onAbandonarTribunal} className="gap-2">
+                <DoorOpen className="w-4 h-4" /> Abandonar tribunal
+              </DropdownMenuItem>
+            </>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={onLogout} className="gap-2 text-alert-urgent focus:text-alert-urgent">
             <LogOut className="w-4 h-4" /> Cerrar sesión
