@@ -61,6 +61,8 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     else setStep("case1");
   };
 
+  useImperativeHandle(ref, () => ({ start }), [soyUnicoMiembro, soyUnicoAdmin]);
+
   const cerrar = () => {
     if (processing) return;
     setStep("idle");
@@ -114,24 +116,26 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
   return (
     <>
-      <section className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-destructive/15 flex items-center justify-center shrink-0">
-              <LogOut className="w-5 h-5 text-destructive" />
+      {!hideSection && (
+        <section className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-destructive/15 flex items-center justify-center shrink-0">
+                <LogOut className="w-5 h-5 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-sm font-display font-semibold text-foreground">Abandonar tribunal</h3>
+                <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+                  Dejás de tener acceso a este tribunal. Esta acción no afecta a los demás miembros (salvo que seas el último).
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-display font-semibold text-foreground">Abandonar tribunal</h3>
-              <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
-                Dejás de tener acceso a este tribunal. Esta acción no afecta a los demás miembros (salvo que seas el último).
-              </p>
-            </div>
+            <Button variant="destructive" size="sm" onClick={start} disabled={!yo}>
+              <LogOut className="w-3.5 h-3.5 mr-1.5" /> Abandonar tribunal
+            </Button>
           </div>
-          <Button variant="destructive" size="sm" onClick={start} disabled={!yo}>
-            <LogOut className="w-3.5 h-3.5 mr-1.5" /> Abandonar tribunal
-          </Button>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CASO 1 — simple */}
       <AlertDialog open={step === "case1"} onOpenChange={(o) => !o && cerrar()}>
