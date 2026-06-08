@@ -1,4 +1,5 @@
 import { Causa, EstadoCausa, EstadoLibertad, Imputado, OtroInterviniente } from "@/data/mockCausas";
+import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 
 export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "probation" | "condenado";
 export type DbEstadoCausa = "tramite" | "recurso" | "terminada";
@@ -152,7 +153,22 @@ export function dbCausaToUI(row: DbCausa): Causa {
     tipoProceso: row.tipo_proceso ?? null,
     fechaPrescripcion: prescripcionPrincipal?.fecha ?? "",
     fechasPrescripcionExtra: prescripcionExtras.length > 0 ? prescripcionExtras : undefined,
-    fechaVencimientoPP: firstNonNull(sujetos.map((s) => s.vencimiento_pp)),
+    ...(() => {
+      // PP efectivo: prioriza manual cargado en algún sujeto; si ninguno tiene manual, usa el primero calculado.
+      let manual: string | undefined;
+      let calc: string | undefined;
+      for (const s of sujetos) {
+        const e = calcularPpEfectivo(s);
+        if (!e.fecha) continue;
+        if (!e.calculado && !manual) manual = e.fecha;
+        if (e.calculado && !calc) calc = e.fecha;
+      }
+      const fecha = manual ?? calc;
+      return {
+        fechaVencimientoPP: fecha,
+        fechaVencimientoPPCalculado: !manual && !!calc,
+      };
+    })(),
     otrosIntervinientes: otros.length ? otros : undefined,
     causasConexas: row.causa_conexa_texto ? [row.causa_conexa_texto] : undefined,
     causaConexaId: row.causa_conexa_id ?? null,
