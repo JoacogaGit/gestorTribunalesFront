@@ -300,7 +300,11 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
         open={openInvitar}
         onOpenChange={(o) => { setOpenInvitar(o); if (!o) refetchMiembros(); }}
         tribunalId={tribunalId}
+        forceRol="admin"
       />
     </>
   );
-}
+});
+
+export default AbandonarTribunal;
+
