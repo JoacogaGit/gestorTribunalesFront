@@ -67,6 +67,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
           .is("causas.borrado_en", null),
+        // PP manual cargado en rango [hoy, hoy+30d]
         supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .gte("vencimiento_pp", hoyDate)
