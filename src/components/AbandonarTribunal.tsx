@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { LogOut, Loader2, AlertTriangle, Shield, UserPlus, Trash2, Archive, Copy, Check } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -15,15 +15,25 @@ import { useMiembrosTribunal } from "@/hooks/useMiembrosTribunal";
 import { useTribunal } from "@/hooks/useTribunal";
 import InvitarMiembroDialog from "@/components/forms/InvitarMiembroDialog";
 
+export interface AbandonarTribunalHandle {
+  /** Abre el flujo de abandono desde un trigger externo (ej: UserMenu). */
+  start: () => void;
+}
+
 interface Props {
   tribunalId: string;
   /** Llamado tras abandonar/eliminar; debería limpiar la vocalía activa y refrescar membresías. */
   onAbandoned: () => void;
+  /** Si true, no renderiza la sección con el botón. Sólo expone start() vía ref. */
+  hideSection?: boolean;
 }
 
 type Step = "idle" | "case1" | "case2" | "case3" | "confirm-archive" | "confirm-delete";
 
-export default function AbandonarTribunal({ tribunalId, onAbandoned }: Props) {
+const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function AbandonarTribunal(
+  { tribunalId, onAbandoned, hideSection },
+  ref,
+) {
   const { user } = useAuth();
   const { tribunal } = useTribunal(tribunalId);
   const { miembros, refetch: refetchMiembros, adminCount, cambiarRol, saving } = useMiembrosTribunal(tribunalId);
