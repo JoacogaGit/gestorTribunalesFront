@@ -78,7 +78,14 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground", render: (r) => r.imputado.defensor.nombre },
     {
       key: "pp", label: "Vto. PP", headClass: "whitespace-nowrap",
-      render: (r) => <span className={`text-xs whitespace-nowrap ${r.causa.fechaVencimientoPP ? getProximityColor(r.causa.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(r.causa.fechaVencimientoPP)}</span>,
+      render: (r) => (
+        <span className={`text-xs whitespace-nowrap ${r.causa.fechaVencimientoPP ? getProximityColor(r.causa.fechaVencimientoPP) : "text-muted-foreground"}`}>
+          {fmtDate(r.causa.fechaVencimientoPP)}
+          {r.causa.fechaVencimientoPP && r.causa.fechaVencimientoPPCalculado && (
+            <span className="ml-1 text-[10px] font-normal text-muted-foreground/70" title="Calculado automáticamente: fecha de detención + 2 años">(calc.)</span>
+          )}
+        </span>
+      ),
     },
     {
       key: "vtoPena", label: "Vto. Pena", headClass: "whitespace-nowrap",

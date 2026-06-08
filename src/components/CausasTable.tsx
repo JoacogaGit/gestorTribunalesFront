@@ -304,7 +304,14 @@ export default function CausasTable({
     {
       key: "pp", label: "PP Vence", headClass: "whitespace-nowrap",
       sortValue: (c) => c.fechaVencimientoPP ? new Date(c.fechaVencimientoPP).getTime() : Number.MAX_SAFE_INTEGER,
-      render: (c) => <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>{fmtDate(c.fechaVencimientoPP)}</span>,
+      render: (c) => (
+        <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>
+          {fmtDate(c.fechaVencimientoPP)}
+          {c.fechaVencimientoPP && c.fechaVencimientoPPCalculado && (
+            <span className="ml-1 text-[10px] font-normal text-muted-foreground/70" title="Calculado automáticamente: fecha de detención + 2 años">(calc.)</span>
+          )}
+        </span>
+      ),
     },
     ...(listKey === "recursos" ? [{
       key: "vtoPena",
