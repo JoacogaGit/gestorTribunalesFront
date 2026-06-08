@@ -761,6 +761,22 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               value={sujeto.vencimiento_pp ?? ""}
               onChange={(e) => onChange({ vencimiento_pp: e.target.value || null })}
             />
+            {(() => {
+              if (sujeto.vencimiento_pp) return null;
+              if (sujeto.vencimiento_pena) return null;
+              if (!sujeto.fecha_detencion) return null;
+              // Mostrar el calculado en gris.
+              const base = sujeto.fecha_detencion.slice(0, 10);
+              const d = new Date(base + "T00:00:00");
+              if (isNaN(d.getTime())) return null;
+              d.setFullYear(d.getFullYear() + 2);
+              const calc = d.toLocaleDateString("es-AR");
+              return (
+                <p className="text-[10px] text-muted-foreground/70">
+                  Calculado automático: {calc} (detención + 2 años). Dejá vacío para usar el calculado.
+                </p>
+              );
+            })()}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Vto. Pena</Label>

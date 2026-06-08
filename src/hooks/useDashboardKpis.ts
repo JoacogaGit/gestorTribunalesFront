@@ -50,7 +50,12 @@ export function useDashboardKpis(vocaliaId: string | null) {
       const { inicio: mesIni, fin: mesFin } = rangoMesActual();
       const { hoyISO, finISO, hoyDate, finDate } = rango30Dias();
 
-      const [detenidos, juicios, pp, rebeldes, evt30, total] = await Promise.all([
+      // Para PP calculado: fecha_detencion + 2 años en [hoy, hoy+30d]
+      // ↔ fecha_detencion en [hoy - 2y, hoy+30d - 2y]
+      const ppCalcDesde = (() => { const d = new Date(hoyDate + "T00:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
+      const ppCalcHasta = (() => { const d = new Date(finDate + "T00:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
+
+      const [detenidos, juicios, pp, ppCalc, rebeldes, evt30, total] = await Promise.all([
         supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .eq("situacion_libertad", "detenido")
@@ -67,10 +72,22 @@ export function useDashboardKpis(vocaliaId: string | null) {
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
           .is("causas.borrado_en", null),
+        // PP manual cargado en rango [hoy, hoy+30d]
         supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .gte("vencimiento_pp", hoyDate)
           .lte("vencimiento_pp", finDate)
+          .in("causas.estado_causa", ACTIVOS)
+          .eq("causas.vocalia_id", vocaliaId)
+          .is("borrado_en", null)
+          .is("causas.borrado_en", null),
+        // PP calculado: sin vencimiento_pp ni vencimiento_pena, con fecha_detencion+2y en el rango.
+        supabase.from("sujetos")
+          .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
+          .is("vencimiento_pp", null)
+          .is("vencimiento_pena", null)
+          .gte("fecha_detencion", ppCalcDesde)
+          .lte("fecha_detencion", ppCalcHasta)
           .in("causas.estado_causa", ACTIVOS)
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
@@ -100,7 +117,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
       setKpis({
         detenidos: await countOrThrow(detenidos),
         juiciosEsteMes: await countOrThrow(juicios),
-        ppProximas: await countOrThrow(pp),
+        ppProximas: (await countOrThrow(pp)) + (await countOrThrow(ppCalc)),
         rebeldes: await countOrThrow(rebeldes),
         eventos30d: await countOrThrow(evt30),
         totalCausas: await countOrThrow(total),

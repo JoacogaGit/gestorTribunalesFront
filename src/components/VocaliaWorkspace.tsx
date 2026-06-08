@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
@@ -29,6 +29,7 @@ import { useTribunal } from "@/hooks/useTribunal";
 import { supabase } from "@/integrations/supabase/client";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
+import AbandonarTribunal, { AbandonarTribunalHandle } from "@/components/AbandonarTribunal";
 import Papelera from "@/components/Papelera";
 import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
@@ -138,6 +139,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
   const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
   const [showCreateCausa, setShowCreateCausa] = useState(false);
+  const abandonarRef = useRef<AbandonarTribunalHandle>(null);
 
   const navigateToCausa = async (causaId: string) => {
     const { data, error } = await supabase
@@ -332,9 +334,19 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               name={user.name}
               onLogout={onLogout}
               onUpdateProfile={onUpdateUser}
+              onAbandonarTribunal={tribunalId ? () => abandonarRef.current?.start() : undefined}
             />
           </div>
         </div>
+
+        {tribunalId && (
+          <AbandonarTribunal
+            ref={abandonarRef}
+            tribunalId={tribunalId}
+            hideSection
+            onAbandoned={() => { setVocalia(null); onBack(); }}
+          />
+        )}
 
         {migracionStatus && view !== "migrar" && (
           <MigracionFloatingBanner

@@ -53,6 +53,8 @@ export interface Causa {
   fechaPrescripcion: string;
   fechasPrescripcionExtra?: { fecha: string; label?: string }[];
   fechaVencimientoPP?: string;
+  /** true si fechaVencimientoPP fue calculada automáticamente (fecha_detencion + 2 años). */
+  fechaVencimientoPPCalculado?: boolean;
   juicioFijado?: { fecha: string; hora: string };
   audiencias?: Audiencia[];
   probation?: { vencimiento: string };
