@@ -364,7 +364,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="flex flex-col flex-1 min-h-0"
+            className={view === "migrar" ? "hidden" : "flex flex-col flex-1 min-h-0"}
           >
             {view === "dashboard" && (
               <div className="space-y-8 flex flex-col flex-1 min-h-0">
