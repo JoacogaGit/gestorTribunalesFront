@@ -595,6 +595,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             estado interno y los lotes en curso se preservan. */}
         {vocaliaId && (
           <div
+            ref={(el) => {
+              if (el && view === "migrar") {
+                // Reset scroll to top whenever the migrar view becomes active.
+                requestAnimationFrame(() => { el.scrollTop = 0; });
+              }
+            }}
+            key={view === "migrar" ? "migrar-visible" : "migrar-hidden"}
             className={
               view === "migrar"
                 ? "flex-1 min-h-0 overflow-y-auto -mx-6 lg:-mx-8 px-6 lg:px-8"
