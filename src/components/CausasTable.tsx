@@ -313,7 +313,7 @@ export default function CausasTable({
         </span>
       ),
     },
-    ...(listKey === "recursos" ? [{
+    {
       key: "vtoPena",
       label: "Vto. Pena",
       headClass: "whitespace-nowrap",
@@ -338,7 +338,7 @@ export default function CausasTable({
           </div>
         );
       },
-    } satisfies ColDef] : []),
+    },
     {
       key: "otrosIntervinientes", label: "Otros intervinientes",
       cellClass: "text-xs text-muted-foreground max-w-[180px]",

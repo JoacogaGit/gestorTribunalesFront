@@ -23,6 +23,7 @@ export function useDetenidos(vocaliaId: string | null) {
       .select("*, causas!inner(*)")
       .eq("situacion_libertad", "detenido")
       .eq("causas.vocalia_id", vocaliaId)
+      .neq("causas.estado_causa", "terminada")
       .is("borrado_en", null)
       .is("causas.borrado_en", null)
       .order("created_at", { ascending: false });
