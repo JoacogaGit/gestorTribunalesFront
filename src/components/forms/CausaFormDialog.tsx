@@ -55,7 +55,9 @@ interface SujetoState extends SujetoInput {
 function emptyCausa(): CausaInput {
   return {
     expediente_nro: "",
+    numero_interno: null,
     caratula: "",
+
     estado_causa: "tramite",
     tipo_recurso: null,
     tipo_proceso: null,
