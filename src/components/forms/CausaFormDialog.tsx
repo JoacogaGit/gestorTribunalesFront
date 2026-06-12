@@ -431,6 +431,15 @@ export default function CausaFormDialog({
                     />
                   </div>
                   <div className="space-y-1.5">
+                    <Label className="text-xs">Número interno del tribunal</Label>
+                    <Input
+                      value={causa.numero_interno ?? ""}
+                      onChange={(e) => updateCausa({ numero_interno: e.target.value })}
+                      placeholder="Ej. 7019"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
                     <Label className="text-xs">Carátula</Label>
                     <Input
                       value={causa.caratula ?? ""}
