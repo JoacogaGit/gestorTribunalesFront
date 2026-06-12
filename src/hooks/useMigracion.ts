@@ -6,7 +6,9 @@ import { normalizarCausa } from "@/lib/normalizarCausa";
 export interface CausaIA {
   id_temporal: string;
   expediente_nro: string;
+  numero_interno?: string | null;
   caratula: string | null;
+
   estado_causa: "tramite" | "recurso" | "terminada";
   tipo_recurso: "casacion" | "rex" | "queja_corte" | null;
   tipo_proceso?: "unipersonal" | "colegiado" | null;
