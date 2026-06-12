@@ -52,7 +52,9 @@ export type DbTipoProceso = "unipersonal" | "colegiado" | null;
 export type DbCausa = {
   id: string;
   expediente_nro: string;
+  numero_interno: string | null;
   caratula: string | null;
+
   estado_causa: DbEstadoCausa;
   tipo_recurso: DbTipoRecurso;
   tipo_proceso: DbTipoProceso;
