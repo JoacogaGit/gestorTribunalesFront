@@ -146,7 +146,9 @@ export function dbCausaToUI(row: DbCausa): Causa {
   return {
     id: row.id,
     numero: row.expediente_nro,
+    numeroInterno: row.numero_interno ?? null,
     caratulaOverride: row.caratula ?? undefined,
+
     delito: firstNonNull(sujetos.map((s) => s.delito)) ?? "—",
     imputados,
     estadoCausa: mapEstadoCausa(row.estado_causa, row.tipo_recurso),
