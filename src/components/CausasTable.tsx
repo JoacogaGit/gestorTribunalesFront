@@ -244,6 +244,17 @@ export default function CausasTable({
       },
     },
     {
+      key: "numeroInterno",
+      label: "N° Interno",
+      headClass: "whitespace-nowrap",
+      cellClass: "font-mono text-xs whitespace-nowrap",
+      sortValue: (c) => c.numeroInterno ?? "",
+      render: (c) => c.numeroInterno
+        ? <span className="text-muted-foreground">{c.numeroInterno}</span>
+        : <span className="text-muted-foreground/60">—</span>,
+    },
+
+    {
       key: "caratula", label: "Carátula",
       cellClass: "text-sm font-medium text-foreground max-w-[220px] truncate",
       sortValue: (c) => getCaratula(c),
