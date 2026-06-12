@@ -420,9 +420,20 @@ export default function CausasTable({
   const storageKey = listKey ? `cols-hidden-${listKey}` : null;
   const customColsKey = listKey ? `cols-custom-${listKey}` : null;
   const initialHidden = (() => {
-    if (!storageKey) return new Set<string>();
-    try { return new Set<string>(JSON.parse(localStorage.getItem(storageKey) || "[]")); } catch { return new Set<string>(); }
+    if (!storageKey) return new Set<string>(["numeroInterno"]);
+    const raw = localStorage.getItem(storageKey);
+    let set: Set<string>;
+    try { set = new Set<string>(JSON.parse(raw || "[]")); } catch { set = new Set<string>(); }
+    // One-time migration: "numeroInterno" comienza OCULTA por default.
+    const migKey = `${storageKey}:numeroInterno-default-applied`;
+    if (raw === null || !localStorage.getItem(migKey)) {
+      set.add("numeroInterno");
+      localStorage.setItem(storageKey, JSON.stringify([...set]));
+      localStorage.setItem(migKey, "1");
+    }
+    return set;
   })();
+
   const initialCustom = (() => {
     if (!customColsKey) return [] as { key: string; label: string }[];
     try { return JSON.parse(localStorage.getItem(customColsKey) || "[]"); } catch { return []; }
