@@ -206,7 +206,9 @@ export function useMigracion() {
         const causaPayload = {
           vocalia_id: vocaliaId,
           expediente_nro: c.expediente_nro,
+          numero_interno: c.numero_interno ?? null,
           caratula: c.caratula,
+
           estado_causa: c.estado_causa,
           tipo_recurso: c.tipo_recurso,
           tipo_proceso: c.tipo_proceso ?? null,
