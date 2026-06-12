@@ -74,6 +74,7 @@ export type Database = {
           id: string
           link_externo: string | null
           modificado_por: string | null
+          numero_interno: string | null
           otros_intervinientes: string | null
           querella: string | null
           tipo_proceso: Database["public"]["Enums"]["tipo_proceso_enum"] | null
@@ -98,6 +99,7 @@ export type Database = {
           id?: string
           link_externo?: string | null
           modificado_por?: string | null
+          numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
@@ -122,6 +124,7 @@ export type Database = {
           id?: string
           link_externo?: string | null
           modificado_por?: string | null
+          numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null

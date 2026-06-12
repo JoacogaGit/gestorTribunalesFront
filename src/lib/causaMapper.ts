@@ -52,7 +52,9 @@ export type DbTipoProceso = "unipersonal" | "colegiado" | null;
 export type DbCausa = {
   id: string;
   expediente_nro: string;
+  numero_interno: string | null;
   caratula: string | null;
+
   estado_causa: DbEstadoCausa;
   tipo_recurso: DbTipoRecurso;
   tipo_proceso: DbTipoProceso;
@@ -144,7 +146,9 @@ export function dbCausaToUI(row: DbCausa): Causa {
   return {
     id: row.id,
     numero: row.expediente_nro,
+    numeroInterno: row.numero_interno ?? null,
     caratulaOverride: row.caratula ?? undefined,
+
     delito: firstNonNull(sujetos.map((s) => s.delito)) ?? "—",
     imputados,
     estadoCausa: mapEstadoCausa(row.estado_causa, row.tipo_recurso),

@@ -96,7 +96,9 @@ export function normalizarCausa(c: unknown): CausaIA {
   return {
     id_temporal: toStringOrNull(src.id_temporal) ?? "",
     expediente_nro: toStringOrNull(src.expediente_nro) ?? "",
+    numero_interno: toStringOrNull(src.numero_interno),
     caratula: toStringOrNull(src.caratula),
+
     estado_causa: estado,
     tipo_recurso: tipoRec,
     tipo_proceso: tipoProc,

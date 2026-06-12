@@ -55,7 +55,9 @@ interface SujetoState extends SujetoInput {
 function emptyCausa(): CausaInput {
   return {
     expediente_nro: "",
+    numero_interno: null,
     caratula: "",
+
     estado_causa: "tramite",
     tipo_recurso: null,
     tipo_proceso: null,
@@ -145,7 +147,10 @@ export default function CausaFormDialog({
         } else {
           setCausa({
             expediente_nro: data.expediente_nro ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            numero_interno: (data as any).numero_interno ?? null,
             caratula: data.caratula ?? "",
+
             estado_causa: data.estado_causa as DbEstadoCausa,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -425,6 +430,15 @@ export default function CausaFormDialog({
                       autoFocus
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Número interno del tribunal</Label>
+                    <Input
+                      value={causa.numero_interno ?? ""}
+                      onChange={(e) => updateCausa({ numero_interno: e.target.value })}
+                      placeholder="Ej. 7019"
+                    />
+                  </div>
+
                   <div className="space-y-1.5">
                     <Label className="text-xs">Carátula</Label>
                     <Input

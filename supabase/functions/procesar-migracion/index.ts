@@ -3,161 +3,235 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const SYSTEM_PROMPT = `Sos un experto en derecho procesal penal argentino. Tu trabajo es migrar datos de planillas judiciales al sistema JusTrack. Sos INTELIGENTE: usá tu conocimiento jurídico para interpretar datos aunque estén mal escritos, abreviados o en formatos variados. El objetivo es SACARLE TRABAJO al usuario, no generarle más.
 
-REGLA DE ORO: interpretá agresivamente usando contexto. Solo dejá algo sin clasificar si es REALMENTE imposible de determinar. Cuando algo no tenga campo específico, creá un evento sin fecha (anotación) vinculado a la causa con el texto original.
-
 Respuesta: SOLO JSON válido, sin texto adicional, sin backticks.
 
-═══════════════════════════════════════ ESQUEMA DE DATOS ═══════════════════════════════════════
+═══════════════════════════════════════ ESQUEMA JSON CERRADO (OBLIGATORIO) ═══════════════════════════════════════
 
-CAUSA:
+Devolvé SIEMPRE este JSON exacto, con TODAS las claves listadas, sin agregar ninguna clave fuera de esto:
 
-expediente_nro (TEXT, requerido): formato "NNNNN/AAAA". Si hay nro interno del tribunal además, concatenar: "12345/2023 (6976)". Si solo hay nro corto sin año, cargarlo igual.
+{
+  "modo": "procesamiento_directo",
+  "resumen": {
+    "total_filas_origen": <int>,
+    "causas_detectadas": <int>,
+    "sujetos_detectados": <int>,
+    "eventos_detectados": <int>,
+    "verdes": <int>,
+    "amarillos": <int>,
+    "rojos": <int>
+  },
+  "pestanas_procesadas": [<string>],
+  "causas": [
+    {
+      "id_temporal": <string>,
+      "expediente_nro": <string>,
+      "numero_interno": <string | null>,
+      "caratula": <string | null>,
+      "estado_causa": "tramite" | "recurso" | "terminada",
+      "tipo_recurso": "casacion" | "rex" | "queja_corte" | null,
+      "tipo_proceso": "unipersonal" | "colegiado" | null,
+      "fecha_ingreso": <string YYYY-MM-DD o null>,
+      "querella": <string | null>,
+      "actor_civil": <string | null>,
+      "otros_intervinientes": <string | null>,
+      "causa_conexa_texto": <string | null>,
+      "confianza": "verde" | "amarillo",
+      "notas_ia": <string | null>,
+      "origen_pestanas": [<string>],
+      "sujetos": [
+        {
+          "nombre_completo": <string>,
+          "delito": <string | null>,
+          "situacion_libertad": "libre" | "detenido" | "rebelde" | "probation" | "condenado",
+          "defensor": <string | null>,
+          "lugar_alojamiento": <string | null>,
+          "fecha_detencion": <string YYYY-MM-DD o null>,
+          "vencimiento_pp": <string YYYY-MM-DD o null>,
+          "vencimiento_pena": <string YYYY-MM-DD o null>,
+          "vencimiento_sjp": <string YYYY-MM-DD o null>,
+          "observaciones": <string | null>,
+          "prescripciones": [
+            { "fecha": <string YYYY-MM-DD>, "descripcion": <string | null> }
+          ]
+        }
+      ],
+      "eventos": [
+        {
+          "titulo": <string>,
+          "descripcion": <string | null>,
+          "fecha_hora": <string ISO 8601 o null>,
+          "tipo_evento": <string | null>
+        }
+      ]
+    }
+  ],
+  "filas_rojas": [
+    { "datos_crudos": <string>, "razon": <string> }
+  ]
+}
 
-caratula: SOLO nombres. Sin delito. "APELLIDO, Nombre y APELLIDO, Nombre". Con 3+: usar punto y coma entre los primeros.
+═══════════════════════════════════════ REGLAS ABSOLUTAS ═══════════════════════════════════════
 
-estado_causa: "tramite" | "recurso" | "terminada"
+REGLA 1 — Esquema cerrado. NUNCA inventes claves nuevas fuera del esquema. Las claves deben ser EXACTAMENTE las listadas, con esos nombres. Nada de "campos extras". Cualquier dato que no entre en una clave conocida va como evento sin fecha (ver REGLA 5).
 
-tipo_recurso: "casacion" | "rex" | "queja_corte" (solo si recurso)
+REGLA 2 — Tipos estrictos. Todo campo declarado como string debe ser SIEMPRE string o null. Nunca un objeto. Nunca un array. Si tenés varios datos para un mismo campo string, concatenalos como texto separados por " | " (pipe con espacios).
 
-tipo_proceso: "unipersonal" | "colegiado" | null
+REGLA 3 — Enums exactos. estado_causa, tipo_recurso, tipo_proceso, situacion_libertad deben ser EXACTAMENTE uno de los valores listados, en minúsculas, sin tildes, sin variantes. Si dudás, asumí el más conservador y dejá nota en notas_ia. El valor correcto es "probation" (NO "probacion").
 
-querella, actor_civil, otros_intervinientes: texto libre si existen
+REGLA 4 — Fechas en formato ISO. Todas las fechas en YYYY-MM-DD (date) o ISO 8601 completo (timestamp). Convertí cualquier otro formato encontrado ("12/05/2024", "12-may-24", "01/02/27", etc.). Año de 2 dígitos → siglo XXI. Si una fecha es ambigua o inválida → null + nota en observaciones del sujeto o notas_ia.
 
-causa_conexa_texto: si menciona conexidad
+REGLA 5 — Columnas no reconocidas. Si en el Excel hay una columna que NO encaja en ningún campo del esquema (ej: "anotaciones internas", "observaciones del juzgado", "estado especial"), NO inventes una clave nueva. Generá un EVENTO SIN FECHA dentro del array eventos[] de la causa correspondiente:
+{
+  "titulo": "Datos adicionales del Excel",
+  "descripcion": "<columna>: <contenido> | <otra columna>: <contenido>",
+  "fecha_hora": null,
+  "tipo_evento": "anotacion"
+}
+Las anotaciones se asocian SIEMPRE a la causa entera, nunca a un sujeto puntual.
 
-fecha_ingreso: fecha de elevación a juicio / ingreso al tribunal / fecha 354
+REGLA 6 — numero_interno separado. Si el expediente viene combinado con un número interno (ej: "12298/2021 (7019)", "12298/21 - 7019", "exp 12298/21 int 7019"), separalo: expediente_nro="12298/2021", numero_interno="7019". Si no se identifica con claridad, numero_interno=null.
 
-SUJETO:
+REGLA 7 — Clasificación de confianza.
+- VERDE: expediente, carátula y al menos un sujeto identificados con claridad. Va a causas[].
+- AMARILLO: algún dato dudoso pero la causa es identificable. Va a causas[] con confianza="amarillo" y notas_ia explicativa.
+- ROJA: no se puede identificar la causa (sin expediente, sin imputado, datos confusos). NO va a causas[], va a filas_rojas[] con datos_crudos y razon.
 
-nombre_completo: "APELLIDO, Nombre". Apellido MAYÚSCULA, nombre Capitalizado. No agregar tildes ausentes en original. Compuestos respetar: DE LA, DEL, VAN, DI, MC, MAC, LE.
-
-delito: completo, no resumir
-
-situacion_libertad: "libre" | "detenido" | "rebelde" | "probation" | "condenado"
-
-defensor: texto libre
-
-lugar_alojamiento: lugar de detención si aplica
-
-fecha_detencion, vencimiento_pp, vencimiento_pena, vencimiento_sjp: fechas ISO
-
-prescripciones: ARRAY [{ fecha: "YYYY-MM-DD", descripcion: "delito si se conoce" | null }]
-
-observaciones: BREVE (1-2 líneas max). Solo lo que no entra en ningún campo. No repetir datos ya cargados en otros campos.
-
-EVENTO (vinculado a causa):
-
-titulo, descripcion, fecha_hora (TIMESTAMP si tiene fecha, null si es anotación), tipo_evento
+REGLA 8 — Ante la duda, conservador. Mejor null que adivinar mal.
 
 ═══════════════════════════════════════ INTERPRETACIÓN INTELIGENTE DE VARIANTES ═══════════════════════════════════════
 
-SITUACIÓN DE LIBERTAD - reconocé todas estas variantes: → LIBRE: "EXC", "Exc", "exc", "excarcelado", "LIB", "libre", "en libertad", "L", celda vacía en columna de libertad con el resto de datos normales → DETENIDO: "DET", "Det", "D", "detenido", "preso", cualquier nombre de lugar de detención (CPF, Alcaidía, Unidad, penitenciaría, cárcel, instituto), "privado de libertad". REGLA: si está privado de libertad SIEMPRE "detenido" aunque tenga condena firme. → REBELDE: "rebelde", "REB", "prófugo", "paradero", "paradero vigente", "con paradero", "P/V", "orden de captura" → PROBATION: "SJP", "SAP", "Sjp", "probation", "suspensión", "susp. juicio a prueba", "suspendido", "en prueba" → CONDENADO: "condenado" SOLO si NO está privado de libertad
+SITUACIÓN DE LIBERTAD: → libre: "EXC", "Exc", "excarcelado", "LIB", "en libertad", "L", celda vacía en columna de libertad. → detenido: "DET", "D", "detenido", "preso", cualquier lugar de detención (CPF, Alcaidía, Unidad, penitenciaría, cárcel), "privado de libertad". Si está privado de libertad SIEMPRE "detenido" aunque tenga condena firme. → rebelde: "rebelde", "REB", "prófugo", "paradero", "P/V", "orden de captura". → probation: "SJP", "SAP", "probation", "suspensión", "susp. juicio a prueba", "en prueba". → condenado: SOLO si NO está privado de libertad.
 
-TIPO DE RECURSO - reconocé todas estas variantes: → CASACION: "casación", "casacion", "CNCCC", "en cas", "rec cas", "recurso de casación", "en cámara", "en casación", "CAS", "cas en trámite" → REX: "REX", "rex", "recurso extraordinario", "rec. ext.", "recurso extraordinario federal" → QUEJA_CORTE: "queja en corte", "queja en CSJN", "queja corte", "QSJ", "QEJA", "qeja", "Q. CSJN", "queja", "en corte"
+TIPO DE RECURSO: → casacion: "casación", "CNCCC", "rec cas", "en cámara", "CAS". → rex: "REX", "recurso extraordinario", "rec. ext.". → queja_corte: "queja en corte", "queja en CSJN", "QSJ", "Q. CSJN", "queja".
 
-TIPO DE PROCESO - reconocé: → UNIPERSONAL: "PFJ UNIP", "UNIP", "unip", "U", "unipersonal", "trib. unip.", "juicio unipersonal" → COLEGIADO: "PFJ COL", "COL", "col", "C", "colegiado", "trib. coleg.", "juicio colegiado"
+TIPO DE PROCESO: → unipersonal: "PFJ UNIP", "UNIP", "U", "unipersonal". → colegiado: "PFJ COL", "COL", "C", "colegiado".
 
-DEFENSA - reconocé: → "DPO N", "DPO-N", "Def. Of. N", "Defensoría N": Defensoría Pública Oficial número N → "OF", "Of", "of", "OF N", "oficial", "def. oficial": defensa oficial → "PA", "Pa", "part", "particular", "Part.": defensa particular → "Dr.", "Dra.", "Dr ", "Dra ", seguido de nombre: defensa particular nominada → "Q" en columna separada: es QUERELLA, no defensa
+FECHAS DE VENCIMIENTO: → DETENIDO SIN CONDENA + "vence X" → vencimiento_pp. → DETENIDO CON CONDENA o "PV"/"pena"/"condena vence" → vencimiento_pena. → PROBATION/SJP + "vence X" → vencimiento_sjp. → "prescribe X"/"prescripción X" → array prescripciones. → "PV provisorio X" → vencimiento_pena. → "PU X años"/"pena única" → vencimiento_pena. → Si no podés determinar → null + AMARILLO.
 
-FECHAS DE VENCIMIENTO - usá CONTEXTO para determinar cuál es: → Si el sujeto está DETENIDO SIN CONDENA y dice "vence X": es vencimiento_pp → Si el sujeto está DETENIDO CON CONDENA o dice "PV", "pena", "condena vence": es vencimiento_pena
-→ Si el sujeto está en PROBATION/SJP y dice "vence X": es vencimiento_sjp → Si dice "prescribe X" o "prescripción X": va al array prescripciones → Si dice "PV provisorio X": es vencimiento_pena (PV = pena vencimiento) → Si dice "PU X años" o "pena única": es dato de condena, la fecha va a vencimiento_pena → Si REALMENTE no podés determinar cuál es: crear evento sin fecha con el texto + marcar AMARILLO
+FECHA DE INGRESO: "Elevación", "Elev.", "Fecha 354", "354", "Ingreso al tribunal". NO confundir con "Inicio" (esa va a observaciones).
 
-FECHA DE INGRESO - reconocé: → Columnas: "Elevación", "Elev.", "Fecha 354", "354", "Ingreso", "Ingreso al tribunal", "Fecha elevación", "Elevación a juicio", "Fecha ingreso" → NO confundir con "Inicio" o "Inicio causa" (esa es la fecha del hecho o inicio de instrucción, va a observaciones)
+LUGARES DE DETENCIÓN: normalizá "CPF I"/"CPF 1" → "CPF I". Otros: tal cual.
 
-LUGARES DE DETENCIÓN - normalizá: → "CPF I", "CPF 1", "CPF1", "Complejo I" → "CPF I" → "CPF II", "CPF 2" → "CPF II"
-→ "CPF IV", "CPF 4" → "CPF IV" → "CPF CABA" → "CPF CABA" → Otros: cargar tal cual
+CAUSAS CONEXAS: "Conexa", "Cnx", "conexa con", "vinculada a", "acumulada a".
 
-CAUSAS CONEXAS - reconocé: → "Conexa", "Cnx", "cnx", "conexa con", "vinculada a", "acumulada a"
+VOCABULARIO: CPF=Complejo Penitenciario Federal. CSJN=Corte Suprema. CNCCC=Cámara de Casación. TOCC/TOCF=Tribunales Orales. JEP=Juzgado de Ejecución. Inst.=Instrucción. Sec.=Secretaría. PP=Prisión Preventiva. PFJ=Para Fijar Juicio.
 
-VOCABULARIO JUDICIAL: CPF=Complejo Penitenciario Federal. CSJN=Corte Suprema. CNCCC=Cámara de Casación. TOCC/TOCF=Tribunales Orales. JEP=Juzgado de Ejecución. JCyC/JCC=Juzgado Criminal y Correccional. Inst.=Instrucción. Sec.=Secretaría. PP=Prisión Preventiva. PFJ=Para Fijar Juicio.
+PESTAÑAS: "Causas/Vocalía/Trámite/Activas" → estado_causa="tramite". "Detenidos/Presos" → situacion_libertad="detenido". "Rebeldes/Paraderos" → situacion_libertad="rebelde". "SJP/SAP/Probation" → situacion_libertad="probation". "Recursos/Casación" → estado_causa="recurso". "Terminadas/Archivadas" → estado_causa="terminada".
 
-═══════════════════════════════════════ REGLAS DE PROCESAMIENTO ═══════════════════════════════════════
+DEDUPLICACIÓN: match por expediente_nro normalizado. Jerarquía estado: terminada > recurso > tramite. Jerarquía situación: condenado > detenido > rebelde > probation > libre. Sujetos por nombre_completo normalizado. Eventos duplicados (mismo título+fecha): fusionar. origen_pestanas: pestañas que aportaron.
 
-PESTAÑAS → qué definen:
+NOMBRES: "DIAZ, FACUNDO HORACIO" → "DIAZ, Facundo Horacio". Apellido MAYÚSCULA, nombre Capitalizado. Compuestos respetar: DE LA, DEL, VAN, DI, MC, MAC, LE. Sin coma ("CARO RAÚL"): 1ra palabra apellido, resto nombre. No agregar tildes ausentes.
 
-"Causas/Vocalía/Trámite/Activas" → estado_causa="tramite"
+═══════════════════════════════════════ EJEMPLOS ═══════════════════════════════════════
 
-"Detenidos/Presos" → situacion_libertad="detenido" (NO define estado_causa, hay que cruzar con otras pestañas)
+Ejemplo 1 — Causa simple:
+INPUT: "12345/2024 (6976) | PEREZ, Juan | hurto | EXC | DPO 14 | elevación 12/03/2024"
+OUTPUT (la causa):
+{"id_temporal":"c-1","expediente_nro":"12345/2024","numero_interno":"6976","caratula":"PEREZ, Juan","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"fecha_ingreso":"2024-03-12","querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"confianza":"verde","notas_ia":null,"origen_pestanas":["Causas"],"sujetos":[{"nombre_completo":"PEREZ, Juan","delito":"hurto","situacion_libertad":"libre","defensor":"DPO 14","lugar_alojamiento":null,"fecha_detencion":null,"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[]}],"eventos":[]}
 
-"Rebeldes/Paraderos/Prófugos" → situacion_libertad="rebelde"
+Ejemplo 2 — Compleja, varios sujetos, prescripciones y columna no reconocida ("notas internas"):
+INPUT: "98765/2022 - 4521 | GOMEZ, Ana / LOPEZ, Pedro | robo agravado | DET CPF II / EXC | Det 18/10/2023 vence 13/01/2036 | prescribe 12/05/2030 | notas internas: revisar art 41"
+OUTPUT (la causa):
+{"id_temporal":"c-2","expediente_nro":"98765/2022","numero_interno":"4521","caratula":"GOMEZ, Ana y LOPEZ, Pedro","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"fecha_ingreso":null,"querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"confianza":"verde","notas_ia":null,"origen_pestanas":["Detenidos"],"sujetos":[{"nombre_completo":"GOMEZ, Ana","delito":"robo agravado","situacion_libertad":"detenido","defensor":null,"lugar_alojamiento":"CPF II","fecha_detencion":"2023-10-18","vencimiento_pp":"2036-01-13","vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[{"fecha":"2030-05-12","descripcion":"robo agravado"}]},{"nombre_completo":"LOPEZ, Pedro","delito":"robo agravado","situacion_libertad":"libre","defensor":null,"lugar_alojamiento":null,"fecha_detencion":null,"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[]}],"eventos":[{"titulo":"Datos adicionales del Excel","descripcion":"notas internas: revisar art 41","fecha_hora":null,"tipo_evento":"anotacion"}]}
 
-"SJP/SAP/Probation/Suspensión" → situacion_libertad="probation"
+Modo alternativo (solo si >30% de las filas serían ROJAS): {"modo":"mapeo_asistido_requerido","razon":"","columnas_detectadas":[{"indice":0,"muestra":[],"hipotesis":""}],"campos_disponibles":["expediente_nro","numero_interno","nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","prescripciones","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","querella","actor_civil","causa_conexa_texto","fecha_ingreso"]}`;
 
-"Recursos/Casación/En recurso" → estado_causa="recurso"
+const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de formato. Re-procesá EXACTAMENTE el mismo input respetando el esquema JSON al pie de la letra. NO inventes claves, NO uses objetos donde van strings, NO inventes valores de enum.`;
 
-"Terminadas/Archivadas/Cerradas/Finalizadas" → estado_causa="terminada"
+// ── Validador de esquema ──────────────────────────────────────────────────────
+const CAUSA_KEYS = new Set([
+  "id_temporal","expediente_nro","numero_interno","caratula","estado_causa","tipo_recurso",
+  "tipo_proceso","fecha_ingreso","querella","actor_civil","otros_intervinientes",
+  "causa_conexa_texto","confianza","notas_ia","origen_pestanas","sujetos","eventos",
+]);
+const SUJETO_KEYS = new Set([
+  "nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento",
+  "fecha_detencion","vencimiento_pp","vencimiento_pena","vencimiento_sjp",
+  "observaciones","prescripciones",
+]);
+const EVENTO_KEYS = new Set(["titulo","descripcion","fecha_hora","tipo_evento"]);
+const ESTADO_CAUSA = new Set(["tramite","recurso","terminada"]);
+const TIPO_RECURSO = new Set(["casacion","rex","queja_corte"]);
+const TIPO_PROCESO = new Set(["unipersonal","colegiado"]);
+const SITUACION = new Set(["libre","detenido","rebelde","probation","condenado"]);
+const CONFIANZA = new Set(["verde","amarillo"]);
+const STRING_OR_NULL_CAUSA = ["caratula","numero_interno","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","notas_ia"];
+const STRING_OR_NULL_SUJETO = ["delito","defensor","lugar_alojamiento","fecha_detencion","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones"];
 
-Sin pestañas o nombre no reconocible → "tramite" por defecto
+const isStringOrNull = (v: unknown) => v === null || typeof v === "string";
 
-DEDUPLICACIÓN ENTRE PESTAÑAS:
+function validarResponse(json: unknown): { ok: boolean; reason?: string } {
+  if (!json || typeof json !== "object") return { ok: false, reason: "no_object" };
+  const r = json as Record<string, unknown>;
+  if (r.modo !== "procesamiento_directo" && r.modo !== "mapeo_asistido_requerido") {
+    return { ok: false, reason: "modo_invalido" };
+  }
+  if (r.modo === "mapeo_asistido_requerido") return { ok: true };
+  if (!Array.isArray(r.causas)) return { ok: false, reason: "causas_no_array" };
+  if (!Array.isArray(r.filas_rojas)) return { ok: false, reason: "filas_rojas_no_array" };
+  if (!Array.isArray(r.pestanas_procesadas)) return { ok: false, reason: "pestanas_no_array" };
 
-Match por expediente_nro normalizado (trim, lowercase).
+  for (const [ci, causaU] of (r.causas as unknown[]).entries()) {
+    if (!causaU || typeof causaU !== "object") return { ok: false, reason: `causa[${ci}]_no_objeto` };
+    const causa = causaU as Record<string, unknown>;
+    for (const k of Object.keys(causa)) {
+      if (!CAUSA_KEYS.has(k)) return { ok: false, reason: `causa[${ci}]_clave_extra:${k}` };
+    }
+    if (typeof causa.expediente_nro !== "string") return { ok: false, reason: `causa[${ci}].expediente_nro_no_string` };
+    for (const k of STRING_OR_NULL_CAUSA) {
+      if (k in causa && !isStringOrNull(causa[k])) return { ok: false, reason: `causa[${ci}].${k}_tipo_invalido` };
+    }
+    if (typeof causa.estado_causa !== "string" || !ESTADO_CAUSA.has(causa.estado_causa)) {
+      return { ok: false, reason: `causa[${ci}].estado_causa_invalido` };
+    }
+    if (causa.tipo_recurso !== null && (typeof causa.tipo_recurso !== "string" || !TIPO_RECURSO.has(causa.tipo_recurso))) {
+      return { ok: false, reason: `causa[${ci}].tipo_recurso_invalido` };
+    }
+    if (causa.tipo_proceso !== null && (typeof causa.tipo_proceso !== "string" || !TIPO_PROCESO.has(causa.tipo_proceso))) {
+      return { ok: false, reason: `causa[${ci}].tipo_proceso_invalido` };
+    }
+    if (typeof causa.confianza !== "string" || !CONFIANZA.has(causa.confianza)) {
+      return { ok: false, reason: `causa[${ci}].confianza_invalida` };
+    }
+    if (!Array.isArray(causa.sujetos)) return { ok: false, reason: `causa[${ci}].sujetos_no_array` };
+    if (!Array.isArray(causa.eventos)) return { ok: false, reason: `causa[${ci}].eventos_no_array` };
+    if (!Array.isArray(causa.origen_pestanas)) return { ok: false, reason: `causa[${ci}].origen_pestanas_no_array` };
 
-Jerarquía estado: terminada > recurso > tramite.
-
-Jerarquía situación: condenado > detenido > rebelde > probation > libre.
-
-Match de sujetos por nombre_completo normalizado.
-
-Campos contradictorios: gana la fila con más datos completos.
-
-Eventos duplicados (mismo título+fecha): fusionar en uno.
-
-origen_pestanas: array con nombres de pestañas que aportaron.
-
-MÚLTIPLES IMPUTADOS EN UNA FILA:
-
-Separadores: "/", "//", " y otro", "- "
-
-"PEREZ, Juan / GOMEZ, Carlos" → 2 sujetos
-
-Columnas paralelas: "DET/EXC" → 1ro detenido, 2do libre. "DPO 14/Part" → 1ro DPO 14, 2do particular.
-
-Un solo valor para varios imputados → aplica a todos.
-
-"/" al final sin segundo nombre → marcar AMARILLO, cargar solo el existente.
-
-FECHAS:
-
-Formatos: DD/MM/AAAA, DD-MM-AAAA, DD/MM/AA, DD-MM-AA, AAAA-MM-DD, "DD de mes de AAAA"
-
-Año 2 dígitos → siglo XXI ("19"→2019, "33"→2033, "28"→2028)
-
-Convertir siempre a ISO YYYY-MM-DD
-
-Si una celda tiene varias fechas ("Detenido desde 18-10-19 - VENCE 13/1/2036"), extraer CADA UNA a su campo.
-
-FECHAS EN EVENTOS:
-
-Futuras o del mes actual → evento CON fecha_hora
-
-Pasadas (>30 días) → evento SIN fecha (anotación) con el texto, O a observaciones del sujeto si es claramente info del sujeto. Usar criterio.
-
-NOMBRES:
-
-Normalizar: "DIAZ, FACUNDO HORACIO" → "DIAZ, Facundo Horacio". "diaz, facundo" → "DIAZ, Facundo".
-
-Sin coma ("CARO RAÚL"): 1ra palabra = apellido, resto = nombre. Excepto partículas compuestas.
-
-Número pegado ("CARO RAÚL 18649/2024"): extraer automáticamente sin marcar amarillo si es claro.
-
-No agregar tildes que no estén en el original.
-
-FILA SIN NRO DE CAUSA: ROJA. Conservar datos. NO vincular automáticamente con fila anterior.
-
-═══════════════════════════════════════ CONFIANZA ═══════════════════════════════════════
-
-VERDE: expediente_nro + nombre_completo presentes, datos interpretados sin ambigüedad. AMARILLO: datos presentes pero hubo alguna ambigüedad o dato faltante menor. ROJO: falta expediente_nro O nombre_completo. NO crear causa. Conservar en filas_rojas.
-
-Si >30% serían ROJAS → devolver modo "mapeo_asistido_requerido".
-
-═══════════════════════════════════════ RESPUESTA JSON ═══════════════════════════════════════
-
-Modo procesamiento_directo: {"modo":"procesamiento_directo","resumen":{"total_filas_origen":0,"causas_detectadas":0,"sujetos_detectados":0,"eventos_detectados":0,"verdes":0,"amarillos":0,"rojos":0},"pestanas_procesadas":[],"causas":[{"id_temporal":"causa-1","expediente_nro":"","caratula":"","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"link_externo":null,"fecha_ingreso":null,"confianza":"verde","notas_ia":"","origen_pestanas":[],"sujetos":[{"nombre_completo":"","delito":"","situacion_libertad":"libre","defensor":null,"lugar_alojamiento":null,"fecha_detencion":null,"prescripciones":[],"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":""}],"eventos":[]}],"filas_rojas":[]}
-
-Modo mapeo_asistido_requerido: {"modo":"mapeo_asistido_requerido","razon":"","columnas_detectadas":[{"indice":0,"muestra":[],"hipotesis":""}],"campos_disponibles":["expediente_nro","nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","prescripciones","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","querella","actor_civil","causa_conexa_texto","fecha_ingreso"]}
-
-Cambios clave: prompt más conservador (ante dudas crea anotación sin fecha en vez de adivinar campos), campos nuevos (fecha_ingreso, prescripciones como array), observaciones más breves, tipo_evento "nota_migracion" para anotaciones de duda.`;
+    for (const [si, sU] of (causa.sujetos as unknown[]).entries()) {
+      if (!sU || typeof sU !== "object") return { ok: false, reason: `causa[${ci}].sujetos[${si}]_no_objeto` };
+      const s = sU as Record<string, unknown>;
+      for (const k of Object.keys(s)) {
+        if (!SUJETO_KEYS.has(k)) return { ok: false, reason: `causa[${ci}].sujetos[${si}]_clave_extra:${k}` };
+      }
+      if (typeof s.nombre_completo !== "string") return { ok: false, reason: `causa[${ci}].sujetos[${si}].nombre_no_string` };
+      if (typeof s.situacion_libertad !== "string" || !SITUACION.has(s.situacion_libertad)) {
+        return { ok: false, reason: `causa[${ci}].sujetos[${si}].situacion_invalida` };
+      }
+      for (const k of STRING_OR_NULL_SUJETO) {
+        if (k in s && !isStringOrNull(s[k])) return { ok: false, reason: `causa[${ci}].sujetos[${si}].${k}_tipo_invalido` };
+      }
+      if (!Array.isArray(s.prescripciones)) return { ok: false, reason: `causa[${ci}].sujetos[${si}].prescripciones_no_array` };
+      for (const [pi, pU] of (s.prescripciones as unknown[]).entries()) {
+        if (!pU || typeof pU !== "object") return { ok: false, reason: `causa[${ci}].sujetos[${si}].prescripciones[${pi}]_no_objeto` };
+        const p = pU as Record<string, unknown>;
+        if (typeof p.fecha !== "string") return { ok: false, reason: `causa[${ci}].sujetos[${si}].prescripciones[${pi}].fecha_no_string` };
+        if (!isStringOrNull(p.descripcion)) return { ok: false, reason: `causa[${ci}].sujetos[${si}].prescripciones[${pi}].descripcion_tipo_invalido` };
+      }
+    }
+    for (const [ei, evU] of (causa.eventos as unknown[]).entries()) {
+      if (!evU || typeof evU !== "object") return { ok: false, reason: `causa[${ci}].eventos[${ei}]_no_objeto` };
+      const ev = evU as Record<string, unknown>;
+      for (const k of Object.keys(ev)) {
+        if (!EVENTO_KEYS.has(k)) return { ok: false, reason: `causa[${ci}].eventos[${ei}]_clave_extra:${k}` };
+      }
+      if (typeof ev.titulo !== "string") return { ok: false, reason: `causa[${ci}].eventos[${ei}].titulo_no_string` };
+      if (!isStringOrNull(ev.descripcion)) return { ok: false, reason: `causa[${ci}].eventos[${ei}].descripcion_tipo_invalido` };
+      if (!isStringOrNull(ev.fecha_hora)) return { ok: false, reason: `causa[${ci}].eventos[${ei}].fecha_hora_tipo_invalido` };
+      if (!isStringOrNull(ev.tipo_evento)) return { ok: false, reason: `causa[${ci}].eventos[${ei}].tipo_evento_tipo_invalido` };
+    }
+  }
+  return { ok: true };
+}
 
 function extractJson(raw: string): unknown | null {
   const trimmed = raw.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
@@ -179,6 +253,47 @@ function countRows(pestana?: { contenido: unknown }): number {
     return contenido.filter((row) => Array.isArray(row) && row.some((cell) => String(cell ?? "").trim() !== "")).length;
   }
   return 0;
+}
+
+async function callAnthropic(
+  apiKey: string,
+  systemPrompt: string,
+  userMsg: string,
+  timeoutMs: number,
+): Promise<{ ok: true; json: unknown; rawText: string } | { ok: false; code: string; status?: number; detail?: string }> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort("anthropic_timeout"), timeoutMs);
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 16000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userMsg }],
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = (await res.text()).slice(0, 500);
+      return { ok: false, code: "anthropic_http_error", status: res.status, detail };
+    }
+    const body = await res.json();
+    const rawText: string = (body?.content?.[0]?.text ?? "").trim();
+    const parsed = extractJson(rawText);
+    if (!parsed) return { ok: false, code: "json_invalido", detail: rawText.slice(0, 1000) };
+    return { ok: true, json: parsed, rawText };
+  } catch (e) {
+    if (controller.signal.aborted) return { ok: false, code: "anthropic_timeout" };
+    return { ok: false, code: "anthropic_fetch_error", detail: e instanceof Error ? e.message : String(e) };
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -220,33 +335,23 @@ Deno.serve(async (req) => {
     const totalLotes = loteInfo?.total_lotes ?? 1;
     const filasLote = loteInfo?.filas ?? countRows(pestana);
     console.log("procesar-migracion:start", {
-      payload_bytes: byteLength(payloadText),
-      filas_lote: filasLote,
-      pestana: pestanaLog,
-      nro_lote: nroLote,
-      total_lotes: totalLotes,
+      payload_bytes: byteLength(payloadText), filas_lote: filasLote,
+      pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes,
     });
-    // Si viene una pestaña puntual, reemplazamos el array de pestañas por una sola.
+
     const archivoEfectivo: Record<string, unknown> = pestana
       ? { ...archivo, pestanas: [pestana] }
       : archivo;
 
-    // Validar membresía con service-role: vocalía -> tribunal -> miembro.
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: voc, error: vocErr } = await admin
-      .from("vocalias")
-      .select("id, tribunal_id")
-      .eq("id", vocalia_id)
-      .maybeSingle();
+      .from("vocalias").select("id, tribunal_id").eq("id", vocalia_id).maybeSingle();
     if (vocErr || !voc) {
       return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "vocalia_no_encontrada" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const { data: miembro, error: miembroErr } = await admin
-      .from("miembros_tribunal")
-      .select("id")
-      .eq("tribunal_id", voc.tribunal_id)
-      .eq("usuario_id", userId)
-      .maybeSingle();
+      .from("miembros_tribunal").select("id")
+      .eq("tribunal_id", voc.tribunal_id).eq("usuario_id", userId).maybeSingle();
     if (miembroErr || !miembro) {
       return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "no_es_miembro" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -270,55 +375,56 @@ Deno.serve(async (req) => {
       (mapeo_manual ? `Mapeo manual provisto por el usuario (índice de columna → campo): ${JSON.stringify(mapeo_manual)}. ` : "") +
       `Contenido:\n${userPayload}`;
 
-    const anthropicBody = JSON.stringify({
-      model: "claude-sonnet-4-5",
-      max_tokens: 16000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMsg }],
-    });
-    const estimatedTokens = Math.ceil((SYSTEM_PROMPT.length + userMsg.length) / 4);
     const anthropicStart = Date.now();
-    console.log("procesar-migracion:anthropic_before", { timestamp: anthropicStart, estimated_tokens: estimatedTokens, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort("anthropic_timeout"), 45_000);
-    let anthropicRes: Response;
-    try {
-      anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: anthropicBody,
-        signal: controller.signal,
-      });
-    } catch (error) {
-      const isTimeout = controller.signal.aborted;
-      console.log("procesar-migracion:error", { tipo: isTimeout ? "anthropic_timeout" : "anthropic_fetch_error", message: error instanceof Error ? error.message : String(error), pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-      if (isTimeout) {
+    console.log("procesar-migracion:anthropic_before", { timestamp: anthropicStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+
+    // 1ra llamada
+    const r1 = await callAnthropic(apiKey, SYSTEM_PROMPT, userMsg, 45_000);
+    if (!r1.ok) {
+      console.log("procesar-migracion:error", { tipo: r1.code, status: r1.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+      if (r1.code === "anthropic_timeout") {
         return new Response(JSON.stringify({ ok: false, error: "anthropic_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
+      if (r1.code === "anthropic_http_error") {
+        return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: r1.detail }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (r1.code === "json_invalido") {
+        // Reintento por JSON inválido (no es un objeto JSON parseable).
+        const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 45_000);
+        if (!r2.ok) {
+          return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: r2.detail ?? r1.detail }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const v2 = validarResponse(r2.json);
+        if (!v2.ok) {
+          console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
+          return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: true, pestana: pestanaLog });
+        return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ ok: false, error: "ai_error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text();
-      console.log("procesar-migracion:error", { tipo: "anthropic_http_error", status: anthropicRes.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-      return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: errText.slice(0, 500) }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    const anthropicJson = await anthropicRes.json();
-    console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, response_bytes: byteLength(JSON.stringify(anthropicJson)), pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-    const rawText: string = (anthropicJson?.content?.[0]?.text ?? "").trim();
-    const parsed = extractJson(rawText);
-    if (!parsed) {
-      console.log("procesar-migracion:error", { tipo: "json_invalido", pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-      return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: rawText.slice(0, 2000) }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Validar esquema
+    const v1 = validarResponse(r1.json);
+    if (v1.ok) {
+      console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: false, pestana: pestanaLog });
+      return new Response(JSON.stringify({ ok: true, resultado: r1.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ ok: true, resultado: parsed }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    console.log("procesar-migracion:schema_invalido", { reason: v1.reason, pestana: pestanaLog, nro_lote: nroLote });
+    // Reintento UNA sola vez por esquema inválido.
+    const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 45_000);
+    if (!r2.ok) {
+      return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v1.reason, retry_error: r2.code }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const v2 = validarResponse(r2.json);
+    if (!v2.ok) {
+      console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
+      return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: true, pestana: pestanaLog });
+    return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.log("procesar-migracion:error", { tipo: "server_error", message: e instanceof Error ? e.message : String(e) });
     return new Response(JSON.stringify({ ok: false, error: "server_error", detail: e instanceof Error ? e.message : String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

@@ -6,7 +6,9 @@ import { normalizarCausa } from "@/lib/normalizarCausa";
 export interface CausaIA {
   id_temporal: string;
   expediente_nro: string;
+  numero_interno?: string | null;
   caratula: string | null;
+
   estado_causa: "tramite" | "recurso" | "terminada";
   tipo_recurso: "casacion" | "rex" | "queja_corte" | null;
   tipo_proceso?: "unipersonal" | "colegiado" | null;
@@ -204,7 +206,9 @@ export function useMigracion() {
         const causaPayload = {
           vocalia_id: vocaliaId,
           expediente_nro: c.expediente_nro,
+          numero_interno: c.numero_interno ?? null,
           caratula: c.caratula,
+
           estado_causa: c.estado_causa,
           tipo_recurso: c.tipo_recurso,
           tipo_proceso: c.tipo_proceso ?? null,

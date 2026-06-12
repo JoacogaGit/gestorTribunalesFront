@@ -1,0 +1,1 @@
+ALTER TABLE public.causas ADD COLUMN IF NOT EXISTS numero_interno text;

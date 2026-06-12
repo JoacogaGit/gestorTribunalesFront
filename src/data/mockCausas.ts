@@ -38,6 +38,9 @@ export type TipoProceso = "unipersonal" | "colegiado";
 export interface Causa {
   id: string;
   numero: string;
+  /** Número interno del tribunal (separado del nº de expediente). */
+  numeroInterno?: string | null;
+
   /** Carátula explícita (cuando viene de DB). Si no, se deriva de imputados. */
   caratulaOverride?: string;
   delito: string;
