@@ -147,7 +147,10 @@ export default function CausaFormDialog({
         } else {
           setCausa({
             expediente_nro: data.expediente_nro ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            numero_interno: (data as any).numero_interno ?? null,
             caratula: data.caratula ?? "",
+
             estado_causa: data.estado_causa as DbEstadoCausa,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
