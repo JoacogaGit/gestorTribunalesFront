@@ -40,6 +40,10 @@ export interface Causa {
   numero: string;
   /** Número interno del tribunal (separado del nº de expediente). */
   numeroInterno?: string | null;
+  /** Despachante (máx 3 caracteres). */
+  despachante?: string | null;
+
+
 
   /** Carátula explícita (cuando viene de DB). Si no, se deriva de imputados. */
   caratulaOverride?: string;

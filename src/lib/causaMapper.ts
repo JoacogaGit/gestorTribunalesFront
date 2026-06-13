@@ -53,6 +53,7 @@ export type DbCausa = {
   id: string;
   expediente_nro: string;
   numero_interno: string | null;
+  despachante: string | null;
   caratula: string | null;
 
   estado_causa: DbEstadoCausa;
@@ -147,6 +148,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
     id: row.id,
     numero: row.expediente_nro,
     numeroInterno: row.numero_interno ?? null,
+    despachante: row.despachante ?? null,
     caratulaOverride: row.caratula ?? undefined,
 
     delito: firstNonNull(sujetos.map((s) => s.delito)) ?? "—",
