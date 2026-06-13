@@ -56,6 +56,7 @@ function emptyCausa(): CausaInput {
   return {
     expediente_nro: "",
     numero_interno: null,
+    despachante: null,
     caratula: "",
 
     estado_causa: "tramite",
@@ -149,6 +150,8 @@ export default function CausaFormDialog({
             expediente_nro: data.expediente_nro ?? "",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             numero_interno: (data as any).numero_interno ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            despachante: (data as any).despachante ?? null,
             caratula: data.caratula ?? "",
 
             estado_causa: data.estado_causa as DbEstadoCausa,
