@@ -1,5 +1,6 @@
 import { Scale, Rocket, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SubtleBackground from "@/components/SubtleBackground";
 
 interface Props {
   onMigrar: () => void;
@@ -9,9 +10,7 @@ interface Props {
 export default function BienvenidaTribunal({ onMigrar, onEmpezarDesdeCero }: Props) {
   return (
     <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-surface" />
-      <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-primary/10 blur-3xl -z-10" />
-      <div className="absolute -bottom-40 -right-32 w-[520px] h-[520px] rounded-full bg-gold/15 blur-3xl -z-10" />
+      <SubtleBackground />
 
       <div className="w-full max-w-3xl animate-fade-in text-center">
         <div className="flex items-center justify-center gap-3 mb-6">

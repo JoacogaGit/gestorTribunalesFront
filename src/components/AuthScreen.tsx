@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import SubtleBackground from "@/components/SubtleBackground";
 
 export default function AuthScreen() {
   const navigate = useNavigate();
@@ -32,9 +33,7 @@ export default function AuthScreen() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-surface" />
-      <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-primary/10 blur-3xl -z-10" />
-      <div className="absolute -bottom-40 -right-32 w-[520px] h-[520px] rounded-full bg-gold/15 blur-3xl -z-10" />
+      <SubtleBackground />
 
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
