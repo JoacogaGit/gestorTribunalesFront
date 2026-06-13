@@ -11,6 +11,7 @@ export interface EventoCausa {
   tipo_evento: string | null;
   completado: boolean | null;
   created_at: string | null;
+  categoria_personalizada_id: string | null;
 }
 
 export function useEventosCausa(causaId: string | null | undefined) {
@@ -23,7 +24,7 @@ export function useEventosCausa(causaId: string | null | undefined) {
     setLoading(true); setError(null);
     const { data, error: e } = await supabase
       .from("eventos")
-      .select("id, causa_id, titulo, descripcion, fecha_hora, tipo_evento, completado, created_at")
+      .select("id, causa_id, titulo, descripcion, fecha_hora, tipo_evento, completado, created_at, categoria_personalizada_id")
       .eq("causa_id", causaId)
       .is("borrado_en", null);
     if (e) {

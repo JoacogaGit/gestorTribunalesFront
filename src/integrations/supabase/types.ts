@@ -68,6 +68,7 @@ export type Database = {
           color_destacado: string | null
           creado_por: string | null
           created_at: string | null
+          despachante: string | null
           estado_causa: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro: string
           fecha_ingreso: string | null
@@ -93,6 +94,7 @@ export type Database = {
           color_destacado?: string | null
           creado_por?: string | null
           created_at?: string | null
+          despachante?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro: string
           fecha_ingreso?: string | null
@@ -118,6 +120,7 @@ export type Database = {
           color_destacado?: string | null
           creado_por?: string | null
           created_at?: string | null
+          despachante?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro?: string
           fecha_ingreso?: string | null
@@ -170,53 +173,11 @@ export type Database = {
           },
         ]
       }
-      causas_en_categorias: {
-        Row: {
-          agregado_en: string | null
-          agregado_por: string | null
-          categoria_id: string
-          causa_id: string
-        }
-        Insert: {
-          agregado_en?: string | null
-          agregado_por?: string | null
-          categoria_id: string
-          causa_id: string
-        }
-        Update: {
-          agregado_en?: string | null
-          agregado_por?: string | null
-          categoria_id?: string
-          causa_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "causas_en_categorias_agregado_por_fkey"
-            columns: ["agregado_por"]
-            isOneToOne: false
-            referencedRelation: "perfiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "causas_en_categorias_categoria_id_fkey"
-            columns: ["categoria_id"]
-            isOneToOne: false
-            referencedRelation: "categorias_personalizadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "causas_en_categorias_causa_id_fkey"
-            columns: ["causa_id"]
-            isOneToOne: false
-            referencedRelation: "causas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       eventos: {
         Row: {
           borrado_en: string | null
           borrado_por: string | null
+          categoria_personalizada_id: string | null
           causa_id: string
           completado: boolean | null
           creado_por: string | null
@@ -233,6 +194,7 @@ export type Database = {
         Insert: {
           borrado_en?: string | null
           borrado_por?: string | null
+          categoria_personalizada_id?: string | null
           causa_id: string
           completado?: boolean | null
           creado_por?: string | null
@@ -249,6 +211,7 @@ export type Database = {
         Update: {
           borrado_en?: string | null
           borrado_por?: string | null
+          categoria_personalizada_id?: string | null
           causa_id?: string
           completado?: boolean | null
           creado_por?: string | null
@@ -268,6 +231,13 @@ export type Database = {
             columns: ["borrado_por"]
             isOneToOne: false
             referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventos_categoria_personalizada_id_fkey"
+            columns: ["categoria_personalizada_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_personalizadas"
             referencedColumns: ["id"]
           },
           {
@@ -661,6 +631,10 @@ export type Database = {
         Returns: undefined
       }
       aceptar_invitacion: { Args: { p_token: string }; Returns: string }
+      crear_categoria_con_eventos: {
+        Args: { p_nombre: string; p_vocalia_id: string }
+        Returns: string
+      }
       crear_tribunal: { Args: { p_nombre: string }; Returns: string }
       cuenta_admins_tribunal: {
         Args: { p_tribunal_id: string }

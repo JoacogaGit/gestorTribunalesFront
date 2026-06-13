@@ -34,6 +34,7 @@ import Papelera from "@/components/Papelera";
 import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
+import CategoriasManager from "@/components/CategoriasManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import ZoomControl from "@/components/ZoomControl";
@@ -254,6 +255,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     recursos: "Recursos (Casación / Queja / REX)",
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
+    categorias: "Categorías personalizadas",
     miembros: "Miembros del tribunal",
     papelera: "Papelera",
     migrar: "Migrar causas",
@@ -559,6 +561,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} />}
+            {view === "categorias" && vocaliaId && <CategoriasManager vocaliaId={vocaliaId} />}
             {view === "miembros" && esAdmin && tribunalId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                 <MiembrosTribunal tribunalId={tribunalId} onAbandoned={onBack} />

@@ -8,11 +8,11 @@ export interface EventoInput {
   tipo_evento: string | null;
   /** "YYYY-MM-DD" o null */
   fecha: string | null;
+  categoria_personalizada_id?: string | null;
 }
 
 function toTimestamp(fecha: string | null): string | null {
   if (!fecha) return null;
-  // Interpretado como hora local 00:00 → ISO en UTC.
   const d = new Date(`${fecha}T00:00:00`);
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
@@ -32,6 +32,7 @@ export function useEventoMutations() {
         descripcion: input.descripcion?.trim() || null,
         tipo_evento: input.tipo_evento?.trim() || null,
         fecha_hora: toTimestamp(input.fecha),
+        categoria_personalizada_id: input.categoria_personalizada_id ?? null,
       });
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();

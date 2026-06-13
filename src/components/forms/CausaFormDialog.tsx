@@ -56,6 +56,7 @@ function emptyCausa(): CausaInput {
   return {
     expediente_nro: "",
     numero_interno: null,
+    despachante: null,
     caratula: "",
 
     estado_causa: "tramite",
@@ -149,6 +150,8 @@ export default function CausaFormDialog({
             expediente_nro: data.expediente_nro ?? "",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             numero_interno: (data as any).numero_interno ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            despachante: (data as any).despachante ?? null,
             caratula: data.caratula ?? "",
 
             estado_causa: data.estado_causa as DbEstadoCausa,
@@ -436,6 +439,15 @@ export default function CausaFormDialog({
                       value={causa.numero_interno ?? ""}
                       onChange={(e) => updateCausa({ numero_interno: e.target.value })}
                       placeholder="Ej. 7019"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Despachante</Label>
+                    <Input
+                      value={causa.despachante ?? ""}
+                      onChange={(e) => updateCausa({ despachante: e.target.value.slice(0, 3) })}
+                      maxLength={3}
+                      placeholder="3 letras"
                     />
                   </div>
 

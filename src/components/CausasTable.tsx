@@ -253,6 +253,16 @@ export default function CausasTable({
         ? <span className="text-muted-foreground">{c.numeroInterno}</span>
         : <span className="text-muted-foreground/60">—</span>,
     },
+    {
+      key: "despachante",
+      label: "Despachante",
+      headClass: "whitespace-nowrap w-20 text-center",
+      cellClass: "text-xs font-mono text-center whitespace-nowrap",
+      sortValue: (c) => c.despachante ?? "",
+      render: (c) => c.despachante
+        ? <span className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80">{c.despachante}</span>
+        : <span className="text-muted-foreground/60">—</span>,
+    },
 
     {
       key: "caratula", label: "Carátula",

@@ -8,6 +8,7 @@ import {
 export interface CausaInput {
   expediente_nro: string;
   numero_interno?: string | null;
+  despachante?: string | null;
   caratula: string | null;
 
   estado_causa: DbEstadoCausa;
