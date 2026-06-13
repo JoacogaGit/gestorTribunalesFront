@@ -441,6 +441,15 @@ export default function CausaFormDialog({
                       placeholder="Ej. 7019"
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Despachante</Label>
+                    <Input
+                      value={causa.despachante ?? ""}
+                      onChange={(e) => updateCausa({ despachante: e.target.value.slice(0, 3) })}
+                      maxLength={3}
+                      placeholder="3 letras"
+                    />
+                  </div>
 
                   <div className="space-y-1.5">
                     <Label className="text-xs">Carátula</Label>
