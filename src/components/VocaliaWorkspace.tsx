@@ -610,6 +610,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 {...remoteTableCommon}
               />
             )}
+            {listaActiva && vocaliaId && (
+              <ListaPersonalizadaView
+                key={listaActiva.id}
+                lista={listaActiva}
+                vocaliaId={vocaliaId}
+                onListaBorrada={() => { listasHook.refetch(); setView("dashboard"); }}
+                onNavigateToConexa={navigateToCausa}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -661,6 +670,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           recursosRemote.refetch();
           terminadasRemote.refetch();
           dashboardKpis.refetch();
+        }}
+      />
+      <CrearListaDialog
+        open={showCreateLista}
+        onOpenChange={setShowCreateLista}
+        onCrear={async (nombre) => {
+          const id = await listasHook.crearLista(nombre);
+          if (id) setView(`lista-${id}`);
         }}
       />
     </div>
