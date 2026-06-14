@@ -91,11 +91,7 @@ export default function AuthScreen() {
             </Button>
           </form>
 
-            <Button type="submit" className="w-full h-11 mt-2" disabled={loading}>
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Iniciar sesión
-            </Button>
-          </form>
+
 
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
