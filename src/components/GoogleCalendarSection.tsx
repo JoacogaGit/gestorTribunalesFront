@@ -47,17 +47,16 @@ export default function GoogleCalendarSection() {
   const iniciarVinculacion = async () => {
     if (!vocaliaSel) { toast.error("Elegí una vocalía"); return; }
     try {
-      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
-      const cfgRes = await fetch(
-        `https://${projectRef}.supabase.co/functions/v1/google-calendar-oauth?action=config`,
-        { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string } },
-      );
-      const cfg = await cfgRes.json();
-      if (!cfg.client_id) { toast.error("Falta configurar GOOGLE_OAUTH_CLIENT_ID"); return; }
+      const { data: cfg, error } = await supabase.functions.invoke("google-calendar-oauth", {
+        body: { action: "config" },
+      });
+      if (error || !(cfg as any)?.client_id) {
+        toast.error("Falta configurar GOOGLE_OAUTH_CLIENT_ID"); return;
+      }
       sessionStorage.setItem("gcal_vocalia_id", vocaliaSel);
       const redirect = `${window.location.origin}/google-calendar-callback`;
       const params = new URLSearchParams({
-        client_id: cfg.client_id,
+        client_id: (cfg as any).client_id,
         redirect_uri: redirect,
         response_type: "code",
         scope: "https://www.googleapis.com/auth/calendar",
@@ -66,10 +65,11 @@ export default function GoogleCalendarSection() {
         include_granted_scopes: "true",
       });
       window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-    } catch (e) {
+    } catch (_) {
       toast.error("No se pudo iniciar la vinculación");
     }
   };
+
 
 
   const desvincular = async () => {
