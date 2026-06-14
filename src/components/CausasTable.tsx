@@ -123,12 +123,14 @@ interface Props {
   openCausaId?: string | null;
   /** Llamado cuando se consume el openCausaId. */
   onOpenedCausa?: () => void;
+  /** Acción extra opcional que se agrega al menú contextual de cada fila. */
+  extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
 }
 
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
-  onNavigateToConexa, openCausaId, onOpenedCausa,
+  onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -870,6 +872,14 @@ export default function CausasTable({
                       </ContextMenuItem>
                     )}
                     <ContextMenuSeparator />
+                    {extraRowAction && (
+                      <ContextMenuItem
+                        onSelect={() => extraRowAction.onClick(c)}
+                        className={`text-xs ${extraRowAction.destructive ? "text-alert-urgent focus:text-alert-urgent" : ""}`}
+                      >
+                        {extraRowAction.label}
+                      </ContextMenuItem>
+                    )}
                     <ContextMenuItem
                       onSelect={() => setConfirmDelete(c)}
                       className="text-xs text-alert-urgent focus:text-alert-urgent"

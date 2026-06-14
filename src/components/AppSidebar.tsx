@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
 import type { ModoTribunal } from "@/hooks/useTribunal";
+import type { ListaPersonalizada } from "@/hooks/useListasPersonalizadas";
 
-const defaultNavItems = [
+const navBeforeTerminadas = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "tramite", label: "Causas en Trámite", icon: Scale },
   { id: "detenidos", label: "Detenidos", icon: Shield },
   { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle },
   { id: "sjp", label: "SJP en Trámite", icon: Pause },
   { id: "recursos", label: "Recursos", icon: Users },
+];
+const navAfterTerminadas = [
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },
   { id: "calendario", label: "Calendario / Alertas", icon: Calendar },
   { id: "categorias", label: "Categorías", icon: Tag },
@@ -37,12 +40,15 @@ interface Props {
   onBack: () => void;
   esAdmin?: boolean;
   modoTribunal?: ModoTribunal;
+  listasPersonalizadas?: ListaPersonalizada[];
+  onCreateLista?: () => void;
 }
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
   vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
   modoTribunal = "vocalias_separadas",
+  listasPersonalizadas = [], onCreateLista,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -159,8 +165,58 @@ export default function AppSidebar({
           </button>
         </div>
 
-        <nav className={`flex-1 ${collapsed ? "px-2" : "px-3"} space-y-1`}>
-          {defaultNavItems.map(renderNavButton)}
+        <nav className={`flex-1 ${collapsed ? "px-2" : "px-3"} space-y-1 overflow-y-auto`}>
+          {navBeforeTerminadas.map(renderNavButton)}
+
+          {/* Listas personalizadas: arriba de "Causas Terminadas" */}
+          {!collapsed && (listasPersonalizadas.length > 0 || onCreateLista) && (
+            <div className="pt-3 pb-1">
+              <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Listas</span>
+            </div>
+          )}
+          {listasPersonalizadas.map((lista) => {
+            const id = `lista-${lista.id}`;
+            const isActive = active === id;
+            const btn = (
+              <button
+                key={id}
+                onClick={() => onNavigate(id)}
+                className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                }`}
+                aria-label={lista.nombre}
+              >
+                {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
+                <FolderOpen className={`w-4 h-4 shrink-0 ${isActive ? "text-sidebar-primary" : ""}`} />
+                {!collapsed && (
+                  <>
+                    <span className="truncate flex-1 text-left">{lista.nombre}</span>
+                    <span className="text-[10px] text-sidebar-foreground/50 tabular-nums">{lista.count}</span>
+                  </>
+                )}
+              </button>
+            );
+            if (!collapsed) return btn;
+            return (
+              <Tooltip key={id} delayDuration={150}>
+                <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                <TooltipContent side="right">{lista.nombre} ({lista.count})</TooltipContent>
+              </Tooltip>
+            );
+          })}
+          {!collapsed && onCreateLista && listasPersonalizadas.length < 2 && (
+            <button
+              onClick={onCreateLista}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors border border-dashed border-sidebar-border/50"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Crear nueva lista
+            </button>
+          )}
+
+          {navAfterTerminadas.map(renderNavButton)}
           {esAdmin && adminItems.map(renderNavButton)}
 
           {!collapsed && customBoards.length > 0 && (

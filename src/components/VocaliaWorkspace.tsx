@@ -36,6 +36,9 @@ import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
+import CrearListaDialog from "@/components/listas/CrearListaDialog";
+import ListaPersonalizadaView from "@/components/listas/ListaPersonalizadaView";
 
 import ZoomControl from "@/components/ZoomControl";
 
@@ -140,7 +143,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
   const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
   const [showCreateCausa, setShowCreateCausa] = useState(false);
+  const [showCreateLista, setShowCreateLista] = useState(false);
   const abandonarRef = useRef<AbandonarTribunalHandle>(null);
+
+  const listasHook = useListasPersonalizadas(vocaliaId);
 
   const navigateToCausa = async (causaId: string) => {
     const { data, error } = await supabase
@@ -261,7 +267,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     migrar: "Migrar causas",
   };
 
-  const title = defaultTitles[view] || customBoards.find((b) => b.id === view)?.label || "Tablero";
+  const listaActiva = view.startsWith("lista-")
+    ? listasHook.listas.find((l) => `lista-${l.id}` === view) ?? null
+    : null;
+  const title = defaultTitles[view]
+    || (listaActiva ? `Lista: ${listaActiva.nombre}` : null)
+    || customBoards.find((b) => b.id === view)?.label
+    || "Tablero";
 
   const remoteTableCommon = {
     onUpdateCausa: remoteNoop,
@@ -286,6 +298,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         onBack={onBack}
         esAdmin={esAdmin}
         modoTribunal={modoTribunal}
+        listasPersonalizadas={listasHook.listas}
+        onCreateLista={() => {
+          if (listasHook.listas.length >= 2) {
+            toast.error("Llegaste al límite de 2 listas personalizadas para esta vocalía");
+            return;
+          }
+          setShowCreateLista(true);
+        }}
       />
       <main className="flex-1 p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
         <div className="flex items-end justify-between mb-8 gap-4">
@@ -590,6 +610,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 {...remoteTableCommon}
               />
             )}
+            {listaActiva && vocaliaId && (
+              <ListaPersonalizadaView
+                key={listaActiva.id}
+                lista={listaActiva}
+                vocaliaId={vocaliaId}
+                onListaBorrada={() => { listasHook.refetch(); setView("dashboard"); }}
+                onNavigateToConexa={navigateToCausa}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -641,6 +670,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           recursosRemote.refetch();
           terminadasRemote.refetch();
           dashboardKpis.refetch();
+        }}
+      />
+      <CrearListaDialog
+        open={showCreateLista}
+        onOpenChange={setShowCreateLista}
+        onCrear={async (nombre) => {
+          const id = await listasHook.crearLista(nombre);
+          if (id) setView(`lista-${id}`);
         }}
       />
     </div>

@@ -321,6 +321,74 @@ export type Database = {
           },
         ]
       }
+      listas_personalizadas: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          id: string
+          nombre: string
+          vocalia_id: string
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          id?: string
+          nombre: string
+          vocalia_id: string
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          id?: string
+          nombre?: string
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listas_personalizadas_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listas_personalizadas_causas: {
+        Row: {
+          added_at: string
+          agregado_por: string | null
+          causa_id: string
+          lista_id: string
+        }
+        Insert: {
+          added_at?: string
+          agregado_por?: string | null
+          causa_id: string
+          lista_id: string
+        }
+        Update: {
+          added_at?: string
+          agregado_por?: string | null
+          causa_id?: string
+          lista_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listas_personalizadas_causas_causa_id_fkey"
+            columns: ["causa_id"]
+            isOneToOne: false
+            referencedRelation: "causas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listas_personalizadas_causas_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "listas_personalizadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       miembros_tribunal: {
         Row: {
           created_at: string | null
@@ -632,6 +700,10 @@ export type Database = {
       }
       aceptar_invitacion: { Args: { p_token: string }; Returns: string }
       crear_categoria_con_eventos: {
+        Args: { p_nombre: string; p_vocalia_id: string }
+        Returns: string
+      }
+      crear_lista_personalizada: {
         Args: { p_nombre: string; p_vocalia_id: string }
         Returns: string
       }
