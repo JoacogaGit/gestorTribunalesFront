@@ -19,13 +19,20 @@ function toTimestamp(fecha: string | null): string | null {
 
 type Result = { ok: true } | { ok: false; error: string };
 
+function fireSync(action: "create" | "update" | "delete", evento_id: string, causa_id: string) {
+  // Fire-and-forget: no rompe la mutación principal si falla.
+  supabase.functions
+    .invoke("google-calendar-sync", { body: { action, evento_id, causa_id } })
+    .catch((e) => console.warn("google-calendar-sync error", e));
+}
+
 export function useEventoMutations() {
   const [saving, setSaving] = useState(false);
 
   const crearEvento = useCallback(async (causaId: string, input: EventoInput): Promise<Result> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from("eventos").insert({
+      const { data, error } = await supabase.from("eventos").insert({
         causa_id: causaId,
         sujeto_id: null,
         titulo: input.titulo.trim(),
@@ -33,9 +40,10 @@ export function useEventoMutations() {
         tipo_evento: input.tipo_evento?.trim() || null,
         fecha_hora: toTimestamp(input.fecha),
         categoria_personalizada_id: input.categoria_personalizada_id ?? null,
-      });
+      }).select("id").maybeSingle();
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();
+      if (data?.id && input.fecha) fireSync("create", data.id, causaId);
       return { ok: true };
     } finally { setSaving(false); }
   }, []);
@@ -43,14 +51,15 @@ export function useEventoMutations() {
   const actualizarEvento = useCallback(async (id: string, input: EventoInput): Promise<Result> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from("eventos").update({
+      const { data, error } = await supabase.from("eventos").update({
         titulo: input.titulo.trim(),
         descripcion: input.descripcion?.trim() || null,
         tipo_evento: input.tipo_evento?.trim() || null,
         fecha_hora: toTimestamp(input.fecha),
-      }).eq("id", id);
+      }).eq("id", id).select("causa_id").maybeSingle();
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();
+      if (data?.causa_id) fireSync("update", id, data.causa_id);
       return { ok: true };
     } finally { setSaving(false); }
   }, []);
@@ -59,10 +68,13 @@ export function useEventoMutations() {
     setSaving(true);
     try {
       const { data: userRes } = await supabase.auth.getUser();
+      // Necesitamos causa_id para sync; lo leemos antes del soft delete.
+      const { data: prev } = await supabase.from("eventos").select("causa_id").eq("id", id).maybeSingle();
       const patch = { borrado_en: new Date().toISOString(), borrado_por: userRes.user?.id ?? null } as never;
       const { error } = await supabase.from("eventos").update(patch).eq("id", id);
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();
+      if (prev?.causa_id) fireSync("delete", id, prev.causa_id);
       return { ok: true };
     } finally { setSaving(false); }
   }, []);

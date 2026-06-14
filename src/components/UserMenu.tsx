@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, LogOut, UserCircle2, Mail, Settings, DoorOpen } from "lucide-react";
+import { User, LogOut, UserCircle2, Mail, Settings, DoorOpen, Calendar } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import GoogleCalendarSection from "@/components/GoogleCalendarSection";
 
 interface Props {
   email: string;
@@ -21,6 +22,7 @@ interface Props {
 
 export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal }: Props) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const [gcalOpen, setGcalOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
 
@@ -57,6 +59,9 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => { setDraftName(name); setDraftEmail(email); setProfileOpen(true); }} className="gap-2">
             <UserCircle2 className="w-4 h-4" /> Mi perfil
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setGcalOpen(true)} className="gap-2">
+            <Calendar className="w-4 h-4" /> Google Calendar
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => toast.info("Próximamente")} className="gap-2">
             <Settings className="w-4 h-4" /> Preferencias
@@ -108,6 +113,19 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
               <Button variant="outline" className="flex-1" onClick={() => setProfileOpen(false)}>Cancelar</Button>
               <Button className="flex-1" onClick={saveProfile}>Guardar</Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={gcalOpen} onOpenChange={setGcalOpen}>
+        <DialogContent className="max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <User className="w-5 h-5" /> Configuración
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <GoogleCalendarSection />
           </div>
         </DialogContent>
       </Dialog>
