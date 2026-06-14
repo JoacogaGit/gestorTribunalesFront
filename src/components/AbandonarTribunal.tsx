@@ -68,9 +68,30 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     setStep("idle");
   };
 
+  /** Si el usuario tiene Google Calendar vinculado a una vocalía de este tribunal, desvincular. */
+  const unlinkGCalSiCorresponde = async () => {
+    if (!user) return;
+    const { data: sync } = await supabase
+      .from("google_calendar_sync")
+      .select("vocalia_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!sync?.vocalia_id) return;
+    const { data: voc } = await supabase
+      .from("vocalias")
+      .select("tribunal_id")
+      .eq("id", sync.vocalia_id)
+      .maybeSingle();
+    if (voc?.tribunal_id === tribunalId) {
+      await supabase.functions.invoke("google-calendar-unlink", { body: {} }).catch(() => {});
+    }
+  };
+
+
   const abandonarSimple = async () => {
     if (!yo) return;
     setProcessing(true);
+    await unlinkGCalSiCorresponde();
     const { error } = await supabase.from("miembros_tribunal").delete().eq("id", yo.id);
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
@@ -81,6 +102,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
   const archivar = async () => {
     setProcessing(true);
+    await unlinkGCalSiCorresponde();
     const { error } = await supabase.rpc("abandonar_tribunal_archivar", { p_tribunal_id: tribunalId });
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
@@ -91,6 +113,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
   const eliminarTodo = async () => {
     setProcessing(true);
+    await unlinkGCalSiCorresponde();
     const { error } = await supabase.rpc("abandonar_tribunal_eliminar_todo", { p_tribunal_id: tribunalId });
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
@@ -98,6 +121,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     setStep("idle");
     onAbandoned();
   };
+
 
   const promoverAAdmin = async (miembroId: string, nombre: string) => {
     const r = await cambiarRol(miembroId, "admin");
