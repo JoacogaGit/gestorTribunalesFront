@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter } from "lucide-react";
+import { useCategoriasVocalia, useCausasConCategoria } from "@/hooks/useCategoriasVocalia";
+import { useVocaliaActual } from "@/context/VocaliaContext";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -138,6 +140,11 @@ export default function CausasTable({
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
   const { user } = useAuth();
+  const { vocalia: vocaliaActual } = useVocaliaActual();
+  const [categoriaFiltroId, setCategoriaFiltroId] = useState<string | null>(null);
+  const { categorias: categoriasVocalia } = useCategoriasVocalia(vocaliaActual?.id ?? null);
+  const { ids: causasIdsConCategoria } = useCausasConCategoria(categoriaFiltroId);
+  const categoriaFiltroNombre = categoriasVocalia.find((c) => c.id === categoriaFiltroId)?.nombre_categoria;
 
   // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
   const [localColors, setLocalColors] = useState<Record<string, string | null>>({});
@@ -557,6 +564,7 @@ export default function CausasTable({
   };
 
   const filtered = causas.filter((c) => {
+    if (categoriaFiltroId && !causasIdsConCategoria.has(c.id)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -652,6 +660,53 @@ export default function CausasTable({
               title="Quitar ordenamiento"
             >
               <X className="w-3 h-3" /> Orden: {fullColumns.find((c) => c.key === sortBy.key)?.label} ({sortBy.dir})
+            </button>
+          )}
+          {categoriasVocalia.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                  categoriaFiltroId
+                    ? "bg-primary/15 text-primary hover:bg-primary/20"
+                    : "text-muted-foreground hover:text-foreground bg-muted/40"
+                }`}
+                title="Filtrar por categoría"
+              >
+                <Filter className="w-3 h-3" />
+                {categoriaFiltroId ? `Categoría: ${categoriaFiltroNombre}` : "Filtrar por categoría"}
+                <ChevronDown className="w-3 h-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="text-xs">Solo causas con entrada en…</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(e) => { e.preventDefault(); setCategoriaFiltroId(null); }}
+                  className="text-xs flex items-center gap-2"
+                >
+                  <input type="radio" readOnly checked={categoriaFiltroId === null} className="accent-primary" />
+                  Todas las causas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {categoriasVocalia.map((cat) => (
+                  <DropdownMenuItem
+                    key={cat.id}
+                    onSelect={(e) => { e.preventDefault(); setCategoriaFiltroId(cat.id); }}
+                    className="text-xs flex items-center gap-2"
+                  >
+                    <input type="radio" readOnly checked={categoriaFiltroId === cat.id} className="accent-primary" />
+                    <span className="truncate">{cat.nombre_categoria}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {categoriaFiltroId && (
+            <button
+              onClick={() => setCategoriaFiltroId(null)}
+              className="text-[10px] text-muted-foreground hover:text-foreground bg-muted/40 px-2 py-1 rounded-md flex items-center gap-1"
+              title="Quitar filtro de categoría"
+            >
+              <X className="w-3 h-3" /> Quitar filtro
             </button>
           )}
           <DropdownMenu>
