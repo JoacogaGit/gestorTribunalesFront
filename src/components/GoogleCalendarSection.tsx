@@ -13,8 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useVocalias } from "@/hooks/useVocalias";
 import { toast } from "sonner";
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined;
-
 interface SyncRow {
   id: string;
   vocalia_id: string;
@@ -46,25 +44,33 @@ export default function GoogleCalendarSection() {
 
   const vocaliaActual = sync ? vocalias.find((v) => v.id === sync.vocalia_id) : null;
 
-  const iniciarVinculacion = () => {
+  const iniciarVinculacion = async () => {
     if (!vocaliaSel) { toast.error("Elegí una vocalía"); return; }
-    if (!GOOGLE_CLIENT_ID) {
-      toast.error("Falta configurar VITE_GOOGLE_OAUTH_CLIENT_ID");
-      return;
+    try {
+      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
+      const cfgRes = await fetch(
+        `https://${projectRef}.supabase.co/functions/v1/google-calendar-oauth?action=config`,
+        { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string } },
+      );
+      const cfg = await cfgRes.json();
+      if (!cfg.client_id) { toast.error("Falta configurar GOOGLE_OAUTH_CLIENT_ID"); return; }
+      sessionStorage.setItem("gcal_vocalia_id", vocaliaSel);
+      const redirect = `${window.location.origin}/google-calendar-callback`;
+      const params = new URLSearchParams({
+        client_id: cfg.client_id,
+        redirect_uri: redirect,
+        response_type: "code",
+        scope: "https://www.googleapis.com/auth/calendar",
+        access_type: "offline",
+        prompt: "consent",
+        include_granted_scopes: "true",
+      });
+      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    } catch (e) {
+      toast.error("No se pudo iniciar la vinculación");
     }
-    sessionStorage.setItem("gcal_vocalia_id", vocaliaSel);
-    const redirect = `${window.location.origin}/google-calendar-callback`;
-    const params = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: redirect,
-      response_type: "code",
-      scope: "https://www.googleapis.com/auth/calendar",
-      access_type: "offline",
-      prompt: "consent",
-      include_granted_scopes: "true",
-    });
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   };
+
 
   const desvincular = async () => {
     setUnlinking(true);

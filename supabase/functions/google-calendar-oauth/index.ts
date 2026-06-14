@@ -9,6 +9,13 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Endpoint público auxiliar: devuelve el client_id para que el frontend arme la URL de OAuth.
+  const url = new URL(req.url);
+  if (url.searchParams.get("action") === "config") {
+    return json({ client_id: GOOGLE_CLIENT_ID });
+  }
+
+
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
