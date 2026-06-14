@@ -267,7 +267,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     migrar: "Migrar causas",
   };
 
-  const title = defaultTitles[view] || customBoards.find((b) => b.id === view)?.label || "Tablero";
+  const listaActiva = view.startsWith("lista-")
+    ? listasHook.listas.find((l) => `lista-${l.id}` === view) ?? null
+    : null;
+  const title = defaultTitles[view]
+    || (listaActiva ? `Lista: ${listaActiva.nombre}` : null)
+    || customBoards.find((b) => b.id === view)?.label
+    || "Tablero";
 
   const remoteTableCommon = {
     onUpdateCausa: remoteNoop,
