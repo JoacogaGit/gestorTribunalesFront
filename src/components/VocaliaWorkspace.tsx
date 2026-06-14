@@ -292,6 +292,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         onBack={onBack}
         esAdmin={esAdmin}
         modoTribunal={modoTribunal}
+        listasPersonalizadas={listasHook.listas}
+        onCreateLista={() => {
+          if (listasHook.listas.length >= 2) {
+            toast.error("Llegaste al límite de 2 listas personalizadas para esta vocalía");
+            return;
+          }
+          setShowCreateLista(true);
+        }}
       />
       <main className="flex-1 p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
         <div className="flex items-end justify-between mb-8 gap-4">
