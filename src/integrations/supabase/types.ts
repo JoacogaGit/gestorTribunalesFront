@@ -184,6 +184,7 @@ export type Database = {
           created_at: string | null
           descripcion: string | null
           fecha_hora: string | null
+          google_event_id: string | null
           id: string
           modificado_por: string | null
           sujeto_id: string | null
@@ -201,6 +202,7 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           fecha_hora?: string | null
+          google_event_id?: string | null
           id?: string
           modificado_por?: string | null
           sujeto_id?: string | null
@@ -218,6 +220,7 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           fecha_hora?: string | null
+          google_event_id?: string | null
           id?: string
           modificado_por?: string | null
           sujeto_id?: string | null
@@ -266,6 +269,53 @@ export type Database = {
             columns: ["sujeto_id"]
             isOneToOne: false
             referencedRelation: "sujetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_calendar_sync: {
+        Row: {
+          access_token: string
+          activo: boolean
+          created_at: string
+          google_calendar_id: string
+          id: string
+          refresh_token: string
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          vocalia_id: string
+        }
+        Insert: {
+          access_token: string
+          activo?: boolean
+          created_at?: string
+          google_calendar_id: string
+          id?: string
+          refresh_token: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          vocalia_id: string
+        }
+        Update: {
+          access_token?: string
+          activo?: boolean
+          created_at?: string
+          google_calendar_id?: string
+          id?: string
+          refresh_token?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_calendar_sync_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
             referencedColumns: ["id"]
           },
         ]
