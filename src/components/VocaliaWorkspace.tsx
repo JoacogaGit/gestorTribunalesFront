@@ -36,6 +36,9 @@ import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
+import CrearListaDialog from "@/components/listas/CrearListaDialog";
+import ListaPersonalizadaView from "@/components/listas/ListaPersonalizadaView";
 
 import ZoomControl from "@/components/ZoomControl";
 
@@ -140,7 +143,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
   const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
   const [showCreateCausa, setShowCreateCausa] = useState(false);
+  const [showCreateLista, setShowCreateLista] = useState(false);
   const abandonarRef = useRef<AbandonarTribunalHandle>(null);
+
+  const listasHook = useListasPersonalizadas(vocaliaId);
 
   const navigateToCausa = async (causaId: string) => {
     const { data, error } = await supabase
