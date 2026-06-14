@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import SuperadminPanel from "./pages/SuperadminPanel";
 import SuperadminTribunalDetail from "./pages/SuperadminTribunalDetail";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import { VocaliaProvider } from "@/context/VocaliaContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { SuperadminModeProvider } from "@/context/SuperadminModeContext";
@@ -45,6 +46,7 @@ const App = () => (
                   <Route path="/invitacion/:token" element={<AcceptInvitation />} />
                   <Route path="/superadmin" element={<SuperadminPanel />} />
                   <Route path="/superadmin/tribunal/:id" element={<SuperadminTribunalDetail />} />
+                  <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
                   <Route path="/" element={<Index />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
