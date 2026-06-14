@@ -137,7 +137,7 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
           <AlertDialogHeader>
             <AlertDialogTitle>Sacar causa de esta lista</AlertDialogTitle>
             <AlertDialogDescription>
-              La causa <strong>{confirmRemoveCausa?.caratula}</strong> dejará de aparecer en esta lista personalizada. No se borra ni cambia su estado.
+              La causa <strong>{confirmRemoveCausa?.caratulaOverride ?? confirmRemoveCausa?.numero ?? ""}</strong> dejará de aparecer en esta lista personalizada. No se borra ni cambia su estado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
