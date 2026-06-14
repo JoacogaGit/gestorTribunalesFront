@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
 import type { ModoTribunal } from "@/hooks/useTribunal";
+import type { ListaPersonalizada } from "@/hooks/useListasPersonalizadas";
 
-const defaultNavItems = [
+const navBeforeTerminadas = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "tramite", label: "Causas en Trámite", icon: Scale },
   { id: "detenidos", label: "Detenidos", icon: Shield },
   { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle },
   { id: "sjp", label: "SJP en Trámite", icon: Pause },
   { id: "recursos", label: "Recursos", icon: Users },
+];
+const navAfterTerminadas = [
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },
   { id: "calendario", label: "Calendario / Alertas", icon: Calendar },
   { id: "categorias", label: "Categorías", icon: Tag },
@@ -37,12 +40,15 @@ interface Props {
   onBack: () => void;
   esAdmin?: boolean;
   modoTribunal?: ModoTribunal;
+  listasPersonalizadas?: ListaPersonalizada[];
+  onCreateLista?: () => void;
 }
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
   vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
   modoTribunal = "vocalias_separadas",
+  listasPersonalizadas = [], onCreateLista,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
