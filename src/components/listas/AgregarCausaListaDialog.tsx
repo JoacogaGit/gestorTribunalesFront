@@ -20,7 +20,7 @@ const TABS: { key: TabKey; label: string }[] = [
 interface CausaItem {
   id: string;
   caratula: string;
-  numero_expediente: string | null;
+  expediente_nro: string | null;
 }
 
 interface Props {
@@ -52,7 +52,7 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
       setLoading(true);
       let query = supabase
         .from("causas")
-        .select("id, caratula, numero_expediente, sujetos(situacion_libertad, borrado_en)")
+        .select("id, caratula, expediente_nro, sujetos(situacion_libertad, borrado_en)")
         .eq("vocalia_id", vocaliaId)
         .is("borrado_en", null);
 
@@ -78,7 +78,7 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
               .some((s) => s.situacion_libertad === need)
           );
         }
-        setCausas(rows.map((r) => ({ id: r.id, caratula: r.caratula, numero_expediente: r.numero_expediente })));
+        setCausas(rows.map((r) => ({ id: r.id, caratula: r.caratula, expediente_nro: r.expediente_nro })));
       }
       setLoading(false);
     })();
@@ -90,7 +90,7 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
     if (!q) return causas;
     return causas.filter((c) =>
       c.caratula.toLowerCase().includes(q) ||
-      (c.numero_expediente ?? "").toLowerCase().includes(q)
+      (c.expediente_nro ?? "").toLowerCase().includes(q)
     );
   }, [causas, busqueda]);
 
@@ -168,8 +168,8 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
                     <div key={c.id} className="flex items-center justify-between p-3 hover:bg-accent/20">
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">{c.caratula}</div>
-                        {c.numero_expediente && (
-                          <div className="text-xs text-muted-foreground truncate">{c.numero_expediente}</div>
+                        {c.expediente_nro && (
+                          <div className="text-xs text-muted-foreground truncate">{c.expediente_nro}</div>
                         )}
                       </div>
                       {yaEsta ? (
