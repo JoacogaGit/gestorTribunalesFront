@@ -357,6 +357,7 @@ export default function CausaFormDialog({
       }
     }
     toast.success("Cambios guardados");
+    fireVocaliaResync();
     clearDraft(draftKey);
     onMutated?.();
     onOpenChange(false);
