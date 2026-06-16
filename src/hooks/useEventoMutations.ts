@@ -6,14 +6,20 @@ export interface EventoInput {
   titulo: string;
   descripcion: string | null;
   tipo_evento: string | null;
-  /** "YYYY-MM-DD" o null */
+  /** ISO completo (con T y hora/zone) o "YYYY-MM-DD" o null. */
   fecha: string | null;
   categoria_personalizada_id?: string | null;
 }
 
 function toTimestamp(fecha: string | null): string | null {
   if (!fecha) return null;
-  const d = new Date(`${fecha}T00:00:00`);
+  // Si ya viene en formato ISO (con T y hora), pasarlo tal cual.
+  if (/T\d{2}:\d{2}/.test(fecha)) {
+    const d = new Date(fecha);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  // YYYY-MM-DD → UTC midnight (all-day).
+  const d = new Date(`${fecha}T00:00:00.000Z`);
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
 

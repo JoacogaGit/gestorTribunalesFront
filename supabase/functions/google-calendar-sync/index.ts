@@ -1,6 +1,5 @@
-// Propaga create/update/delete de un evento JusTrack a todos los Google Calendars
-// vinculados a la vocalía de la causa. También soporta acción "bulk" para
-// sincronizar retroactivamente todos los eventos existentes al vincular.
+// Sincroniza eventos JusTrack ↔ Google Calendar.
+// Soporta: eventos manuales, vencimientos de PP/Pena/SJP, prescripciones y PP calculado.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
@@ -43,79 +42,43 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // ========== BULK SYNC INICIAL (al vincular) ==========
-    if (action === "bulk") {
+    // ========== BULK / RESYNC DE VOCALÍA ==========
+    if (action === "bulk" || action === "vocalia_resync") {
       if (!vocalia_id) return json({ error: "Falta vocalia_id" }, 400);
 
-      const { data: sync } = await admin
+      // Para "bulk" (post-vinculación): sólo el sync del user actual.
+      // Para "vocalia_resync": todos los syncs activos de la vocalía.
+      let syncsQ = admin
         .from("google_calendar_sync")
         .select("*")
-        .eq("user_id", userId)
         .eq("vocalia_id", vocalia_id)
-        .eq("activo", true)
-        .maybeSingle();
-      if (!sync) return json({ ok: true, skipped: "no-sync" });
+        .eq("activo", true);
+      if (action === "bulk") syncsQ = syncsQ.eq("user_id", userId);
 
-      // Eventos no borrados, con fecha, de causas no borradas de esta vocalía
-      const { data: eventos, error: eErr } = await admin
-        .from("eventos")
-        .select("id, titulo, fecha_hora, google_event_id, causa:causas!inner(id, vocalia_id, borrado_en)")
-        .is("borrado_en", null)
-        .not("fecha_hora", "is", null)
-        .eq("causa.vocalia_id", vocalia_id)
-        .is("causa.borrado_en", null);
-      if (eErr) return json({ error: eErr.message }, 500);
+      const { data: syncs } = await syncsQ;
+      if (!syncs || syncs.length === 0) return json({ ok: true, skipped: "no-sync" });
 
-      const accessToken = await ensureValidToken(admin, sync);
-      const calId = encodeURIComponent(sync.google_calendar_id);
-      let created = 0, updated = 0, failed = 0;
-
-      for (const ev of eventos ?? []) {
+      const aggregated = { total: 0, ok: 0, failed: 0 };
+      for (const sync of syncs) {
         try {
-          const eventBody = buildEventBody(ev.titulo, ev.fecha_hora);
-          if (ev.google_event_id) {
-            const r = await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${ev.google_event_id}`,
-              {
-                method: "PATCH",
-                headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-                body: JSON.stringify(eventBody),
-              },
-            );
-            if (r.ok) updated++; else failed++;
-            await r.text();
-          } else {
-            const r = await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${calId}/events`,
-              {
-                method: "POST",
-                headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-                body: JSON.stringify(eventBody),
-              },
-            );
-            const j = await r.json();
-            if (r.ok && j.id) {
-              await admin.from("eventos").update({ google_event_id: j.id }).eq("id", ev.id);
-              created++;
-            } else {
-              failed++;
-            }
-          }
-        } catch (err) {
-          console.error("bulk per-event error", ev.id, err);
-          failed++;
+          const r = await runFullSyncForCalendar(admin, sync);
+          aggregated.total += r.total;
+          aggregated.ok += r.ok;
+          aggregated.failed += r.failed;
+        } catch (e) {
+          console.error("vocalia_resync per-sync error", sync.user_id, e);
+          aggregated.failed++;
         }
       }
-      return json({ ok: true, bulk: { total: eventos?.length ?? 0, created, updated, failed } });
+      return json({ ok: true, bulk: { created: aggregated.ok, total: aggregated.total, failed: aggregated.failed } });
     }
 
-    // ========== SYNC PUNTUAL (create/update/delete) ==========
+    // ========== SYNC PUNTUAL DE EVENTO MANUAL ==========
     if (!evento_id) return json({ error: "Falta evento_id" }, 400);
 
-    // Trae evento + causa en un solo round-trip y filtra borrado_en IS NULL en causa
     const { data: evento, error: evErr } = await admin
       .from("eventos")
-      .select("id, titulo, fecha_hora, google_event_id, borrado_en, causa:causas!inner(id, vocalia_id, borrado_en)")
+      .select("id, titulo, fecha_hora, google_event_id, borrado_en, sujeto_id, causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en)")
       .eq("id", evento_id)
       .is("causa.borrado_en", null)
       .maybeSingle();
@@ -125,29 +88,147 @@ Deno.serve(async (req) => {
       return json({ error: evErr.message }, 500);
     }
     const causa: any = (evento as any)?.causa;
-    if (!causa?.vocalia_id) {
-      // fallback: si vino causa_id explícito, intentar resolver vocalia desde causas
-      if (causa_id) {
-        const { data: c } = await admin
-          .from("causas")
-          .select("id, vocalia_id")
-          .eq("id", causa_id)
-          .is("borrado_en", null)
-          .maybeSingle();
-        if (!c?.vocalia_id) return json({ ok: true, skipped: "no-causa" });
-        return await syncOne(admin, action, evento, c.vocalia_id);
-      }
-      return json({ ok: true, skipped: "no-causa" });
+    let vocaliaId = causa?.vocalia_id as string | undefined;
+    let expediente = causa?.expediente_nro as string | undefined;
+    if (!vocaliaId && causa_id) {
+      const { data: c } = await admin
+        .from("causas")
+        .select("id, vocalia_id, expediente_nro")
+        .eq("id", causa_id)
+        .is("borrado_en", null)
+        .maybeSingle();
+      vocaliaId = c?.vocalia_id;
+      expediente = c?.expediente_nro;
+    }
+    if (!vocaliaId) return json({ ok: true, skipped: "no-causa" });
+
+    // Buscar nombre del sujeto si está asociado
+    let sujetoNombre: string | null = null;
+    if (evento && (evento as any).sujeto_id) {
+      const { data: sj } = await admin
+        .from("sujetos")
+        .select("nombre_completo")
+        .eq("id", (evento as any).sujeto_id)
+        .maybeSingle();
+      sujetoNombre = sj?.nombre_completo ?? null;
     }
 
-    return await syncOne(admin, action, evento, causa.vocalia_id);
+    return await syncOneEvento(admin, action, evento, vocaliaId, expediente ?? "", sujetoNombre);
   } catch (e) {
     console.error(e);
     return json({ error: (e as Error).message }, 500);
   }
 });
 
-async function syncOne(admin: any, action: string, evento: any, vocaliaId: string) {
+// ============================================================
+// SYNC COMPLETO DE UN CALENDARIO (todos los tipos de fecha)
+// ============================================================
+async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: number; ok: number; failed: number }> {
+  const accessToken = await ensureValidToken(admin, sync);
+  const calId = encodeURIComponent(sync.google_calendar_id);
+  let total = 0, ok = 0, failed = 0;
+
+  // 1. EVENTOS MANUALES
+  const { data: eventos } = await admin
+    .from("eventos")
+    .select("id, titulo, fecha_hora, google_event_id, sujeto_id, sujeto:sujetos(nombre_completo), causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en)")
+    .is("borrado_en", null)
+    .not("fecha_hora", "is", null)
+    .eq("causa.vocalia_id", sync.vocalia_id)
+    .is("causa.borrado_en", null);
+
+  for (const ev of eventos ?? []) {
+    total++;
+    try {
+      const causa: any = Array.isArray(ev.causa) ? ev.causa[0] : ev.causa;
+      const sujeto: any = Array.isArray(ev.sujeto) ? ev.sujeto[0] : ev.sujeto;
+      const title = formatEventoTitle(ev.titulo, sujeto?.nombre_completo ?? null, causa?.expediente_nro ?? "");
+      const body = buildEventBody(title, ev.fecha_hora);
+      if (ev.google_event_id) {
+        const r = await gcalPatch(calId, ev.google_event_id, body, accessToken);
+        if (r.ok) ok++; else failed++;
+      } else {
+        const r = await gcalInsert(calId, body, accessToken);
+        const j = await r.json();
+        if (r.ok && j.id) {
+          await admin.from("eventos").update({ google_event_id: j.id }).eq("id", ev.id);
+          ok++;
+        } else failed++;
+      }
+    } catch (e) { failed++; console.error("evento sync error", e); }
+  }
+
+  // 2. SUJETOS (vencimientos + pp calculado)
+  const { data: sujetos } = await admin
+    .from("sujetos")
+    .select("id, nombre_completo, vencimiento_pp, vencimiento_pena, vencimiento_sjp, fecha_detencion, causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en)")
+    .is("borrado_en", null)
+    .eq("causa.vocalia_id", sync.vocalia_id)
+    .is("causa.borrado_en", null);
+
+  for (const s of sujetos ?? []) {
+    const causa: any = Array.isArray(s.causa) ? s.causa[0] : s.causa;
+    const exp = causa?.expediente_nro ?? "";
+    const nombre = s.nombre_completo;
+    const sujetoHex = (s.id as string).replace(/-/g, "");
+
+    const items: Array<{ id: string; titulo: string; fecha: string | null }> = [
+      { id: `jtpp${sujetoHex}`, titulo: `Vto. Prisión Preventiva - ${nombre} (${exp})`, fecha: s.vencimiento_pp },
+      { id: `jtpena${sujetoHex}`, titulo: `Vto. Pena - ${nombre} (${exp})`, fecha: s.vencimiento_pena },
+      { id: `jtsjp${sujetoHex}`, titulo: `Vto. SJP - ${nombre} (${exp})`, fecha: s.vencimiento_sjp },
+    ];
+    // PP calculado: fecha_detencion + 2 años, sólo si no hay vto_pp ni vto_pena
+    if (s.fecha_detencion && !s.vencimiento_pp && !s.vencimiento_pena) {
+      const d = new Date(s.fecha_detencion);
+      d.setUTCFullYear(d.getUTCFullYear() + 2);
+      const calc = d.toISOString().slice(0, 10);
+      items.push({
+        id: `jtppcalc${sujetoHex}`,
+        titulo: `Vto. Prisión Preventiva (2 años) - ${nombre} (${exp})`,
+        fecha: calc,
+      });
+    } else {
+      // si existe vto_pp o vto_pena, asegurar eliminar el ppcalc
+      items.push({ id: `jtppcalc${sujetoHex}`, titulo: "", fecha: null });
+    }
+
+    for (const it of items) {
+      total++;
+      try {
+        const okItem = await upsertDateEvent(calId, accessToken, it.id, it.titulo, it.fecha);
+        if (okItem) ok++; else failed++;
+      } catch (e) { failed++; console.error("sujeto date sync error", e); }
+    }
+  }
+
+  // 3. PRESCRIPCIONES
+  const { data: prescs } = await admin
+    .from("prescripciones")
+    .select("id, fecha, sujeto:sujetos!inner(id, nombre_completo, borrado_en, causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en))")
+    .eq("sujeto.causa.vocalia_id", sync.vocalia_id)
+    .is("sujeto.borrado_en", null)
+    .is("sujeto.causa.borrado_en", null);
+
+  for (const p of prescs ?? []) {
+    const sj: any = Array.isArray(p.sujeto) ? p.sujeto[0] : p.sujeto;
+    const causa: any = sj && (Array.isArray(sj.causa) ? sj.causa[0] : sj.causa);
+    if (!sj || !causa) continue;
+    const presHex = (p.id as string).replace(/-/g, "");
+    const titulo = `Prescripción - ${sj.nombre_completo} (${causa.expediente_nro ?? ""})`;
+    total++;
+    try {
+      const okItem = await upsertDateEvent(calId, accessToken, `jtpresc${presHex}`, titulo, p.fecha);
+      if (okItem) ok++; else failed++;
+    } catch (e) { failed++; console.error("prescripcion sync error", e); }
+  }
+
+  return { total, ok, failed };
+}
+
+// ============================================================
+// SYNC PUNTUAL DE EVENTO MANUAL
+// ============================================================
+async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId: string, expediente: string, sujetoNombre: string | null) {
   const { data: syncs } = await admin
     .from("google_calendar_sync")
     .select("*")
@@ -164,11 +245,7 @@ async function syncOne(admin: any, action: string, evento: any, vocaliaId: strin
 
       if (action === "delete") {
         if (evento?.google_event_id) {
-          const r = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evento.google_event_id}`,
-            { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } },
-          );
-          await r.text();
+          await gcalDelete(calId, evento.google_event_id, accessToken);
         }
         results.push({ user: s.user_id, ok: true, action: "delete" });
         continue;
@@ -176,39 +253,21 @@ async function syncOne(admin: any, action: string, evento: any, vocaliaId: strin
 
       if (!evento?.fecha_hora) {
         if (evento?.google_event_id) {
-          const r = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evento.google_event_id}`,
-            { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } },
-          );
-          await r.text();
+          await gcalDelete(calId, evento.google_event_id, accessToken);
           await admin.from("eventos").update({ google_event_id: null }).eq("id", evento.id);
         }
         results.push({ user: s.user_id, ok: true, skipped: "sin-fecha" });
         continue;
       }
 
-      const eventBody = buildEventBody(evento.titulo, evento.fecha_hora);
+      const title = formatEventoTitle(evento.titulo, sujetoNombre, expediente);
+      const body = buildEventBody(title, evento.fecha_hora);
 
       if (action === "update" && evento.google_event_id) {
-        const r = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evento.google_event_id}`,
-          {
-            method: "PATCH",
-            headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify(eventBody),
-          },
-        );
-        await r.text();
+        const r = await gcalPatch(calId, evento.google_event_id, body, accessToken);
         results.push({ user: s.user_id, ok: r.ok, action: "update" });
       } else {
-        const r = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${calId}/events`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify(eventBody),
-          },
-        );
+        const r = await gcalInsert(calId, body, accessToken);
         const created = await r.json();
         if (r.ok && created.id) {
           await admin.from("eventos").update({ google_event_id: created.id }).eq("id", evento.id);
@@ -223,34 +282,89 @@ async function syncOne(admin: any, action: string, evento: any, vocaliaId: strin
   return json({ ok: true, results });
 }
 
+// ============================================================
+// HELPERS GOOGLE CALENDAR
+// ============================================================
+function gcalInsert(calId: string, body: unknown, token: string) {
+  return fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+function gcalPatch(calId: string, eventId: string, body: unknown, token: string) {
+  return fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${eventId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+async function gcalDelete(calId: string, eventId: string, token: string) {
+  const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${eventId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  await r.text();
+  return r;
+}
+
+/** Upsert con ID determinístico (base32hex valid). Si existe, PATCH; si no, INSERT con id custom. */
+async function upsertDateEvent(calId: string, token: string, eventId: string, titulo: string, fecha: string | null): Promise<boolean> {
+  if (!fecha) {
+    const r = await gcalDelete(calId, eventId, token);
+    return r.status === 204 || r.status === 404 || r.status === 410 || r.ok;
+  }
+  const body = buildAllDayBody(titulo, fecha);
+  // Intento INSERT con id explícito
+  const ins = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, id: eventId }),
+  });
+  if (ins.ok) { await ins.text(); return true; }
+  if (ins.status === 409) {
+    const p = await gcalPatch(calId, eventId, body, token);
+    await p.text();
+    return p.ok;
+  }
+  const txt = await ins.text();
+  console.warn("upsertDateEvent insert failed", ins.status, txt);
+  return false;
+}
+
+// ============================================================
+// FORMATEO Y BODY
+// ============================================================
+function formatEventoTitle(titulo: string | null, sujetoNombre: string | null, expediente: string): string {
+  const base = titulo?.trim() || "Evento JusTrack";
+  if (sujetoNombre && sujetoNombre.trim()) return `${base} - ${sujetoNombre.trim()} (${expediente})`;
+  return `${base} (${expediente})`;
+}
+
 function isAllDayISO(iso: string): boolean {
   return /T00:00:00(\.000)?Z$/.test(iso) || /T00:00:00\+00:?00$/.test(iso);
 }
 
-function buildEventBody(titulo: string | null, fechaHora: string) {
-  const summary = titulo?.trim() || "Evento JusTrack";
-  const description = "Evento sincronizado desde JusTrack";
+function buildAllDayBody(titulo: string, dateStr: string) {
+  const onlyDate = dateStr.slice(0, 10);
+  const nextDay = new Date(onlyDate + "T00:00:00Z");
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  return {
+    summary: titulo,
+    description: "Evento sincronizado desde JusTrack",
+    start: { date: onlyDate },
+    end: { date: nextDay.toISOString().slice(0, 10) },
+    reminders: REMINDERS,
+  };
+}
 
-  if (isAllDayISO(fechaHora)) {
-    // Evento de día completo: usar start.date / end.date (end exclusivo).
-    const dateStr = fechaHora.slice(0, 10);
-    const nextDay = new Date(dateStr + "T00:00:00Z");
-    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-    const endStr = nextDay.toISOString().slice(0, 10);
-    return {
-      summary,
-      description,
-      start: { date: dateStr },
-      end: { date: endStr },
-      reminders: REMINDERS,
-    };
-  }
-
+function buildEventBody(titulo: string, fechaHora: string) {
+  if (isAllDayISO(fechaHora)) return buildAllDayBody(titulo, fechaHora);
   const start = new Date(fechaHora);
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   return {
-    summary,
-    description,
+    summary: titulo,
+    description: "Evento sincronizado desde JusTrack",
     start: { dateTime: start.toISOString(), timeZone: "America/Argentina/Buenos_Aires" },
     end: { dateTime: end.toISOString(), timeZone: "America/Argentina/Buenos_Aires" },
     reminders: REMINDERS,

@@ -15,6 +15,7 @@ import { ChevronDown, ExternalLink, Loader2, Plus, Trash2, X } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
+import { useVocaliaActual } from "@/context/VocaliaContext";
 import { fetchPrescripcionesDeSujetos, syncPrescripcionesSujeto, PrescripcionDraft } from "@/hooks/usePrescripciones";
 import {
   DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso,
@@ -102,6 +103,13 @@ export default function CausaFormDialog({
   open, onOpenChange, mode, causaId, initialSujetoSituacion, onMutated,
 }: Props) {
   const muts = useCausaMutations();
+  const { vocalia } = useVocaliaActual();
+  const fireVocaliaResync = () => {
+    if (!vocalia?.id) return;
+    supabase.functions
+      .invoke("google-calendar-sync", { body: { action: "vocalia_resync", vocalia_id: vocalia.id } })
+      .catch((e) => console.warn("vocalia_resync error", e));
+  };
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [confirmDeleteCausa, setConfirmDeleteCausa] = useState(false);
@@ -300,6 +308,7 @@ export default function CausaFormDialog({
         if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
       }
       toast.success("Causa creada");
+      fireVocaliaResync();
       clearDraft(draftKey);
       onMutated?.();
       onOpenChange(false);
@@ -348,6 +357,7 @@ export default function CausaFormDialog({
       }
     }
     toast.success("Cambios guardados");
+    fireVocaliaResync();
     clearDraft(draftKey);
     onMutated?.();
     onOpenChange(false);

@@ -116,6 +116,24 @@ Deno.serve(async (req) => {
       return json({ error: upErr.message }, 500);
     }
 
+    // Disparar bulk sync inicial server-side (no depende del navegador).
+    try {
+      const supaUrl = Deno.env.get("SUPABASE_URL")!;
+      const fnUrl = `${supaUrl}/functions/v1/google-calendar-sync`;
+      const r = await fetch(fnUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+        body: JSON.stringify({ action: "bulk", vocalia_id }),
+      });
+      const txt = await r.text();
+      console.log("bulk sync post-link status:", r.status, txt.slice(0, 200));
+    } catch (e) {
+      console.error("bulk sync post-link error", e);
+    }
+
     return json({ ok: true, vocalia_nombre: voc.nombre });
   } catch (e) {
     console.error("Unhandled", e);
