@@ -33,9 +33,22 @@ export default function GoogleCalendarCallback() {
         return;
       }
       setStatus("ok");
-      setMsg(`Vinculado a ${(data as any)?.vocalia_nombre ?? "tu vocalía"}`);
+      setMsg(`Vinculado a ${(data as any)?.vocalia_nombre ?? "tu vocalía"}. Sincronizando eventos…`);
       toast.success("Google Calendar vinculado");
-      setTimeout(() => navigate("/", { replace: true }), 1500);
+
+      // Bulk sync inicial: sube todos los eventos existentes de la vocalía.
+      try {
+        const { data: bulk } = await supabase.functions.invoke("google-calendar-sync", {
+          body: { action: "bulk", vocalia_id: vocaliaId },
+        });
+        const b = (bulk as any)?.bulk;
+        if (b) {
+          setMsg(`Vinculado. ${b.created} eventos sincronizados${b.failed ? ` (${b.failed} fallaron)` : ""}.`);
+        }
+      } catch (e) {
+        console.warn("bulk sync error", e);
+      }
+      setTimeout(() => navigate("/", { replace: true }), 2000);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
