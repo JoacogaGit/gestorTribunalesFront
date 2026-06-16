@@ -15,6 +15,7 @@ import { ChevronDown, ExternalLink, Loader2, Plus, Trash2, X } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
+import { useVocaliaActual } from "@/context/VocaliaContext";
 import { fetchPrescripcionesDeSujetos, syncPrescripcionesSujeto, PrescripcionDraft } from "@/hooks/usePrescripciones";
 import {
   DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso,
