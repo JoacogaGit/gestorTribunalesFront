@@ -6,6 +6,8 @@ import CausasTable from "@/components/CausasTable";
 import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
+import NotificationBell from "@/components/NotificationBell";
+import PushReminderBanner from "@/components/PushReminderBanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
