@@ -9,6 +9,7 @@ import { useCalendarioEventos } from "@/hooks/useCalendarioEventos";
 import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSemaforoDot } from "@/lib/eventoMapper";
 import RefreshButton from "@/components/RefreshButton";
 import EventoDetailDialog from "@/components/EventoDetailDialog";
+import GoogleCalendarSection from "@/components/GoogleCalendarSection";
 
 const tipoIcons: Record<CalendarTipo, typeof Clock> = {
   evento: CalIcon,
@@ -152,6 +153,9 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
 
   return (
     <div className="space-y-6 h-full overflow-y-auto pr-1">
+      <div className="glass-card rounded-lg p-4">
+        <GoogleCalendarSection />
+      </div>
       <div className="flex items-start gap-6">
         {/* Left column */}
         <div className="shrink-0 w-[320px] space-y-4">
