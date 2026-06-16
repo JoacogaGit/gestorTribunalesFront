@@ -21,7 +21,6 @@ interface Props {
 
 export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal }: Props) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [gcalOpen, setGcalOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
 
