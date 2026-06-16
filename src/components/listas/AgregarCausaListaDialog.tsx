@@ -20,7 +20,7 @@ const TABS: { key: TabKey; label: string }[] = [
 interface CausaItem {
   id: string;
   caratula: string;
-  numero_expediente: string | null;
+  expediente_nro: string | null;
 }
 
 interface Props {
