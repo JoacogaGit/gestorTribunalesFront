@@ -34,7 +34,10 @@ export default function AuthScreen() {
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: window.location.origin,
+        scopes: "openid email profile",
+      },
     });
     if (error) toast.error(error.message);
   };
