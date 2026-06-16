@@ -479,6 +479,12 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setExito(r.inserted);
     setOmitidas(r.omitidas || []);
     limpiarLS();
+    // Marcar el job como completado
+    if (jobId) {
+      try {
+        await supabase.from("migraciones_jobs").update({ estado: "completado" }).eq("id", jobId);
+      } catch (e) { console.warn("[migracion] no se pudo marcar job completado", e); }
+    }
     if ((r.omitidas?.length || 0) > 0) {
       toast.success(`Migración completada. Se omitieron ${r.omitidas.length} causa(s) duplicada(s).`);
     } else {
@@ -486,7 +492,13 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     }
   };
 
-  const handleDescartar = () => {
+  const handleDescartar = async () => {
+    // Borrar job server-side si existe
+    if (jobId) {
+      try { await supabase.from("migraciones_jobs").delete().eq("id", jobId); }
+      catch (e) { console.warn("[migracion] no se pudo borrar job", e); }
+    }
+    setJobId(null); setJobEstado(null);
     setResultado(null); setEditable([]); setIncluir({}); setFilename("");
     setMapeo(null); setSeleccionMapeo({}); setArchivoCache(null);
     setPestanasDetectadas([]); setSeleccionPestanas({}); setLotes([]);
@@ -494,6 +506,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setConfirmacionPendiente(null); setConfirmacionOk(false); setOmitidas([]);
     limpiarLS();
   };
+
 
 
   // PASO 1.45 — Aviso obligatorio antes de comenzar
