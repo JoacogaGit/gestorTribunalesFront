@@ -186,7 +186,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       setProcesando(data.estado === "procesando" || data.estado === "pendiente");
       setFilename(data.archivo_nombre || "");
       if (data.estado === "revision" && !resultado) {
-        const lista = ((data.resultados as { pestana: string; resultado: ResultadoIADirecto }[]) || []).map((r) => ({
+        const lista = (((data.resultados as unknown) as { pestana: string; resultado: ResultadoIADirecto }[]) || []).map((r) => ({
           pestana: r.pestana,
           resultado: { ...r.resultado, causas: (r.resultado.causas ?? []).map((c) => normalizarCausa(c)) },
         }));
