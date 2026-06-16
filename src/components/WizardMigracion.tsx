@@ -16,6 +16,7 @@ import { deduplicarCausas } from "@/lib/deduplicarCausas";
 import { normalizarCausa } from "@/lib/normalizarCausa";
 import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
 import ProgresoLotes from "@/components/migracion/ProgresoLotes";
+import { supabase } from "@/integrations/supabase/client";
 
 type EstadoLote = "pendiente" | "procesando" | "ok" | "error";
 interface LoteTrabajo {
