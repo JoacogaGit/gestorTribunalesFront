@@ -112,18 +112,6 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
         </DialogContent>
       </Dialog>
 
-      <Dialog open={gcalOpen} onOpenChange={setGcalOpen}>
-        <DialogContent className="max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="font-display flex items-center gap-2">
-              <User className="w-5 h-5" /> Configuración
-            </DialogTitle>
-          </DialogHeader>
-          <div className="mt-2">
-            <GoogleCalendarSection />
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
