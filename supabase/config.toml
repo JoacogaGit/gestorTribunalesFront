@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.procesar-migracion]
 verify_jwt = false
+
+[functions.enviar-push-alertas]
+verify_jwt = false
