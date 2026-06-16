@@ -294,42 +294,60 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return out;
   };
 
-  const ejecutarLotes = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
+  // Fase B: inicia un JOB server-side y arranca polling.
+  const iniciarJob = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
     setProcesando(true);
     cancelarRef.current = false;
-    let current = lotesIniciales;
-    setLotes(current);
-    const archivoMeta: ArchivoParseado = { ...archivo, pestanas: [] };
-    const okAcum: { pestana: string; resultado: ResultadoIADirecto }[] = [...resultadosOk];
+    setLotes(lotesIniciales);
 
-    for (let i = 0; i < current.length; i++) {
-      if (cancelarRef.current) break;
-      if (current[i].estado !== "pendiente") continue;
-      current = current.map((l, idx) => idx === i ? { ...l, estado: "procesando" as EstadoLote } : l);
-      setLotes(current);
-      const lote = current[i];
-      const pestPayload: PestanaParseada = { nombre: lote.pestana, contenido: lote.contenido };
-      const r = await procesarUnLote(vocaliaId, vocaliaNombre, archivoMeta, pestPayload,
-        { pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas });
-      if (r.ok && r.resultado) {
-        current = current.map((l, idx) => idx === i ? { ...l, estado: "ok" as EstadoLote, errorCode: undefined, errorMsg: undefined } : l);
-        setLotes(current);
-        okAcum.push({ pestana: `${lote.pestana} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r.resultado });
-        setResultadosOk([...okAcum]);
-        guardarLS(okAcum, filename);
-      } else {
-        current = current.map((l, idx) => idx === i ? { ...l, estado: "error" as EstadoLote, errorCode: r.errorCode, errorMsg: r.errorMsg } : l);
-        setLotes(current);
-      }
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      toast.error("No autenticado.");
+      setProcesando(false);
+      return;
     }
-    setProcesando(false);
-    const fallidos = current.filter((l) => l.estado === "error");
-    const oks = current.filter((l) => l.estado === "ok");
-    if (oks.length > 0 && fallidos.length === 0) {
-      finalizarConResultados(okAcum);
-    } else if (oks.length === 0 && fallidos.length > 0) {
-      toast.error("Ningún lote pudo procesarse. Revisá y reintentá.");
+
+    const lotesPendientes = lotesIniciales.map((l) => ({
+      pestana: l.pestana,
+      nro_lote: l.nro_lote,
+      total_lotes: l.total_lotes,
+      filas: l.filas,
+      contenido: l.contenido,
+    }));
+
+    const archivoNombre = filename || (archivo as { nombreArchivo?: string }).nombreArchivo || "archivo";
+    const archivoMeta = {
+      tipo: (archivo as { tipo?: string }).tipo ?? "desconocido",
+      nombre: archivoNombre,
+      vocalia_nombre: vocaliaNombre,
+    };
+
+    const { data: jobIns, error: insErr } = await supabase
+      .from("migraciones_jobs")
+      .insert({
+        vocalia_id: vocaliaId,
+        usuario_id: userData.user.id,
+        archivo_nombre: archivoNombre,
+        archivo_meta: archivoMeta,
+        estado: "pendiente",
+        total_lotes: lotesIniciales.length,
+        lotes_pendientes: lotesPendientes,
+      } as never)
+      .select("id")
+      .single();
+
+    if (insErr || !jobIns) {
+      toast.error("No se pudo crear el job de migración.");
+      console.error(insErr);
+      setProcesando(false);
+      return;
     }
+
+    setJobId(jobIns.id);
+    setJobEstado("pendiente");
+    // Fire-and-forget: la edge function corre server-side y el polling actualiza el progreso.
+    supabase.functions.invoke("procesar-migracion-job", { body: { job_id: jobIns.id } })
+      .catch((e) => console.warn("[migracion] invoke procesar-migracion-job fall:", e));
   };
 
   const finalizarConResultados = (lista: { pestana: string; resultado: ResultadoIADirecto }[]) => {
@@ -355,43 +373,15 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     const { archivo, lotes: ini } = confirmacionPendiente;
     setConfirmacionPendiente(null);
     setConfirmacionOk(false);
-    await ejecutarLotes(archivo, ini);
+    await iniciarJob(archivo, ini);
   };
 
-
-
+  // En Fase B los reintentos ya los hace el servidor automáticamente (1 por lote).
+  // Mantenemos el handler para no romper la UI; muestra un mensaje informativo.
   const handleReintentarFallidos = async () => {
-    if (!archivoCache) return;
-    const nuevos: LoteTrabajo[] = [];
-    let split = 0, retry = 0;
-    for (const l of lotes) {
-      if (l.estado !== "error") { nuevos.push(l); continue; }
-      if (ADAPTIVE_ERRORS.has(l.errorCode || "") && l.filas > MIN_FILAS_LOTE) {
-        const fakePest: PestanaParseada = { nombre: l.pestana, contenido: l.contenido };
-        const mitades = dividirLoteEnMitades({ pestana: fakePest, nro_lote: l.nro_lote, total_lotes: l.total_lotes, filas: l.filas });
-        if (mitades) {
-          mitades.forEach((m, idx) => {
-            nuevos.push({
-              id: `${l.id}.${idx}`,
-              pestana: l.pestana,
-              nro_lote: l.nro_lote,
-              total_lotes: l.total_lotes,
-              contenido: m.pestana.contenido as string[][],
-              filas: m.filas,
-              estado: "pendiente",
-            });
-          });
-          split++;
-          continue;
-        }
-      }
-      nuevos.push({ ...l, estado: "pendiente", errorCode: undefined, errorMsg: undefined });
-      retry++;
-    }
-    if (split + retry === 0) return;
-    if (split > 0) toast.info(`${split} lote(s) divididos en mitades para reintentar.`);
-    await ejecutarLotes(archivoCache, nuevos);
+    toast.info("Los reintentos automáticos ya se hicieron en el servidor. Continuá con los lotes OK o descartá.");
   };
+
 
   const handleContinuarConOk = () => {
     if (resultadosOk.length === 0) return;
