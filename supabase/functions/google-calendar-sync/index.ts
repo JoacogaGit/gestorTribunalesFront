@@ -223,12 +223,34 @@ async function syncOne(admin: any, action: string, evento: any, vocaliaId: strin
   return json({ ok: true, results });
 }
 
+function isAllDayISO(iso: string): boolean {
+  return /T00:00:00(\.000)?Z$/.test(iso) || /T00:00:00\+00:?00$/.test(iso);
+}
+
 function buildEventBody(titulo: string | null, fechaHora: string) {
+  const summary = titulo?.trim() || "Evento JusTrack";
+  const description = "Evento sincronizado desde JusTrack";
+
+  if (isAllDayISO(fechaHora)) {
+    // Evento de día completo: usar start.date / end.date (end exclusivo).
+    const dateStr = fechaHora.slice(0, 10);
+    const nextDay = new Date(dateStr + "T00:00:00Z");
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+    const endStr = nextDay.toISOString().slice(0, 10);
+    return {
+      summary,
+      description,
+      start: { date: dateStr },
+      end: { date: endStr },
+      reminders: REMINDERS,
+    };
+  }
+
   const start = new Date(fechaHora);
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   return {
-    summary: titulo?.trim() || "Evento JusTrack",
-    description: "Evento sincronizado desde JusTrack",
+    summary,
+    description,
     start: { dateTime: start.toISOString(), timeZone: "America/Argentina/Buenos_Aires" },
     end: { dateTime: end.toISOString(), timeZone: "America/Argentina/Buenos_Aires" },
     reminders: REMINDERS,
