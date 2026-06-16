@@ -516,6 +516,68 @@ export type Database = {
           },
         ]
       }
+      migraciones_jobs: {
+        Row: {
+          archivo_meta: Json
+          archivo_nombre: string
+          created_at: string
+          error_mensaje: string | null
+          estado: string
+          filas_rojas: Json
+          id: string
+          lotes_fallidos: number
+          lotes_pendientes: Json
+          lotes_procesados: number
+          resultados: Json
+          total_lotes: number
+          updated_at: string
+          usuario_id: string
+          vocalia_id: string
+        }
+        Insert: {
+          archivo_meta?: Json
+          archivo_nombre: string
+          created_at?: string
+          error_mensaje?: string | null
+          estado?: string
+          filas_rojas?: Json
+          id?: string
+          lotes_fallidos?: number
+          lotes_pendientes?: Json
+          lotes_procesados?: number
+          resultados?: Json
+          total_lotes?: number
+          updated_at?: string
+          usuario_id: string
+          vocalia_id: string
+        }
+        Update: {
+          archivo_meta?: Json
+          archivo_nombre?: string
+          created_at?: string
+          error_mensaje?: string | null
+          estado?: string
+          filas_rojas?: Json
+          id?: string
+          lotes_fallidos?: number
+          lotes_pendientes?: Json
+          lotes_procesados?: number
+          resultados?: Json
+          total_lotes?: number
+          updated_at?: string
+          usuario_id?: string
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migraciones_jobs_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfiles: {
         Row: {
           created_at: string | null
