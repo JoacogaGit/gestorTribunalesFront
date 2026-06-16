@@ -168,8 +168,8 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
                     <div key={c.id} className="flex items-center justify-between p-3 hover:bg-accent/20">
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">{c.caratula}</div>
-                        {c.numero_expediente && (
-                          <div className="text-xs text-muted-foreground truncate">{c.numero_expediente}</div>
+                        {c.expediente_nro && (
+                          <div className="text-xs text-muted-foreground truncate">{c.expediente_nro}</div>
                         )}
                       </div>
                       {yaEsta ? (
