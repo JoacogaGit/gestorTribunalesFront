@@ -78,7 +78,7 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
               .some((s) => s.situacion_libertad === need)
           );
         }
-        setCausas(rows.map((r) => ({ id: r.id, caratula: r.caratula, numero_expediente: r.numero_expediente })));
+        setCausas(rows.map((r) => ({ id: r.id, caratula: r.caratula, expediente_nro: r.expediente_nro })));
       }
       setLoading(false);
     })();
