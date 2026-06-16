@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, LogOut, UserCircle2, Mail, Settings, DoorOpen, Calendar } from "lucide-react";
+import { User, LogOut, UserCircle2, Mail, Settings, DoorOpen } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import GoogleCalendarSection from "@/components/GoogleCalendarSection";
 
 interface Props {
   email: string;
