@@ -67,24 +67,29 @@ export default function EventoFormInline({ mode, initialValue, saving, onSubmit,
     : (initialValue?.fecha
       ? (initialValue.fecha.length > 10 ? isoToInputDate(initialValue.fecha) : initialValue.fecha)
       : "");
+  const initHora = restored?.fecha
+    ? (restored.fecha.length > 10 ? isoToInputTime(restored.fecha) : "")
+    : (initialValue?.fecha && initialValue.fecha.length > 10 ? isoToInputTime(initialValue.fecha) : "");
   const [fecha, setFecha] = useState(initFecha);
+  const [hora, setHora] = useState(initHora);
   const [descripcion, setDescripcion] = useState(restored?.descripcion ?? initialValue?.descripcion ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   // Persistencia con debounce solo si hay key y estamos creando.
   useFormDraft(
     draftKey ?? "__noop__",
-    { titulo, tipo_evento: tipo || null, fecha: fecha || null, descripcion: descripcion || null },
+    { titulo, tipo_evento: tipo || null, fecha: combineToISO(fecha, hora), descripcion: descripcion || null },
     !!draftKey && mode === "crear",
   );
 
   const submit = async () => {
     if (!titulo.trim()) { setErr("El título es obligatorio."); return; }
+    if (hora && !fecha) { setErr("Si cargás hora, también debés cargar la fecha."); return; }
     setErr(null);
     await onSubmit({
       titulo: titulo.trim(),
       tipo_evento: tipo.trim() || null,
-      fecha: fecha || null,
+      fecha: combineToISO(fecha, hora),
       descripcion: descripcion?.trim() || null,
     });
     if (draftKey) clearDraft(draftKey);
