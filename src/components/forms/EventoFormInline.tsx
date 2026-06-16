@@ -119,6 +119,10 @@ export default function EventoFormInline({ mode, initialValue, saving, onSubmit,
           <Label className="text-xs">Fecha (opcional)</Label>
           <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Hora (opcional)</Label>
+          <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} disabled={!fecha} />
+        </div>
         <div className="space-y-1.5 col-span-2">
           <Label className="text-xs">Descripción</Label>
           <Textarea rows={2} value={descripcion ?? ""} onChange={(e) => setDescripcion(e.target.value)} />
