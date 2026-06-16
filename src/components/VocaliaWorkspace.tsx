@@ -353,6 +353,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             })()}
             <SuperadminLink variant="compact" />
             <ThemeToggle />
+            <NotificationBell />
             <UserMenu
               email={user.email}
               name={user.name}
