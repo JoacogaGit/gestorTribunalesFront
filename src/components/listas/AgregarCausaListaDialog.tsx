@@ -90,7 +90,7 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
     if (!q) return causas;
     return causas.filter((c) =>
       c.caratula.toLowerCase().includes(q) ||
-      (c.numero_expediente ?? "").toLowerCase().includes(q)
+      (c.expediente_nro ?? "").toLowerCase().includes(q)
     );
   }, [causas, busqueda]);
 
