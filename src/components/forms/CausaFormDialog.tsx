@@ -103,6 +103,13 @@ export default function CausaFormDialog({
   open, onOpenChange, mode, causaId, initialSujetoSituacion, onMutated,
 }: Props) {
   const muts = useCausaMutations();
+  const { vocalia } = useVocaliaActual();
+  const fireVocaliaResync = () => {
+    if (!vocalia?.id) return;
+    supabase.functions
+      .invoke("google-calendar-sync", { body: { action: "vocalia_resync", vocalia_id: vocalia.id } })
+      .catch((e) => console.warn("vocalia_resync error", e));
+  };
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [confirmDeleteCausa, setConfirmDeleteCausa] = useState(false);
