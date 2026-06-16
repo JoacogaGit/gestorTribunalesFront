@@ -52,7 +52,7 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
       setLoading(true);
       let query = supabase
         .from("causas")
-        .select("id, caratula, numero_expediente, sujetos(situacion_libertad, borrado_en)")
+        .select("id, caratula, expediente_nro, sujetos(situacion_libertad, borrado_en)")
         .eq("vocalia_id", vocaliaId)
         .is("borrado_en", null);
 
