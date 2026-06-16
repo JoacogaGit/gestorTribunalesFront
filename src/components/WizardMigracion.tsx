@@ -116,16 +116,97 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   }, [procesando]);
 
 
-  // Cargar estado pendiente de localStorage al montar
+  // Detectar job server-side activo + fallback localStorage
   useEffect(() => {
     if (!vocaliaId) return;
-    try {
-      const raw = localStorage.getItem(lsKey(vocaliaId));
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
-    } catch { /* noop */ }
+    let cancelled = false;
+    (async () => {
+      // 1) Buscar job activo en BD (prioridad)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setJobLoaded(true); return; }
+        const { data: jobs } = await supabase
+          .from("migraciones_jobs")
+          .select("id, estado, archivo_nombre, total_lotes, lotes_procesados, lotes_fallidos, resultados, lotes_pendientes")
+          .eq("usuario_id", user.id)
+          .eq("vocalia_id", vocaliaId)
+          .in("estado", ["pendiente", "procesando", "revision"])
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        const job = jobs?.[0];
+        if (job) {
+          setJobId(job.id);
+          setJobEstado(job.estado);
+          setFilename(job.archivo_nombre || "");
+          setJobLoaded(true);
+          return;
+        }
+      } catch (e) { console.warn("[migracion] no se pudo consultar jobs", e); }
+      // 2) Fallback localStorage (sólo si no hay job en BD)
+      try {
+        const raw = localStorage.getItem(lsKey(vocaliaId));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
+        }
+      } catch { /* noop */ }
+      setJobLoaded(true);
+    })();
+    return () => { cancelled = true; };
   }, [vocaliaId]);
+
+  // Polling del job server-side
+  useEffect(() => {
+    if (!jobId) return;
+    let cancelled = false;
+    const poll = async () => {
+      const { data, error } = await supabase
+        .from("migraciones_jobs")
+        .select("*")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      const total = data.total_lotes ?? 0;
+      const ok = data.lotes_procesados ?? 0;
+      const fall = data.lotes_fallidos ?? 0;
+      const pending = Math.max(0, total - ok - fall);
+      // Synthesize lotes para mostrar progreso
+      const synth: LoteTrabajo[] = [];
+      const pestPlan = data.archivo_nombre || "Procesamiento";
+      for (let i = 0; i < ok; i++) synth.push({ id: `ok-${i}`, pestana: pestPlan, nro_lote: i + 1, total_lotes: total, contenido: [], filas: 0, estado: "ok" });
+      for (let i = 0; i < fall; i++) synth.push({ id: `er-${i}`, pestana: pestPlan, nro_lote: ok + i + 1, total_lotes: total, contenido: [], filas: 0, estado: "error", errorCode: "ai_error" });
+      const procActivo = data.estado === "procesando" || data.estado === "pendiente";
+      for (let i = 0; i < pending; i++) {
+        const est: EstadoLote = procActivo && i === 0 ? "procesando" : "pendiente";
+        synth.push({ id: `pe-${i}`, pestana: pestPlan, nro_lote: ok + fall + i + 1, total_lotes: total, contenido: [], filas: 0, estado: est });
+      }
+      setLotes(synth);
+      setJobEstado(data.estado);
+      setProcesando(data.estado === "procesando" || data.estado === "pendiente");
+      setFilename(data.archivo_nombre || "");
+      if (data.estado === "revision" && !resultado) {
+        const lista = ((data.resultados as { pestana: string; resultado: ResultadoIADirecto }[]) || []).map((r) => ({
+          pestana: r.pestana,
+          resultado: { ...r.resultado, causas: (r.resultado.causas ?? []).map((c) => normalizarCausa(c)) },
+        }));
+        setResultadosOk(lista);
+        finalizarConResultados(lista);
+      }
+      if (data.estado === "error") {
+        toast.error(data.error_mensaje || "La migración falló en el servidor.");
+      }
+    };
+    poll();
+    const iv = setInterval(() => {
+      // No seguir polleando si terminó
+      if (jobEstado === "revision" || jobEstado === "completado" || jobEstado === "error") return;
+      poll();
+    }, 3000);
+    return () => { cancelled = true; clearInterval(iv); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId]);
+
 
   // Reportar status al padre
   useEffect(() => {
