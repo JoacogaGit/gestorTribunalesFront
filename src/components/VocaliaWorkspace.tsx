@@ -6,6 +6,8 @@ import CausasTable from "@/components/CausasTable";
 import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
+import NotificationBell from "@/components/NotificationBell";
+import PushReminderBanner from "@/components/PushReminderBanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
@@ -351,6 +353,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             })()}
             <SuperadminLink variant="compact" />
             <ThemeToggle />
+            <NotificationBell />
             <UserMenu
               email={user.email}
               name={user.name}
@@ -378,7 +381,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           />
         )}
 
+        <PushReminderBanner />
+
         <AnimatePresence mode="wait">
+
 
           <motion.div
             key={view}
