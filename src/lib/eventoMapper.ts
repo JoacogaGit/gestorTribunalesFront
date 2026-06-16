@@ -126,13 +126,22 @@ function caratulaOf(c: DbCausaJoin | null): string {
   return c.caratula || c.expediente_nro || "—";
 }
 
+export function isAllDayISO(iso: string): boolean {
+  return /T00:00:00(\.000)?Z$/.test(iso) || /T00:00:00\+00:?00$/.test(iso);
+}
+
 export function mapDbEventoToCalendar(row: DbEventoRow): CalendarEvento | null {
   if (!row.fecha_hora) return null;
   const causa = pickCausa(row.causas);
   if (!causa) return null;
   const fecha = row.fecha_hora;
-  const dt = new Date(fecha);
-  const hora = isNaN(dt.getTime()) ? undefined : dt.toTimeString().slice(0, 5);
+  let hora: string | undefined;
+  if (!isAllDayISO(fecha)) {
+    const dt = new Date(fecha);
+    if (!isNaN(dt.getTime())) {
+      hora = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
+    }
+  }
   return {
     id: `evento-${row.id}`,
     fecha,
