@@ -16,6 +16,7 @@ import { deduplicarCausas } from "@/lib/deduplicarCausas";
 import { normalizarCausa } from "@/lib/normalizarCausa";
 import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
 import ProgresoLotes from "@/components/migracion/ProgresoLotes";
+import { supabase } from "@/integrations/supabase/client";
 
 type EstadoLote = "pendiente" | "procesando" | "ok" | "error";
 interface LoteTrabajo {
@@ -89,6 +90,10 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   // Resume desde localStorage
   const [pendingResume, setPendingResume] = useState<{ filename: string; timestamp: number; resultadosOk: { pestana: string; resultado: ResultadoIADirecto }[] } | null>(null);
   const cancelarRef = useRef(false);
+  // Server-side job (Fase B)
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobLoaded, setJobLoaded] = useState(false);
+  const [jobEstado, setJobEstado] = useState<string | null>(null);
 
   // Detección de pestaña en background mientras procesa (solo log).
   useEffect(() => {
@@ -111,16 +116,97 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   }, [procesando]);
 
 
-  // Cargar estado pendiente de localStorage al montar
+  // Detectar job server-side activo + fallback localStorage
   useEffect(() => {
     if (!vocaliaId) return;
-    try {
-      const raw = localStorage.getItem(lsKey(vocaliaId));
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
-    } catch { /* noop */ }
+    let cancelled = false;
+    (async () => {
+      // 1) Buscar job activo en BD (prioridad)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setJobLoaded(true); return; }
+        const { data: jobs } = await supabase
+          .from("migraciones_jobs")
+          .select("id, estado, archivo_nombre, total_lotes, lotes_procesados, lotes_fallidos, resultados, lotes_pendientes")
+          .eq("usuario_id", user.id)
+          .eq("vocalia_id", vocaliaId)
+          .in("estado", ["pendiente", "procesando", "revision"])
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        const job = jobs?.[0];
+        if (job) {
+          setJobId(job.id);
+          setJobEstado(job.estado);
+          setFilename(job.archivo_nombre || "");
+          setJobLoaded(true);
+          return;
+        }
+      } catch (e) { console.warn("[migracion] no se pudo consultar jobs", e); }
+      // 2) Fallback localStorage (sólo si no hay job en BD)
+      try {
+        const raw = localStorage.getItem(lsKey(vocaliaId));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
+        }
+      } catch { /* noop */ }
+      setJobLoaded(true);
+    })();
+    return () => { cancelled = true; };
   }, [vocaliaId]);
+
+  // Polling del job server-side
+  useEffect(() => {
+    if (!jobId) return;
+    let cancelled = false;
+    const poll = async () => {
+      const { data, error } = await supabase
+        .from("migraciones_jobs")
+        .select("*")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      const total = data.total_lotes ?? 0;
+      const ok = data.lotes_procesados ?? 0;
+      const fall = data.lotes_fallidos ?? 0;
+      const pending = Math.max(0, total - ok - fall);
+      // Synthesize lotes para mostrar progreso
+      const synth: LoteTrabajo[] = [];
+      const pestPlan = data.archivo_nombre || "Procesamiento";
+      for (let i = 0; i < ok; i++) synth.push({ id: `ok-${i}`, pestana: pestPlan, nro_lote: i + 1, total_lotes: total, contenido: [], filas: 0, estado: "ok" });
+      for (let i = 0; i < fall; i++) synth.push({ id: `er-${i}`, pestana: pestPlan, nro_lote: ok + i + 1, total_lotes: total, contenido: [], filas: 0, estado: "error", errorCode: "ai_error" });
+      const procActivo = data.estado === "procesando" || data.estado === "pendiente";
+      for (let i = 0; i < pending; i++) {
+        const est: EstadoLote = procActivo && i === 0 ? "procesando" : "pendiente";
+        synth.push({ id: `pe-${i}`, pestana: pestPlan, nro_lote: ok + fall + i + 1, total_lotes: total, contenido: [], filas: 0, estado: est });
+      }
+      setLotes(synth);
+      setJobEstado(data.estado);
+      setProcesando(data.estado === "procesando" || data.estado === "pendiente");
+      setFilename(data.archivo_nombre || "");
+      if (data.estado === "revision" && !resultado) {
+        const lista = (((data.resultados as unknown) as { pestana: string; resultado: ResultadoIADirecto }[]) || []).map((r) => ({
+          pestana: r.pestana,
+          resultado: { ...r.resultado, causas: (r.resultado.causas ?? []).map((c) => normalizarCausa(c)) },
+        }));
+        setResultadosOk(lista);
+        finalizarConResultados(lista);
+      }
+      if (data.estado === "error") {
+        toast.error(data.error_mensaje || "La migración falló en el servidor.");
+      }
+    };
+    poll();
+    const iv = setInterval(() => {
+      // No seguir polleando si terminó
+      if (jobEstado === "revision" || jobEstado === "completado" || jobEstado === "error") return;
+      poll();
+    }, 3000);
+    return () => { cancelled = true; clearInterval(iv); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId]);
+
 
   // Reportar status al padre
   useEffect(() => {
@@ -208,42 +294,60 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return out;
   };
 
-  const ejecutarLotes = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
+  // Fase B: inicia un JOB server-side y arranca polling.
+  const iniciarJob = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
     setProcesando(true);
     cancelarRef.current = false;
-    let current = lotesIniciales;
-    setLotes(current);
-    const archivoMeta: ArchivoParseado = { ...archivo, pestanas: [] };
-    const okAcum: { pestana: string; resultado: ResultadoIADirecto }[] = [...resultadosOk];
+    setLotes(lotesIniciales);
 
-    for (let i = 0; i < current.length; i++) {
-      if (cancelarRef.current) break;
-      if (current[i].estado !== "pendiente") continue;
-      current = current.map((l, idx) => idx === i ? { ...l, estado: "procesando" as EstadoLote } : l);
-      setLotes(current);
-      const lote = current[i];
-      const pestPayload: PestanaParseada = { nombre: lote.pestana, contenido: lote.contenido };
-      const r = await procesarUnLote(vocaliaId, vocaliaNombre, archivoMeta, pestPayload,
-        { pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas });
-      if (r.ok && r.resultado) {
-        current = current.map((l, idx) => idx === i ? { ...l, estado: "ok" as EstadoLote, errorCode: undefined, errorMsg: undefined } : l);
-        setLotes(current);
-        okAcum.push({ pestana: `${lote.pestana} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r.resultado });
-        setResultadosOk([...okAcum]);
-        guardarLS(okAcum, filename);
-      } else {
-        current = current.map((l, idx) => idx === i ? { ...l, estado: "error" as EstadoLote, errorCode: r.errorCode, errorMsg: r.errorMsg } : l);
-        setLotes(current);
-      }
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      toast.error("No autenticado.");
+      setProcesando(false);
+      return;
     }
-    setProcesando(false);
-    const fallidos = current.filter((l) => l.estado === "error");
-    const oks = current.filter((l) => l.estado === "ok");
-    if (oks.length > 0 && fallidos.length === 0) {
-      finalizarConResultados(okAcum);
-    } else if (oks.length === 0 && fallidos.length > 0) {
-      toast.error("Ningún lote pudo procesarse. Revisá y reintentá.");
+
+    const lotesPendientes = lotesIniciales.map((l) => ({
+      pestana: l.pestana,
+      nro_lote: l.nro_lote,
+      total_lotes: l.total_lotes,
+      filas: l.filas,
+      contenido: l.contenido,
+    }));
+
+    const archivoNombre = filename || (archivo as { nombreArchivo?: string }).nombreArchivo || "archivo";
+    const archivoMeta = {
+      tipo: (archivo as { tipo?: string }).tipo ?? "desconocido",
+      nombre: archivoNombre,
+      vocalia_nombre: vocaliaNombre,
+    };
+
+    const { data: jobIns, error: insErr } = await supabase
+      .from("migraciones_jobs")
+      .insert({
+        vocalia_id: vocaliaId,
+        usuario_id: userData.user.id,
+        archivo_nombre: archivoNombre,
+        archivo_meta: archivoMeta,
+        estado: "pendiente",
+        total_lotes: lotesIniciales.length,
+        lotes_pendientes: lotesPendientes,
+      } as never)
+      .select("id")
+      .single();
+
+    if (insErr || !jobIns) {
+      toast.error("No se pudo crear el job de migración.");
+      console.error(insErr);
+      setProcesando(false);
+      return;
     }
+
+    setJobId(jobIns.id);
+    setJobEstado("pendiente");
+    // Fire-and-forget: la edge function corre server-side y el polling actualiza el progreso.
+    supabase.functions.invoke("procesar-migracion-job", { body: { job_id: jobIns.id } })
+      .catch((e) => console.warn("[migracion] invoke procesar-migracion-job fall:", e));
   };
 
   const finalizarConResultados = (lista: { pestana: string; resultado: ResultadoIADirecto }[]) => {
@@ -269,43 +373,15 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     const { archivo, lotes: ini } = confirmacionPendiente;
     setConfirmacionPendiente(null);
     setConfirmacionOk(false);
-    await ejecutarLotes(archivo, ini);
+    await iniciarJob(archivo, ini);
   };
 
-
-
+  // En Fase B los reintentos ya los hace el servidor automáticamente (1 por lote).
+  // Mantenemos el handler para no romper la UI; muestra un mensaje informativo.
   const handleReintentarFallidos = async () => {
-    if (!archivoCache) return;
-    const nuevos: LoteTrabajo[] = [];
-    let split = 0, retry = 0;
-    for (const l of lotes) {
-      if (l.estado !== "error") { nuevos.push(l); continue; }
-      if (ADAPTIVE_ERRORS.has(l.errorCode || "") && l.filas > MIN_FILAS_LOTE) {
-        const fakePest: PestanaParseada = { nombre: l.pestana, contenido: l.contenido };
-        const mitades = dividirLoteEnMitades({ pestana: fakePest, nro_lote: l.nro_lote, total_lotes: l.total_lotes, filas: l.filas });
-        if (mitades) {
-          mitades.forEach((m, idx) => {
-            nuevos.push({
-              id: `${l.id}.${idx}`,
-              pestana: l.pestana,
-              nro_lote: l.nro_lote,
-              total_lotes: l.total_lotes,
-              contenido: m.pestana.contenido as string[][],
-              filas: m.filas,
-              estado: "pendiente",
-            });
-          });
-          split++;
-          continue;
-        }
-      }
-      nuevos.push({ ...l, estado: "pendiente", errorCode: undefined, errorMsg: undefined });
-      retry++;
-    }
-    if (split + retry === 0) return;
-    if (split > 0) toast.info(`${split} lote(s) divididos en mitades para reintentar.`);
-    await ejecutarLotes(archivoCache, nuevos);
+    toast.info("Los reintentos automáticos ya se hicieron en el servidor. Continuá con los lotes OK o descartá.");
   };
+
 
   const handleContinuarConOk = () => {
     if (resultadosOk.length === 0) return;
@@ -403,6 +479,12 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setExito(r.inserted);
     setOmitidas(r.omitidas || []);
     limpiarLS();
+    // Marcar el job como completado
+    if (jobId) {
+      try {
+        await supabase.from("migraciones_jobs").update({ estado: "completado" }).eq("id", jobId);
+      } catch (e) { console.warn("[migracion] no se pudo marcar job completado", e); }
+    }
     if ((r.omitidas?.length || 0) > 0) {
       toast.success(`Migración completada. Se omitieron ${r.omitidas.length} causa(s) duplicada(s).`);
     } else {
@@ -410,7 +492,13 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     }
   };
 
-  const handleDescartar = () => {
+  const handleDescartar = async () => {
+    // Borrar job server-side si existe
+    if (jobId) {
+      try { await supabase.from("migraciones_jobs").delete().eq("id", jobId); }
+      catch (e) { console.warn("[migracion] no se pudo borrar job", e); }
+    }
+    setJobId(null); setJobEstado(null);
     setResultado(null); setEditable([]); setIncluir({}); setFilename("");
     setMapeo(null); setSeleccionMapeo({}); setArchivoCache(null);
     setPestanasDetectadas([]); setSeleccionPestanas({}); setLotes([]);
@@ -418,6 +506,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     setConfirmacionPendiente(null); setConfirmacionOk(false); setOmitidas([]);
     limpiarLS();
   };
+
 
 
   // PASO 1.45 — Aviso obligatorio antes de comenzar
