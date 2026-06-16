@@ -308,6 +308,7 @@ export default function CausaFormDialog({
         if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
       }
       toast.success("Causa creada");
+      fireVocaliaResync();
       clearDraft(draftKey);
       onMutated?.();
       onOpenChange(false);
