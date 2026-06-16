@@ -381,7 +381,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           />
         )}
 
+        <PushReminderBanner />
+
         <AnimatePresence mode="wait">
+
 
           <motion.div
             key={view}
