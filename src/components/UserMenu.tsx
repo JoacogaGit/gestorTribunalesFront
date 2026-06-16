@@ -58,9 +58,6 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
           <DropdownMenuItem onSelect={() => { setDraftName(name); setDraftEmail(email); setProfileOpen(true); }} className="gap-2">
             <UserCircle2 className="w-4 h-4" /> Mi perfil
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setGcalOpen(true)} className="gap-2">
-            <Calendar className="w-4 h-4" /> Google Calendar
-          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => toast.info("Próximamente")} className="gap-2">
             <Settings className="w-4 h-4" /> Preferencias
           </DropdownMenuItem>
