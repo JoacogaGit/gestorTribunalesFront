@@ -17,14 +17,43 @@ interface Props {
   draftKey?: string;
 }
 
+// All-day events: se guardan como UTC midnight ("YYYY-MM-DDT00:00:00.000Z").
+function isAllDayISO(iso: string): boolean {
+  return /T00:00:00(\.000)?Z$/.test(iso) || /T00:00:00\+00:?00$/.test(iso);
+}
+
 function isoToInputDate(iso: string | null | undefined): string {
   if (!iso) return "";
+  if (isAllDayISO(iso)) {
+    // Mantener la fecha tal cual en UTC (no aplicar timezone shift).
+    return iso.slice(0, 10);
+  }
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function isoToInputTime(iso: string | null | undefined): string {
+  if (!iso || iso.length <= 10) return "";
+  if (isAllDayISO(iso)) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Combina fecha (YYYY-MM-DD) + hora (HH:MM opcional) en ISO para guardar. */
+function combineToISO(fecha: string, hora: string): string | null {
+  if (!fecha) return null;
+  if (!hora) {
+    // All-day → UTC midnight para detección consistente.
+    return `${fecha}T00:00:00.000Z`;
+  }
+  const d = new Date(`${fecha}T${hora}:00`);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 export default function EventoFormInline({ mode, initialValue, saving, onSubmit, onCancel, draftKey }: Props) {
