@@ -90,6 +90,10 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   // Resume desde localStorage
   const [pendingResume, setPendingResume] = useState<{ filename: string; timestamp: number; resultadosOk: { pestana: string; resultado: ResultadoIADirecto }[] } | null>(null);
   const cancelarRef = useRef(false);
+  // Server-side job (Fase B)
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobLoaded, setJobLoaded] = useState(false);
+  const [jobEstado, setJobEstado] = useState<string | null>(null);
 
   // Detección de pestaña en background mientras procesa (solo log).
   useEffect(() => {
