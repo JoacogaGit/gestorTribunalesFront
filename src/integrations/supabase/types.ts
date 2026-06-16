@@ -637,6 +637,66 @@ export type Database = {
           },
         ]
       }
+      push_alertas_enviadas: {
+        Row: {
+          enviada_en: string
+          fecha_objetivo: string
+          id: string
+          recurso_id: string
+          tipo: string
+          ventana: string
+        }
+        Insert: {
+          enviada_en?: string
+          fecha_objetivo: string
+          id?: string
+          recurso_id: string
+          tipo: string
+          ventana: string
+        }
+        Update: {
+          enviada_en?: string
+          fecha_objetivo?: string
+          id?: string
+          recurso_id?: string
+          tipo?: string
+          ventana?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          activo: boolean
+          created_at: string
+          endpoint: string
+          id: string
+          subscription: Json
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          endpoint: string
+          id?: string
+          subscription: Json
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          endpoint?: string
+          id?: string
+          subscription?: Json
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       sujetos: {
         Row: {
           borrado_en: string | null
