@@ -178,7 +178,7 @@ const TIPO_RECURSO = new Set(["casacion","rex","queja_corte"]);
 const TIPO_PROCESO = new Set(["unipersonal","colegiado"]);
 const SITUACION = new Set(["libre","detenido","rebelde","probation","condenado"]);
 const CONFIANZA = new Set(["verde","amarillo"]);
-const STRING_OR_NULL_CAUSA = ["caratula","numero_interno","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","notas_ia"];
+const STRING_OR_NULL_CAUSA = ["caratula","numero_interno","despachante","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","notas_ia"];
 const STRING_OR_NULL_SUJETO = ["delito","defensor","lugar_alojamiento","fecha_detencion","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones"];
 
 const isStringOrNull = (v: unknown) => v === null || typeof v === "string";
