@@ -23,7 +23,7 @@ Reglas: tipos estrictos (string|null nunca objeto); enums exactos en minúscula 
 const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de formato. Re-procesá EXACTAMENTE el mismo input respetando el esquema JSON al pie de la letra. NO inventes claves, NO uses objetos donde van strings, NO inventes valores de enum.`;
 
 // ── Validador de esquema (replica el de procesar-migracion) ───────────────────
-const CAUSA_KEYS = new Set(["id_temporal","expediente_nro","numero_interno","caratula","estado_causa","tipo_recurso","tipo_proceso","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","confianza","notas_ia","origen_pestanas","sujetos","eventos"]);
+const CAUSA_KEYS = new Set(["id_temporal","expediente_nro","numero_interno","caratula","despachante","estado_causa","tipo_recurso","tipo_proceso","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","confianza","notas_ia","origen_pestanas","sujetos","eventos"]);
 const SUJETO_KEYS = new Set(["nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","prescripciones"]);
 const EVENTO_KEYS = new Set(["titulo","descripcion","fecha_hora","tipo_evento"]);
 const ESTADO_CAUSA = new Set(["tramite","recurso","terminada"]);
