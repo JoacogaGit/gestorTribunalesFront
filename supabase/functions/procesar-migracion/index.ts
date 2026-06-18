@@ -163,7 +163,7 @@ const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de forma
 
 // ── Validador de esquema ──────────────────────────────────────────────────────
 const CAUSA_KEYS = new Set([
-  "id_temporal","expediente_nro","numero_interno","caratula","estado_causa","tipo_recurso",
+  "id_temporal","expediente_nro","numero_interno","caratula","despachante","estado_causa","tipo_recurso",
   "tipo_proceso","fecha_ingreso","querella","actor_civil","otros_intervinientes",
   "causa_conexa_texto","confianza","notas_ia","origen_pestanas","sujetos","eventos",
 ]);
