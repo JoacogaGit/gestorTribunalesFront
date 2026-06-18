@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
     console.log("procesar-migracion:anthropic_before", { timestamp: anthropicStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
 
     // 1ra llamada
-    const r1 = await callAnthropic(apiKey, SYSTEM_PROMPT, userMsg, 45_000);
+    const r1 = await callAnthropic(apiKey, SYSTEM_PROMPT, userMsg, 180_000);
     if (!r1.ok) {
       console.log("procesar-migracion:error", { tipo: r1.code, status: r1.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
       if (r1.code === "anthropic_timeout") {
@@ -413,7 +413,7 @@ Deno.serve(async (req) => {
       }
       if (r1.code === "json_invalido") {
         // Reintento por JSON inválido (no es un objeto JSON parseable).
-        const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 45_000);
+        const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 180_000);
         if (!r2.ok) {
           return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: r2.detail ?? r1.detail }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
@@ -437,7 +437,7 @@ Deno.serve(async (req) => {
 
     console.log("procesar-migracion:schema_invalido", { reason: v1.reason, pestana: pestanaLog, nro_lote: nroLote });
     // Reintento UNA sola vez por esquema inválido.
-    const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 45_000);
+    const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 180_000);
     if (!r2.ok) {
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v1.reason, retry_error: r2.code }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
