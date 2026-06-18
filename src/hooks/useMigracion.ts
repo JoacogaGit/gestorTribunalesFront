@@ -8,6 +8,8 @@ export interface CausaIA {
   expediente_nro: string;
   numero_interno?: string | null;
   caratula: string | null;
+  despachante?: string | null;
+
 
   estado_causa: "tramite" | "recurso" | "terminada";
   tipo_recurso: "casacion" | "rex" | "queja_corte" | null;
