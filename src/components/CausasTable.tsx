@@ -309,7 +309,7 @@ export default function CausasTable({
     {
       key: "fechaIngreso", label: "Fecha 354", headClass: "whitespace-nowrap",
       cellClass: "text-xs text-muted-foreground whitespace-nowrap",
-      sortValue: (c) => c.fechaIngreso ? new Date(c.fechaIngreso).getTime() : Number.MAX_SAFE_INTEGER,
+      sortValue: (c) => parseLocalTime(c.fechaIngreso),
       render: (c) => c.fechaIngreso ? fmtDate(c.fechaIngreso) : <span className="text-muted-foreground/60">—</span>,
     },
     {
