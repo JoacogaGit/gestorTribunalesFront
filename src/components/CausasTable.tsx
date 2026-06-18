@@ -333,7 +333,7 @@ export default function CausasTable({
     },
     {
       key: "pp", label: "PP Vence", headClass: "whitespace-nowrap",
-      sortValue: (c) => c.fechaVencimientoPP ? new Date(c.fechaVencimientoPP).getTime() : Number.MAX_SAFE_INTEGER,
+      sortValue: (c) => parseLocalTime(c.fechaVencimientoPP),
       render: (c) => (
         <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>
           {fmtDate(c.fechaVencimientoPP)}
