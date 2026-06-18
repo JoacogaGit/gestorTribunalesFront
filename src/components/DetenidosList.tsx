@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useCausaMutations } from "@/hooks/useCausaMutations";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
+import { formatLocalDate } from "@/lib/parseDate";
 
 interface DetenidoRow {
   imputado: Imputado;
@@ -34,8 +35,7 @@ interface ColDef {
 }
 
 function fmtDate(d?: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("es-AR");
+  return formatLocalDate(d);
 }
 
 interface Props {
