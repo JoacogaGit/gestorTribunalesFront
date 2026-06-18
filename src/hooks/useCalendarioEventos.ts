@@ -11,6 +11,7 @@ import {
 } from "@/lib/eventoMapper";
 import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { parseLocalTime } from "@/lib/parseDate";
 
 const ACTIVOS = ["tramite", "recurso"] as const;
 const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa,vocalia_id";
