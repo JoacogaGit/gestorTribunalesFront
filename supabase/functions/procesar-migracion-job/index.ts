@@ -119,9 +119,12 @@ async function callAnthropic(apiKey: string, systemPrompt: string, userMsg: stri
 }
 
 // ── Procesamiento ─────────────────────────────────────────────────────────────
-const MAX_LOTES_PER_RUN = 6;       // procesar hasta 6 lotes y luego encadenar
-const MAX_RUN_MS = 200_000;        // ~3:20 — tope conservador para self-chain
-const TIMEOUT_LOTE_MS = 50_000;
+// Cada lote puede demorar hasta 360s (2 intentos x 180s). El wall-clock límite
+// de una invocación de Edge Function ronda los 400s, así que encadenamos
+// después de cada lote para no perder progreso.
+const MAX_LOTES_PER_RUN = 1;       // procesar 1 lote y encadenar
+const MAX_RUN_MS = 370_000;        // ~6:10 — tope conservador antes del límite duro
+const TIMEOUT_LOTE_MS = 180_000;   // 3 min por intento (2 intentos = hasta 6 min/lote)
 
 type Lote = { pestana: string; nro_lote: number; total_lotes: number; filas: number; contenido: string[][] };
 type ArchivoMeta = { tipo?: string; nombre?: string; vocalia_nombre?: string };
