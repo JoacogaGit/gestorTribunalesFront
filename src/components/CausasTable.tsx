@@ -351,7 +351,7 @@ export default function CausasTable({
         const fechas = c.imputados
           .map((i) => i.fechaVencimientoPena)
           .filter((f): f is string => !!f)
-          .map((f) => new Date(f).getTime());
+          .map((f) => parseLocalTime(f));
         return fechas.length ? Math.min(...fechas) : Number.MAX_SAFE_INTEGER;
       },
       render: (c: Causa) => {
