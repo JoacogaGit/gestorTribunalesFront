@@ -123,7 +123,8 @@ async function buildAlertas(now: Date): Promise<Alerta[]> {
     if (!sj || sj.borrado_en) continue;
     const c: any = sj.causa;
     if (!c || c.borrado_en) continue;
-    const f = new Date(p.fecha as string);
+    const pf = p.fecha as string;
+    const f = /^\d{4}-\d{2}-\d{2}$/.test(pf) ? new Date(`${pf}T00:00:00`) : new Date(pf);
     if (f <= now || f > horizonte) continue;
     out.push({
       tipo: "prescripcion",
