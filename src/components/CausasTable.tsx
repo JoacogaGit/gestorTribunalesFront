@@ -373,7 +373,7 @@ export default function CausasTable({
     },
     {
       key: "otrosIntervinientes", label: "Otros intervinientes",
-      cellClass: "text-xs text-muted-foreground max-w-[180px]",
+      cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top",
       sortValue: (c) => (c.otrosIntervinientes || []).map((o) => o.nombre).join(", "),
       render: (c) => (c.otrosIntervinientes && c.otrosIntervinientes.length > 0)
         ? <div className="space-y-0.5">{c.otrosIntervinientes.map((o, i) => <div key={i}><span className="font-medium text-foreground/80">{o.rol}:</span> {o.nombre}</div>)}</div>
