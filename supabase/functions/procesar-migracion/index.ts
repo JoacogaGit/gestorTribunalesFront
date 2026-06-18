@@ -27,6 +27,7 @@ Devolvé SIEMPRE este JSON exacto, con TODAS las claves listadas, sin agregar ni
       "expediente_nro": <string>,
       "numero_interno": <string | null>,
       "caratula": <string | null>,
+      "despachante": <string de hasta 3 caracteres | null>,
       "estado_causa": "tramite" | "recurso" | "terminada",
       "tipo_recurso": "casacion" | "rex" | "queja_corte" | null,
       "tipo_proceso": "unipersonal" | "colegiado" | null,
