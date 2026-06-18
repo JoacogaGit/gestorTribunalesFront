@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -10,8 +11,8 @@ import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AcceptInvitation from "./pages/AcceptInvitation";
-import SuperadminPanel from "./pages/SuperadminPanel";
-import SuperadminTribunalDetail from "./pages/SuperadminTribunalDetail";
+const SuperadminPanel = lazy(() => import("./pages/SuperadminPanel"));
+const SuperadminTribunalDetail = lazy(() => import("./pages/SuperadminTribunalDetail"));
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import { VocaliaProvider } from "@/context/VocaliaContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -38,18 +39,20 @@ const App = () => (
           <VocaliaProvider>
             <AuthProvider>
               <SuperadminModeProvider>
-                <Routes>
-                  <Route path="/auth" element={<AuthScreen />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/invitacion/:token" element={<AcceptInvitation />} />
-                  <Route path="/superadmin" element={<SuperadminPanel />} />
-                  <Route path="/superadmin/tribunal/:id" element={<SuperadminTribunalDetail />} />
-                  <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
-                  <Route path="/" element={<Index />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <Suspense fallback={null}>
+                  <Routes>
+                    <Route path="/auth" element={<AuthScreen />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/invitacion/:token" element={<AcceptInvitation />} />
+                    <Route path="/superadmin" element={<SuperadminPanel />} />
+                    <Route path="/superadmin/tribunal/:id" element={<SuperadminTribunalDetail />} />
+                    <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
+                    <Route path="/" element={<Index />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </SuperadminModeProvider>
             </AuthProvider>
           </VocaliaProvider>
