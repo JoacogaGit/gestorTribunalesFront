@@ -316,7 +316,7 @@ export default function CausasTable({
       key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
       sortValue: (c) => {
         const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
-        const future = all.map((d) => new Date(d).getTime()).sort((a, b) => a - b);
+        const future = all.map((d) => parseLocalTime(d)).sort((a, b) => a - b);
         return future[0] ?? Number.MAX_SAFE_INTEGER;
       },
       render: (c) => {
