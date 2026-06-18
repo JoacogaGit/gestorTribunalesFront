@@ -491,7 +491,7 @@ export default function CausasTable({
   const customColDefs: ColDef[] = customCols.map((cc) => ({
     key: cc.key,
     label: cc.label,
-    cellClass: "text-xs text-muted-foreground max-w-[160px]",
+    cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top",
     sortValue: (c) => (c.extra?.[cc.key] || "").toString(),
     render: (c) => {
       const val = c.extra?.[cc.key] || "";
