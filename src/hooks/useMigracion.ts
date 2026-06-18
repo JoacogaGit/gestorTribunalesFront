@@ -210,6 +210,8 @@ export function useMigracion() {
           expediente_nro: c.expediente_nro,
           numero_interno: c.numero_interno ?? null,
           caratula: c.caratula,
+          despachante: (c.despachante ?? null)?.toString().slice(0, 3) || null,
+
 
           estado_causa: c.estado_causa,
           tipo_recurso: c.tipo_recurso,
