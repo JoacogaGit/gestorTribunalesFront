@@ -98,7 +98,6 @@ interface ColDef {
   sortValue?: (c: Causa) => string | number | undefined;
 }
 
-import { formatLocalDate, parseLocalTime } from "@/lib/parseDate";
 function fmtDate(d?: string) {
   return formatLocalDate(d);
 }
