@@ -98,9 +98,9 @@ interface ColDef {
   sortValue?: (c: Causa) => string | number | undefined;
 }
 
+import { formatLocalDate, parseLocalTime } from "@/lib/parseDate";
 function fmtDate(d?: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("es-AR");
+  return formatLocalDate(d);
 }
 
 interface Props {
