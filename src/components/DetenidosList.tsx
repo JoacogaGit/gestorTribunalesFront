@@ -65,19 +65,19 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   };
 
   const allColumns: ColDef[] = [
-    { key: "imputado", label: "Imputado", cellClass: "text-sm font-medium text-foreground", render: (r) => r.imputado.nombre },
-    { key: "lugar", label: "Lugar de Detención", cellClass: "text-xs text-alert-urgent", render: (r) => r.imputado.lugarDetencion || "—" },
+    { key: "imputado", label: "Imputado", cellClass: "text-sm font-medium text-foreground max-w-[200px] break-words whitespace-normal align-top", render: (r) => r.imputado.nombre },
+    { key: "lugar", label: "Lugar de Detención", cellClass: "text-xs text-alert-urgent max-w-[140px] break-words whitespace-normal align-top", render: (r) => r.imputado.lugarDetencion || "—" },
     {
-      key: "numero", label: "N° Causa", cellClass: "font-mono text-xs font-semibold",
+      key: "numero", label: "N° Causa", cellClass: "font-mono text-xs font-semibold whitespace-nowrap align-top",
       render: (r) => r.causa.link
         ? <a href={r.causa.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline inline-flex items-center gap-1">{r.causa.numero}<ExternalLink className="w-3 h-3" /></a>
         : <span className="text-primary">{r.causa.numero}</span>,
     },
-    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[200px] truncate", render: (r) => r.causa.delito },
-    { key: "estadoCausa", label: "Estado causa", cellClass: "text-xs text-foreground whitespace-nowrap", render: (r) => r.causa.estadoCausa },
-    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground", render: (r) => r.imputado.defensor.nombre },
+    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[250px] break-words whitespace-normal align-top", render: (r) => r.causa.delito },
+    { key: "estadoCausa", label: "Estado causa", cellClass: "text-xs text-foreground max-w-[120px] break-words whitespace-normal align-top", render: (r) => r.causa.estadoCausa },
+    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", render: (r) => r.imputado.defensor.nombre },
     {
-      key: "pp", label: "Vto. PP", headClass: "whitespace-nowrap",
+      key: "pp", label: "Vto. PP", headClass: "whitespace-nowrap", cellClass: "max-w-[120px] align-top",
       render: (r) => (
         <span className={`text-xs whitespace-nowrap ${r.causa.fechaVencimientoPP ? getProximityColor(r.causa.fechaVencimientoPP) : "text-muted-foreground"}`}>
           {fmtDate(r.causa.fechaVencimientoPP)}
@@ -88,7 +88,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
       ),
     },
     {
-      key: "vtoPena", label: "Vto. Pena", headClass: "whitespace-nowrap",
+      key: "vtoPena", label: "Vto. Pena", headClass: "whitespace-nowrap", cellClass: "max-w-[120px] align-top",
       render: (r) => <span className={`text-xs whitespace-nowrap ${r.imputado.fechaVencimientoPena ? getProximityColor(r.imputado.fechaVencimientoPena) : "text-muted-foreground"}`}>{fmtDate(r.imputado.fechaVencimientoPena)}</span>,
     },
   ];
