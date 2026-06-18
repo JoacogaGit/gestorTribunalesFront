@@ -99,6 +99,19 @@ REGLA 7 — Clasificación de confianza.
 
 REGLA 8 — Ante la duda, conservador. Mejor null que adivinar mal.
 
+REGLA 9 — DESPACHANTE. Si hay columna tipo "DESPACHANTE", "DESP", "RESPONSABLE", "ENCARGADO" o similar, completá causa.despachante (string de MÁXIMO 3 caracteres):
+- Si el valor ya tiene ≤3 caracteres → usalo tal cual (ej: "JPM" → "JPM"; "AB" → "AB").
+- Si es un nombre completo → INICIALES en mayúscula (primera letra de cada palabra significativa, ignorando preposiciones DE/DEL/LA): "PATRICIO GASTÓN FLORES" → "PGF"; "Juan Pérez" → "JP"; "MARÍA DE LOS ÁNGELES SOSA" → "MAS"; "Ana Belén Ruiz Torres" → "ABR" (primeras 3).
+- Si no hay columna → null.
+
+REGLA 10 — CATEGORÍAS PERSONALIZADAS. Si hay una columna con un patrón claramente reconocible de categoría con valores estructurados (ej: "PRUEBA PROVEÍDA" con sí/no; "INSTRUCCIÓN SUPLEMENTARIA" con cumplida/pendiente; "CITADO" con sí/no/pendiente; "AUDIENCIA REALIZADA" con sí/no), incluila como un evento dentro de causa.eventos[] con:
+  - titulo: nombre de la columna en formato legible (ej: "Prueba proveída").
+  - descripcion: el valor de la celda (ej: "Sí", "Cumplida").
+  - fecha_hora: null.
+  - tipo_evento: "categoria".
+NO uses tipo_evento="categoria" para: columnas numéricas sueltas, IDs, foja, fechas, ni columnas que ya mapean a campos del esquema (delito, defensor, etc.). Si la columna NO tiene un patrón categórico claro pero tampoco encaja, va como tipo_evento="anotacion" (REGLA 5).
+
+
 ═══════════════════════════════════════ INTERPRETACIÓN INTELIGENTE DE VARIANTES ═══════════════════════════════════════
 
 SITUACIÓN DE LIBERTAD: → libre: "EXC", "Exc", "excarcelado", "LIB", "en libertad", "L", celda vacía en columna de libertad. → detenido: "DET", "D", "detenido", "preso", cualquier lugar de detención (CPF, Alcaidía, Unidad, penitenciaría, cárcel), "privado de libertad". Si está privado de libertad SIEMPRE "detenido" aunque tenga condena firme. → rebelde: "rebelde", "REB", "prófugo", "paradero", "P/V", "orden de captura". → probation: "SJP", "SAP", "probation", "suspensión", "susp. juicio a prueba", "en prueba". → condenado: SOLO si NO está privado de libertad.
