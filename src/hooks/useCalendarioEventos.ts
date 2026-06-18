@@ -103,7 +103,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
         ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[]).map(mapPrescripcionToCalendar),
       ].filter((e): e is CalendarEvento => e !== null)
-       .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+       .sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
 
       setEventos(merged);
     } catch (e) {
