@@ -359,7 +359,7 @@ export default function CausasTable({
           .map((i) => ({ nombre: i.nombre, fecha: i.fechaVencimientoPena }))
           .filter((x) => !!x.fecha) as { nombre: string; fecha: string }[];
         if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
-        items.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        items.sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
         return (
           <div className="space-y-0.5 text-xs whitespace-nowrap">
             {items.map((it, i) => (
