@@ -275,15 +275,16 @@ export default function CausasTable({
 
     {
       key: "caratula", label: "Carátula",
-      cellClass: "text-sm font-medium text-foreground max-w-[220px] truncate",
+      cellClass: "text-sm font-medium text-foreground max-w-[250px] break-words whitespace-normal align-top",
       sortValue: (c) => getCaratula(c),
       render: (c) => c.link
-        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-center gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a>
+        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-baseline gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a>
         : getCaratula(c),
     },
-    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", sortValue: (c) => c.delito, render: (c) => c.delito },
+    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[250px] break-words whitespace-normal align-top", sortValue: (c) => c.delito, render: (c) => c.delito },
     {
       key: "libertad", label: "Libertad",
+      cellClass: "max-w-[140px] align-top",
       sortValue: (c) => c.imputados[0]?.estadoLibertad,
       render: (c) => (
         <div className="flex flex-wrap gap-1">
@@ -293,8 +294,9 @@ export default function CausasTable({
         </div>
       ),
     },
-    { key: "estado", label: "Estado", cellClass: "text-xs text-foreground whitespace-nowrap", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
-    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
+    { key: "estado", label: "Estado", cellClass: "text-xs text-foreground max-w-[120px] break-words whitespace-normal align-top", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
+    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
+
     {
       key: "tipoProceso", label: "Tipo",
       headClass: "whitespace-nowrap w-12 text-center",
