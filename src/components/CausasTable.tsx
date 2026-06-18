@@ -36,6 +36,7 @@ import {
   SortableContext, horizontalListSortingStrategy, useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { formatLocalDate, parseLocalTime } from "@/lib/parseDate";
 
 const PALETA_COLORES: { hex: string; label: string }[] = [
   { hex: "#FCA5A5", label: "Rojo" },
