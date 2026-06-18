@@ -1,4 +1,5 @@
 // Helpers de calendario: mapping DB → eventos UI + semáforo cromático.
+import { parseLocalDate } from "@/lib/parseDate";
 
 export type CalendarTipo = "evento" | "vencimiento_pp" | "vencimiento_pena" | "prescripcion";
 
@@ -27,7 +28,9 @@ export const CALENDAR_TIPO_LABEL: Record<CalendarTipo, string> = {
 export type SemaforoBucket = "vencido" | "muy_urgente" | "urgente" | "medio" | "lejano" | "lejano_ok";
 
 export function getSemaforoBucket(fecha: string): SemaforoBucket {
-  const d = (new Date(fecha).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  const fechaDate = parseLocalDate(fecha);
+  const ts = fechaDate ? fechaDate.getTime() : Date.now();
+  const d = (ts - Date.now()) / (1000 * 60 * 60 * 24);
   if (d <= 4) return "vencido";       // incluye vencidos y 0-4d → rojo potente
   if (d <= 10) return "muy_urgente";  // 5-10d
   if (d <= 20) return "urgente";      // 11-20d → naranja fuerte

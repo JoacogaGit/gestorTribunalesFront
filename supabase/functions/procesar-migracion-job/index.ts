@@ -14,16 +14,22 @@ Devolvé SIEMPRE un objeto con esta forma exacta (no inventes claves nuevas):
   "modo": "procesamiento_directo",
   "resumen": { "total_filas_origen": <int>, "causas_detectadas": <int>, "sujetos_detectados": <int>, "eventos_detectados": <int>, "verdes": <int>, "amarillos": <int>, "rojos": <int> },
   "pestanas_procesadas": [<string>],
-  "causas": [ { "id_temporal": <string>, "expediente_nro": <string>, "numero_interno": <string|null>, "caratula": <string|null>, "estado_causa": "tramite"|"recurso"|"terminada", "tipo_recurso": "casacion"|"rex"|"queja_corte"|null, "tipo_proceso": "unipersonal"|"colegiado"|null, "fecha_ingreso": <string YYYY-MM-DD|null>, "querella": <string|null>, "actor_civil": <string|null>, "otros_intervinientes": <string|null>, "causa_conexa_texto": <string|null>, "confianza": "verde"|"amarillo", "notas_ia": <string|null>, "origen_pestanas": [<string>], "sujetos": [ { "nombre_completo": <string>, "delito": <string|null>, "situacion_libertad": "libre"|"detenido"|"rebelde"|"probation"|"condenado", "defensor": <string|null>, "lugar_alojamiento": <string|null>, "fecha_detencion": <string YYYY-MM-DD|null>, "vencimiento_pp": <string YYYY-MM-DD|null>, "vencimiento_pena": <string YYYY-MM-DD|null>, "vencimiento_sjp": <string YYYY-MM-DD|null>, "observaciones": <string|null>, "prescripciones": [ { "fecha": <string YYYY-MM-DD>, "descripcion": <string|null> } ] } ], "eventos": [ { "titulo": <string>, "descripcion": <string|null>, "fecha_hora": <string ISO 8601|null>, "tipo_evento": <string|null> } ] } ],
+  "causas": [ { "id_temporal": <string>, "expediente_nro": <string>, "numero_interno": <string|null>, "caratula": <string|null>, "despachante": <string ≤3 chars|null>, "estado_causa": "tramite"|"recurso"|"terminada", "tipo_recurso": "casacion"|"rex"|"queja_corte"|null, "tipo_proceso": "unipersonal"|"colegiado"|null, "fecha_ingreso": <string YYYY-MM-DD|null>, "querella": <string|null>, "actor_civil": <string|null>, "otros_intervinientes": <string|null>, "causa_conexa_texto": <string|null>, "confianza": "verde"|"amarillo", "notas_ia": <string|null>, "origen_pestanas": [<string>], "sujetos": [ { "nombre_completo": <string>, "delito": <string|null>, "situacion_libertad": "libre"|"detenido"|"rebelde"|"probation"|"condenado", "defensor": <string|null>, "lugar_alojamiento": <string|null>, "fecha_detencion": <string YYYY-MM-DD|null>, "vencimiento_pp": <string YYYY-MM-DD|null>, "vencimiento_pena": <string YYYY-MM-DD|null>, "vencimiento_sjp": <string YYYY-MM-DD|null>, "observaciones": <string|null>, "prescripciones": [ { "fecha": <string YYYY-MM-DD>, "descripcion": <string|null> } ] } ], "eventos": [ { "titulo": <string>, "descripcion": <string|null>, "fecha_hora": <string ISO 8601|null>, "tipo_evento": <string|null> } ] } ],
   "filas_rojas": [ { "datos_crudos": <string>, "razon": <string> } ]
 }
 
-Reglas: tipos estrictos (string|null nunca objeto); enums exactos en minúscula y sin tildes ("probation" no "probacion"); fechas ISO; columnas no reconocidas van como evento sin fecha con tipo_evento="anotacion"; numero_interno separado del expediente; clasificá confianza verde/amarillo/roja (las rojas a filas_rojas[]); ante la duda, conservador. Si >30% de filas serían rojas devolvé { "modo":"mapeo_asistido_requerido", "razon": <string>, "columnas_detectadas":[{"indice":<int>,"muestra":[<string>],"hipotesis":<string>}], "campos_disponibles":[...] }.`;
+Reglas: tipos estrictos (string|null nunca objeto); enums exactos en minúscula y sin tildes ("probation" no "probacion"); fechas ISO; columnas no reconocidas van como evento sin fecha con tipo_evento="anotacion"; numero_interno separado del expediente; clasificá confianza verde/amarillo/roja (las rojas a filas_rojas[]); ante la duda, conservador.
+
+DESPACHANTE: columna "DESPACHANTE"/"DESP"/"RESPONSABLE"/"ENCARGADO" → causa.despachante (máx 3 chars). Si ya es ≤3 chars usalo tal cual; si es nombre completo → iniciales mayúsculas (ej "PATRICIO GASTÓN FLORES" → "PGF"; "Juan Pérez" → "JP"; con más de 3 palabras tomá las primeras 3 iniciales). Si no hay columna → null.
+
+CATEGORÍAS: si hay columnas con patrón categórico claro (ej "PRUEBA PROVEÍDA": sí/no; "CITADO": sí/no/pendiente; "INSTRUCCIÓN SUPLEMENTARIA": cumplida/pendiente) → incluilas como evento sin fecha en causa.eventos[] con titulo=nombre de columna legible, descripcion=valor de celda, fecha_hora=null, tipo_evento="categoria". NO usés "categoria" para columnas numéricas, IDs, ni columnas que mapean a campos del esquema.
+
+Si >30% de filas serían rojas devolvé { "modo":"mapeo_asistido_requerido", "razon": <string>, "columnas_detectadas":[{"indice":<int>,"muestra":[<string>],"hipotesis":<string>}], "campos_disponibles":[...] }.`;
 
 const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de formato. Re-procesá EXACTAMENTE el mismo input respetando el esquema JSON al pie de la letra. NO inventes claves, NO uses objetos donde van strings, NO inventes valores de enum.`;
 
 // ── Validador de esquema (replica el de procesar-migracion) ───────────────────
-const CAUSA_KEYS = new Set(["id_temporal","expediente_nro","numero_interno","caratula","estado_causa","tipo_recurso","tipo_proceso","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","confianza","notas_ia","origen_pestanas","sujetos","eventos"]);
+const CAUSA_KEYS = new Set(["id_temporal","expediente_nro","numero_interno","caratula","despachante","estado_causa","tipo_recurso","tipo_proceso","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","confianza","notas_ia","origen_pestanas","sujetos","eventos"]);
 const SUJETO_KEYS = new Set(["nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","prescripciones"]);
 const EVENTO_KEYS = new Set(["titulo","descripcion","fecha_hora","tipo_evento"]);
 const ESTADO_CAUSA = new Set(["tramite","recurso","terminada"]);
@@ -31,7 +37,7 @@ const TIPO_RECURSO = new Set(["casacion","rex","queja_corte"]);
 const TIPO_PROCESO = new Set(["unipersonal","colegiado"]);
 const SITUACION = new Set(["libre","detenido","rebelde","probation","condenado"]);
 const CONFIANZA = new Set(["verde","amarillo"]);
-const STRING_OR_NULL_CAUSA = ["caratula","numero_interno","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","notas_ia"];
+const STRING_OR_NULL_CAUSA = ["caratula","numero_interno","despachante","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","notas_ia"];
 const STRING_OR_NULL_SUJETO = ["delito","defensor","lugar_alojamiento","fecha_detencion","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones"];
 const isStringOrNull = (v: unknown) => v === null || typeof v === "string";
 

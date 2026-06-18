@@ -179,9 +179,11 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
     ];
     // PP calculado: fecha_detencion + 2 años, sólo si no hay vto_pp ni vto_pena
     if (s.fecha_detencion && !s.vencimiento_pp && !s.vencimiento_pena) {
-      const d = new Date(s.fecha_detencion);
-      d.setUTCFullYear(d.getUTCFullYear() + 2);
-      const calc = d.toISOString().slice(0, 10);
+      // fecha_detencion es DATE puro → parsear como local para no perder un día.
+      const fd = s.fecha_detencion as string;
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(fd) ? new Date(`${fd}T00:00:00`) : new Date(fd);
+      d.setFullYear(d.getFullYear() + 2);
+      const calc = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       items.push({
         id: `jtppcalc${sujetoHex}`,
         titulo: `Vto. Prisión Preventiva (2 años) - ${nombre} (${exp})`,

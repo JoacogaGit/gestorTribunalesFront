@@ -10,6 +10,7 @@ import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSe
 import RefreshButton from "@/components/RefreshButton";
 import EventoDetailDialog from "@/components/EventoDetailDialog";
 import GoogleCalendarSection from "@/components/GoogleCalendarSection";
+import { parseLocalDate, parseLocalTime, formatLocalDate } from "@/lib/parseDate";
 
 const tipoIcons: Record<CalendarTipo, typeof Clock> = {
   evento: CalIcon,
@@ -19,7 +20,7 @@ const tipoIcons: Record<CalendarTipo, typeof Clock> = {
 };
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("es-AR");
+  return formatLocalDate(d);
 }
 
 function eventoKey(e: CalendarEvento) {
@@ -75,18 +76,18 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
   };
 
   const matchesDate = (e: CalendarEvento) =>
-    !selectedDate || new Date(e.fecha).toDateString() === selectedDate.toDateString();
+    !selectedDate || (parseLocalDate(e.fecha)?.toDateString() === selectedDate.toDateString());
 
   const now = Date.now();
-  const futuros = visibles.filter((e) => new Date(e.fecha).getTime() >= now && matchesSearch(e) && matchesDate(e));
-  const pasadosTodos = visibles.filter((e) => new Date(e.fecha).getTime() < now && matchesSearch(e) && matchesDate(e))
-    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+  const futuros = visibles.filter((e) => parseLocalTime(e.fecha) >= now && matchesSearch(e) && matchesDate(e));
+  const pasadosTodos = visibles.filter((e) => parseLocalTime(e.fecha) < now && matchesSearch(e) && matchesDate(e))
+    .sort((a, b) => parseLocalTime(b.fecha) - parseLocalTime(a.fecha));
   // Si el usuario seleccionó una fecha pasada, mostramos sus eventos en el panel principal en gris.
   const selectedIsPast = !!selectedDate && selectedDate.getTime() < new Date(new Date().toDateString()).getTime();
   const pasadosDelDiaSeleccionado = selectedIsPast ? pasadosTodos : [];
   const pasados = pasadosTodos;
 
-  const eventDates = new Set(visibles.map((e) => new Date(e.fecha).toDateString()));
+  const eventDates = new Set(visibles.map((e) => parseLocalDate(e.fecha)?.toDateString()).filter(Boolean) as string[]);
 
   const renderEvento = (e: CalendarEvento, i: number, isPast = false) => {
     const Icon = isPast ? Clock : (tipoIcons[e.tipo] ?? Scale);

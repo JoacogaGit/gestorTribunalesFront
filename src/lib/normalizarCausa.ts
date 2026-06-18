@@ -98,6 +98,7 @@ export function normalizarCausa(c: unknown): CausaIA {
     expediente_nro: toStringOrNull(src.expediente_nro) ?? "",
     numero_interno: toStringOrNull(src.numero_interno),
     caratula: toStringOrNull(src.caratula),
+    despachante: toStringOrNull((src as Record<string, unknown>).despachante)?.slice(0, 3) ?? null,
 
     estado_causa: estado,
     tipo_recurso: tipoRec,

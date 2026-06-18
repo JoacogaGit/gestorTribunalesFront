@@ -27,6 +27,7 @@ Devolvé SIEMPRE este JSON exacto, con TODAS las claves listadas, sin agregar ni
       "expediente_nro": <string>,
       "numero_interno": <string | null>,
       "caratula": <string | null>,
+      "despachante": <string de hasta 3 caracteres | null>,
       "estado_causa": "tramite" | "recurso" | "terminada",
       "tipo_recurso": "casacion" | "rex" | "queja_corte" | null,
       "tipo_proceso": "unipersonal" | "colegiado" | null,
@@ -98,6 +99,19 @@ REGLA 7 — Clasificación de confianza.
 
 REGLA 8 — Ante la duda, conservador. Mejor null que adivinar mal.
 
+REGLA 9 — DESPACHANTE. Si hay columna tipo "DESPACHANTE", "DESP", "RESPONSABLE", "ENCARGADO" o similar, completá causa.despachante (string de MÁXIMO 3 caracteres):
+- Si el valor ya tiene ≤3 caracteres → usalo tal cual (ej: "JPM" → "JPM"; "AB" → "AB").
+- Si es un nombre completo → INICIALES en mayúscula (primera letra de cada palabra significativa, ignorando preposiciones DE/DEL/LA): "PATRICIO GASTÓN FLORES" → "PGF"; "Juan Pérez" → "JP"; "MARÍA DE LOS ÁNGELES SOSA" → "MAS"; "Ana Belén Ruiz Torres" → "ABR" (primeras 3).
+- Si no hay columna → null.
+
+REGLA 10 — CATEGORÍAS PERSONALIZADAS. Si hay una columna con un patrón claramente reconocible de categoría con valores estructurados (ej: "PRUEBA PROVEÍDA" con sí/no; "INSTRUCCIÓN SUPLEMENTARIA" con cumplida/pendiente; "CITADO" con sí/no/pendiente; "AUDIENCIA REALIZADA" con sí/no), incluila como un evento dentro de causa.eventos[] con:
+  - titulo: nombre de la columna en formato legible (ej: "Prueba proveída").
+  - descripcion: el valor de la celda (ej: "Sí", "Cumplida").
+  - fecha_hora: null.
+  - tipo_evento: "categoria".
+NO uses tipo_evento="categoria" para: columnas numéricas sueltas, IDs, foja, fechas, ni columnas que ya mapean a campos del esquema (delito, defensor, etc.). Si la columna NO tiene un patrón categórico claro pero tampoco encaja, va como tipo_evento="anotacion" (REGLA 5).
+
+
 ═══════════════════════════════════════ INTERPRETACIÓN INTELIGENTE DE VARIANTES ═══════════════════════════════════════
 
 SITUACIÓN DE LIBERTAD: → libre: "EXC", "Exc", "excarcelado", "LIB", "en libertad", "L", celda vacía en columna de libertad. → detenido: "DET", "D", "detenido", "preso", cualquier lugar de detención (CPF, Alcaidía, Unidad, penitenciaría, cárcel), "privado de libertad". Si está privado de libertad SIEMPRE "detenido" aunque tenga condena firme. → rebelde: "rebelde", "REB", "prófugo", "paradero", "P/V", "orden de captura". → probation: "SJP", "SAP", "probation", "suspensión", "susp. juicio a prueba", "en prueba". → condenado: SOLO si NO está privado de libertad.
@@ -134,13 +148,22 @@ INPUT: "98765/2022 - 4521 | GOMEZ, Ana / LOPEZ, Pedro | robo agravado | DET CPF 
 OUTPUT (la causa):
 {"id_temporal":"c-2","expediente_nro":"98765/2022","numero_interno":"4521","caratula":"GOMEZ, Ana y LOPEZ, Pedro","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"fecha_ingreso":null,"querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"confianza":"verde","notas_ia":null,"origen_pestanas":["Detenidos"],"sujetos":[{"nombre_completo":"GOMEZ, Ana","delito":"robo agravado","situacion_libertad":"detenido","defensor":null,"lugar_alojamiento":"CPF II","fecha_detencion":"2023-10-18","vencimiento_pp":"2036-01-13","vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[{"fecha":"2030-05-12","descripcion":"robo agravado"}]},{"nombre_completo":"LOPEZ, Pedro","delito":"robo agravado","situacion_libertad":"libre","defensor":null,"lugar_alojamiento":null,"fecha_detencion":null,"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[]}],"eventos":[{"titulo":"Datos adicionales del Excel","descripcion":"notas internas: revisar art 41","fecha_hora":null,"tipo_evento":"anotacion"}]}
 
-Modo alternativo (solo si >30% de las filas serían ROJAS): {"modo":"mapeo_asistido_requerido","razon":"","columnas_detectadas":[{"indice":0,"muestra":[],"hipotesis":""}],"campos_disponibles":["expediente_nro","numero_interno","nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","prescripciones","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","querella","actor_civil","causa_conexa_texto","fecha_ingreso"]}`;
+Ejemplo 3 — Con DESPACHANTE (nombre completo) y CATEGORÍAS personalizadas:
+INPUT: "12345/2024 | PEREZ, Juan | hurto | EXC | despachante: PATRICIO GASTÓN FLORES | prueba proveída: Sí | citado: pendiente"
+OUTPUT (la causa):
+{"id_temporal":"c-3","expediente_nro":"12345/2024","numero_interno":null,"caratula":"PEREZ, Juan","despachante":"PGF","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"fecha_ingreso":null,"querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"confianza":"verde","notas_ia":null,"origen_pestanas":["Causas"],"sujetos":[{"nombre_completo":"PEREZ, Juan","delito":"hurto","situacion_libertad":"libre","defensor":null,"lugar_alojamiento":null,"fecha_detencion":null,"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[]}],"eventos":[{"titulo":"Prueba proveída","descripcion":"Sí","fecha_hora":null,"tipo_evento":"categoria"},{"titulo":"Citado","descripcion":"pendiente","fecha_hora":null,"tipo_evento":"categoria"}]}
+
+Ejemplo 4 — DESPACHANTE ya abreviado:
+INPUT: "55555/2025 | RUIZ, Ana | estafa | EXC | desp: JPM"
+OUTPUT (extracto): "despachante":"JPM"
+
+Modo alternativo (solo si >30% de las filas serían ROJAS): {"modo":"mapeo_asistido_requerido","razon":"","columnas_detectadas":[{"indice":0,"muestra":[],"hipotesis":""}],"campos_disponibles":["expediente_nro","numero_interno","nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","prescripciones","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","querella","actor_civil","causa_conexa_texto","fecha_ingreso","despachante"]}`;
 
 const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de formato. Re-procesá EXACTAMENTE el mismo input respetando el esquema JSON al pie de la letra. NO inventes claves, NO uses objetos donde van strings, NO inventes valores de enum.`;
 
 // ── Validador de esquema ──────────────────────────────────────────────────────
 const CAUSA_KEYS = new Set([
-  "id_temporal","expediente_nro","numero_interno","caratula","estado_causa","tipo_recurso",
+  "id_temporal","expediente_nro","numero_interno","caratula","despachante","estado_causa","tipo_recurso",
   "tipo_proceso","fecha_ingreso","querella","actor_civil","otros_intervinientes",
   "causa_conexa_texto","confianza","notas_ia","origen_pestanas","sujetos","eventos",
 ]);
@@ -155,7 +178,7 @@ const TIPO_RECURSO = new Set(["casacion","rex","queja_corte"]);
 const TIPO_PROCESO = new Set(["unipersonal","colegiado"]);
 const SITUACION = new Set(["libre","detenido","rebelde","probation","condenado"]);
 const CONFIANZA = new Set(["verde","amarillo"]);
-const STRING_OR_NULL_CAUSA = ["caratula","numero_interno","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","notas_ia"];
+const STRING_OR_NULL_CAUSA = ["caratula","numero_interno","despachante","fecha_ingreso","querella","actor_civil","otros_intervinientes","causa_conexa_texto","notas_ia"];
 const STRING_OR_NULL_SUJETO = ["delito","defensor","lugar_alojamiento","fecha_detencion","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones"];
 
 const isStringOrNull = (v: unknown) => v === null || typeof v === "string";

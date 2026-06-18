@@ -36,6 +36,7 @@ import {
   SortableContext, horizontalListSortingStrategy, useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { formatLocalDate, parseLocalTime } from "@/lib/parseDate";
 
 const PALETA_COLORES: { hex: string; label: string }[] = [
   { hex: "#FCA5A5", label: "Rojo" },
@@ -99,8 +100,7 @@ interface ColDef {
 }
 
 function fmtDate(d?: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("es-AR");
+  return formatLocalDate(d);
 }
 
 interface Props {
@@ -275,15 +275,16 @@ export default function CausasTable({
 
     {
       key: "caratula", label: "Carátula",
-      cellClass: "text-sm font-medium text-foreground max-w-[220px] truncate",
+      cellClass: "text-sm font-medium text-foreground max-w-[250px] break-words whitespace-normal align-top",
       sortValue: (c) => getCaratula(c),
       render: (c) => c.link
-        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-center gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a>
+        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-baseline gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a>
         : getCaratula(c),
     },
-    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[180px] truncate", sortValue: (c) => c.delito, render: (c) => c.delito },
+    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[250px] break-words whitespace-normal align-top", sortValue: (c) => c.delito, render: (c) => c.delito },
     {
       key: "libertad", label: "Libertad",
+      cellClass: "max-w-[140px] align-top",
       sortValue: (c) => c.imputados[0]?.estadoLibertad,
       render: (c) => (
         <div className="flex flex-wrap gap-1">
@@ -293,8 +294,9 @@ export default function CausasTable({
         </div>
       ),
     },
-    { key: "estado", label: "Estado", cellClass: "text-xs text-foreground whitespace-nowrap", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
-    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground whitespace-nowrap", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
+    { key: "estado", label: "Estado", cellClass: "text-xs text-foreground max-w-[120px] break-words whitespace-normal align-top", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
+    { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
+
     {
       key: "tipoProceso", label: "Tipo",
       headClass: "whitespace-nowrap w-12 text-center",
@@ -309,14 +311,14 @@ export default function CausasTable({
     {
       key: "fechaIngreso", label: "Fecha 354", headClass: "whitespace-nowrap",
       cellClass: "text-xs text-muted-foreground whitespace-nowrap",
-      sortValue: (c) => c.fechaIngreso ? new Date(c.fechaIngreso).getTime() : Number.MAX_SAFE_INTEGER,
+      sortValue: (c) => parseLocalTime(c.fechaIngreso),
       render: (c) => c.fechaIngreso ? fmtDate(c.fechaIngreso) : <span className="text-muted-foreground/60">—</span>,
     },
     {
       key: "prescripcion", label: "Prescripción", headClass: "whitespace-nowrap",
       sortValue: (c) => {
         const all = [c.fechaPrescripcion, ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha)].filter(Boolean);
-        const future = all.map((d) => new Date(d).getTime()).sort((a, b) => a - b);
+        const future = all.map((d) => parseLocalTime(d)).sort((a, b) => a - b);
         return future[0] ?? Number.MAX_SAFE_INTEGER;
       },
       render: (c) => {
@@ -333,7 +335,7 @@ export default function CausasTable({
     },
     {
       key: "pp", label: "PP Vence", headClass: "whitespace-nowrap",
-      sortValue: (c) => c.fechaVencimientoPP ? new Date(c.fechaVencimientoPP).getTime() : Number.MAX_SAFE_INTEGER,
+      sortValue: (c) => parseLocalTime(c.fechaVencimientoPP),
       render: (c) => (
         <span className={`text-xs whitespace-nowrap ${c.fechaVencimientoPP ? getProximityColor(c.fechaVencimientoPP) : "text-muted-foreground"}`}>
           {fmtDate(c.fechaVencimientoPP)}
@@ -351,7 +353,7 @@ export default function CausasTable({
         const fechas = c.imputados
           .map((i) => i.fechaVencimientoPena)
           .filter((f): f is string => !!f)
-          .map((f) => new Date(f).getTime());
+          .map((f) => parseLocalTime(f));
         return fechas.length ? Math.min(...fechas) : Number.MAX_SAFE_INTEGER;
       },
       render: (c: Causa) => {
@@ -359,7 +361,7 @@ export default function CausasTable({
           .map((i) => ({ nombre: i.nombre, fecha: i.fechaVencimientoPena }))
           .filter((x) => !!x.fecha) as { nombre: string; fecha: string }[];
         if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
-        items.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        items.sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
         return (
           <div className="space-y-0.5 text-xs whitespace-nowrap">
             {items.map((it, i) => (
@@ -371,7 +373,7 @@ export default function CausasTable({
     },
     {
       key: "otrosIntervinientes", label: "Otros intervinientes",
-      cellClass: "text-xs text-muted-foreground max-w-[180px]",
+      cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top",
       sortValue: (c) => (c.otrosIntervinientes || []).map((o) => o.nombre).join(", "),
       render: (c) => (c.otrosIntervinientes && c.otrosIntervinientes.length > 0)
         ? <div className="space-y-0.5">{c.otrosIntervinientes.map((o, i) => <div key={i}><span className="font-medium text-foreground/80">{o.rol}:</span> {o.nombre}</div>)}</div>
@@ -489,7 +491,7 @@ export default function CausasTable({
   const customColDefs: ColDef[] = customCols.map((cc) => ({
     key: cc.key,
     label: cc.label,
-    cellClass: "text-xs text-muted-foreground max-w-[160px]",
+    cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top",
     sortValue: (c) => (c.extra?.[cc.key] || "").toString(),
     render: (c) => {
       const val = c.extra?.[cc.key] || "";
