@@ -10,6 +10,7 @@ import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSe
 import RefreshButton from "@/components/RefreshButton";
 import EventoDetailDialog from "@/components/EventoDetailDialog";
 import GoogleCalendarSection from "@/components/GoogleCalendarSection";
+import { parseLocalDate, parseLocalTime, formatLocalDate } from "@/lib/parseDate";
 
 const tipoIcons: Record<CalendarTipo, typeof Clock> = {
   evento: CalIcon,
@@ -19,7 +20,7 @@ const tipoIcons: Record<CalendarTipo, typeof Clock> = {
 };
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("es-AR");
+  return formatLocalDate(d);
 }
 
 function eventoKey(e: CalendarEvento) {
