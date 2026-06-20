@@ -92,59 +92,79 @@ function extractJson(raw: string): unknown | null {
   try { return JSON.parse(trimmed.slice(start, end + 1)); } catch { return null; }
 }
 
-async function callAnthropic(apiKey: string, systemPrompt: string, userMsg: string, timeoutMs: number):
-  Promise<{ ok: true; json: unknown } | { ok: false; code: string; status?: number; detail?: string }> {
+async function callGemini(
+  apiKey: string,
+  systemPrompt: string,
+  userMsg: string,
+  timeoutMs: number,
+  logCtx?: { job_id: string; nro_lote: number; pestana: string },
+): Promise<{ ok: true; json: unknown } | { ok: false; code: string; status?: number; detail?: string }> {
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort("anthropic_timeout"), timeoutMs);
+  const t = setTimeout(() => controller.abort("gemini_timeout"), timeoutMs);
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 16000, system: systemPrompt, messages: [{ role: "user", content: userMsg }] }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: userMsg }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 16000,
+          responseMimeType: "application/json",
+        },
+      }),
       signal: controller.signal,
     });
     if (!res.ok) {
       const detail = (await res.text()).slice(0, 500);
-      return { ok: false, code: "anthropic_http_error", status: res.status, detail };
+      console.log("procesar-migracion-job:gemini_response", { ...logCtx, status: res.status, body_preview: detail });
+      return { ok: false, code: "gemini_http_error", status: res.status, detail };
     }
     const body = await res.json();
-    const rawText: string = (body?.content?.[0]?.text ?? "").trim();
+    const rawText: string = (body?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+    console.log("procesar-migracion-job:gemini_response", { ...logCtx, status: res.status, body_preview: rawText.slice(0, 500) });
     const parsed = extractJson(rawText);
     if (!parsed) return { ok: false, code: "json_invalido", detail: rawText.slice(0, 1000) };
     return { ok: true, json: parsed };
   } catch (e) {
-    if (controller.signal.aborted) return { ok: false, code: "anthropic_timeout" };
-    return { ok: false, code: "anthropic_fetch_error", detail: e instanceof Error ? e.message : String(e) };
+    if (controller.signal.aborted) {
+      console.error("procesar-migracion-job:gemini_timeout", { ...logCtx });
+      return { ok: false, code: "gemini_timeout" };
+    }
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("procesar-migracion-job:gemini_fetch_error", { ...logCtx, msg });
+    return { ok: false, code: "gemini_fetch_error", detail: msg };
   } finally { clearTimeout(t); }
 }
 
 // ── Procesamiento ─────────────────────────────────────────────────────────────
-// Cada lote puede demorar hasta 360s (2 intentos x 180s). El wall-clock límite
-// de una invocación de Edge Function ronda los 400s, así que encadenamos
-// después de cada lote para no perder progreso.
-const MAX_LOTES_PER_RUN = 1;       // procesar 1 lote y encadenar
-const MAX_RUN_MS = 370_000;        // ~6:10 — tope conservador antes del límite duro
-const TIMEOUT_LOTE_MS = 180_000;   // 3 min por intento (2 intentos = hasta 6 min/lote)
+// Cada lote: 2 intentos x 55s = hasta ~110s. MAX_RUN_MS conservador para 1 lote + chaining.
+const MAX_LOTES_PER_RUN = 1;
+const MAX_RUN_MS = 200_000;
+const TIMEOUT_LOTE_MS = 55_000;
 
 type Lote = { pestana: string; nro_lote: number; total_lotes: number; filas: number; contenido: string[][] };
 type ArchivoMeta = { tipo?: string; nombre?: string; vocalia_nombre?: string };
 type ResultadoAcum = { pestana: string; resultado: unknown };
 
-async function procesarLote(apiKey: string, archivoMeta: ArchivoMeta, lote: Lote): Promise<{ ok: true; resultado: unknown } | { ok: false; error: string }> {
+async function procesarLote(jobId: string, apiKey: string, archivoMeta: ArchivoMeta, lote: Lote): Promise<{ ok: true; resultado: unknown } | { ok: false; error: string }> {
   const userPayload = JSON.stringify({
     tipo: archivoMeta.tipo ?? "desconocido",
     nombreArchivo: archivoMeta.nombre ?? "",
     pestanas: [{ nombre: lote.pestana, contenido: lote.contenido }],
   }).slice(0, 350_000);
   const userMsg = `Estás procesando ÚNICAMENTE la pestaña "${lote.pestana}" del archivo "${archivoMeta.nombre ?? ""}". No infieras nada sobre otras pestañas; solo trabajá con los datos de esta. Migrar a vocalía: ${archivoMeta.vocalia_nombre ?? ""}. Archivo de tipo ${archivoMeta.tipo ?? "desconocido"}. Contenido:\n${userPayload}`;
+  const logCtx = { job_id: jobId, nro_lote: lote.nro_lote, pestana: lote.pestana };
 
-  const r1 = await callAnthropic(apiKey, SYSTEM_PROMPT, userMsg, TIMEOUT_LOTE_MS);
+  const r1 = await callGemini(apiKey, SYSTEM_PROMPT, userMsg, TIMEOUT_LOTE_MS, logCtx);
   if (r1.ok) {
     const v1 = validarResponse(r1.json);
     if (v1.ok) return { ok: true, resultado: r1.json };
+    console.log("procesar-migracion-job:schema_invalid_intento1", { ...logCtx, reason: v1.reason });
   }
-  // 1 reintento (igual que procesar-migracion)
-  const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, TIMEOUT_LOTE_MS);
+  const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, TIMEOUT_LOTE_MS, logCtx);
   if (r2.ok) {
     const v2 = validarResponse(r2.json);
     if (v2.ok) return { ok: true, resultado: r2.json };
@@ -198,7 +218,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true, estado: "procesando" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
     await admin.from("migraciones_jobs").update({ estado: "error", error_mensaje: "no_api_key" }).eq("id", jobId);
     return new Response(JSON.stringify({ error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -220,25 +240,44 @@ Deno.serve(async (req) => {
     while (pendientes.length > 0 && processedThisRun < MAX_LOTES_PER_RUN && (Date.now() - tStart) < MAX_RUN_MS) {
       const lote = pendientes[0];
       console.log("procesar-migracion-job:lote_start", { job_id: jobId, pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas });
-      const r = await procesarLote(apiKey, archivoMeta, lote);
-      pendientes.shift();
-      if (r.ok) {
-        lotesProcesados++;
-        const res = r.resultado as { filas_rojas?: unknown[] } | undefined;
-        resultados.push({ pestana: `${lote.pestana} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r.resultado });
-        if (res && Array.isArray(res.filas_rojas)) for (const fr of res.filas_rojas) filasRojasAcum.push(fr);
-      } else {
+      try {
+        const r = await procesarLote(jobId, apiKey, archivoMeta, lote);
+        pendientes.shift();
+        if (r.ok) {
+          lotesProcesados++;
+          const res = r.resultado as { filas_rojas?: unknown[] } | undefined;
+          resultados.push({ pestana: `${lote.pestana} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r.resultado });
+          if (res && Array.isArray(res.filas_rojas)) for (const fr of res.filas_rojas) filasRojasAcum.push(fr);
+        } else {
+          lotesFallidos++;
+          console.log("procesar-migracion-job:lote_error", { job_id: jobId, nro_lote: lote.nro_lote, error: r.error });
+        }
+      } catch (err) {
+        // Crash inesperado dentro del lote: marcar como fallido y CONTINUAR con el siguiente
+        pendientes.shift();
         lotesFallidos++;
-        console.log("procesar-migracion-job:lote_error", { job_id: jobId, error: r.error });
+        const e = err as Error;
+        console.error("lote_crash", {
+          job_id: jobId,
+          nro_lote: lote.nro_lote,
+          pestana: lote.pestana,
+          error: e?.message ?? String(err),
+          stack: e?.stack,
+        });
       }
       processedThisRun++;
-      await admin.from("migraciones_jobs").update({
-        lotes_procesados: lotesProcesados,
-        lotes_fallidos: lotesFallidos,
-        lotes_pendientes: pendientes,
-        resultados,
-        filas_rojas: filasRojasAcum,
-      }).eq("id", jobId);
+      try {
+        await admin.from("migraciones_jobs").update({
+          lotes_procesados: lotesProcesados,
+          lotes_fallidos: lotesFallidos,
+          lotes_pendientes: pendientes,
+          resultados,
+          filas_rojas: filasRojasAcum,
+        }).eq("id", jobId);
+      } catch (dbErr) {
+        const e = dbErr as Error;
+        console.error("procesar-migracion-job:db_update_error", { job_id: jobId, msg: e?.message, stack: e?.stack });
+      }
     }
 
     if (pendientes.length === 0) {
