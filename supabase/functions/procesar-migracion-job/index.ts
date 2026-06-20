@@ -136,6 +136,31 @@ type Lote = { pestana: string; nro_lote: number; total_lotes: number; filas: num
 type ArchivoMeta = { tipo?: string; nombre?: string; vocalia_nombre?: string };
 type ResultadoAcum = { pestana: string; resultado: unknown };
 
+const DELAY_POST_CALL_MS = 8000;
+const DELAY_429_MS = 15000;
+const MAX_429_RETRIES = 3;
+
+async function callGeminiConRateLimit(
+  apiKey: string,
+  systemPrompt: string,
+  userMsg: string,
+  timeoutMs: number,
+  logCtx: { job_id: string; nro_lote: number; pestana: string },
+) {
+  let attempt429 = 0;
+  while (true) {
+    const r = await callGemini(apiKey, systemPrompt, userMsg, timeoutMs, logCtx);
+    if (!r.ok && r.status === 429 && attempt429 < MAX_429_RETRIES) {
+      attempt429++;
+      console.warn("procesar-migracion-job:rate_limit_429", { ...logCtx, attempt: attempt429 });
+      await new Promise((res) => setTimeout(res, DELAY_429_MS));
+      continue;
+    }
+    await new Promise((res) => setTimeout(res, DELAY_POST_CALL_MS));
+    return r;
+  }
+}
+
 async function procesarLote(jobId: string, apiKey: string, archivoMeta: ArchivoMeta, lote: Lote): Promise<{ ok: true; resultado: unknown } | { ok: false; error: string }> {
   const userPayload = JSON.stringify({
     tipo: archivoMeta.tipo ?? "desconocido",
@@ -145,13 +170,13 @@ async function procesarLote(jobId: string, apiKey: string, archivoMeta: ArchivoM
   const userMsg = `Estás procesando ÚNICAMENTE la pestaña "${lote.pestana}" del archivo "${archivoMeta.nombre ?? ""}". No infieras nada sobre otras pestañas; solo trabajá con los datos de esta. Migrar a vocalía: ${archivoMeta.vocalia_nombre ?? ""}. Archivo de tipo ${archivoMeta.tipo ?? "desconocido"}. Contenido:\n${userPayload}`;
   const logCtx = { job_id: jobId, nro_lote: lote.nro_lote, pestana: lote.pestana };
 
-  const r1 = await callGemini(apiKey, SYSTEM_PROMPT, userMsg, TIMEOUT_LOTE_MS, logCtx);
+  const r1 = await callGeminiConRateLimit(apiKey, SYSTEM_PROMPT, userMsg, TIMEOUT_LOTE_MS, logCtx);
   if (r1.ok) {
     const v1 = validarResponse(r1.json);
     if (v1.ok) return { ok: true, resultado: r1.json };
     console.log("procesar-migracion-job:schema_invalid_intento1", { ...logCtx, reason: v1.reason });
   }
-  const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, TIMEOUT_LOTE_MS, logCtx);
+  const r2 = await callGeminiConRateLimit(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, TIMEOUT_LOTE_MS, logCtx);
   if (r2.ok) {
     const v2 = validarResponse(r2.json);
     if (v2.ok) return { ok: true, resultado: r2.json };
