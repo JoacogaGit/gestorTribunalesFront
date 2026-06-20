@@ -92,29 +92,50 @@ function extractJson(raw: string): unknown | null {
   try { return JSON.parse(trimmed.slice(start, end + 1)); } catch { return null; }
 }
 
-async function callAnthropic(apiKey: string, systemPrompt: string, userMsg: string, timeoutMs: number):
-  Promise<{ ok: true; json: unknown } | { ok: false; code: string; status?: number; detail?: string }> {
+async function callGemini(
+  apiKey: string,
+  systemPrompt: string,
+  userMsg: string,
+  timeoutMs: number,
+  logCtx?: { job_id: string; nro_lote: number; pestana: string },
+): Promise<{ ok: true; json: unknown } | { ok: false; code: string; status?: number; detail?: string }> {
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort("anthropic_timeout"), timeoutMs);
+  const t = setTimeout(() => controller.abort("gemini_timeout"), timeoutMs);
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 16000, system: systemPrompt, messages: [{ role: "user", content: userMsg }] }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: userMsg }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 16000,
+          responseMimeType: "application/json",
+        },
+      }),
       signal: controller.signal,
     });
     if (!res.ok) {
       const detail = (await res.text()).slice(0, 500);
-      return { ok: false, code: "anthropic_http_error", status: res.status, detail };
+      console.log("procesar-migracion-job:gemini_response", { ...logCtx, status: res.status, body_preview: detail });
+      return { ok: false, code: "gemini_http_error", status: res.status, detail };
     }
     const body = await res.json();
-    const rawText: string = (body?.content?.[0]?.text ?? "").trim();
+    const rawText: string = (body?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+    console.log("procesar-migracion-job:gemini_response", { ...logCtx, status: res.status, body_preview: rawText.slice(0, 500) });
     const parsed = extractJson(rawText);
     if (!parsed) return { ok: false, code: "json_invalido", detail: rawText.slice(0, 1000) };
     return { ok: true, json: parsed };
   } catch (e) {
-    if (controller.signal.aborted) return { ok: false, code: "anthropic_timeout" };
-    return { ok: false, code: "anthropic_fetch_error", detail: e instanceof Error ? e.message : String(e) };
+    if (controller.signal.aborted) {
+      console.error("procesar-migracion-job:gemini_timeout", { ...logCtx });
+      return { ok: false, code: "gemini_timeout" };
+    }
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("procesar-migracion-job:gemini_fetch_error", { ...logCtx, msg });
+    return { ok: false, code: "gemini_fetch_error", detail: msg };
   } finally { clearTimeout(t); }
 }
 
