@@ -136,28 +136,8 @@ DEDUPLICACIÓN: match por expediente_nro normalizado. Jerarquía estado: termina
 
 NOMBRES: "DIAZ, FACUNDO HORACIO" → "DIAZ, Facundo Horacio". Apellido MAYÚSCULA, nombre Capitalizado. Compuestos respetar: DE LA, DEL, VAN, DI, MC, MAC, LE. Sin coma ("CARO RAÚL"): 1ra palabra apellido, resto nombre. No agregar tildes ausentes.
 
-═══════════════════════════════════════ EJEMPLOS ═══════════════════════════════════════
-
-Ejemplo 1 — Causa simple:
-INPUT: "12345/2024 (6976) | PEREZ, Juan | hurto | EXC | DPO 14 | elevación 12/03/2024"
-OUTPUT (la causa):
-{"id_temporal":"c-1","expediente_nro":"12345/2024","numero_interno":"6976","caratula":"PEREZ, Juan","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"fecha_ingreso":"2024-03-12","querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"confianza":"verde","notas_ia":null,"origen_pestanas":["Causas"],"sujetos":[{"nombre_completo":"PEREZ, Juan","delito":"hurto","situacion_libertad":"libre","defensor":"DPO 14","lugar_alojamiento":null,"fecha_detencion":null,"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[]}],"eventos":[]}
-
-Ejemplo 2 — Compleja, varios sujetos, prescripciones y columna no reconocida ("notas internas"):
-INPUT: "98765/2022 - 4521 | GOMEZ, Ana / LOPEZ, Pedro | robo agravado | DET CPF II / EXC | Det 18/10/2023 vence 13/01/2036 | prescribe 12/05/2030 | notas internas: revisar art 41"
-OUTPUT (la causa):
-{"id_temporal":"c-2","expediente_nro":"98765/2022","numero_interno":"4521","caratula":"GOMEZ, Ana y LOPEZ, Pedro","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"fecha_ingreso":null,"querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"confianza":"verde","notas_ia":null,"origen_pestanas":["Detenidos"],"sujetos":[{"nombre_completo":"GOMEZ, Ana","delito":"robo agravado","situacion_libertad":"detenido","defensor":null,"lugar_alojamiento":"CPF II","fecha_detencion":"2023-10-18","vencimiento_pp":"2036-01-13","vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[{"fecha":"2030-05-12","descripcion":"robo agravado"}]},{"nombre_completo":"LOPEZ, Pedro","delito":"robo agravado","situacion_libertad":"libre","defensor":null,"lugar_alojamiento":null,"fecha_detencion":null,"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[]}],"eventos":[{"titulo":"Datos adicionales del Excel","descripcion":"notas internas: revisar art 41","fecha_hora":null,"tipo_evento":"anotacion"}]}
-
-Ejemplo 3 — Con DESPACHANTE (nombre completo) y CATEGORÍAS personalizadas:
-INPUT: "12345/2024 | PEREZ, Juan | hurto | EXC | despachante: PATRICIO GASTÓN FLORES | prueba proveída: Sí | citado: pendiente"
-OUTPUT (la causa):
-{"id_temporal":"c-3","expediente_nro":"12345/2024","numero_interno":null,"caratula":"PEREZ, Juan","despachante":"PGF","estado_causa":"tramite","tipo_recurso":null,"tipo_proceso":null,"fecha_ingreso":null,"querella":null,"actor_civil":null,"otros_intervinientes":null,"causa_conexa_texto":null,"confianza":"verde","notas_ia":null,"origen_pestanas":["Causas"],"sujetos":[{"nombre_completo":"PEREZ, Juan","delito":"hurto","situacion_libertad":"libre","defensor":null,"lugar_alojamiento":null,"fecha_detencion":null,"vencimiento_pp":null,"vencimiento_pena":null,"vencimiento_sjp":null,"observaciones":null,"prescripciones":[]}],"eventos":[{"titulo":"Prueba proveída","descripcion":"Sí","fecha_hora":null,"tipo_evento":"categoria"},{"titulo":"Citado","descripcion":"pendiente","fecha_hora":null,"tipo_evento":"categoria"}]}
-
-Ejemplo 4 — DESPACHANTE ya abreviado:
-INPUT: "55555/2025 | RUIZ, Ana | estafa | EXC | desp: JPM"
-OUTPUT (extracto): "despachante":"JPM"
-
 Modo alternativo (solo si >30% de las filas serían ROJAS): {"modo":"mapeo_asistido_requerido","razon":"","columnas_detectadas":[{"indice":0,"muestra":[],"hipotesis":""}],"campos_disponibles":["expediente_nro","numero_interno","nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","prescripciones","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","querella","actor_civil","causa_conexa_texto","fecha_ingreso","despachante"]}`;
+
 
 const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de formato. Re-procesá EXACTAMENTE el mismo input respetando el esquema JSON al pie de la letra. NO inventes claves, NO uses objetos donde van strings, NO inventes valores de enum.`;
 
@@ -278,46 +258,47 @@ function countRows(pestana?: { contenido: unknown }): number {
   return 0;
 }
 
-async function callAnthropic(
+async function callGemini(
   apiKey: string,
   systemPrompt: string,
   userMsg: string,
   timeoutMs: number,
 ): Promise<{ ok: true; json: unknown; rawText: string } | { ok: false; code: string; status?: number; detail?: string }> {
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort("anthropic_timeout"), timeoutMs);
+  const t = setTimeout(() => controller.abort("gemini_timeout"), timeoutMs);
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 16000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMsg }],
+        contents: [{ role: "user", parts: [{ text: userMsg }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 16000,
+          responseMimeType: "application/json",
+        },
       }),
       signal: controller.signal,
     });
     if (!res.ok) {
       const detail = (await res.text()).slice(0, 500);
-      return { ok: false, code: "anthropic_http_error", status: res.status, detail };
+      return { ok: false, code: "gemini_http_error", status: res.status, detail };
     }
     const body = await res.json();
-    const rawText: string = (body?.content?.[0]?.text ?? "").trim();
+    const rawText: string = (body?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
     const parsed = extractJson(rawText);
     if (!parsed) return { ok: false, code: "json_invalido", detail: rawText.slice(0, 1000) };
     return { ok: true, json: parsed, rawText };
   } catch (e) {
-    if (controller.signal.aborted) return { ok: false, code: "anthropic_timeout" };
-    return { ok: false, code: "anthropic_fetch_error", detail: e instanceof Error ? e.message : String(e) };
+    if (controller.signal.aborted) return { ok: false, code: "gemini_timeout" };
+    return { ok: false, code: "gemini_fetch_error", detail: e instanceof Error ? e.message : String(e) };
   } finally {
     clearTimeout(t);
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -379,7 +360,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "no_es_miembro" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ ok: false, error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -398,22 +379,21 @@ Deno.serve(async (req) => {
       (mapeo_manual ? `Mapeo manual provisto por el usuario (índice de columna → campo): ${JSON.stringify(mapeo_manual)}. ` : "") +
       `Contenido:\n${userPayload}`;
 
-    const anthropicStart = Date.now();
-    console.log("procesar-migracion:anthropic_before", { timestamp: anthropicStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+    const iaStart = Date.now();
+    console.log("procesar-migracion:gemini_before", { timestamp: iaStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
 
     // 1ra llamada
-    const r1 = await callAnthropic(apiKey, SYSTEM_PROMPT, userMsg, 60_000);
+    const r1 = await callGemini(apiKey, SYSTEM_PROMPT, userMsg, 55_000);
     if (!r1.ok) {
       console.log("procesar-migracion:error", { tipo: r1.code, status: r1.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-      if (r1.code === "anthropic_timeout") {
-        return new Response(JSON.stringify({ ok: false, error: "anthropic_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (r1.code === "gemini_timeout") {
+        return new Response(JSON.stringify({ ok: false, error: "gemini_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (r1.code === "anthropic_http_error") {
+      if (r1.code === "gemini_http_error") {
         return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: r1.detail }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (r1.code === "json_invalido") {
-        // Reintento por JSON inválido (no es un objeto JSON parseable).
-        const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 60_000);
+        const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
         if (!r2.ok) {
           return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: r2.detail ?? r1.detail }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
@@ -422,7 +402,7 @@ Deno.serve(async (req) => {
           console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
           return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: true, pestana: pestanaLog });
+        console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
         return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       return new Response(JSON.stringify({ ok: false, error: "ai_error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -431,13 +411,12 @@ Deno.serve(async (req) => {
     // Validar esquema
     const v1 = validarResponse(r1.json);
     if (v1.ok) {
-      console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: false, pestana: pestanaLog });
+      console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: false, pestana: pestanaLog });
       return new Response(JSON.stringify({ ok: true, resultado: r1.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     console.log("procesar-migracion:schema_invalido", { reason: v1.reason, pestana: pestanaLog, nro_lote: nroLote });
-    // Reintento UNA sola vez por esquema inválido.
-    const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 60_000);
+    const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
     if (!r2.ok) {
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v1.reason, retry_error: r2.code }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -446,7 +425,7 @@ Deno.serve(async (req) => {
       console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: true, pestana: pestanaLog });
+    console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
     return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.log("procesar-migracion:error", { tipo: "server_error", message: e instanceof Error ? e.message : String(e) });
