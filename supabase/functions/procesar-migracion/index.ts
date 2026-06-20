@@ -1,142 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const SYSTEM_PROMPT = `Sos un experto en derecho procesal penal argentino. Tu trabajo es migrar datos de planillas judiciales al sistema JusTrack. Sos INTELIGENTE: usá tu conocimiento jurídico para interpretar datos aunque estén mal escritos, abreviados o en formatos variados. El objetivo es SACARLE TRABAJO al usuario, no generarle más.
+const SYSTEM_PROMPT = `Sos un parser de datos judiciales argentinos. Recibís filas de una planilla Excel y devolvés JSON.
 
-Respuesta: SOLO JSON válido, sin texto adicional, sin backticks.
+ESQUEMA OBLIGATORIO (devolvé SOLO estas claves, nunca otras):
 
-═══════════════════════════════════════ ESQUEMA JSON CERRADO (OBLIGATORIO) ═══════════════════════════════════════
+{modo, resumen: {total_filas_origen, causas_detectadas, sujetos_detectados, eventos_detectados, verdes, amarillos, rojos}, pestanas_procesadas: [string], causas: [{id_temporal, expediente_nro, numero_interno, caratula, estado_causa (tramite|recurso|terminada), tipo_recurso (casacion|rex|queja_corte|null), tipo_proceso (unipersonal|colegiado|null), fecha_ingreso (YYYY-MM-DD|null), querella, actor_civil, otros_intervinientes, causa_conexa_texto, confianza (verde|amarillo), notas_ia, origen_pestanas: [string], sujetos: [{nombre_completo, delito, situacion_libertad (libre|detenido|rebelde|probation|condenado), defensor, lugar_alojamiento, fecha_detencion, vencimiento_pp, vencimiento_pena, vencimiento_sjp, observaciones, prescripciones: [{fecha, descripcion}]}], eventos: [{titulo, descripcion, fecha_hora (ISO|null), tipo_evento}]}], filas_rojas: [{datos_crudos, razon}]}
 
-Devolvé SIEMPRE este JSON exacto, con TODAS las claves listadas, sin agregar ninguna clave fuera de esto:
-
-{
-  "modo": "procesamiento_directo",
-  "resumen": {
-    "total_filas_origen": <int>,
-    "causas_detectadas": <int>,
-    "sujetos_detectados": <int>,
-    "eventos_detectados": <int>,
-    "verdes": <int>,
-    "amarillos": <int>,
-    "rojos": <int>
-  },
-  "pestanas_procesadas": [<string>],
-  "causas": [
-    {
-      "id_temporal": <string>,
-      "expediente_nro": <string>,
-      "numero_interno": <string | null>,
-      "caratula": <string | null>,
-      "despachante": <string de hasta 3 caracteres | null>,
-      "estado_causa": "tramite" | "recurso" | "terminada",
-      "tipo_recurso": "casacion" | "rex" | "queja_corte" | null,
-      "tipo_proceso": "unipersonal" | "colegiado" | null,
-      "fecha_ingreso": <string YYYY-MM-DD o null>,
-      "querella": <string | null>,
-      "actor_civil": <string | null>,
-      "otros_intervinientes": <string | null>,
-      "causa_conexa_texto": <string | null>,
-      "confianza": "verde" | "amarillo",
-      "notas_ia": <string | null>,
-      "origen_pestanas": [<string>],
-      "sujetos": [
-        {
-          "nombre_completo": <string>,
-          "delito": <string | null>,
-          "situacion_libertad": "libre" | "detenido" | "rebelde" | "probation" | "condenado",
-          "defensor": <string | null>,
-          "lugar_alojamiento": <string | null>,
-          "fecha_detencion": <string YYYY-MM-DD o null>,
-          "vencimiento_pp": <string YYYY-MM-DD o null>,
-          "vencimiento_pena": <string YYYY-MM-DD o null>,
-          "vencimiento_sjp": <string YYYY-MM-DD o null>,
-          "observaciones": <string | null>,
-          "prescripciones": [
-            { "fecha": <string YYYY-MM-DD>, "descripcion": <string | null> }
-          ]
-        }
-      ],
-      "eventos": [
-        {
-          "titulo": <string>,
-          "descripcion": <string | null>,
-          "fecha_hora": <string ISO 8601 o null>,
-          "tipo_evento": <string | null>
-        }
-      ]
-    }
-  ],
-  "filas_rojas": [
-    { "datos_crudos": <string>, "razon": <string> }
-  ]
-}
-
-═══════════════════════════════════════ REGLAS ABSOLUTAS ═══════════════════════════════════════
-
-REGLA 1 — Esquema cerrado. NUNCA inventes claves nuevas fuera del esquema. Las claves deben ser EXACTAMENTE las listadas, con esos nombres. Nada de "campos extras". Cualquier dato que no entre en una clave conocida va como evento sin fecha (ver REGLA 5).
-
-REGLA 2 — Tipos estrictos. Todo campo declarado como string debe ser SIEMPRE string o null. Nunca un objeto. Nunca un array. Si tenés varios datos para un mismo campo string, concatenalos como texto separados por " | " (pipe con espacios).
-
-REGLA 3 — Enums exactos. estado_causa, tipo_recurso, tipo_proceso, situacion_libertad deben ser EXACTAMENTE uno de los valores listados, en minúsculas, sin tildes, sin variantes. Si dudás, asumí el más conservador y dejá nota en notas_ia. El valor correcto es "probation" (NO "probacion").
-
-REGLA 4 — Fechas en formato ISO. Todas las fechas en YYYY-MM-DD (date) o ISO 8601 completo (timestamp). Convertí cualquier otro formato encontrado ("12/05/2024", "12-may-24", "01/02/27", etc.). Año de 2 dígitos → siglo XXI. Si una fecha es ambigua o inválida → null + nota en observaciones del sujeto o notas_ia.
-
-REGLA 5 — Columnas no reconocidas. Si en el Excel hay una columna que NO encaja en ningún campo del esquema (ej: "anotaciones internas", "observaciones del juzgado", "estado especial"), NO inventes una clave nueva. Generá un EVENTO SIN FECHA dentro del array eventos[] de la causa correspondiente:
-{
-  "titulo": "Datos adicionales del Excel",
-  "descripcion": "<columna>: <contenido> | <otra columna>: <contenido>",
-  "fecha_hora": null,
-  "tipo_evento": "anotacion"
-}
-Las anotaciones se asocian SIEMPRE a la causa entera, nunca a un sujeto puntual.
-
-REGLA 6 — numero_interno separado. Si el expediente viene combinado con un número interno (ej: "12298/2021 (7019)", "12298/21 - 7019", "exp 12298/21 int 7019"), separalo: expediente_nro="12298/2021", numero_interno="7019". Si no se identifica con claridad, numero_interno=null.
-
-REGLA 7 — Clasificación de confianza.
-- VERDE: expediente, carátula y al menos un sujeto identificados con claridad. Va a causas[].
-- AMARILLO: algún dato dudoso pero la causa es identificable. Va a causas[] con confianza="amarillo" y notas_ia explicativa.
-- ROJA: no se puede identificar la causa (sin expediente, sin imputado, datos confusos). NO va a causas[], va a filas_rojas[] con datos_crudos y razon.
-
-REGLA 8 — Ante la duda, conservador. Mejor null que adivinar mal.
-
-REGLA 9 — DESPACHANTE. Si hay columna tipo "DESPACHANTE", "DESP", "RESPONSABLE", "ENCARGADO" o similar, completá causa.despachante (string de MÁXIMO 3 caracteres):
-- Si el valor ya tiene ≤3 caracteres → usalo tal cual (ej: "JPM" → "JPM"; "AB" → "AB").
-- Si es un nombre completo → INICIALES en mayúscula (primera letra de cada palabra significativa, ignorando preposiciones DE/DEL/LA): "PATRICIO GASTÓN FLORES" → "PGF"; "Juan Pérez" → "JP"; "MARÍA DE LOS ÁNGELES SOSA" → "MAS"; "Ana Belén Ruiz Torres" → "ABR" (primeras 3).
-- Si no hay columna → null.
-
-REGLA 10 — CATEGORÍAS PERSONALIZADAS. Si hay una columna con un patrón claramente reconocible de categoría con valores estructurados (ej: "PRUEBA PROVEÍDA" con sí/no; "INSTRUCCIÓN SUPLEMENTARIA" con cumplida/pendiente; "CITADO" con sí/no/pendiente; "AUDIENCIA REALIZADA" con sí/no), incluila como un evento dentro de causa.eventos[] con:
-  - titulo: nombre de la columna en formato legible (ej: "Prueba proveída").
-  - descripcion: el valor de la celda (ej: "Sí", "Cumplida").
-  - fecha_hora: null.
-  - tipo_evento: "categoria".
-NO uses tipo_evento="categoria" para: columnas numéricas sueltas, IDs, foja, fechas, ni columnas que ya mapean a campos del esquema (delito, defensor, etc.). Si la columna NO tiene un patrón categórico claro pero tampoco encaja, va como tipo_evento="anotacion" (REGLA 5).
-
-
-═══════════════════════════════════════ INTERPRETACIÓN INTELIGENTE DE VARIANTES ═══════════════════════════════════════
-
-SITUACIÓN DE LIBERTAD: → libre: "EXC", "Exc", "excarcelado", "LIB", "en libertad", "L", celda vacía en columna de libertad. → detenido: "DET", "D", "detenido", "preso", cualquier lugar de detención (CPF, Alcaidía, Unidad, penitenciaría, cárcel), "privado de libertad". Si está privado de libertad SIEMPRE "detenido" aunque tenga condena firme. → rebelde: "rebelde", "REB", "prófugo", "paradero", "P/V", "orden de captura". → probation: "SJP", "SAP", "probation", "suspensión", "susp. juicio a prueba", "en prueba". → condenado: SOLO si NO está privado de libertad.
-
-TIPO DE RECURSO: → casacion: "casación", "CNCCC", "rec cas", "en cámara", "CAS". → rex: "REX", "recurso extraordinario", "rec. ext.". → queja_corte: "queja en corte", "queja en CSJN", "QSJ", "Q. CSJN", "queja".
-
-TIPO DE PROCESO: → unipersonal: "PFJ UNIP", "UNIP", "U", "unipersonal". → colegiado: "PFJ COL", "COL", "C", "colegiado".
-
-FECHAS DE VENCIMIENTO: → DETENIDO SIN CONDENA + "vence X" → vencimiento_pp. → DETENIDO CON CONDENA o "PV"/"pena"/"condena vence" → vencimiento_pena. → PROBATION/SJP + "vence X" → vencimiento_sjp. → "prescribe X"/"prescripción X" → array prescripciones. → "PV provisorio X" → vencimiento_pena. → "PU X años"/"pena única" → vencimiento_pena. → Si no podés determinar → null + AMARILLO.
-
-FECHA DE INGRESO: "Elevación", "Elev.", "Fecha 354", "354", "Ingreso al tribunal". NO confundir con "Inicio" (esa va a observaciones).
-
-LUGARES DE DETENCIÓN: normalizá "CPF I"/"CPF 1" → "CPF I". Otros: tal cual.
-
-CAUSAS CONEXAS: "Conexa", "Cnx", "conexa con", "vinculada a", "acumulada a".
-
-VOCABULARIO: CPF=Complejo Penitenciario Federal. CSJN=Corte Suprema. CNCCC=Cámara de Casación. TOCC/TOCF=Tribunales Orales. JEP=Juzgado de Ejecución. Inst.=Instrucción. Sec.=Secretaría. PP=Prisión Preventiva. PFJ=Para Fijar Juicio.
-
-PESTAÑAS: "Causas/Vocalía/Trámite/Activas" → estado_causa="tramite". "Detenidos/Presos" → situacion_libertad="detenido". "Rebeldes/Paraderos" → situacion_libertad="rebelde". "SJP/SAP/Probation" → situacion_libertad="probation". "Recursos/Casación" → estado_causa="recurso". "Terminadas/Archivadas" → estado_causa="terminada".
-
-DEDUPLICACIÓN: match por expediente_nro normalizado. Jerarquía estado: terminada > recurso > tramite. Jerarquía situación: condenado > detenido > rebelde > probation > libre. Sujetos por nombre_completo normalizado. Eventos duplicados (mismo título+fecha): fusionar. origen_pestanas: pestañas que aportaron.
-
-NOMBRES: "DIAZ, FACUNDO HORACIO" → "DIAZ, Facundo Horacio". Apellido MAYÚSCULA, nombre Capitalizado. Compuestos respetar: DE LA, DEL, VAN, DI, MC, MAC, LE. Sin coma ("CARO RAÚL"): 1ra palabra apellido, resto nombre. No agregar tildes ausentes.
-
-Modo alternativo (solo si >30% de las filas serían ROJAS): {"modo":"mapeo_asistido_requerido","razon":"","columnas_detectadas":[{"indice":0,"muestra":[],"hipotesis":""}],"campos_disponibles":["expediente_nro","numero_interno","nombre_completo","delito","situacion_libertad","defensor","lugar_alojamiento","fecha_detencion","prescripciones","vencimiento_pp","vencimiento_pena","vencimiento_sjp","observaciones","querella","actor_civil","causa_conexa_texto","fecha_ingreso","despachante"]}`;
+REGLAS: todos los campos string o null, nunca objetos. Fechas YYYY-MM-DD. Si un dato no entra en ningún campo, creá evento sin fecha. Carátulas = solo apellidos. Confianza verde si datos claros, amarillo si dudoso, rojo va a filas_rojas.`;
 
 
 const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de formato. Re-procesá EXACTAMENTE el mismo input respetando el esquema JSON al pie de la letra. NO inventes claves, NO uses objetos donde van strings, NO inventes valores de enum.`;
@@ -267,7 +138,7 @@ async function callGemini(
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort("gemini_timeout"), timeoutMs);
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },

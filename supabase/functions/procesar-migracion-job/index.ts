@@ -5,26 +5,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const SYSTEM_PROMPT = `Sos un experto en derecho procesal penal argentino. Tu trabajo es migrar datos de planillas judiciales al sistema JusTrack. Sos INTELIGENTE: usá tu conocimiento jurídico para interpretar datos aunque estén mal escritos, abreviados o en formatos variados. El objetivo es SACARLE TRABAJO al usuario, no generarle más.
+const SYSTEM_PROMPT = `Sos un parser de datos judiciales argentinos. Recibís filas de una planilla Excel y devolvés JSON.
 
-Respuesta: SOLO JSON válido, sin texto adicional, sin backticks.
+ESQUEMA OBLIGATORIO (devolvé SOLO estas claves, nunca otras):
 
-Devolvé SIEMPRE un objeto con esta forma exacta (no inventes claves nuevas):
-{
-  "modo": "procesamiento_directo",
-  "resumen": { "total_filas_origen": <int>, "causas_detectadas": <int>, "sujetos_detectados": <int>, "eventos_detectados": <int>, "verdes": <int>, "amarillos": <int>, "rojos": <int> },
-  "pestanas_procesadas": [<string>],
-  "causas": [ { "id_temporal": <string>, "expediente_nro": <string>, "numero_interno": <string|null>, "caratula": <string|null>, "despachante": <string ≤3 chars|null>, "estado_causa": "tramite"|"recurso"|"terminada", "tipo_recurso": "casacion"|"rex"|"queja_corte"|null, "tipo_proceso": "unipersonal"|"colegiado"|null, "fecha_ingreso": <string YYYY-MM-DD|null>, "querella": <string|null>, "actor_civil": <string|null>, "otros_intervinientes": <string|null>, "causa_conexa_texto": <string|null>, "confianza": "verde"|"amarillo", "notas_ia": <string|null>, "origen_pestanas": [<string>], "sujetos": [ { "nombre_completo": <string>, "delito": <string|null>, "situacion_libertad": "libre"|"detenido"|"rebelde"|"probation"|"condenado", "defensor": <string|null>, "lugar_alojamiento": <string|null>, "fecha_detencion": <string YYYY-MM-DD|null>, "vencimiento_pp": <string YYYY-MM-DD|null>, "vencimiento_pena": <string YYYY-MM-DD|null>, "vencimiento_sjp": <string YYYY-MM-DD|null>, "observaciones": <string|null>, "prescripciones": [ { "fecha": <string YYYY-MM-DD>, "descripcion": <string|null> } ] } ], "eventos": [ { "titulo": <string>, "descripcion": <string|null>, "fecha_hora": <string ISO 8601|null>, "tipo_evento": <string|null> } ] } ],
-  "filas_rojas": [ { "datos_crudos": <string>, "razon": <string> } ]
-}
+{modo, resumen: {total_filas_origen, causas_detectadas, sujetos_detectados, eventos_detectados, verdes, amarillos, rojos}, pestanas_procesadas: [string], causas: [{id_temporal, expediente_nro, numero_interno, caratula, estado_causa (tramite|recurso|terminada), tipo_recurso (casacion|rex|queja_corte|null), tipo_proceso (unipersonal|colegiado|null), fecha_ingreso (YYYY-MM-DD|null), querella, actor_civil, otros_intervinientes, causa_conexa_texto, confianza (verde|amarillo), notas_ia, origen_pestanas: [string], sujetos: [{nombre_completo, delito, situacion_libertad (libre|detenido|rebelde|probation|condenado), defensor, lugar_alojamiento, fecha_detencion, vencimiento_pp, vencimiento_pena, vencimiento_sjp, observaciones, prescripciones: [{fecha, descripcion}]}], eventos: [{titulo, descripcion, fecha_hora (ISO|null), tipo_evento}]}], filas_rojas: [{datos_crudos, razon}]}
 
-Reglas: tipos estrictos (string|null nunca objeto); enums exactos en minúscula y sin tildes ("probation" no "probacion"); fechas ISO; columnas no reconocidas van como evento sin fecha con tipo_evento="anotacion"; numero_interno separado del expediente; clasificá confianza verde/amarillo/roja (las rojas a filas_rojas[]); ante la duda, conservador.
-
-DESPACHANTE: columna "DESPACHANTE"/"DESP"/"RESPONSABLE"/"ENCARGADO" → causa.despachante (máx 3 chars). Si ya es ≤3 chars usalo tal cual; si es nombre completo → iniciales mayúsculas (ej "PATRICIO GASTÓN FLORES" → "PGF"; "Juan Pérez" → "JP"; con más de 3 palabras tomá las primeras 3 iniciales). Si no hay columna → null.
-
-CATEGORÍAS: si hay columnas con patrón categórico claro (ej "PRUEBA PROVEÍDA": sí/no; "CITADO": sí/no/pendiente; "INSTRUCCIÓN SUPLEMENTARIA": cumplida/pendiente) → incluilas como evento sin fecha en causa.eventos[] con titulo=nombre de columna legible, descripcion=valor de celda, fecha_hora=null, tipo_evento="categoria". NO usés "categoria" para columnas numéricas, IDs, ni columnas que mapean a campos del esquema.
-
-Si >30% de filas serían rojas devolvé { "modo":"mapeo_asistido_requerido", "razon": <string>, "columnas_detectadas":[{"indice":<int>,"muestra":[<string>],"hipotesis":<string>}], "campos_disponibles":[...] }.`;
+REGLAS: todos los campos string o null, nunca objetos. Fechas YYYY-MM-DD. Si un dato no entra en ningún campo, creá evento sin fecha. Carátulas = solo apellidos. Confianza verde si datos claros, amarillo si dudoso, rojo va a filas_rojas.`;
 
 const RETRY_SUFFIX = `\n\nIMPORTANTE: el response anterior tuvo errores de formato. Re-procesá EXACTAMENTE el mismo input respetando el esquema JSON al pie de la letra. NO inventes claves, NO uses objetos donde van strings, NO inventes valores de enum.`;
 
@@ -102,7 +89,7 @@ async function callGemini(
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort("gemini_timeout"), timeoutMs);
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
