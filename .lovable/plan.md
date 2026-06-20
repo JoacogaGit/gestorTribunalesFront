@@ -1,86 +1,111 @@
-## Refactor: Migración server-side con jobs persistentes
+# Fix de procesar-migracion-job: Gemini + logging robusto
 
-### Objetivo
-Mover el procesamiento de lotes de migración del navegador a una Edge Function que corre server-side, persistiendo estado en `migraciones_jobs`. El usuario podrá cerrar la pestaña y la migración continúa.
+## Contexto del bug
 
----
+`procesar-migracion-job/index.ts` tiene su propia función `callAnthropic` interna (líneas 95-119) que sigue usando Claude/Anthropic. No fue migrada cuando se migró `procesar-migracion`. Además, si `procesarLote()` lanza una excepción no controlada (timeout abrupto, OOM, error de red al actualizar la DB, etc.), el `try/catch` exterior la captura pero marca el job entero como `error` y corta todo el procesamiento — sin loguear stack, sin continuar con los lotes restantes.
 
-### 1. Base de datos (migración)
+## Cambios en `supabase/functions/procesar-migracion-job/index.ts`
 
-Crear tabla `migraciones_jobs`:
-- `id`, `vocalia_id` (FK vocalias), `usuario_id` (FK auth.users)
-- `archivo_nombre`, `estado` (pendiente|procesando|revision|completado|error)
-- `total_lotes`, `lotes_procesados`, `lotes_fallidos`
-- `resultados` JSONB (acumulado por lote), `filas_rojas` JSONB
-- `error_mensaje`, `created_at`, `updated_at`
-- Índice `(vocalia_id, usuario_id, estado)`
+### 1. Reemplazar `callAnthropic` por `callGemini`
 
-RLS:
-- SELECT/INSERT/UPDATE: `usuario_id = auth.uid()` o `es_superadmin()`
-- DELETE: solo dueño
-- GRANTs estándar a `authenticated` y `service_role`
+Replicar exactamente el patrón ya implementado en `procesar-migracion`:
 
-Trigger `updated_at`.
+- Endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
+- Body: `contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\n" + userMsg }] }]` con `generationConfig: { responseMimeType: "application/json", temperature: 0 }`.
+- Timeout: **55s** (dentro del límite de 60s de la invocación) — antes era 180s, inviable en una Edge Function.
+- Extraer texto desde `data.candidates[0].content.parts[0].text` y parsear con `extractJson`.
+- Devolver el mismo shape `{ ok: true; json } | { ok: false; code; status?; detail? }` para no tocar el resto.
 
-### 2. Edge Function `procesar-migracion-job`
+### 2. Acortar `SYSTEM_PROMPT`
 
-Recibe: `{ job_id }` (los lotes ya están en `migraciones_jobs.resultados._pending` o en una columna separada).
+Copiar el SYSTEM_PROMPT ya optimizado de `procesar-migracion` (sin ejemplos input→output, con las 8 reglas + esquema JSON + clasificación). Es el mismo que ya está corriendo en producción para el flujo síncrono.
 
-**Decisión:** agregar columna `lotes_pendientes JSONB` para guardar los lotes a procesar (array de `{pestana, contenido, nro_lote, total_lotes, filas}`), y `archivo_meta JSONB` con `{tipo, nombre}`.
+### 3. Cambiar secret
 
-Flujo:
-1. Marcar `estado='procesando'`
-2. Bucle por lotes pendientes (en orden). Por cada lote:
-   - Llamar internamente a la lógica de `procesar-migracion` (un lote) — reutilizar el mismo módulo o invocar la función con `supabase.functions.invoke`.
-   - 1 reintento si falla validación. Si sigue, `lotes_fallidos++`.
-   - `lotes_procesados++` y push resultado a `resultados`.
-   - Marcar lote como hecho dentro de `lotes_pendientes` (o ir consumiéndolos).
-3. Chaining: cada N=8 lotes (o si quedan <60s de timeout), self-invoke con `fetch` al mismo endpoint usando el service role key, y retornar.
-4. Al terminar sin pendientes: `estado='revision'`.
-5. Si hay throw global: `estado='error'`, `error_mensaje`.
+Reemplazar `Deno.env.get("ANTHROPIC_API_KEY")` por `Deno.env.get("GEMINI_API_KEY")` y el mensaje de error `no_api_key`. `GEMINI_API_KEY` ya está configurado.
 
-Auth: `verify_jwt = true` para la invocación inicial; el self-invoke usa service role.
+### 4. Ajustar constantes de timing
 
-### 3. Frontend `WizardMigracion`
+Con timeout de 55s por intento y 2 intentos por lote, un lote tarda máximo ~110s. Por lo tanto:
 
-PASO 1 (subir archivo) — sin cambios: parseo y `construirLotes` en cliente.
+- `TIMEOUT_LOTE_MS = 55_000` (era 180_000)
+- `MAX_RUN_MS = 200_000` (era 370_000) — margen para 1 lote + chaining, lejos del wall-clock límite
+- `MAX_LOTES_PER_RUN = 1` (se mantiene; el chaining cubre el resto)
 
-PASO 2 (procesamiento) — reescrito:
-- Al confirmar: `INSERT` en `migraciones_jobs` con los lotes en `lotes_pendientes`, estado `pendiente`.
-- `supabase.functions.invoke('procesar-migracion-job', { body: { job_id } })` — fire-and-forget (no esperamos la respuesta).
-- Polling cada 3s a `migraciones_jobs` (filtrado por `id`).
-- Mostrar progreso `lotes_procesados / total_lotes`. Banner flotante existente sigue funcionando.
-- Cuando `estado='revision'`: hidratar `resultadosOk` desde `resultados` y pasar a PASO 3.
-- Cuando `estado='error'`: mostrar error + opción de retomar / descartar.
+### 5. Logging detallado dentro de `callGemini`
 
-Eliminar `ejecutarLotes` / `procesarUnLote` del cliente (mantener `procesarUnLote` en el hook por compat, pero el wizard no lo usa).
+Después del `fetch` a Gemini, loguear:
 
-PASO 3 (revisión) — sin cambios funcionales, los datos vienen del job.
+```ts
+console.log("procesar-migracion-job:gemini_response", {
+  job_id, nro_lote,
+  status: res.status,
+  body_preview: rawText.slice(0, 500),
+});
+```
 
-PASO 4 (cargar BD) — sin cambios; al terminar `cargarEnBD`, hacer `UPDATE estado='completado'` en el job.
+(Pasar `job_id` y `nro_lote` como parámetros opcionales a `callGemini` para poder loguearlos.)
 
-### 4. Detección de jobs en curso
+### 6. Try-catch robusto por lote en el loop
 
-En `WizardMigracion` al montar (y al cambiar de vocalía):
-- Query `migraciones_jobs WHERE usuario_id=auth.uid() AND vocalia_id=actual AND estado IN ('pendiente','procesando','revision') ORDER BY created_at DESC LIMIT 1`.
-- Si existe:
-  - `procesando|pendiente` → mostrar UI de progreso (polling).
-  - `revision` → saltar a PASO 3 con `resultados` hidratados.
-- Bloquear "Subir archivo nuevo" hasta que el job actual se complete/descarte.
-- Botón "Descartar job" → UPDATE estado='error' con razón "cancelado por usuario" (o DELETE).
+Envolver el cuerpo del `while` en su propio try-catch para que un crash de un lote NO mate la corrida entera:
 
-### 5. Limpieza localStorage
+```ts
+while (pendientes.length > 0 && processedThisRun < MAX_LOTES_PER_RUN && (Date.now() - tStart) < MAX_RUN_MS) {
+  const lote = pendientes[0];
+  console.log("procesar-migracion-job:lote_start", { job_id: jobId, pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas });
+  try {
+    const r = await procesarLote(jobId, archivoMeta, lote);
+    pendientes.shift();
+    if (r.ok) {
+      lotesProcesados++;
+      // ...acumular resultado y filas_rojas...
+    } else {
+      lotesFallidos++;
+      console.log("procesar-migracion-job:lote_error", { job_id: jobId, nro_lote: lote.nro_lote, error: r.error });
+    }
+  } catch (err) {
+    // Crash inesperado dentro del lote: marcar como fallido y CONTINUAR
+    pendientes.shift();
+    lotesFallidos++;
+    const e = err as Error;
+    console.error("lote_crash", {
+      job_id: jobId,
+      nro_lote: lote.nro_lote,
+      pestana: lote.pestana,
+      error: e?.message ?? String(err),
+      stack: e?.stack,
+    });
+  }
+  processedThisRun++;
+  // Persistir progreso (también en try-catch para que un fallo de DB no mate el loop)
+  try {
+    await admin.from("migraciones_jobs").update({ lotes_procesados, lotes_fallidos, lotes_pendientes: pendientes, resultados, filas_rojas: filasRojasAcum }).eq("id", jobId);
+  } catch (dbErr) {
+    console.error("procesar-migracion-job:db_update_error", { job_id: jobId, msg: (dbErr as Error)?.message, stack: (dbErr as Error)?.stack });
+  }
+}
+```
 
-- Mantener `lsKey` como fallback de lectura (para jobs viejos sin migrar), pero al iniciar uno nuevo no escribir.
-- Priorizar DB.
+El try-catch exterior existente se mantiene como red de seguridad final.
 
-### Lo que NO cambia
-- `supabase/functions/procesar-migracion/index.ts` (un lote) — se reutiliza.
-- `SYSTEM_PROMPT` IA.
-- `cargarEnBD` en cliente.
-- `ErrorBoundary`, Google Calendar, parseo de archivo, división en lotes.
+### 7. Borrar jobs trabados
 
-### Detalles técnicos
-- Self-invoke usa `fetch(SUPABASE_URL + '/functions/v1/procesar-migracion-job', { headers: { Authorization: 'Bearer ' + SERVICE_ROLE } })` sin `await` antes de `return` para no bloquear el timeout (`EdgeRuntime.waitUntil` no aplica aquí; usamos fetch + return inmediato).
-- Para invocar `procesar-migracion` desde dentro de `procesar-migracion-job`, usamos `supabase.functions.invoke` con service role para no perder tiempo en re-importar lógica.
-- `lotes_pendientes` se actualiza tras cada lote para que un re-arranque (chaining) sepa qué falta.
+Migración SQL para limpiar:
+
+```sql
+DELETE FROM public.migraciones_jobs WHERE estado IN ('procesando', 'pendiente');
+```
+
+## Lo que NO se toca
+
+- `procesar-migracion/index.ts` (ya está en Gemini).
+- `validarResponse()`, `extractJson()` — se mantienen idénticos.
+- `src/lib/dividirEnLotes.ts` (TAMANO_LOTE queda en 8).
+- Frontend (`WizardMigracion`, polling, hooks).
+- `normalizarCausa.ts`, Google Calendar sync, `cargarEnBD`.
+- Estructura del chaining (fire-and-forget con service-role).
+
+## Verificación posterior
+
+Después del deploy, mirar `supabase--edge_function_logs` de `procesar-migracion-job` durante una migración real para confirmar que aparecen los `gemini_response` con status 200 y que, ante cualquier error, se loguea `lote_crash` con stack en vez de `Shutdown` silencioso.
