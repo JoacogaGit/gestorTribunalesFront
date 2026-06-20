@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true, estado: "procesando" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
     await admin.from("migraciones_jobs").update({ estado: "error", error_mensaje: "no_api_key" }).eq("id", jobId);
     return new Response(JSON.stringify({ error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -240,25 +240,44 @@ Deno.serve(async (req) => {
     while (pendientes.length > 0 && processedThisRun < MAX_LOTES_PER_RUN && (Date.now() - tStart) < MAX_RUN_MS) {
       const lote = pendientes[0];
       console.log("procesar-migracion-job:lote_start", { job_id: jobId, pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas });
-      const r = await procesarLote(apiKey, archivoMeta, lote);
-      pendientes.shift();
-      if (r.ok) {
-        lotesProcesados++;
-        const res = r.resultado as { filas_rojas?: unknown[] } | undefined;
-        resultados.push({ pestana: `${lote.pestana} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r.resultado });
-        if (res && Array.isArray(res.filas_rojas)) for (const fr of res.filas_rojas) filasRojasAcum.push(fr);
-      } else {
+      try {
+        const r = await procesarLote(jobId, apiKey, archivoMeta, lote);
+        pendientes.shift();
+        if (r.ok) {
+          lotesProcesados++;
+          const res = r.resultado as { filas_rojas?: unknown[] } | undefined;
+          resultados.push({ pestana: `${lote.pestana} · lote ${lote.nro_lote}/${lote.total_lotes}`, resultado: r.resultado });
+          if (res && Array.isArray(res.filas_rojas)) for (const fr of res.filas_rojas) filasRojasAcum.push(fr);
+        } else {
+          lotesFallidos++;
+          console.log("procesar-migracion-job:lote_error", { job_id: jobId, nro_lote: lote.nro_lote, error: r.error });
+        }
+      } catch (err) {
+        // Crash inesperado dentro del lote: marcar como fallido y CONTINUAR con el siguiente
+        pendientes.shift();
         lotesFallidos++;
-        console.log("procesar-migracion-job:lote_error", { job_id: jobId, error: r.error });
+        const e = err as Error;
+        console.error("lote_crash", {
+          job_id: jobId,
+          nro_lote: lote.nro_lote,
+          pestana: lote.pestana,
+          error: e?.message ?? String(err),
+          stack: e?.stack,
+        });
       }
       processedThisRun++;
-      await admin.from("migraciones_jobs").update({
-        lotes_procesados: lotesProcesados,
-        lotes_fallidos: lotesFallidos,
-        lotes_pendientes: pendientes,
-        resultados,
-        filas_rojas: filasRojasAcum,
-      }).eq("id", jobId);
+      try {
+        await admin.from("migraciones_jobs").update({
+          lotes_procesados: lotesProcesados,
+          lotes_fallidos: lotesFallidos,
+          lotes_pendientes: pendientes,
+          resultados,
+          filas_rojas: filasRojasAcum,
+        }).eq("id", jobId);
+      } catch (dbErr) {
+        const e = dbErr as Error;
+        console.error("procesar-migracion-job:db_update_error", { job_id: jobId, msg: e?.message, stack: e?.stack });
+      }
     }
 
     if (pendientes.length === 0) {
