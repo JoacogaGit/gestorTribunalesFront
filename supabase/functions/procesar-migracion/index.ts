@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "no_es_miembro" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ ok: false, error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -379,22 +379,21 @@ Deno.serve(async (req) => {
       (mapeo_manual ? `Mapeo manual provisto por el usuario (índice de columna → campo): ${JSON.stringify(mapeo_manual)}. ` : "") +
       `Contenido:\n${userPayload}`;
 
-    const anthropicStart = Date.now();
-    console.log("procesar-migracion:anthropic_before", { timestamp: anthropicStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+    const iaStart = Date.now();
+    console.log("procesar-migracion:gemini_before", { timestamp: iaStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
 
     // 1ra llamada
-    const r1 = await callAnthropic(apiKey, SYSTEM_PROMPT, userMsg, 60_000);
+    const r1 = await callGemini(apiKey, SYSTEM_PROMPT, userMsg, 55_000);
     if (!r1.ok) {
       console.log("procesar-migracion:error", { tipo: r1.code, status: r1.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-      if (r1.code === "anthropic_timeout") {
-        return new Response(JSON.stringify({ ok: false, error: "anthropic_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (r1.code === "gemini_timeout") {
+        return new Response(JSON.stringify({ ok: false, error: "gemini_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (r1.code === "anthropic_http_error") {
+      if (r1.code === "gemini_http_error") {
         return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: r1.detail }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (r1.code === "json_invalido") {
-        // Reintento por JSON inválido (no es un objeto JSON parseable).
-        const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 60_000);
+        const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
         if (!r2.ok) {
           return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: r2.detail ?? r1.detail }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
@@ -403,7 +402,7 @@ Deno.serve(async (req) => {
           console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
           return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: true, pestana: pestanaLog });
+        console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
         return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       return new Response(JSON.stringify({ ok: false, error: "ai_error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -412,13 +411,12 @@ Deno.serve(async (req) => {
     // Validar esquema
     const v1 = validarResponse(r1.json);
     if (v1.ok) {
-      console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: false, pestana: pestanaLog });
+      console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: false, pestana: pestanaLog });
       return new Response(JSON.stringify({ ok: true, resultado: r1.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     console.log("procesar-migracion:schema_invalido", { reason: v1.reason, pestana: pestanaLog, nro_lote: nroLote });
-    // Reintento UNA sola vez por esquema inválido.
-    const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 60_000);
+    const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
     if (!r2.ok) {
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v1.reason, retry_error: r2.code }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -427,7 +425,7 @@ Deno.serve(async (req) => {
       console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    console.log("procesar-migracion:anthropic_after", { elapsed_ms: Date.now() - anthropicStart, retry: true, pestana: pestanaLog });
+    console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
     return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.log("procesar-migracion:error", { tipo: "server_error", message: e instanceof Error ? e.message : String(e) });
