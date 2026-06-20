@@ -140,32 +140,31 @@ async function callGemini(
 }
 
 // ── Procesamiento ─────────────────────────────────────────────────────────────
-// Cada lote puede demorar hasta 360s (2 intentos x 180s). El wall-clock límite
-// de una invocación de Edge Function ronda los 400s, así que encadenamos
-// después de cada lote para no perder progreso.
-const MAX_LOTES_PER_RUN = 1;       // procesar 1 lote y encadenar
-const MAX_RUN_MS = 370_000;        // ~6:10 — tope conservador antes del límite duro
-const TIMEOUT_LOTE_MS = 180_000;   // 3 min por intento (2 intentos = hasta 6 min/lote)
+// Cada lote: 2 intentos x 55s = hasta ~110s. MAX_RUN_MS conservador para 1 lote + chaining.
+const MAX_LOTES_PER_RUN = 1;
+const MAX_RUN_MS = 200_000;
+const TIMEOUT_LOTE_MS = 55_000;
 
 type Lote = { pestana: string; nro_lote: number; total_lotes: number; filas: number; contenido: string[][] };
 type ArchivoMeta = { tipo?: string; nombre?: string; vocalia_nombre?: string };
 type ResultadoAcum = { pestana: string; resultado: unknown };
 
-async function procesarLote(apiKey: string, archivoMeta: ArchivoMeta, lote: Lote): Promise<{ ok: true; resultado: unknown } | { ok: false; error: string }> {
+async function procesarLote(jobId: string, apiKey: string, archivoMeta: ArchivoMeta, lote: Lote): Promise<{ ok: true; resultado: unknown } | { ok: false; error: string }> {
   const userPayload = JSON.stringify({
     tipo: archivoMeta.tipo ?? "desconocido",
     nombreArchivo: archivoMeta.nombre ?? "",
     pestanas: [{ nombre: lote.pestana, contenido: lote.contenido }],
   }).slice(0, 350_000);
   const userMsg = `Estás procesando ÚNICAMENTE la pestaña "${lote.pestana}" del archivo "${archivoMeta.nombre ?? ""}". No infieras nada sobre otras pestañas; solo trabajá con los datos de esta. Migrar a vocalía: ${archivoMeta.vocalia_nombre ?? ""}. Archivo de tipo ${archivoMeta.tipo ?? "desconocido"}. Contenido:\n${userPayload}`;
+  const logCtx = { job_id: jobId, nro_lote: lote.nro_lote, pestana: lote.pestana };
 
-  const r1 = await callAnthropic(apiKey, SYSTEM_PROMPT, userMsg, TIMEOUT_LOTE_MS);
+  const r1 = await callGemini(apiKey, SYSTEM_PROMPT, userMsg, TIMEOUT_LOTE_MS, logCtx);
   if (r1.ok) {
     const v1 = validarResponse(r1.json);
     if (v1.ok) return { ok: true, resultado: r1.json };
+    console.log("procesar-migracion-job:schema_invalid_intento1", { ...logCtx, reason: v1.reason });
   }
-  // 1 reintento (igual que procesar-migracion)
-  const r2 = await callAnthropic(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, TIMEOUT_LOTE_MS);
+  const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, TIMEOUT_LOTE_MS, logCtx);
   if (r2.ok) {
     const v2 = validarResponse(r2.json);
     if (v2.ok) return { ok: true, resultado: r2.json };
