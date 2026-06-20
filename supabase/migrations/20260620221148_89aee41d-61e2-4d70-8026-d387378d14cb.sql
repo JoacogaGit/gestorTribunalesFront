@@ -1,0 +1,2 @@
+DELETE FROM public.migraciones_jobs
+WHERE estado IN ('procesando', 'pendiente');
