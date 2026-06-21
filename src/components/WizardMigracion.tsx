@@ -123,42 +123,43 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   }, [procesando]);
 
 
-  // Detectar job server-side activo + fallback localStorage
+  // Detectar job server-side activo (solo si USE_SERVER_SIDE_JOB) + fallback localStorage
   useEffect(() => {
     if (!vocaliaId) return;
     let cancelled = false;
     (async () => {
-      // 1) Buscar job activo en BD (prioridad)
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setJobLoaded(true); return; }
-        const { data: jobs } = await supabase
-          .from("migraciones_jobs")
-          .select("id, estado, archivo_nombre, total_lotes, lotes_procesados, lotes_fallidos, resultados, lotes_pendientes")
-          .eq("usuario_id", user.id)
-          .eq("vocalia_id", vocaliaId)
-          .in("estado", ["pendiente", "procesando", "revision"])
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (cancelled) return;
-        const job = jobs?.[0];
-        if (job) {
-          setJobId(job.id);
-          setJobEstado(job.estado);
-          setFilename(job.archivo_nombre || "");
-          setJobLoaded(true);
-          return;
-        }
-      } catch (e) { console.warn("[migracion] no se pudo consultar jobs", e); }
-      // 2) Fallback localStorage (sólo si no hay job en BD)
+      if (USE_SERVER_SIDE_JOB) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) { setJobLoaded(true); return; }
+          const { data: jobs } = await supabase
+            .from("migraciones_jobs")
+            .select("id, estado, archivo_nombre, total_lotes, lotes_procesados, lotes_fallidos, resultados, lotes_pendientes")
+            .eq("usuario_id", user.id)
+            .eq("vocalia_id", vocaliaId)
+            .in("estado", ["pendiente", "procesando", "revision"])
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (cancelled) return;
+          const job = jobs?.[0];
+          if (job) {
+            setJobId(job.id);
+            setJobEstado(job.estado);
+            setFilename(job.archivo_nombre || "");
+            setJobLoaded(true);
+            return;
+          }
+        } catch (e) { console.warn("[migracion] no se pudo consultar jobs", e); }
+      }
+      // Fallback localStorage (modo client-side usa siempre esta ruta)
       try {
         const raw = localStorage.getItem(lsKey(vocaliaId));
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
+          if (parsed?.resultadosOk?.length > 0 && !cancelled) setPendingResume(parsed);
         }
       } catch { /* noop */ }
-      setJobLoaded(true);
+      if (!cancelled) setJobLoaded(true);
     })();
     return () => { cancelled = true; };
   }, [vocaliaId]);
