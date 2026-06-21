@@ -46,6 +46,13 @@ const ERROR_LABELS: Record<string, string> = {
 const labelError = (code?: string) => ERROR_LABELS[code || "unknown"] || code || "error";
 const lsKey = (vocaliaId: string) => `migracion_v1_${vocaliaId}`;
 
+// Flag de modo de procesamiento.
+// false = client-side (default, funciona en Supabase Free).
+// true  = server-side vía edge function `procesar-migracion-job` (requiere Supabase Pro por timeout >60s).
+const USE_SERVER_SIDE_JOB = false;
+// Delay entre llamadas a la edge function para respetar el rate limit de Gemini gratis.
+const DELAY_ENTRE_LOTES_MS = 10000;
+
 export interface MigracionStatus {
   activa: boolean;
   procesando: boolean;
@@ -116,49 +123,50 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   }, [procesando]);
 
 
-  // Detectar job server-side activo + fallback localStorage
+  // Detectar job server-side activo (solo si USE_SERVER_SIDE_JOB) + fallback localStorage
   useEffect(() => {
     if (!vocaliaId) return;
     let cancelled = false;
     (async () => {
-      // 1) Buscar job activo en BD (prioridad)
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setJobLoaded(true); return; }
-        const { data: jobs } = await supabase
-          .from("migraciones_jobs")
-          .select("id, estado, archivo_nombre, total_lotes, lotes_procesados, lotes_fallidos, resultados, lotes_pendientes")
-          .eq("usuario_id", user.id)
-          .eq("vocalia_id", vocaliaId)
-          .in("estado", ["pendiente", "procesando", "revision"])
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (cancelled) return;
-        const job = jobs?.[0];
-        if (job) {
-          setJobId(job.id);
-          setJobEstado(job.estado);
-          setFilename(job.archivo_nombre || "");
-          setJobLoaded(true);
-          return;
-        }
-      } catch (e) { console.warn("[migracion] no se pudo consultar jobs", e); }
-      // 2) Fallback localStorage (sólo si no hay job en BD)
+      if (USE_SERVER_SIDE_JOB) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) { setJobLoaded(true); return; }
+          const { data: jobs } = await supabase
+            .from("migraciones_jobs")
+            .select("id, estado, archivo_nombre, total_lotes, lotes_procesados, lotes_fallidos, resultados, lotes_pendientes")
+            .eq("usuario_id", user.id)
+            .eq("vocalia_id", vocaliaId)
+            .in("estado", ["pendiente", "procesando", "revision"])
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (cancelled) return;
+          const job = jobs?.[0];
+          if (job) {
+            setJobId(job.id);
+            setJobEstado(job.estado);
+            setFilename(job.archivo_nombre || "");
+            setJobLoaded(true);
+            return;
+          }
+        } catch (e) { console.warn("[migracion] no se pudo consultar jobs", e); }
+      }
+      // Fallback localStorage (modo client-side usa siempre esta ruta)
       try {
         const raw = localStorage.getItem(lsKey(vocaliaId));
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed?.resultadosOk?.length > 0) setPendingResume(parsed);
+          if (parsed?.resultadosOk?.length > 0 && !cancelled) setPendingResume(parsed);
         }
       } catch { /* noop */ }
-      setJobLoaded(true);
+      if (!cancelled) setJobLoaded(true);
     })();
     return () => { cancelled = true; };
   }, [vocaliaId]);
 
-  // Polling del job server-side
+  // Polling del job server-side (solo Fase B con USE_SERVER_SIDE_JOB=true).
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId || !USE_SERVER_SIDE_JOB) return;
     let cancelled = false;
     const poll = async () => {
       const { data, error } = await supabase
@@ -171,7 +179,6 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       const ok = data.lotes_procesados ?? 0;
       const fall = data.lotes_fallidos ?? 0;
       const pending = Math.max(0, total - ok - fall);
-      // Synthesize lotes para mostrar progreso
       const synth: LoteTrabajo[] = [];
       const pestPlan = data.archivo_nombre || "Procesamiento";
       for (let i = 0; i < ok; i++) synth.push({ id: `ok-${i}`, pestana: pestPlan, nro_lote: i + 1, total_lotes: total, contenido: [], filas: 0, estado: "ok" });
@@ -199,7 +206,6 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     };
     poll();
     const iv = setInterval(() => {
-      // No seguir polleando si terminó
       if (jobEstado === "revision" || jobEstado === "completado" || jobEstado === "error") return;
       poll();
     }, 3000);
@@ -294,8 +300,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return out;
   };
 
-  // Fase B: inicia un JOB server-side y arranca polling.
-  const iniciarJob = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
+  // Fase B (server-side, requiere Supabase Pro): inicia un JOB y arranca polling.
+  const iniciarJobServerSide = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
     setProcesando(true);
     cancelarRef.current = false;
     setLotes(lotesIniciales);
@@ -345,10 +351,120 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
     setJobId(jobIns.id);
     setJobEstado("pendiente");
-    // Fire-and-forget: la edge function corre server-side y el polling actualiza el progreso.
     supabase.functions.invoke("procesar-migracion-job", { body: { job_id: jobIns.id } })
       .catch((e) => console.warn("[migracion] invoke procesar-migracion-job fall:", e));
   };
+
+  // Fase A (CLIENT-SIDE, default): el navegador recorre los lotes uno por uno,
+  // cada lote llama a la edge function `procesar-migracion` (procesa un único lote).
+  // El job en BD se usa SOLO como LOG. El estado real vive en el componente + localStorage.
+  const iniciarJobClientSide = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
+    setProcesando(true);
+    cancelarRef.current = false;
+    setLotes(lotesIniciales);
+    setResultadosOk([]);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+    const archivoNombre = filename || (archivo as { nombreArchivo?: string }).nombreArchivo || "archivo";
+
+    // Crear job como LOG (no orquesta nada).
+    let logJobId: string | null = null;
+    if (userId) {
+      try {
+        const archivoMeta = {
+          tipo: (archivo as { tipo?: string }).tipo ?? "desconocido",
+          nombre: archivoNombre,
+          vocalia_nombre: vocaliaNombre,
+          modo: "client_side",
+        };
+        const { data: jobIns } = await supabase
+          .from("migraciones_jobs")
+          .insert({
+            vocalia_id: vocaliaId,
+            usuario_id: userId,
+            archivo_nombre: archivoNombre,
+            archivo_meta: archivoMeta,
+            estado: "procesando",
+            total_lotes: lotesIniciales.length,
+            lotes_pendientes: [],
+          } as never)
+          .select("id")
+          .single();
+        logJobId = jobIns?.id ?? null;
+        if (logJobId) { setJobId(logJobId); setJobEstado("procesando"); }
+      } catch (e) { console.warn("[migracion] log job no creado", e); }
+    }
+
+    const acumuladosOk: { pestana: string; resultado: ResultadoIADirecto }[] = [];
+    let okCount = 0;
+    let errCount = 0;
+
+    for (let i = 0; i < lotesIniciales.length; i++) {
+      if (cancelarRef.current) break;
+      const lote = lotesIniciales[i];
+      setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "procesando" } : l));
+
+      const pestana: PestanaParseada = { nombre: lote.pestana, contenido: lote.contenido };
+      const res = await procesarUnLote(
+        vocaliaId,
+        vocaliaNombre,
+        archivo,
+        pestana,
+        { pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas },
+      );
+
+      if (res.ok && res.resultado) {
+        acumuladosOk.push({ pestana: lote.pestana, resultado: res.resultado });
+        okCount++;
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "ok" } : l));
+        setResultadosOk([...acumuladosOk]);
+        guardarLS(acumuladosOk, archivoNombre);
+      } else {
+        errCount++;
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "error", errorCode: res.errorCode, errorMsg: res.errorMsg } : l));
+      }
+
+      if (logJobId) {
+        supabase.from("migraciones_jobs")
+          .update({ lotes_procesados: okCount, lotes_fallidos: errCount })
+          .eq("id", logJobId)
+          .then(undefined, () => { /* noop */ });
+      }
+
+      // Delay entre llamadas para respetar el rate limit gratuito de Gemini.
+      if (i < lotesIniciales.length - 1 && !cancelarRef.current) {
+        await new Promise((r) => setTimeout(r, DELAY_ENTRE_LOTES_MS));
+      }
+    }
+
+    setProcesando(false);
+
+    if (logJobId) {
+      try {
+        await supabase.from("migraciones_jobs").update({
+          estado: acumuladosOk.length > 0 ? "revision" : "error",
+          lotes_procesados: okCount,
+          lotes_fallidos: errCount,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          resultados: acumuladosOk as any,
+        }).eq("id", logJobId);
+      } catch { /* noop */ }
+    }
+
+    if (acumuladosOk.length === 0) {
+      toast.error("Ningún lote pudo procesarse. Reintentá o revisá el archivo.");
+      return;
+    }
+    if (errCount > 0) {
+      toast.warning(`${errCount} lote(s) fallaron. Podés reintentarlos o continuar con los ${okCount} OK.`);
+      return;
+    }
+    finalizarConResultados(acumuladosOk);
+  };
+
+  const iniciarJob = (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) =>
+    USE_SERVER_SIDE_JOB ? iniciarJobServerSide(archivo, lotesIniciales) : iniciarJobClientSide(archivo, lotesIniciales);
 
   const finalizarConResultados = (lista: { pestana: string; resultado: ResultadoIADirecto }[]) => {
     const unificado = deduplicarCausas(lista);
@@ -376,10 +492,41 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     await iniciarJob(archivo, ini);
   };
 
-  // En Fase B los reintentos ya los hace el servidor automáticamente (1 por lote).
-  // Mantenemos el handler para no romper la UI; muestra un mensaje informativo.
+  // Reintentar lotes fallidos (client-side). En modo server-side esto ya lo hace el job.
   const handleReintentarFallidos = async () => {
-    toast.info("Los reintentos automáticos ya se hicieron en el servidor. Continuá con los lotes OK o descartá.");
+    if (USE_SERVER_SIDE_JOB) {
+      toast.info("Los reintentos automáticos ya se hicieron en el servidor. Continuá con los lotes OK o descartá.");
+      return;
+    }
+    const fallidos = lotes.filter((l) => l.estado === "error");
+    if (fallidos.length === 0 || !archivoCache) return;
+    setProcesando(true);
+    cancelarRef.current = false;
+    const acumuladosOk = [...resultadosOk];
+    for (let i = 0; i < fallidos.length; i++) {
+      if (cancelarRef.current) break;
+      const lote = fallidos[i];
+      setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "procesando" } : l));
+      const res = await procesarUnLote(
+        vocaliaId,
+        vocaliaNombre,
+        archivoCache,
+        { nombre: lote.pestana, contenido: lote.contenido },
+        { pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas },
+      );
+      if (res.ok && res.resultado) {
+        acumuladosOk.push({ pestana: lote.pestana, resultado: res.resultado });
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "ok" } : l));
+        setResultadosOk([...acumuladosOk]);
+        guardarLS(acumuladosOk, filename);
+      } else {
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "error", errorCode: res.errorCode, errorMsg: res.errorMsg } : l));
+      }
+      if (i < fallidos.length - 1 && !cancelarRef.current) {
+        await new Promise((r) => setTimeout(r, DELAY_ENTRE_LOTES_MS));
+      }
+    }
+    setProcesando(false);
   };
 
 
