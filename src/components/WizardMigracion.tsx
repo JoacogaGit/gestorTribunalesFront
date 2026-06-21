@@ -300,8 +300,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return out;
   };
 
-  // Fase B: inicia un JOB server-side y arranca polling.
-  const iniciarJob = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
+  // Fase B (server-side, requiere Supabase Pro): inicia un JOB y arranca polling.
+  const iniciarJobServerSide = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
     setProcesando(true);
     cancelarRef.current = false;
     setLotes(lotesIniciales);
@@ -351,10 +351,120 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
     setJobId(jobIns.id);
     setJobEstado("pendiente");
-    // Fire-and-forget: la edge function corre server-side y el polling actualiza el progreso.
     supabase.functions.invoke("procesar-migracion-job", { body: { job_id: jobIns.id } })
       .catch((e) => console.warn("[migracion] invoke procesar-migracion-job fall:", e));
   };
+
+  // Fase A (CLIENT-SIDE, default): el navegador recorre los lotes uno por uno,
+  // cada lote llama a la edge function `procesar-migracion` (procesa un único lote).
+  // El job en BD se usa SOLO como LOG. El estado real vive en el componente + localStorage.
+  const iniciarJobClientSide = async (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) => {
+    setProcesando(true);
+    cancelarRef.current = false;
+    setLotes(lotesIniciales);
+    setResultadosOk([]);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+    const archivoNombre = filename || (archivo as { nombreArchivo?: string }).nombreArchivo || "archivo";
+
+    // Crear job como LOG (no orquesta nada).
+    let logJobId: string | null = null;
+    if (userId) {
+      try {
+        const archivoMeta = {
+          tipo: (archivo as { tipo?: string }).tipo ?? "desconocido",
+          nombre: archivoNombre,
+          vocalia_nombre: vocaliaNombre,
+          modo: "client_side",
+        };
+        const { data: jobIns } = await supabase
+          .from("migraciones_jobs")
+          .insert({
+            vocalia_id: vocaliaId,
+            usuario_id: userId,
+            archivo_nombre: archivoNombre,
+            archivo_meta: archivoMeta,
+            estado: "procesando",
+            total_lotes: lotesIniciales.length,
+            lotes_pendientes: [],
+          } as never)
+          .select("id")
+          .single();
+        logJobId = jobIns?.id ?? null;
+        if (logJobId) { setJobId(logJobId); setJobEstado("procesando"); }
+      } catch (e) { console.warn("[migracion] log job no creado", e); }
+    }
+
+    const acumuladosOk: { pestana: string; resultado: ResultadoIADirecto }[] = [];
+    let okCount = 0;
+    let errCount = 0;
+
+    for (let i = 0; i < lotesIniciales.length; i++) {
+      if (cancelarRef.current) break;
+      const lote = lotesIniciales[i];
+      setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "procesando" } : l));
+
+      const pestana: PestanaParseada = { nombre: lote.pestana, contenido: lote.contenido };
+      const res = await procesarUnLote(
+        vocaliaId,
+        vocaliaNombre,
+        archivo,
+        pestana,
+        { pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas },
+      );
+
+      if (res.ok && res.resultado) {
+        acumuladosOk.push({ pestana: lote.pestana, resultado: res.resultado });
+        okCount++;
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "ok" } : l));
+        setResultadosOk([...acumuladosOk]);
+        guardarLS(acumuladosOk, archivoNombre);
+      } else {
+        errCount++;
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "error", errorCode: res.errorCode, errorMsg: res.errorMsg } : l));
+      }
+
+      if (logJobId) {
+        supabase.from("migraciones_jobs")
+          .update({ lotes_procesados: okCount, lotes_fallidos: errCount })
+          .eq("id", logJobId)
+          .then(undefined, () => { /* noop */ });
+      }
+
+      // Delay entre llamadas para respetar el rate limit gratuito de Gemini.
+      if (i < lotesIniciales.length - 1 && !cancelarRef.current) {
+        await new Promise((r) => setTimeout(r, DELAY_ENTRE_LOTES_MS));
+      }
+    }
+
+    setProcesando(false);
+
+    if (logJobId) {
+      try {
+        await supabase.from("migraciones_jobs").update({
+          estado: acumuladosOk.length > 0 ? "revision" : "error",
+          lotes_procesados: okCount,
+          lotes_fallidos: errCount,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          resultados: acumuladosOk as any,
+        }).eq("id", logJobId);
+      } catch { /* noop */ }
+    }
+
+    if (acumuladosOk.length === 0) {
+      toast.error("Ningún lote pudo procesarse. Reintentá o revisá el archivo.");
+      return;
+    }
+    if (errCount > 0) {
+      toast.warning(`${errCount} lote(s) fallaron. Podés reintentarlos o continuar con los ${okCount} OK.`);
+      return;
+    }
+    finalizarConResultados(acumuladosOk);
+  };
+
+  const iniciarJob = (archivo: ArchivoParseado, lotesIniciales: LoteTrabajo[]) =>
+    USE_SERVER_SIDE_JOB ? iniciarJobServerSide(archivo, lotesIniciales) : iniciarJobClientSide(archivo, lotesIniciales);
 
   const finalizarConResultados = (lista: { pestana: string; resultado: ResultadoIADirecto }[]) => {
     const unificado = deduplicarCausas(lista);
@@ -382,10 +492,41 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     await iniciarJob(archivo, ini);
   };
 
-  // En Fase B los reintentos ya los hace el servidor automáticamente (1 por lote).
-  // Mantenemos el handler para no romper la UI; muestra un mensaje informativo.
+  // Reintentar lotes fallidos (client-side). En modo server-side esto ya lo hace el job.
   const handleReintentarFallidos = async () => {
-    toast.info("Los reintentos automáticos ya se hicieron en el servidor. Continuá con los lotes OK o descartá.");
+    if (USE_SERVER_SIDE_JOB) {
+      toast.info("Los reintentos automáticos ya se hicieron en el servidor. Continuá con los lotes OK o descartá.");
+      return;
+    }
+    const fallidos = lotes.filter((l) => l.estado === "error");
+    if (fallidos.length === 0 || !archivoCache) return;
+    setProcesando(true);
+    cancelarRef.current = false;
+    const acumuladosOk = [...resultadosOk];
+    for (let i = 0; i < fallidos.length; i++) {
+      if (cancelarRef.current) break;
+      const lote = fallidos[i];
+      setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "procesando" } : l));
+      const res = await procesarUnLote(
+        vocaliaId,
+        vocaliaNombre,
+        archivoCache,
+        { nombre: lote.pestana, contenido: lote.contenido },
+        { pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas },
+      );
+      if (res.ok && res.resultado) {
+        acumuladosOk.push({ pestana: lote.pestana, resultado: res.resultado });
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "ok" } : l));
+        setResultadosOk([...acumuladosOk]);
+        guardarLS(acumuladosOk, filename);
+      } else {
+        setLotes((prev) => prev.map((l) => l.id === lote.id ? { ...l, estado: "error", errorCode: res.errorCode, errorMsg: res.errorMsg } : l));
+      }
+      if (i < fallidos.length - 1 && !cancelarRef.current) {
+        await new Promise((r) => setTimeout(r, DELAY_ENTRE_LOTES_MS));
+      }
+    }
+    setProcesando(false);
   };
 
 
