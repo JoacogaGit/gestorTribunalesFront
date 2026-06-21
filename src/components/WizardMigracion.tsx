@@ -46,6 +46,13 @@ const ERROR_LABELS: Record<string, string> = {
 const labelError = (code?: string) => ERROR_LABELS[code || "unknown"] || code || "error";
 const lsKey = (vocaliaId: string) => `migracion_v1_${vocaliaId}`;
 
+// Flag de modo de procesamiento.
+// false = client-side (default, funciona en Supabase Free).
+// true  = server-side vía edge function `procesar-migracion-job` (requiere Supabase Pro por timeout >60s).
+const USE_SERVER_SIDE_JOB = false;
+// Delay entre llamadas a la edge function para respetar el rate limit de Gemini gratis.
+const DELAY_ENTRE_LOTES_MS = 10000;
+
 export interface MigracionStatus {
   activa: boolean;
   procesando: boolean;
