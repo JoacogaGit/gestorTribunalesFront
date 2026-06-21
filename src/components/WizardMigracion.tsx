@@ -164,9 +164,9 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return () => { cancelled = true; };
   }, [vocaliaId]);
 
-  // Polling del job server-side
+  // Polling del job server-side (solo Fase B con USE_SERVER_SIDE_JOB=true).
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId || !USE_SERVER_SIDE_JOB) return;
     let cancelled = false;
     const poll = async () => {
       const { data, error } = await supabase
@@ -179,7 +179,6 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
       const ok = data.lotes_procesados ?? 0;
       const fall = data.lotes_fallidos ?? 0;
       const pending = Math.max(0, total - ok - fall);
-      // Synthesize lotes para mostrar progreso
       const synth: LoteTrabajo[] = [];
       const pestPlan = data.archivo_nombre || "Procesamiento";
       for (let i = 0; i < ok; i++) synth.push({ id: `ok-${i}`, pestana: pestPlan, nro_lote: i + 1, total_lotes: total, contenido: [], filas: 0, estado: "ok" });
@@ -207,7 +206,6 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     };
     poll();
     const iv = setInterval(() => {
-      // No seguir polleando si terminó
       if (jobEstado === "revision" || jobEstado === "completado" || jobEstado === "error") return;
       poll();
     }, 3000);
