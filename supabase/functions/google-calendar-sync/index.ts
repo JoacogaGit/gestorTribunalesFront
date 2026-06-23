@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     const { data: evento, error: evErr } = await admin
       .from("eventos")
-      .select("id, titulo, fecha_hora, google_event_id, borrado_en, sujeto_id, causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en)")
+      .select("id, titulo, fecha_hora, fecha_hora_fin, google_event_id, borrado_en, sujeto_id, causa:causas!inner(id, vocalia_id, expediente_nro, caratula, borrado_en)")
       .eq("id", evento_id)
       .is("causa.borrado_en", null)
       .maybeSingle();
@@ -90,30 +90,21 @@ Deno.serve(async (req) => {
     const causa: any = (evento as any)?.causa;
     let vocaliaId = causa?.vocalia_id as string | undefined;
     let expediente = causa?.expediente_nro as string | undefined;
+    let caratula = causa?.caratula as string | undefined;
     if (!vocaliaId && causa_id) {
       const { data: c } = await admin
         .from("causas")
-        .select("id, vocalia_id, expediente_nro")
+        .select("id, vocalia_id, expediente_nro, caratula")
         .eq("id", causa_id)
         .is("borrado_en", null)
         .maybeSingle();
       vocaliaId = c?.vocalia_id;
       expediente = c?.expediente_nro;
+      caratula = c?.caratula ?? undefined;
     }
     if (!vocaliaId) return json({ ok: true, skipped: "no-causa" });
 
-    // Buscar nombre del sujeto si está asociado
-    let sujetoNombre: string | null = null;
-    if (evento && (evento as any).sujeto_id) {
-      const { data: sj } = await admin
-        .from("sujetos")
-        .select("nombre_completo")
-        .eq("id", (evento as any).sujeto_id)
-        .maybeSingle();
-      sujetoNombre = sj?.nombre_completo ?? null;
-    }
-
-    return await syncOneEvento(admin, action, evento, vocaliaId, expediente ?? "", sujetoNombre);
+    return await syncOneEvento(admin, action, evento, vocaliaId, expediente ?? "", caratula ?? null);
   } catch (e) {
     console.error(e);
     return json({ error: (e as Error).message }, 500);
