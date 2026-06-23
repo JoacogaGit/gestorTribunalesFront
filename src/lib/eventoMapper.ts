@@ -6,7 +6,9 @@ export type CalendarTipo = "evento" | "vencimiento_pp" | "vencimiento_pena" | "p
 export interface CalendarEvento {
   id: string;
   fecha: string; // ISO date or datetime
+  fechaFin?: string | null; // ISO datetime fin (opcional)
   hora?: string; // "HH:MM"
+  horaFin?: string; // "HH:MM"
   titulo: string;
   descripcion?: string;
   tipo: CalendarTipo;
@@ -85,6 +87,7 @@ export type DbEventoRow = {
   titulo: string;
   descripcion: string | null;
   fecha_hora: string | null;
+  fecha_hora_fin?: string | null;
   tipo_evento: string | null;
   causa_id: string;
   sujeto_id: string | null;
@@ -145,10 +148,19 @@ export function mapDbEventoToCalendar(row: DbEventoRow): CalendarEvento | null {
       hora = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
     }
   }
+  let horaFin: string | undefined;
+  if (row.fecha_hora_fin && !isAllDayISO(row.fecha_hora_fin)) {
+    const dt = new Date(row.fecha_hora_fin);
+    if (!isNaN(dt.getTime())) {
+      horaFin = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
+    }
+  }
   return {
     id: `evento-${row.id}`,
     fecha,
+    fechaFin: row.fecha_hora_fin ?? null,
     hora,
+    horaFin,
     titulo: row.titulo,
     descripcion: row.descripcion ?? undefined,
     tipo: "evento",
