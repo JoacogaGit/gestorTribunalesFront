@@ -78,6 +78,7 @@ export default function EventoDetailDialog({ evento, onClose, onOpenCausa, onMut
                 descripcion: evento.descripcion ?? null,
                 tipo_evento: evento.tipoEventoRaw ?? null,
                 fecha: evento.fecha,
+                fechaFin: evento.fechaFin ?? null,
               }}
               onSubmit={handleUpdate}
               onCancel={() => setEditing(false)}
@@ -87,7 +88,9 @@ export default function EventoDetailDialog({ evento, onClose, onOpenCausa, onMut
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="w-3.5 h-3.5" />
                 <span className={getSemaforoText(evento.fecha)}>{fmtFecha(evento.fecha)}</span>
-                {evento.hora && <span>· {evento.hora} hs</span>}
+                {evento.hora && (
+                  <span>· {evento.hora}{evento.horaFin ? ` a ${evento.horaFin}` : ""} hs</span>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
