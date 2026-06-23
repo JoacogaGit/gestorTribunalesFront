@@ -8,10 +8,12 @@ export interface EventoInput {
   tipo_evento: string | null;
   /** ISO completo (con T y hora/zone) o "YYYY-MM-DD" o null. */
   fecha: string | null;
+  /** ISO fin (opcional, solo cuando hay franja horaria). */
+  fechaFin?: string | null;
   categoria_personalizada_id?: string | null;
 }
 
-function toTimestamp(fecha: string | null): string | null {
+function toTimestamp(fecha: string | null | undefined): string | null {
   if (!fecha) return null;
   // Si ya viene en formato ISO (con T y hora), pasarlo tal cual.
   if (/T\d{2}:\d{2}/.test(fecha)) {
@@ -45,8 +47,9 @@ export function useEventoMutations() {
         descripcion: input.descripcion?.trim() || null,
         tipo_evento: input.tipo_evento?.trim() || null,
         fecha_hora: toTimestamp(input.fecha),
+        fecha_hora_fin: toTimestamp(input.fechaFin ?? null),
         categoria_personalizada_id: input.categoria_personalizada_id ?? null,
-      }).select("id").maybeSingle();
+      } as never).select("id").maybeSingle();
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();
       if (data?.id && input.fecha) fireSync("create", data.id, causaId);
@@ -62,7 +65,8 @@ export function useEventoMutations() {
         descripcion: input.descripcion?.trim() || null,
         tipo_evento: input.tipo_evento?.trim() || null,
         fecha_hora: toTimestamp(input.fecha),
-      }).eq("id", id).select("causa_id").maybeSingle();
+        fecha_hora_fin: toTimestamp(input.fechaFin ?? null),
+      } as never).eq("id", id).select("causa_id").maybeSingle();
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();
       if (data?.causa_id) fireSync("update", id, data.causa_id);

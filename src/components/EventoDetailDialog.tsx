@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, ExternalLink, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { CalendarEvento, CALENDAR_TIPO_LABEL, getSemaforoText } from "@/lib/eventoMapper";
+import { parseLocalDate, parseLocalTime } from "@/lib/parseDate";
 import EventoFormInline from "@/components/forms/EventoFormInline";
 import { useEventoMutations, EventoInput } from "@/hooks/useEventoMutations";
 import { toast } from "sonner";
@@ -20,8 +21,8 @@ interface Props {
 }
 
 function fmtFecha(d: string) {
-  const dt = new Date(d);
-  if (isNaN(dt.getTime())) return d;
+  const dt = parseLocalDate(d);
+  if (!dt) return d;
   return dt.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
@@ -34,7 +35,7 @@ export default function EventoDetailDialog({ evento, onClose, onOpenCausa, onMut
 
   const esEventoReal = evento.tipo === "evento";
   const eventoId = esEventoReal ? evento.id.replace(/^evento-/, "") : null;
-  const esPasado = new Date(evento.fecha).getTime() < Date.now();
+  const esPasado = parseLocalTime(evento.fecha) < Date.now();
 
   const handleUpdate = async (v: EventoInput) => {
     if (!eventoId) return;
