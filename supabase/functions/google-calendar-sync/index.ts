@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     const { data: evento, error: evErr } = await admin
       .from("eventos")
-      .select("id, titulo, fecha_hora, google_event_id, borrado_en, sujeto_id, causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en)")
+      .select("id, titulo, fecha_hora, fecha_hora_fin, google_event_id, borrado_en, sujeto_id, causa:causas!inner(id, vocalia_id, expediente_nro, caratula, borrado_en)")
       .eq("id", evento_id)
       .is("causa.borrado_en", null)
       .maybeSingle();
@@ -90,30 +90,21 @@ Deno.serve(async (req) => {
     const causa: any = (evento as any)?.causa;
     let vocaliaId = causa?.vocalia_id as string | undefined;
     let expediente = causa?.expediente_nro as string | undefined;
+    let caratula = causa?.caratula as string | undefined;
     if (!vocaliaId && causa_id) {
       const { data: c } = await admin
         .from("causas")
-        .select("id, vocalia_id, expediente_nro")
+        .select("id, vocalia_id, expediente_nro, caratula")
         .eq("id", causa_id)
         .is("borrado_en", null)
         .maybeSingle();
       vocaliaId = c?.vocalia_id;
       expediente = c?.expediente_nro;
+      caratula = c?.caratula ?? undefined;
     }
     if (!vocaliaId) return json({ ok: true, skipped: "no-causa" });
 
-    // Buscar nombre del sujeto si está asociado
-    let sujetoNombre: string | null = null;
-    if (evento && (evento as any).sujeto_id) {
-      const { data: sj } = await admin
-        .from("sujetos")
-        .select("nombre_completo")
-        .eq("id", (evento as any).sujeto_id)
-        .maybeSingle();
-      sujetoNombre = sj?.nombre_completo ?? null;
-    }
-
-    return await syncOneEvento(admin, action, evento, vocaliaId, expediente ?? "", sujetoNombre);
+    return await syncOneEvento(admin, action, evento, vocaliaId, expediente ?? "", caratula ?? null);
   } catch (e) {
     console.error(e);
     return json({ error: (e as Error).message }, 500);
@@ -131,7 +122,7 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
   // 1. EVENTOS MANUALES
   const { data: eventos } = await admin
     .from("eventos")
-    .select("id, titulo, fecha_hora, google_event_id, sujeto_id, sujeto:sujetos(nombre_completo), causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en)")
+    .select("id, titulo, fecha_hora, fecha_hora_fin, google_event_id, sujeto_id, causa:causas!inner(id, vocalia_id, expediente_nro, caratula, borrado_en)")
     .is("borrado_en", null)
     .not("fecha_hora", "is", null)
     .eq("causa.vocalia_id", sync.vocalia_id)
@@ -141,9 +132,8 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
     total++;
     try {
       const causa: any = Array.isArray(ev.causa) ? ev.causa[0] : ev.causa;
-      const sujeto: any = Array.isArray(ev.sujeto) ? ev.sujeto[0] : ev.sujeto;
-      const title = formatEventoTitle(ev.titulo, sujeto?.nombre_completo ?? null, causa?.expediente_nro ?? "");
-      const body = buildEventBody(title, ev.fecha_hora);
+      const title = formatEventoTitle(ev.titulo, causa?.caratula ?? null, causa?.expediente_nro ?? "");
+      const body = buildEventBody(title, ev.fecha_hora, ev.fecha_hora_fin ?? null);
       if (ev.google_event_id) {
         const r = await gcalPatch(calId, ev.google_event_id, body, accessToken);
         if (r.ok) ok++; else failed++;
@@ -158,10 +148,10 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
     } catch (e) { failed++; console.error("evento sync error", e); }
   }
 
-  // 2. SUJETOS (vencimientos + pp calculado)
+  // 2. SUJETOS (vencimientos + pp calculado) — usamos carátula de la causa en el título.
   const { data: sujetos } = await admin
     .from("sujetos")
-    .select("id, nombre_completo, vencimiento_pp, vencimiento_pena, vencimiento_sjp, fecha_detencion, causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en)")
+    .select("id, nombre_completo, vencimiento_pp, vencimiento_pena, vencimiento_sjp, fecha_detencion, causa:causas!inner(id, vocalia_id, expediente_nro, caratula, borrado_en)")
     .is("borrado_en", null)
     .eq("causa.vocalia_id", sync.vocalia_id)
     .is("causa.borrado_en", null);
@@ -169,24 +159,24 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
   for (const s of sujetos ?? []) {
     const causa: any = Array.isArray(s.causa) ? s.causa[0] : s.causa;
     const exp = causa?.expediente_nro ?? "";
-    const nombre = s.nombre_completo;
+    const sujLabel = (causa?.caratula && String(causa.caratula).trim()) || s.nombre_completo;
     const sujetoHex = (s.id as string).replace(/-/g, "");
 
     const items: Array<{ id: string; titulo: string; fecha: string | null }> = [
-      { id: `jtpp${sujetoHex}`, titulo: `Vto. Prisión Preventiva - ${nombre} (${exp})`, fecha: s.vencimiento_pp },
-      { id: `jtpena${sujetoHex}`, titulo: `Vto. Pena - ${nombre} (${exp})`, fecha: s.vencimiento_pena },
-      { id: `jtsjp${sujetoHex}`, titulo: `Vto. SJP - ${nombre} (${exp})`, fecha: s.vencimiento_sjp },
+      { id: `jtpp${sujetoHex}`, titulo: `Vto. Prisión Preventiva - ${sujLabel} (${exp})`, fecha: s.vencimiento_pp },
+      { id: `jtpena${sujetoHex}`, titulo: `Vto. Pena - ${sujLabel} (${exp})`, fecha: s.vencimiento_pena },
+      { id: `jtsjp${sujetoHex}`, titulo: `Vto. SJP - ${sujLabel} (${exp})`, fecha: s.vencimiento_sjp },
     ];
     // PP calculado: fecha_detencion + 2 años, sólo si no hay vto_pp ni vto_pena
     if (s.fecha_detencion && !s.vencimiento_pp && !s.vencimiento_pena) {
       // fecha_detencion es DATE puro → parsear como local para no perder un día.
       const fd = s.fecha_detencion as string;
-      const d = /^\d{4}-\d{2}-\d{2}$/.test(fd) ? new Date(`${fd}T00:00:00`) : new Date(fd);
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(fd) ? new Date(`${fd}T12:00:00`) : new Date(fd);
       d.setFullYear(d.getFullYear() + 2);
       const calc = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       items.push({
         id: `jtppcalc${sujetoHex}`,
-        titulo: `Vto. Prisión Preventiva (2 años) - ${nombre} (${exp})`,
+        titulo: `Vto. Prisión Preventiva (2 años) - ${sujLabel} (${exp})`,
         fecha: calc,
       });
     } else {
@@ -206,7 +196,7 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
   // 3. PRESCRIPCIONES
   const { data: prescs } = await admin
     .from("prescripciones")
-    .select("id, fecha, sujeto:sujetos!inner(id, nombre_completo, borrado_en, causa:causas!inner(id, vocalia_id, expediente_nro, borrado_en))")
+    .select("id, fecha, sujeto:sujetos!inner(id, nombre_completo, borrado_en, causa:causas!inner(id, vocalia_id, expediente_nro, caratula, borrado_en))")
     .eq("sujeto.causa.vocalia_id", sync.vocalia_id)
     .is("sujeto.borrado_en", null)
     .is("sujeto.causa.borrado_en", null);
@@ -216,7 +206,8 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
     const causa: any = sj && (Array.isArray(sj.causa) ? sj.causa[0] : sj.causa);
     if (!sj || !causa) continue;
     const presHex = (p.id as string).replace(/-/g, "");
-    const titulo = `Prescripción - ${sj.nombre_completo} (${causa.expediente_nro ?? ""})`;
+    const label = (causa.caratula && String(causa.caratula).trim()) || sj.nombre_completo;
+    const titulo = `Prescripción - ${label} (${causa.expediente_nro ?? ""})`;
     total++;
     try {
       const okItem = await upsertDateEvent(calId, accessToken, `jtpresc${presHex}`, titulo, p.fecha);
@@ -230,7 +221,7 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
 // ============================================================
 // SYNC PUNTUAL DE EVENTO MANUAL
 // ============================================================
-async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId: string, expediente: string, sujetoNombre: string | null) {
+async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId: string, expediente: string, caratula: string | null) {
   const { data: syncs } = await admin
     .from("google_calendar_sync")
     .select("*")
@@ -262,8 +253,8 @@ async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId:
         continue;
       }
 
-      const title = formatEventoTitle(evento.titulo, sujetoNombre, expediente);
-      const body = buildEventBody(title, evento.fecha_hora);
+      const title = formatEventoTitle(evento.titulo, caratula, expediente);
+      const body = buildEventBody(title, evento.fecha_hora, evento.fecha_hora_fin ?? null);
 
       if (action === "update" && evento.google_event_id) {
         const r = await gcalPatch(calId, evento.google_event_id, body, accessToken);
@@ -337,9 +328,10 @@ async function upsertDateEvent(calId: string, token: string, eventId: string, ti
 // ============================================================
 // FORMATEO Y BODY
 // ============================================================
-function formatEventoTitle(titulo: string | null, sujetoNombre: string | null, expediente: string): string {
+function formatEventoTitle(titulo: string | null, caratula: string | null, expediente: string): string {
   const base = titulo?.trim() || "Evento JusTrack";
-  if (sujetoNombre && sujetoNombre.trim()) return `${base} - ${sujetoNombre.trim()} (${expediente})`;
+  const car = caratula?.trim();
+  if (car) return `${base} - ${car} (${expediente})`;
   return `${base} (${expediente})`;
 }
 
@@ -360,10 +352,18 @@ function buildAllDayBody(titulo: string, dateStr: string) {
   };
 }
 
-function buildEventBody(titulo: string, fechaHora: string) {
+function buildEventBody(titulo: string, fechaHora: string, fechaHoraFin?: string | null) {
   if (isAllDayISO(fechaHora)) return buildAllDayBody(titulo, fechaHora);
   const start = new Date(fechaHora);
-  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  let end: Date;
+  if (fechaHoraFin && !isAllDayISO(fechaHoraFin)) {
+    const candidate = new Date(fechaHoraFin);
+    end = !isNaN(candidate.getTime()) && candidate.getTime() > start.getTime()
+      ? candidate
+      : new Date(start.getTime() + 60 * 60 * 1000);
+  } else {
+    end = new Date(start.getTime() + 60 * 60 * 1000);
+  }
   return {
     summary: titulo,
     description: "Evento sincronizado desde JusTrack",

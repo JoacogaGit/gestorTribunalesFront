@@ -56,6 +56,14 @@ function combineToISO(fecha: string, hora: string): string | null {
   return d.toISOString();
 }
 
+/** Combina fecha + horaFin en ISO (sin all-day fallback: si no hay hora, devolvemos null). */
+function combineFinToISO(fecha: string, horaFin: string): string | null {
+  if (!fecha || !horaFin) return null;
+  const d = new Date(`${fecha}T${horaFin}:00`);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 export default function EventoFormInline({ mode, initialValue, saving, onSubmit, onCancel, draftKey }: Props) {
   // Restaurar borrador local si existe (solo en modo crear, para evitar pisar datos cargados desde DB).
   const restored = mode === "crear" && draftKey ? loadDraft<EventoInput>(draftKey) : null;
@@ -70,26 +78,39 @@ export default function EventoFormInline({ mode, initialValue, saving, onSubmit,
   const initHora = restored?.fecha
     ? (restored.fecha.length > 10 ? isoToInputTime(restored.fecha) : "")
     : (initialValue?.fecha && initialValue.fecha.length > 10 ? isoToInputTime(initialValue.fecha) : "");
+  const initHoraFin = restored?.fechaFin
+    ? isoToInputTime(restored.fechaFin)
+    : (initialValue?.fechaFin ? isoToInputTime(initialValue.fechaFin) : "");
   const [fecha, setFecha] = useState(initFecha);
   const [hora, setHora] = useState(initHora);
+  const [horaFin, setHoraFin] = useState(initHoraFin);
   const [descripcion, setDescripcion] = useState(restored?.descripcion ?? initialValue?.descripcion ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   // Persistencia con debounce solo si hay key y estamos creando.
   useFormDraft(
     draftKey ?? "__noop__",
-    { titulo, tipo_evento: tipo || null, fecha: combineToISO(fecha, hora), descripcion: descripcion || null },
+    {
+      titulo,
+      tipo_evento: tipo || null,
+      fecha: combineToISO(fecha, hora),
+      fechaFin: combineFinToISO(fecha, horaFin),
+      descripcion: descripcion || null,
+    },
     !!draftKey && mode === "crear",
   );
 
   const submit = async () => {
     if (!titulo.trim()) { setErr("El título es obligatorio."); return; }
     if (hora && !fecha) { setErr("Si cargás hora, también debés cargar la fecha."); return; }
+    if (horaFin && !hora) { setErr("Si cargás hora fin, también debés cargar la hora inicio."); return; }
+    if (hora && horaFin && horaFin <= hora) { setErr("La hora fin debe ser posterior a la hora inicio."); return; }
     setErr(null);
     await onSubmit({
       titulo: titulo.trim(),
       tipo_evento: tipo.trim() || null,
       fecha: combineToISO(fecha, hora),
+      fechaFin: combineFinToISO(fecha, horaFin),
       descripcion: descripcion?.trim() || null,
     });
     if (draftKey) clearDraft(draftKey);
@@ -102,12 +123,12 @@ export default function EventoFormInline({ mode, initialValue, saving, onSubmit,
 
   return (
     <div className="bg-muted/40 border border-border/60 rounded-md p-3 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5 col-span-2">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1.5 col-span-3">
           <Label className="text-xs">Título *</Label>
           <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} autoFocus placeholder="Ej. Audiencia de debate" />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 col-span-3">
           <Label className="text-xs">Tipo</Label>
           <Input
             value={tipo ?? ""}
@@ -120,10 +141,20 @@ export default function EventoFormInline({ mode, initialValue, saving, onSubmit,
           <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Hora (opcional)</Label>
+          <Label className="text-xs">Hora inicio</Label>
           <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} disabled={!fecha} />
         </div>
-        <div className="space-y-1.5 col-span-2">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Hasta (opcional)</Label>
+          <Input
+            type="time"
+            value={horaFin}
+            onChange={(e) => setHoraFin(e.target.value)}
+            disabled={!hora}
+            placeholder="hora fin"
+          />
+        </div>
+        <div className="space-y-1.5 col-span-3">
           <Label className="text-xs">Descripción</Label>
           <Textarea rows={2} value={descripcion ?? ""} onChange={(e) => setDescripcion(e.target.value)} />
         </div>
