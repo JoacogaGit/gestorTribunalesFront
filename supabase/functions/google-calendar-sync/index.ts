@@ -221,7 +221,7 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
 // ============================================================
 // SYNC PUNTUAL DE EVENTO MANUAL
 // ============================================================
-async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId: string, expediente: string, sujetoNombre: string | null) {
+async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId: string, expediente: string, caratula: string | null) {
   const { data: syncs } = await admin
     .from("google_calendar_sync")
     .select("*")
@@ -253,8 +253,8 @@ async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId:
         continue;
       }
 
-      const title = formatEventoTitle(evento.titulo, sujetoNombre, expediente);
-      const body = buildEventBody(title, evento.fecha_hora);
+      const title = formatEventoTitle(evento.titulo, caratula, expediente);
+      const body = buildEventBody(title, evento.fecha_hora, evento.fecha_hora_fin ?? null);
 
       if (action === "update" && evento.google_event_id) {
         const r = await gcalPatch(calId, evento.google_event_id, body, accessToken);
@@ -328,9 +328,10 @@ async function upsertDateEvent(calId: string, token: string, eventId: string, ti
 // ============================================================
 // FORMATEO Y BODY
 // ============================================================
-function formatEventoTitle(titulo: string | null, sujetoNombre: string | null, expediente: string): string {
+function formatEventoTitle(titulo: string | null, caratula: string | null, expediente: string): string {
   const base = titulo?.trim() || "Evento JusTrack";
-  if (sujetoNombre && sujetoNombre.trim()) return `${base} - ${sujetoNombre.trim()} (${expediente})`;
+  const car = caratula?.trim();
+  if (car) return `${base} - ${car} (${expediente})`;
   return `${base} (${expediente})`;
 }
 
@@ -351,10 +352,18 @@ function buildAllDayBody(titulo: string, dateStr: string) {
   };
 }
 
-function buildEventBody(titulo: string, fechaHora: string) {
+function buildEventBody(titulo: string, fechaHora: string, fechaHoraFin?: string | null) {
   if (isAllDayISO(fechaHora)) return buildAllDayBody(titulo, fechaHora);
   const start = new Date(fechaHora);
-  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  let end: Date;
+  if (fechaHoraFin && !isAllDayISO(fechaHoraFin)) {
+    const candidate = new Date(fechaHoraFin);
+    end = !isNaN(candidate.getTime()) && candidate.getTime() > start.getTime()
+      ? candidate
+      : new Date(start.getTime() + 60 * 60 * 1000);
+  } else {
+    end = new Date(start.getTime() + 60 * 60 * 1000);
+  }
   return {
     summary: titulo,
     description: "Evento sincronizado desde JusTrack",
