@@ -184,6 +184,7 @@ export type Database = {
           created_at: string | null
           descripcion: string | null
           fecha_hora: string | null
+          fecha_hora_fin: string | null
           google_event_id: string | null
           id: string
           modificado_por: string | null
@@ -202,6 +203,7 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           fecha_hora?: string | null
+          fecha_hora_fin?: string | null
           google_event_id?: string | null
           id?: string
           modificado_por?: string | null
@@ -220,6 +222,7 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           fecha_hora?: string | null
+          fecha_hora_fin?: string | null
           google_event_id?: string | null
           id?: string
           modificado_por?: string | null
