@@ -51,7 +51,7 @@ const lsKey = (vocaliaId: string) => `migracion_v1_${vocaliaId}`;
 // true  = server-side vía edge function `procesar-migracion-job` (requiere Supabase Pro por timeout >60s).
 const USE_SERVER_SIDE_JOB = false;
 // Delay entre llamadas a la edge function para respetar el rate limit de Gemini gratis.
-const DELAY_ENTRE_LOTES_MS = 10000;
+const DELAY_ENTRE_LOTES_MS = 7000;
 
 export interface MigracionStatus {
   activa: boolean;
