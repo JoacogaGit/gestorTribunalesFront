@@ -129,27 +129,30 @@ function countRows(pestana?: { contenido: unknown }): number {
   return 0;
 }
 
-async function callGemini(
+async function callGroq(
   apiKey: string,
   systemPrompt: string,
   userMsg: string,
   timeoutMs: number,
 ): Promise<{ ok: true; json: unknown; rawText: string } | { ok: false; code: string; status?: number; detail?: string }> {
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort("gemini_timeout"), timeoutMs);
+  const t = setTimeout(() => controller.abort("groq_timeout"), timeoutMs);
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: userMsg }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 16000,
-          responseMimeType: "application/json",
-        },
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMsg },
+        ],
+        temperature: 0.2,
+        max_tokens: 16000,
+        response_format: { type: "json_object" },
       }),
       signal: controller.signal,
     });
@@ -158,7 +161,7 @@ async function callGemini(
       return { ok: false, code: "gemini_http_error", status: res.status, detail };
     }
     const body = await res.json();
-    const rawText: string = (body?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+    const rawText: string = (body?.choices?.[0]?.message?.content ?? "").trim();
     const parsed = extractJson(rawText);
     if (!parsed) return { ok: false, code: "json_invalido", detail: rawText.slice(0, 1000) };
     return { ok: true, json: parsed, rawText };
@@ -231,7 +234,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "no_es_miembro" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("GROQ_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ ok: false, error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -254,7 +257,7 @@ Deno.serve(async (req) => {
     console.log("procesar-migracion:gemini_before", { timestamp: iaStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
 
     // 1ra llamada
-    const r1 = await callGemini(apiKey, SYSTEM_PROMPT, userMsg, 55_000);
+    const r1 = await callGroq(apiKey, SYSTEM_PROMPT, userMsg, 55_000);
     if (!r1.ok) {
       console.log("procesar-migracion:error", { tipo: r1.code, status: r1.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
       if (r1.code === "gemini_timeout") {
@@ -264,7 +267,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: r1.detail }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (r1.code === "json_invalido") {
-        const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
+        const r2 = await callGroq(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
         if (!r2.ok) {
           return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: r2.detail ?? r1.detail }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
@@ -287,7 +290,7 @@ Deno.serve(async (req) => {
     }
 
     console.log("procesar-migracion:schema_invalido", { reason: v1.reason, pestana: pestanaLog, nro_lote: nroLote });
-    const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
+    const r2 = await callGroq(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
     if (!r2.ok) {
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v1.reason, retry_error: r2.code }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
