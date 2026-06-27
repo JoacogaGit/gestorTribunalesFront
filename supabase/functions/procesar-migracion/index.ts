@@ -129,27 +129,30 @@ function countRows(pestana?: { contenido: unknown }): number {
   return 0;
 }
 
-async function callGemini(
+async function callGroq(
   apiKey: string,
   systemPrompt: string,
   userMsg: string,
   timeoutMs: number,
 ): Promise<{ ok: true; json: unknown; rawText: string } | { ok: false; code: string; status?: number; detail?: string }> {
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort("gemini_timeout"), timeoutMs);
+  const t = setTimeout(() => controller.abort("groq_timeout"), timeoutMs);
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: userMsg }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 16000,
-          responseMimeType: "application/json",
-        },
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMsg },
+        ],
+        temperature: 0.2,
+        max_tokens: 16000,
+        response_format: { type: "json_object" },
       }),
       signal: controller.signal,
     });
@@ -158,7 +161,7 @@ async function callGemini(
       return { ok: false, code: "gemini_http_error", status: res.status, detail };
     }
     const body = await res.json();
-    const rawText: string = (body?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+    const rawText: string = (body?.choices?.[0]?.message?.content ?? "").trim();
     const parsed = extractJson(rawText);
     if (!parsed) return { ok: false, code: "json_invalido", detail: rawText.slice(0, 1000) };
     return { ok: true, json: parsed, rawText };
