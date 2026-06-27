@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "forbidden", detail: "no_es_miembro" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("GROQ_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ ok: false, error: "no_api_key" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
     console.log("procesar-migracion:gemini_before", { timestamp: iaStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
 
     // 1ra llamada
-    const r1 = await callGemini(apiKey, SYSTEM_PROMPT, userMsg, 55_000);
+    const r1 = await callGroq(apiKey, SYSTEM_PROMPT, userMsg, 55_000);
     if (!r1.ok) {
       console.log("procesar-migracion:error", { tipo: r1.code, status: r1.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
       if (r1.code === "gemini_timeout") {
@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: r1.detail }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (r1.code === "json_invalido") {
-        const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
+        const r2 = await callGroq(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
         if (!r2.ok) {
           return new Response(JSON.stringify({ ok: false, error: "json_invalido", raw: r2.detail ?? r1.detail }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
     }
 
     console.log("procesar-migracion:schema_invalido", { reason: v1.reason, pestana: pestanaLog, nro_lote: nroLote });
-    const r2 = await callGemini(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
+    const r2 = await callGroq(apiKey, SYSTEM_PROMPT + RETRY_SUFFIX, userMsg, 55_000);
     if (!r2.ok) {
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v1.reason, retry_error: r2.code }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
