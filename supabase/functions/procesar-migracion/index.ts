@@ -151,14 +151,14 @@ async function callGroq(
           { role: "user", content: userMsg },
         ],
         temperature: 0.2,
-        max_tokens: 16000,
+        max_tokens: 4096,
         response_format: { type: "json_object" },
       }),
       signal: controller.signal,
     });
     if (!res.ok) {
       const detail = (await res.text()).slice(0, 500);
-      return { ok: false, code: "gemini_http_error", status: res.status, detail };
+      return { ok: false, code: "groq_http_error", status: res.status, detail };
     }
     const body = await res.json();
     const rawText: string = (body?.choices?.[0]?.message?.content ?? "").trim();
@@ -166,8 +166,8 @@ async function callGroq(
     if (!parsed) return { ok: false, code: "json_invalido", detail: rawText.slice(0, 1000) };
     return { ok: true, json: parsed, rawText };
   } catch (e) {
-    if (controller.signal.aborted) return { ok: false, code: "gemini_timeout" };
-    return { ok: false, code: "gemini_fetch_error", detail: e instanceof Error ? e.message : String(e) };
+    if (controller.signal.aborted) return { ok: false, code: "groq_timeout" };
+    return { ok: false, code: "groq_fetch_error", detail: e instanceof Error ? e.message : String(e) };
   } finally {
     clearTimeout(t);
   }
@@ -254,16 +254,16 @@ Deno.serve(async (req) => {
       `Contenido:\n${userPayload}`;
 
     const iaStart = Date.now();
-    console.log("procesar-migracion:gemini_before", { timestamp: iaStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
+    console.log("procesar-migracion:groq_before", { timestamp: iaStart, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
 
     // 1ra llamada
     const r1 = await callGroq(apiKey, SYSTEM_PROMPT, userMsg, 55_000);
     if (!r1.ok) {
       console.log("procesar-migracion:error", { tipo: r1.code, status: r1.status, pestana: pestanaLog, nro_lote: nroLote, total_lotes: totalLotes });
-      if (r1.code === "gemini_timeout") {
-        return new Response(JSON.stringify({ ok: false, error: "gemini_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (r1.code === "groq_timeout") {
+        return new Response(JSON.stringify({ ok: false, error: "groq_timeout", lote_info: { pestana: pestanaLog, nro_lote: nroLote } }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (r1.code === "gemini_http_error") {
+      if (r1.code === "groq_http_error") {
         return new Response(JSON.stringify({ ok: false, error: "ai_error", detail: r1.detail }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (r1.code === "json_invalido") {
@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
           console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
           return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
+        console.log("procesar-migracion:groq_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
         return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       return new Response(JSON.stringify({ ok: false, error: "ai_error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
     // Validar esquema
     const v1 = validarResponse(r1.json);
     if (v1.ok) {
-      console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: false, pestana: pestanaLog });
+      console.log("procesar-migracion:groq_after", { elapsed_ms: Date.now() - iaStart, retry: false, pestana: pestanaLog });
       return new Response(JSON.stringify({ ok: true, resultado: r1.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
       console.log("procesar-migracion:error", { tipo: "schema_invalido_retry", reason: v2.reason, pestana: pestanaLog });
       return new Response(JSON.stringify({ ok: false, error: "schema_invalido", reason: v2.reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    console.log("procesar-migracion:gemini_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
+    console.log("procesar-migracion:groq_after", { elapsed_ms: Date.now() - iaStart, retry: true, pestana: pestanaLog });
     return new Response(JSON.stringify({ ok: true, resultado: r2.json }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.log("procesar-migracion:error", { tipo: "server_error", message: e instanceof Error ? e.message : String(e) });
