@@ -1,3 +1,5 @@
+import { parseLocalTime } from "@/lib/parseDate";
+
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
 export type EstadoCausa = "En trámite" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX";
 
@@ -108,7 +110,7 @@ export type ProximityLevel = "vencido" | "critico" | "urgente" | "proximo" | "me
 
 // Escala unificada con eventoMapper: ≤4d (incluye vencidos) | 5-10 | 11-20 | 21-30 | 31-60 | 60+.
 export function getProximityLevel(fecha: string): ProximityLevel {
-  const diff = (new Date(fecha).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  const diff = (parseLocalTime(fecha) - Date.now()) / (1000 * 60 * 60 * 24);
   if (diff <= 4) return "vencido";
   if (diff <= 10) return "critico";
   if (diff <= 20) return "urgente";
@@ -199,7 +201,7 @@ export function getAllEventos(causas: Causa[]): Evento[] {
       }
     }
   }
-  return eventos.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+  return eventos.sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
 }
 
 export const mockCausas: Causa[] = [
