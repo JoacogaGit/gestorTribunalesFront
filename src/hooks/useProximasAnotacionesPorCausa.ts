@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { parseLocalTime } from "@/lib/parseDate";
 
 export interface AnotacionResumen {
   proximaConFecha?: { id: string; titulo: string; fecha_hora: string };
@@ -47,11 +48,11 @@ export function useProximasAnotacionesPorCausa(causaIds: string[]) {
     allCausas.forEach((causaId) => {
       const cf = conFecha.get(causaId) ?? [];
       const futuras = cf
-        .filter((e) => new Date(e.fecha_hora).getTime() >= now)
-        .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime());
+        .filter((e) => parseLocalTime(e.fecha_hora) >= now)
+        .sort((a, b) => parseLocalTime(a.fecha_hora) - parseLocalTime(b.fecha_hora));
       const pasadas = cf
-        .filter((e) => new Date(e.fecha_hora).getTime() < now)
-        .sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
+        .filter((e) => parseLocalTime(e.fecha_hora) < now)
+        .sort((a, b) => parseLocalTime(b.fecha_hora) - parseLocalTime(a.fecha_hora));
       const proximaConFecha = futuras[0] ?? pasadas[0];
 
       const sf = (sinFecha.get(causaId) ?? []).sort(
