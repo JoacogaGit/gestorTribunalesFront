@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI, DbSituacionLibertad } from "@/lib/causaMapper";
 
+const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en)";
+
 /**
  * Trae todas las causas que tienen al menos un sujeto en la situación dada,
  * pero embebe TODOS los sujetos de cada causa (no sólo los que matchean).
@@ -38,7 +40,7 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
     // Paso 2: causas completas con todos sus sujetos.
     const { data, error: e2 } = await supabase
       .from("causas")
-      .select("*, sujetos(*)")
+      .select(CAUSAS_SELECT)
       .in("id", ids)
       .eq("vocalia_id", vocaliaId)
       .neq("estado_causa", "terminada")

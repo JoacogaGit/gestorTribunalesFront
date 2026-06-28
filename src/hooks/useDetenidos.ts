@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI, DbCausa, DbSujeto, mapSujeto } from "@/lib/causaMapper";
 
+const DETENIDOS_SELECT = "id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,causas!inner(id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado)";
+
 /**
  * Trae sujetos detenidos con su causa embebida.
  * Devuelve "causas sintéticas" con un único imputado (el detenido), de forma
@@ -20,7 +22,7 @@ export function useDetenidos(vocaliaId: string | null) {
     setError(null);
     const { data, error } = await supabase
       .from("sujetos")
-      .select("*, causas!inner(*)")
+      .select(DETENIDOS_SELECT)
       .eq("situacion_libertad", "detenido")
       .eq("causas.vocalia_id", vocaliaId)
       .neq("causas.estado_causa", "terminada")

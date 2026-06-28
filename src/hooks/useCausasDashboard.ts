@@ -4,6 +4,7 @@ import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI } from "@/lib/causaMapper";
 
 const ACTIVOS = ["tramite", "recurso"] as const;
+const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en)";
 
 export function useCausasDashboard(vocaliaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
@@ -18,7 +19,7 @@ export function useCausasDashboard(vocaliaId: string | null) {
     setError(null);
     const { data, error } = await supabase
       .from("causas")
-      .select("*, sujetos(*)")
+      .select(CAUSAS_SELECT)
       .eq("vocalia_id", vocaliaId)
       .in("estado_causa", ACTIVOS)
       .is("borrado_en", null)
