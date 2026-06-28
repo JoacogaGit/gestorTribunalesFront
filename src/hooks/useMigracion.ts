@@ -241,6 +241,7 @@ export function useMigracion() {
             return {
               ...rest,
               fecha_detencion: normalizarDateDb(rest.fecha_detencion),
+              prescripcion_fecha: normalizarDateDb(rest.prescripcion_fecha),
               vencimiento_pp: normalizarDateDb(rest.vencimiento_pp),
               vencimiento_pena: normalizarDateDb(rest.vencimiento_pena),
               vencimiento_sjp: normalizarDateDb(rest.vencimiento_sjp),
