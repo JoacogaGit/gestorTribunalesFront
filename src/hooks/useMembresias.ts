@@ -21,7 +21,7 @@ export function useMembresias() {
     setIsFetching(true);
     const { count: c, error } = await supabase
       .from("miembros_tribunal")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("usuario_id", user.id);
     if (error) setError(error.message);
     setCount(c ?? 0);
