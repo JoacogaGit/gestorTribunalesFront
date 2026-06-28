@@ -171,7 +171,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     const poll = async () => {
       const { data, error } = await supabase
         .from("migraciones_jobs")
-        .select("id,total_lotes,lotes_procesados,lotes_fallidos,archivo_nombre,estado,error_code,error_msg")
+        .select("id,total_lotes,lotes_procesados,lotes_fallidos,archivo_nombre,estado,resultados,error_mensaje")
         .eq("id", jobId)
         .maybeSingle();
       if (cancelled || error || !data) return;
