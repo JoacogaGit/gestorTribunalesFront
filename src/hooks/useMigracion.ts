@@ -84,7 +84,8 @@ export interface LoteResultado {
 function normalizarDateDb(value: string | null | undefined): string | null {
   if (value == null) return null;
   const v = String(value).trim();
-  if (!v || v === "null" || v === "undefined" || v === "NULL") return null;
+  const lower = v.toLowerCase();
+  if (!v || lower === "null" || lower === "undefined") return null;
   return v;
 }
 
