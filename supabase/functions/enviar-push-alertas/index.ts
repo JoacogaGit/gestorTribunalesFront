@@ -93,14 +93,14 @@ async function buildAlertas(now: Date): Promise<Alerta[]> {
     if (s.fecha_detencion && !s.vencimiento_pp && !s.vencimiento_pena) {
       // fecha_detencion es DATE puro → parsear como local, no UTC.
       const fd = s.fecha_detencion as string;
-      const d = /^\d{4}-\d{2}-\d{2}$/.test(fd) ? new Date(`${fd}T00:00:00`) : new Date(fd);
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(fd) ? new Date(`${fd}T12:00:00`) : new Date(fd);
       d.setFullYear(d.getFullYear() + 2);
       candidates.push({ key: "pp", tipo: "pp", titulo: `Vto. Prisión Preventiva - ${nombre} (${exp})`, fecha: d.toISOString() });
     }
     for (const cand of candidates) {
       if (!cand.fecha) continue;
       // DATE (YYYY-MM-DD) → local; ISO timestamp → nativo
-      const f = /^\d{4}-\d{2}-\d{2}$/.test(cand.fecha) ? new Date(`${cand.fecha}T00:00:00`) : new Date(cand.fecha);
+      const f = /^\d{4}-\d{2}-\d{2}$/.test(cand.fecha) ? new Date(`${cand.fecha}T12:00:00`) : new Date(cand.fecha);
       if (f <= now || f > horizonte) continue;
       out.push({
         tipo: cand.tipo,
@@ -124,7 +124,7 @@ async function buildAlertas(now: Date): Promise<Alerta[]> {
     const c: any = sj.causa;
     if (!c || c.borrado_en) continue;
     const pf = p.fecha as string;
-    const f = /^\d{4}-\d{2}-\d{2}$/.test(pf) ? new Date(`${pf}T00:00:00`) : new Date(pf);
+    const f = /^\d{4}-\d{2}-\d{2}$/.test(pf) ? new Date(`${pf}T12:00:00`) : new Date(pf);
     if (f <= now || f > horizonte) continue;
     out.push({
       tipo: "prescripcion",
