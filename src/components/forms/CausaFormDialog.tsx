@@ -803,7 +803,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               if (!sujeto.fecha_detencion) return null;
               // Mostrar el calculado en gris.
               const base = sujeto.fecha_detencion.slice(0, 10);
-              const d = new Date(base + "T00:00:00");
+              const d = new Date(base + "T12:00:00");
               if (isNaN(d.getTime())) return null;
               d.setFullYear(d.getFullYear() + 2);
               const calc = d.toLocaleDateString("es-AR");
