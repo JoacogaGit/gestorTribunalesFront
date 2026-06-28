@@ -214,7 +214,11 @@ Deno.serve(async (req) => {
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-  const { data: job, error: jobErr } = await admin.from("migraciones_jobs").select("*").eq("id", jobId).maybeSingle();
+  const { data: job, error: jobErr } = await admin
+    .from("migraciones_jobs")
+    .select("id,usuario_id,vocalia_id,estado,archivo_meta,lotes_pendientes,resultados,filas_rojas,lotes_procesados,lotes_fallidos")
+    .eq("id", jobId)
+    .maybeSingle();
   if (jobErr || !job) {
     return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
