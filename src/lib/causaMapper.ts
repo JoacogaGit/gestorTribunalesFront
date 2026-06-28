@@ -1,5 +1,6 @@
 import { Causa, EstadoCausa, EstadoLibertad, Imputado, OtroInterviniente } from "@/data/mockCausas";
 import { calcularPpEfectivo } from "@/lib/vencimientoPp";
+import { parseLocalTime } from "@/lib/parseDate";
 
 export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "probation" | "condenado";
 export type DbEstadoCausa = "tramite" | "recurso" | "terminada";
@@ -141,7 +142,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
       todasPrescripciones.push({ fecha: p.fecha, label: p.descripcion || s.nombre_completo });
     });
   }
-  todasPrescripciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+  todasPrescripciones.sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
   const [prescripcionPrincipal, ...prescripcionExtras] = todasPrescripciones;
 
   return {
