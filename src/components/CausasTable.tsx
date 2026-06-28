@@ -410,7 +410,7 @@ export default function CausasTable({
       key: "eventosConFecha", label: "Eventos con fecha", headClass: "whitespace-nowrap",
       sortValue: (c) => {
         const p = proximasMap.get(c.id)?.proximaConFecha;
-        return p ? new Date(p.fecha_hora).getTime() : Number.MAX_SAFE_INTEGER;
+        return p ? parseLocalTime(p.fecha_hora) : Number.MAX_SAFE_INTEGER;
       },
       render: (c) => {
         const r = proximasMap.get(c.id);
