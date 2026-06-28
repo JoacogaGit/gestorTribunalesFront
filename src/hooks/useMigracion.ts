@@ -81,6 +81,13 @@ export interface LoteResultado {
   errorMsg?: string;
 }
 
+function normalizarDateDb(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const v = String(value).trim();
+  if (!v || v === "null" || v === "undefined" || v === "NULL") return null;
+  return v;
+}
+
 function detectarErrorCodigo(invokeErr: unknown, dataErr?: string): string {
   if (invokeErr) {
     const msg = String((invokeErr as { message?: string })?.message || invokeErr).toLowerCase();
@@ -216,7 +223,7 @@ export function useMigracion() {
           estado_causa: c.estado_causa,
           tipo_recurso: c.tipo_recurso,
           tipo_proceso: c.tipo_proceso ?? null,
-          fecha_ingreso: c.fecha_ingreso ?? null,
+          fecha_ingreso: normalizarDateDb(c.fecha_ingreso),
           querella: c.querella,
           actor_civil: c.actor_civil,
           otros_intervinientes: c.otros_intervinientes,
@@ -231,7 +238,14 @@ export function useMigracion() {
         if (c.sujetos.length > 0) {
           const payload = c.sujetos.map((s) => {
             const { prescripciones: _p, ...rest } = s;
-            return { ...rest, causa_id: causaRow.id };
+            return {
+              ...rest,
+              fecha_detencion: normalizarDateDb(rest.fecha_detencion),
+              vencimiento_pp: normalizarDateDb(rest.vencimiento_pp),
+              vencimiento_pena: normalizarDateDb(rest.vencimiento_pena),
+              vencimiento_sjp: normalizarDateDb(rest.vencimiento_sjp),
+              causa_id: causaRow.id,
+            };
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: sjRows, error: sjErr } = await supabase.from("sujetos").insert(payload as any).select("id");
@@ -243,7 +257,8 @@ export function useMigracion() {
             const sj = c.sujetos[idx];
             const list = sj?.prescripciones ?? [];
             for (const p of list) {
-              if (p.fecha) prescPayload.push({ sujeto_id: r.id, fecha: p.fecha, descripcion: p.descripcion ?? null });
+              const fecha = normalizarDateDb(p.fecha);
+              if (fecha) prescPayload.push({ sujeto_id: r.id, fecha, descripcion: p.descripcion ?? null });
             }
           });
           if (prescPayload.length > 0) {
