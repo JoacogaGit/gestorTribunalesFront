@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { forwardRef, memo, useEffect, useMemo, useState } from "react";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
@@ -126,6 +126,33 @@ interface Props {
   /** Acción extra opcional que se agrega al menú contextual de cada fila. */
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
 }
+
+const PAGE_SIZE = 50;
+
+interface CausaRowProps {
+  causa: Causa;
+  index: number;
+  rowColor: string | null;
+  visibleColumns: ColDef[];
+  onOpen: (causa: Causa) => void;
+}
+
+const CausaRow = memo(forwardRef<HTMLTableRowElement, CausaRowProps>(
+  ({ causa, index, rowColor, visibleColumns, onOpen }, ref) => (
+    <TableRow
+      ref={ref}
+      className="cursor-pointer hover:bg-primary/5 transition-colors"
+      style={rowColor ? { backgroundColor: rowColor, color: "#111827" } : undefined}
+      onClick={() => onOpen(causa)}
+    >
+      <TableCell className="text-right pr-2 text-[11px] tabular-nums w-10" style={rowColor ? { color: "inherit", opacity: 0.7 } : undefined}>{index}</TableCell>
+      {visibleColumns.map((col) => (
+        <TableCell key={col.key} className={col.cellClass} style={rowColor ? { color: "inherit" } : undefined}>{col.render(causa)}</TableCell>
+      ))}
+    </TableRow>
+  ),
+));
+CausaRow.displayName = "CausaRow";
 
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
