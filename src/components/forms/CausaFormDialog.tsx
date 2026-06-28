@@ -26,6 +26,8 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+
 type Mode = "crear" | "editar";
 
 interface Props {
@@ -146,7 +148,7 @@ export default function CausaFormDialog({
       (async () => {
         const { data, error } = await supabase
           .from("causas")
-          .select("*, sujetos(*)")
+          .select(CAUSA_FORM_SELECT)
           .eq("id", causaId)
           .is("sujetos.borrado_en", null)
           .single();
