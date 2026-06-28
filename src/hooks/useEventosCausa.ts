@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { parseLocalTime } from "@/lib/parseDate";
 
 export interface EventoCausa {
   id: string;
@@ -41,7 +42,7 @@ export function useEventosCausa(causaId: string | null | undefined) {
 
   const conFecha = eventos
     .filter((e) => !!e.fecha_hora)
-    .sort((a, b) => new Date(a.fecha_hora!).getTime() - new Date(b.fecha_hora!).getTime());
+    .sort((a, b) => parseLocalTime(a.fecha_hora!) - parseLocalTime(b.fecha_hora!));
   const sinFecha = eventos
     .filter((e) => !e.fecha_hora)
     .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());

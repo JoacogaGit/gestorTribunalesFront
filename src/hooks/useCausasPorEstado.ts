@@ -8,6 +8,8 @@ interface Options {
   excluirSituaciones?: string[];
 }
 
+const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en)";
+
 export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | null, options: Options = {}) {
   const [causas, setCausas] = useState<Causa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +23,7 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
     setError(null);
     const { data, error } = await supabase
       .from("causas")
-      .select("*, sujetos(*)")
+      .select(CAUSAS_SELECT)
       .eq("estado_causa", estado)
       .eq("vocalia_id", vocaliaId)
       .is("borrado_en", null)

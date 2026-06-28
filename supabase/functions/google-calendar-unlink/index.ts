@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
     const { data: sync } = await admin
       .from("google_calendar_sync")
-      .select("*")
+      .select("id,user_id,vocalia_id,access_token,google_calendar_id")
       .eq("user_id", userId)
       .maybeSingle();
 

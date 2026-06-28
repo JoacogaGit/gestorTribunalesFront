@@ -12,6 +12,7 @@ import { useEventoMutations, EventoInput } from "@/hooks/useEventoMutations";
 import { useCategoriasVocalia } from "@/hooks/useCategoriasVocalia";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import { getSemaforoBg, getSemaforoText } from "@/lib/eventoMapper";
+import { formatLocalDate } from "@/lib/parseDate";
 import EventoFormInline from "./EventoFormInline";
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
 }
 
 function fmt(d: string) {
-  return new Date(d).toLocaleDateString("es-AR");
+  return formatLocalDate(d);
 }
 
 function fmtCreado(d: string | null) {

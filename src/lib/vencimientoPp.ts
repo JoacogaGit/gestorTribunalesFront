@@ -19,7 +19,7 @@ export interface PpEfectivo {
 
 /** Suma `years` años a una fecha ISO (YYYY-MM-DD o ISO completo). Devuelve YYYY-MM-DD. */
 export function addYearsISO(iso: string, years: number): string {
-  const base = iso.length === 10 ? iso + "T00:00:00" : iso;
+  const base = iso.length === 10 ? iso + "T12:00:00" : iso;
   const d = new Date(base);
   if (isNaN(d.getTime())) return iso;
   d.setFullYear(d.getFullYear() + years);

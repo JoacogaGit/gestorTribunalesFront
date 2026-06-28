@@ -52,8 +52,8 @@ export function useDashboardKpis(vocaliaId: string | null) {
 
       // Para PP calculado: fecha_detencion + 2 años en [hoy, hoy+30d]
       // ↔ fecha_detencion en [hoy - 2y, hoy+30d - 2y]
-      const ppCalcDesde = (() => { const d = new Date(hoyDate + "T00:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
-      const ppCalcHasta = (() => { const d = new Date(finDate + "T00:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
+      const ppCalcDesde = (() => { const d = new Date(hoyDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
+      const ppCalcHasta = (() => { const d = new Date(finDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
 
       const [detenidos, juicios, pp, ppCalc, rebeldes, evt30, total] = await Promise.all([
         supabase.from("sujetos")

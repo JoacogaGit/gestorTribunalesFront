@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
@@ -33,7 +33,7 @@ import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
 import AbandonarTribunal, { AbandonarTribunalHandle } from "@/components/AbandonarTribunal";
 import Papelera from "@/components/Papelera";
-import WizardMigracion, { MigracionStatus } from "@/components/WizardMigracion";
+import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
@@ -43,6 +43,8 @@ import CrearListaDialog from "@/components/listas/CrearListaDialog";
 import ListaPersonalizadaView from "@/components/listas/ListaPersonalizadaView";
 
 import ZoomControl from "@/components/ZoomControl";
+
+const WizardMigracion = lazy(() => import("@/components/WizardMigracion"));
 
 interface RemoteListSectionProps {
   loading: boolean;
@@ -653,12 +655,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               title="Error en la migración"
               message="Hubo un problema en el asistente de migración. Tus lotes procesados están guardados — podés reintentar sin perderlos."
             >
-              <WizardMigracion
-                vocaliaId={vocaliaId}
-                vocaliaNombre={vocaliaNombre}
-                onDone={() => setView("dashboard")}
-                onStatusChange={setMigracionStatus}
-              />
+              <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                <WizardMigracion
+                  vocaliaId={vocaliaId}
+                  vocaliaNombre={vocaliaNombre}
+                  onDone={() => setView("dashboard")}
+                  onStatusChange={setMigracionStatus}
+                />
+              </Suspense>
             </ErrorBoundary>
           </div>
         )}

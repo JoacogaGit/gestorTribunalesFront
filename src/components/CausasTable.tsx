@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { forwardRef, memo, useEffect, useMemo, useState } from "react";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
@@ -127,6 +127,33 @@ interface Props {
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
 }
 
+const PAGE_SIZE = 50;
+
+interface CausaRowProps {
+  causa: Causa;
+  index: number;
+  rowColor: string | null;
+  visibleColumns: ColDef[];
+  onOpen: (causa: Causa) => void;
+}
+
+const CausaRow = memo(forwardRef<HTMLTableRowElement, CausaRowProps>(
+  ({ causa, index, rowColor, visibleColumns, onOpen }, ref) => (
+    <TableRow
+      ref={ref}
+      className="cursor-pointer hover:bg-primary/5 transition-colors"
+      style={rowColor ? { backgroundColor: rowColor, color: "#111827" } : undefined}
+      onClick={() => onOpen(causa)}
+    >
+      <TableCell className="text-right pr-2 text-[11px] tabular-nums w-10" style={rowColor ? { color: "inherit", opacity: 0.7 } : undefined}>{index}</TableCell>
+      {visibleColumns.map((col) => (
+        <TableCell key={col.key} className={col.cellClass} style={rowColor ? { color: "inherit" } : undefined}>{col.render(causa)}</TableCell>
+      ))}
+    </TableRow>
+  ),
+));
+CausaRow.displayName = "CausaRow";
+
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
@@ -195,7 +222,7 @@ export default function CausasTable({
     onMutated?.();
   };
 
-  const allColumns: ColDef[] = [
+  const allColumns: ColDef[] = useMemo(() => [
     {
       key: "numero",
       label: "N° Causa",
@@ -383,7 +410,7 @@ export default function CausasTable({
       key: "eventosConFecha", label: "Eventos con fecha", headClass: "whitespace-nowrap",
       sortValue: (c) => {
         const p = proximasMap.get(c.id)?.proximaConFecha;
-        return p ? new Date(p.fecha_hora).getTime() : Number.MAX_SAFE_INTEGER;
+        return p ? parseLocalTime(p.fecha_hora) : Number.MAX_SAFE_INTEGER;
       },
       render: (c) => {
         const r = proximasMap.get(c.id);
@@ -436,7 +463,7 @@ export default function CausasTable({
         );
       },
     },
-  ];
+  ], [onNavigateToConexa, proximasMap]);
 
   const storageKey = listKey ? `cols-hidden-${listKey}` : null;
   const customColsKey = listKey ? `cols-custom-${listKey}` : null;
@@ -488,7 +515,7 @@ export default function CausasTable({
     if (storageKey) localStorage.setItem(storageKey, JSON.stringify([...next]));
   };
 
-  const customColDefs: ColDef[] = customCols.map((cc) => ({
+  const customColDefs: ColDef[] = useMemo(() => customCols.map((cc) => ({
     key: cc.key,
     label: cc.label,
     cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top",
@@ -510,9 +537,9 @@ export default function CausasTable({
         />
       );
     },
-  }));
+  })), [customCols, onUpdateCausa]);
 
-  const fullColumns = [...allColumns, ...customColDefs];
+  const fullColumns = useMemo(() => [...allColumns, ...customColDefs], [allColumns, customColDefs]);
 
   // ===== Orden personalizado de columnas por usuario (localStorage) =====
   const columnOrderKey = listKey && user?.id ? `column-order:${listKey}:${user.id}` : null;
@@ -540,7 +567,10 @@ export default function CausasTable({
     return ordered;
   }, [fullColumns, columnOrder]);
 
-  const visibleColumns = orderedFullColumns.filter((c) => !hiddenCols.has(c.key));
+  const visibleColumns = useMemo(
+    () => orderedFullColumns.filter((c) => !hiddenCols.has(c.key)),
+    [orderedFullColumns, hiddenCols],
+  );
   const displayTitle = customTitle || title;
 
   const handleDragEndColumn = (event: DragEndEvent) => {
@@ -595,6 +625,18 @@ export default function CausasTable({
     if (sortBy.dir === "desc") arr.reverse();
     return arr;
   })();
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  useEffect(() => {
+    setPage(1);
+  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir, causas.length]);
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+  const shouldPaginate = sorted.length > PAGE_SIZE;
+  const pageStart = shouldPaginate ? (page - 1) * PAGE_SIZE : 0;
+  const visibleRows = shouldPaginate ? sorted.slice(pageStart, pageStart + PAGE_SIZE) : sorted;
 
   const copyToClipboard = () => {
     const header = visibleColumns.map((c) => c.label).join("\t");
@@ -803,21 +845,18 @@ export default function CausasTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((c, idx) => {
+              {visibleRows.map((c, idx) => {
                 const rowColor = colorOf(c);
                 return (
                 <ContextMenu key={c.id}>
                   <ContextMenuTrigger asChild>
-                    <TableRow
-                      className="cursor-pointer hover:bg-primary/5 transition-colors"
-                      style={rowColor ? { backgroundColor: rowColor, color: "#111827" } : undefined}
-                      onClick={() => setSelected(c)}
-                    >
-                      <TableCell className="text-right pr-2 text-[11px] tabular-nums w-10" style={rowColor ? { color: "inherit", opacity: 0.7 } : undefined}>{idx + 1}</TableCell>
-                      {visibleColumns.map((col) => (
-                        <TableCell key={col.key} className={col.cellClass} style={rowColor ? { color: "inherit" } : undefined}>{col.render(c)}</TableCell>
-                      ))}
-                    </TableRow>
+                    <CausaRow
+                      causa={c}
+                      index={pageStart + idx + 1}
+                      rowColor={rowColor}
+                      visibleColumns={visibleColumns}
+                      onOpen={setSelected}
+                    />
                   </ContextMenuTrigger>
                   <ContextMenuContent className="w-56">
                     <ContextMenuLabel className="text-xs font-mono">{c.numero}</ContextMenuLabel>
@@ -932,6 +971,22 @@ export default function CausasTable({
             </TableBody>
           </table>
         </div>
+        {shouldPaginate && (
+          <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-card/80 px-4 py-2 text-xs text-muted-foreground">
+            <span>
+              Mostrando {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, sorted.length)} de {sorted.length} causas
+            </span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                Anterior
+              </Button>
+              <span>Página {page} de {totalPages}</span>
+              <Button size="sm" variant="outline" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
       </div>
       {selected && (

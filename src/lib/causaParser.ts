@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import mammoth from "mammoth";
 import { Causa, EstadoCausa, EstadoLibertad } from "@/data/mockCausas";
+import { parseLocalTime } from "@/lib/parseDate";
 
 // ============================================================
 // Parser de archivos judiciales (Excel / Word / PDF)
@@ -84,7 +85,7 @@ function detectarDefensor(texto: string): { nombre: string; tipo: "DPO" | "Parti
 function calcularPrescripcion(fechas: string[], inicio: string): { principal: string; extras: { fecha: string; label?: string }[] } {
   if (fechas.length === 0) {
     // 5 años desde inicio por default
-    const d = new Date(inicio);
+    const d = new Date(`${inicio}T12:00:00`);
     d.setFullYear(d.getFullYear() + 5);
     return { principal: d.toISOString().slice(0, 10), extras: [] };
   }
@@ -106,7 +107,7 @@ function construirCausa(numero: string, cruda: CausaCruda, vocalia: number, idx:
   const fechaInicio = fechasRaw[0] || new Date().toISOString().slice(0, 10);
   // Las fechas “lejanas” (>2 años en futuro) son candidatas a prescripción
   const ahora = Date.now();
-  const fechasFuturas = fechasRaw.filter((f) => new Date(f).getTime() > ahora + 365 * 24 * 60 * 60 * 1000);
+  const fechasFuturas = fechasRaw.filter((f) => parseLocalTime(f) > ahora + 365 * 24 * 60 * 60 * 1000);
   const { principal, extras } = calcularPrescripcion(fechasFuturas, fechaInicio);
 
   const { estado: estadoLib, lugar } = detectarEstadoLibertad(texto);

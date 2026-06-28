@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       // Para "vocalia_resync": todos los syncs activos de la vocalía.
       let syncsQ = admin
         .from("google_calendar_sync")
-        .select("*")
+        .select("id,user_id,vocalia_id,access_token,refresh_token,token_expires_at,google_calendar_id,activo")
         .eq("vocalia_id", vocalia_id)
         .eq("activo", true);
       if (action === "bulk") syncsQ = syncsQ.eq("user_id", userId);
@@ -224,7 +224,7 @@ async function runFullSyncForCalendar(admin: any, sync: any): Promise<{ total: n
 async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId: string, expediente: string, caratula: string | null) {
   const { data: syncs } = await admin
     .from("google_calendar_sync")
-    .select("*")
+    .select("id,user_id,vocalia_id,access_token,refresh_token,token_expires_at,google_calendar_id,activo")
     .eq("vocalia_id", vocaliaId)
     .eq("activo", true);
 
