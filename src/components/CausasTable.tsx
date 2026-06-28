@@ -222,7 +222,7 @@ export default function CausasTable({
     onMutated?.();
   };
 
-  const allColumns: ColDef[] = [
+  const allColumns: ColDef[] = useMemo(() => [
     {
       key: "numero",
       label: "N° Causa",
@@ -463,7 +463,7 @@ export default function CausasTable({
         );
       },
     },
-  ];
+  ], [onNavigateToConexa, proximasMap]);
 
   const storageKey = listKey ? `cols-hidden-${listKey}` : null;
   const customColsKey = listKey ? `cols-custom-${listKey}` : null;
@@ -515,7 +515,7 @@ export default function CausasTable({
     if (storageKey) localStorage.setItem(storageKey, JSON.stringify([...next]));
   };
 
-  const customColDefs: ColDef[] = customCols.map((cc) => ({
+  const customColDefs: ColDef[] = useMemo(() => customCols.map((cc) => ({
     key: cc.key,
     label: cc.label,
     cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top",
@@ -537,9 +537,9 @@ export default function CausasTable({
         />
       );
     },
-  }));
+  })), [customCols, onUpdateCausa]);
 
-  const fullColumns = [...allColumns, ...customColDefs];
+  const fullColumns = useMemo(() => [...allColumns, ...customColDefs], [allColumns, customColDefs]);
 
   // ===== Orden personalizado de columnas por usuario (localStorage) =====
   const columnOrderKey = listKey && user?.id ? `column-order:${listKey}:${user.id}` : null;
@@ -567,7 +567,10 @@ export default function CausasTable({
     return ordered;
   }, [fullColumns, columnOrder]);
 
-  const visibleColumns = orderedFullColumns.filter((c) => !hiddenCols.has(c.key));
+  const visibleColumns = useMemo(
+    () => orderedFullColumns.filter((c) => !hiddenCols.has(c.key)),
+    [orderedFullColumns, hiddenCols],
+  );
   const displayTitle = customTitle || title;
 
   const handleDragEndColumn = (event: DragEndEvent) => {
