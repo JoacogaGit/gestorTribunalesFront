@@ -120,7 +120,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Scale className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">JusTrack</h1>
+            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">IusTrack</h1>
           </div>
           <p className="text-muted-foreground text-lg">Elegí la vocalía con la que querés trabajar</p>
         </div>

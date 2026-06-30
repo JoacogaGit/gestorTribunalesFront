@@ -108,7 +108,7 @@ export default function AppSidebar({
             </div>
             {!collapsed && (
               <div className="flex flex-col leading-tight">
-                <span className="font-display text-lg font-bold text-sidebar-accent-foreground tracking-tight">JusTrack</span>
+                <span className="font-display text-lg font-bold text-sidebar-accent-foreground tracking-tight">IusTrack</span>
                 <span className="text-[9px] uppercase tracking-[0.18em] text-sidebar-primary/80">Gestión Judicial</span>
               </div>
             )}
