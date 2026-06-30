@@ -1184,7 +1184,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-6">
           {[
             { icon: Upload, title: "1. Subís", desc: "Tu planilla, lista de causas o documento de trabajo. No importa el formato exacto." },
-            { icon: Wand2, title: "2. La IA interpreta", desc: "Detecta causas, sujetos, fechas, estados y los organiza según el esquema de IusTrack." },
+            { icon: Wand2, title: "2. La IA interpreta", desc: "Detecta causas, sujetos, fechas, estados y los organiza según el esquema de JusTrack." },
             { icon: ShieldCheck, title: "3. Revisás", desc: "Editás lo que haga falta, marcás qué incluir y qué descartar. Las dudosas quedan marcadas." },
             { icon: CheckCircle2, title: "4. Cargás", desc: "Confirmás y todo queda guardado en la vocalía. Las filas que no pudieron procesarse quedan para revisión manual." },
           ].map((s) => (

@@ -1,6 +1,6 @@
 {
-  "name": "IusTrack - Gestión Judicial",
-  "short_name": "IusTrack",
+  "name": "JusTrack - Gestión Judicial",
+  "short_name": "JusTrack",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

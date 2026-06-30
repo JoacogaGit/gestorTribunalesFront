@@ -34,12 +34,12 @@ function buildHtml(opts: {
 <body style="margin:0;padding:0;background:#f5f3ee;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;">
   <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8e4dd;">
     <div style="background:#0f1b3d;padding:28px 32px;color:#f5f3ee;">
-      <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c9a84c;margin-bottom:6px;">IusTrack · Gestión Judicial</div>
+      <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c9a84c;margin-bottom:6px;">JusTrack · Gestión Judicial</div>
       <h1 style="margin:0;font-size:22px;font-weight:700;">Te invitaron a un tribunal</h1>
     </div>
     <div style="padding:28px 32px;">
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;">
-        Te invitaron a integrarte a <strong>${tn}</strong> en IusTrack como <strong>${ro}</strong>.
+        Te invitaron a integrarte a <strong>${tn}</strong> en JusTrack como <strong>${ro}</strong>.
       </p>
       <p style="margin:0 0 24px;font-size:14px;line-height:1.55;color:#55575d;">
         Hacé clic en el botón para aceptar la invitación y unirte al tribunal.
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
       rol: inv.rol_a_asignar ?? "miembro",
       link,
     });
-    const subject = `Te invitaron a ${trib?.nombre ?? "un tribunal"} en IusTrack`;
+    const subject = `Te invitaron a ${trib?.nombre ?? "un tribunal"} en JusTrack`;
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) {
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "IusTrack <onboarding@resend.dev>",
+          from: "JusTrack <onboarding@resend.dev>",
           to: [inv.email_invitado],
           subject,
           html,

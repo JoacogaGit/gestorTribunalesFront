@@ -21,7 +21,7 @@ export default function PushInstrucciones() {
             <ol className="list-decimal list-inside space-y-0.5">
               <li>Abrí el menú (⋮) arriba a la derecha.</li>
               <li>Tocá "Agregar a pantalla de inicio" o "Instalar app".</li>
-              <li>Confirmá. Abrí IusTrack desde el ícono y activá la campana.</li>
+              <li>Confirmá. Abrí JusTrack desde el ícono y activá la campana.</li>
             </ol>
           </div>
           <div>
@@ -29,7 +29,7 @@ export default function PushInstrucciones() {
             <ol className="list-decimal list-inside space-y-0.5">
               <li>Tocá el botón compartir (↑) en la barra inferior.</li>
               <li>Elegí "Agregar a pantalla de inicio".</li>
-              <li>Abrí IusTrack desde el ícono y activá la campana.</li>
+              <li>Abrí JusTrack desde el ícono y activá la campana.</li>
             </ol>
           </div>
           <p className="italic">En iPhone las notificaciones push sólo funcionan abriendo la app desde el ícono agregado.</p>

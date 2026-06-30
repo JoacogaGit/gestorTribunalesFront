@@ -148,51 +148,12 @@
     @apply bg-background text-foreground font-sans antialiased;
     background-image: var(--gradient-surface);
     background-attachment: fixed;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  h1, h2, h3, h4 {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-  }
-
-  /* Reserve Playfair only for opted-in brand moments */
-  .font-display {
-    font-family: 'Playfair Display', serif !important;
+  h1, h2, h3 {
+    font-family: 'Playfair Display', serif;
     letter-spacing: -0.01em;
   }
-
-  p, li, span, label, button, input, textarea, select {
-    line-height: 1.5;
-  }
-
-  /* Numbers tabular by default in tables */
-  table { font-variant-numeric: tabular-nums; }
-
-  /* Polished table headers — Linear / Notion style */
-  thead th {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 500;
-    color: hsl(var(--muted-foreground));
-    background: hsl(var(--muted) / 0.4);
-  }
-
-  /* Horizontal-only borders + generous padding in tables */
-  tbody tr {
-    border-bottom: 1px solid hsl(var(--border) / 0.6);
-    transition: background-color 150ms ease;
-  }
-  tbody tr:hover {
-    background: hsl(var(--muted) / 0.35);
-  }
-  tbody td, thead th { border-left: 0 !important; border-right: 0 !important; }
-
-  /* Smoother interactive elements */
-  button, a { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
 
   /* Refined scrollbars */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -204,14 +165,7 @@
     background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); background-clip: padding-box; }
-
-  /* Modal overlay — darker, softer */
-  [data-radix-dialog-overlay], [data-radix-alert-dialog-overlay] {
-    background-color: hsl(222 40% 4% / 0.55) !important;
-    backdrop-filter: blur(2px);
-  }
 }
-
 
 @layer utilities {
   .glass-card {

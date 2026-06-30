@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
 
       const payload = {
         title: `${a.titulo} - ${humanWindow(ventana)}`,
-        body: "Tocá para ver en IusTrack",
+        body: "Tocá para ver en JusTrack",
         tag: `${a.tipo}-${a.recurso_id}-${ventana}`,
         data: { url: a.url },
       };

@@ -23,7 +23,7 @@ export default function BienvenidaTribunal({ onMigrar, onEmpezarDesdeCero }: Pro
           Tu gestión de causas inteligente empieza acá
         </h1>
         <p className="text-lg text-muted-foreground mb-2">
-          Bienvenido a IusTrack. Tu nuevo espacio de trabajo está listo. Ahora podés sumar tus causas al sistema.
+          Bienvenido a JusTrack. Tu nuevo espacio de trabajo está listo. Ahora podés sumar tus causas al sistema.
         </p>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-10">
           Si ya tenés tus causas en un Excel, Word, Google Sheets u otro formato, podés migrarlas automáticamente.

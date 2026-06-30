@@ -99,7 +99,7 @@ export default function GoogleCalendarSection() {
         <div>
           <h3 className="text-sm font-display font-semibold">Google Calendar</h3>
           <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            IusTrack ya cuenta con un calendario interno donde podés ver todos tus eventos y vencimientos.
+            JusTrack ya cuenta con un calendario interno donde podés ver todos tus eventos y vencimientos.
             Opcionalmente, podés vincular tu Google Calendar para recibir recordatorios automáticos en tu
             celular (3 días, 1 día y 1 hora antes de cada evento). Solo se sincronizarán los eventos con
             fecha de la vocalía que elijas. Por privacidad, los eventos aparecerán solo con el número de
@@ -144,7 +144,7 @@ export default function GoogleCalendarSection() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Desvincular Google Calendar?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se borrarán todos los eventos de IusTrack en tu Google Calendar. ¿Confirmás?
+              Se borrarán todos los eventos de JusTrack en tu Google Calendar. ¿Confirmás?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

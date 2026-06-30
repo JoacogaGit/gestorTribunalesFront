@@ -1,5 +1,5 @@
 // Intercambia el authorization code de Google por tokens, crea un calendario
-// nuevo "IusTrack - [vocalia]" y guarda la vinculación en google_calendar_sync.
+// nuevo "JusTrack - [vocalia]" y guarda la vinculación en google_calendar_sync.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
@@ -82,8 +82,8 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        summary: `IusTrack - ${voc.nombre}`,
-        description: "Eventos sincronizados desde IusTrack",
+        summary: `JusTrack - ${voc.nombre}`,
+        description: "Eventos sincronizados desde JusTrack",
         timeZone: "America/Argentina/Buenos_Aires",
       }),
     });

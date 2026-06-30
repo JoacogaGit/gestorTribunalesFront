@@ -1,4 +1,4 @@
-// IusTrack push notifications service worker (messaging-only, no caching)
+// JusTrack push notifications service worker (messaging-only, no caching)
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -12,11 +12,11 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch (e) {
-    data = { title: 'IusTrack', body: event.data ? event.data.text() : '' };
+    data = { title: 'JusTrack', body: event.data ? event.data.text() : '' };
   }
-  const title = data.title || 'IusTrack';
+  const title = data.title || 'JusTrack';
   const options = {
-    body: data.body || 'Tocá para ver en IusTrack',
+    body: data.body || 'Tocá para ver en JusTrack',
     icon: data.icon || '/icon-192.png',
     badge: data.badge || '/icon-192.png',
     data: data.data || { url: '/' },

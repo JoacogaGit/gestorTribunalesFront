@@ -77,7 +77,7 @@ export default function WelcomeModal({ open, onClose, vocalia, onImport }: Props
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                   <Sparkles className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <DialogTitle className="text-2xl font-display">¡Bienvenido a IusTrack!</DialogTitle>
+                <DialogTitle className="text-2xl font-display">¡Bienvenido a JusTrack!</DialogTitle>
               </div>
               <DialogDescription className="text-base leading-relaxed pt-2">
                 Tu gestión judicial acaba de volverse inteligente. Nuestra plataforma transforma tus

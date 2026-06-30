@@ -132,7 +132,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
             <div className="w-12 h-12 rounded-xl bg-gradient-gold flex items-center justify-center shadow-glow">
               <Scale className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">IusTrack</h1>
+            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">JusTrack</h1>
           </div>
           <p className="text-muted-foreground">Bienvenido. Para empezar, elegí una opción.</p>
         </div>
