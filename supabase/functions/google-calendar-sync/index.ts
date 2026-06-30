@@ -1,4 +1,4 @@
-// Sincroniza eventos JusTrack ↔ Google Calendar.
+// Sincroniza eventos IusTrack ↔ Google Calendar.
 // Soporta: eventos manuales, vencimientos de PP/Pena/SJP, prescripciones y PP calculado.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -329,7 +329,7 @@ async function upsertDateEvent(calId: string, token: string, eventId: string, ti
 // FORMATEO Y BODY
 // ============================================================
 function formatEventoTitle(titulo: string | null, caratula: string | null, expediente: string): string {
-  const base = titulo?.trim() || "Evento JusTrack";
+  const base = titulo?.trim() || "Evento IusTrack";
   const car = caratula?.trim();
   if (car) return `${base} - ${car} (${expediente})`;
   return `${base} (${expediente})`;
@@ -345,7 +345,7 @@ function buildAllDayBody(titulo: string, dateStr: string) {
   nextDay.setUTCDate(nextDay.getUTCDate() + 1);
   return {
     summary: titulo,
-    description: "Evento sincronizado desde JusTrack",
+    description: "Evento sincronizado desde IusTrack",
     start: { date: onlyDate },
     end: { date: nextDay.toISOString().slice(0, 10) },
     reminders: REMINDERS,
@@ -366,7 +366,7 @@ function buildEventBody(titulo: string, fechaHora: string, fechaHoraFin?: string
   }
   return {
     summary: titulo,
-    description: "Evento sincronizado desde JusTrack",
+    description: "Evento sincronizado desde IusTrack",
     start: { dateTime: start.toISOString(), timeZone: "America/Argentina/Buenos_Aires" },
     end: { dateTime: end.toISOString(), timeZone: "America/Argentina/Buenos_Aires" },
     reminders: REMINDERS,
