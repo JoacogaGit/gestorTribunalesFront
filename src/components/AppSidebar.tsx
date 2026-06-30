@@ -77,15 +77,15 @@ export default function AppSidebar({
       <button
         key={item.id}
         onClick={() => onNavigate(item.id)}
-        className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
+        className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"} py-2 rounded-md text-[13px] font-medium transition-all duration-150 ${
           isActive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
-            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground"
         }`}
         aria-label={item.label}
       >
-        {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
-        <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-sidebar-primary" : ""}`} />
+        {isActive && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-gradient-gold" />}
+        <item.icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-sidebar-primary" : ""}`} strokeWidth={1.75} />
         {!collapsed && <span className="truncate">{item.label}</span>}
       </button>
     );
