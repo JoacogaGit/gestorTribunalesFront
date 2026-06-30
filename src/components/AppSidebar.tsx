@@ -85,7 +85,7 @@ export default function AppSidebar({
         aria-label={item.label}
       >
         {isActive && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-gradient-gold" />}
-        <item.icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-sidebar-primary" : ""}`} strokeWidth={1.75} />
+        <item.icon className={`w-[18px] h-[18px] shrink-0 stroke-[1.75] ${isActive ? "text-sidebar-primary" : ""}`} />
         {!collapsed && <span className="truncate">{item.label}</span>}
       </button>
     );
