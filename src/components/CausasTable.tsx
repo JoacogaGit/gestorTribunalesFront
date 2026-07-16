@@ -137,13 +137,14 @@ interface CausaRowProps {
   onOpen: (causa: Causa) => void;
 }
 
-const CausaRow = memo(forwardRef<HTMLTableRowElement, CausaRowProps>(
-  ({ causa, index, rowColor, visibleColumns, onOpen }, ref) => (
+const CausaRow = memo(forwardRef<HTMLTableRowElement, CausaRowProps & React.HTMLAttributes<HTMLTableRowElement>>(
+  ({ causa, index, rowColor, visibleColumns, onOpen, ...rest }, ref) => (
     <TableRow
       ref={ref}
+      {...rest}
       className="cursor-pointer hover:bg-primary/5 transition-colors"
       style={rowColor ? { backgroundColor: rowColor, color: "#111827" } : undefined}
-      onClick={() => onOpen(causa)}
+      onClick={(e) => { rest.onClick?.(e); onOpen(causa); }}
     >
       <TableCell className="text-right pr-2 text-[11px] tabular-nums w-10" style={rowColor ? { color: "inherit", opacity: 0.7 } : undefined}>{index}</TableCell>
       {visibleColumns.map((col) => (
