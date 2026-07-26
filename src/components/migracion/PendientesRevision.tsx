@@ -56,7 +56,7 @@ export default function PendientesRevision({ vocaliaId, onMutated }: Props) {
                     {it.razon && <p className="text-xs text-foreground"><strong>Razón:</strong> {it.razon}</p>}
                     <p className="text-[10px] text-muted-foreground mt-0.5">
                       {it.archivo_origen && <span className="font-mono mr-2">{it.archivo_origen}</span>}
-                      {new Date(it.created_at).toLocaleString("es-AR")}
+                      {new Date(it.created_at).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })}
                     </p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">

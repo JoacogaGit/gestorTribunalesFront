@@ -109,7 +109,7 @@ export default function SuperadminTribunalDetail() {
                       <Calendar className="w-3.5 h-3.5" />
                       Creado el{" "}
                       {data.tribunal.created_at
-                        ? new Date(data.tribunal.created_at).toLocaleDateString("es-AR", {
+                        ? new Date(data.tribunal.created_at).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires",
                             day: "numeric",
                             month: "long",
                             year: "numeric",

@@ -165,7 +165,7 @@ export default function SuperadminPanel() {
                     <td className="px-3 py-3 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" />
-                        {t.created_at ? new Date(t.created_at).toLocaleDateString("es-AR") : "—"}
+                        {t.created_at ? new Date(t.created_at).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" }) : "—"}
                       </span>
                     </td>
                     <td className="text-right px-4 py-3">
@@ -221,7 +221,7 @@ export default function SuperadminPanel() {
                         </div>
                       </td>
                       <td className="px-3 py-3 text-xs text-muted-foreground">
-                        {t.eliminado_en ? new Date(t.eliminado_en).toLocaleString("es-AR") : "—"}
+                        {t.eliminado_en ? new Date(t.eliminado_en).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" }) : "—"}
                       </td>
                       <td className="text-center px-3 py-3 tabular-nums text-muted-foreground">{t.causas_count}</td>
                       <td className="text-right px-4 py-3">

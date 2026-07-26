@@ -317,7 +317,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 mb-1">{sidebarLabel}</span>
             <h1 className="text-3xl font-display font-bold text-foreground title-underline">{title}</h1>
             <span className="text-xs text-muted-foreground mt-3">
-              {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {new Date().toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </span>
           </div>
           <div className="flex items-center gap-2">

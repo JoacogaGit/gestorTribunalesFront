@@ -26,7 +26,7 @@ function fmt(d: string) {
 
 function fmtCreado(d: string | null) {
   if (!d) return "";
-  return new Date(d).toLocaleDateString("es-AR");
+  return new Date(d).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 }
 
 export default function AnotacionesSection({ causaId }: Props) {

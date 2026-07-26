@@ -808,7 +808,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               const d = new Date(base + "T12:00:00");
               if (isNaN(d.getTime())) return null;
               d.setFullYear(d.getFullYear() + 2);
-              const calc = d.toLocaleDateString("es-AR");
+              const calc = d.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
               return (
                 <p className="text-[10px] text-muted-foreground/70">
                   Calculado automático: {calc} (detención + 2 años). Dejá vacío para usar el calculado.
