@@ -89,6 +89,14 @@ function normalizarDateDb(value: string | null | undefined): string | null {
   return v;
 }
 
+/** Limpia strings "null"/"undefined"/"" a null real, para columnas date/timestamp. */
+const cleanDate = (v: unknown): string | null => {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s || s === "null" || s === "NULL" || s === "undefined") return null;
+  return s;
+};
+
 function detectarErrorCodigo(invokeErr: unknown, dataErr?: string): string {
   if (invokeErr) {
     const msg = String((invokeErr as { message?: string })?.message || invokeErr).toLowerCase();
@@ -269,7 +277,11 @@ export function useMigracion() {
           }
         }
         if (c.eventos.length > 0) {
-          const payload = c.eventos.map((e) => ({ ...e, causa_id: causaRow.id }));
+          const payload = c.eventos.map((e) => ({
+            ...e,
+            fecha_hora: cleanDate(e.fecha_hora),
+            causa_id: causaRow.id,
+          }));
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: evRows, error: evErr } = await supabase.from("eventos").insert(payload as any).select("id");
           if (evErr) throw new Error(`Eventos de ${c.expediente_nro}: ${evErr.message}`);

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { EventoInput } from "@/hooks/useEventoMutations";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
+import { combineARToISO, toARDateString, toARTimeString } from "@/lib/parseDate";
 
 interface Props {
   mode: "crear" | "editar";
@@ -25,43 +26,30 @@ function isAllDayISO(iso: string): boolean {
 function isoToInputDate(iso: string | null | undefined): string {
   if (!iso) return "";
   if (isAllDayISO(iso)) {
-    // Mantener la fecha tal cual en UTC (no aplicar timezone shift).
     return iso.slice(0, 10);
   }
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return toARDateString(iso);
 }
 
 function isoToInputTime(iso: string | null | undefined): string {
   if (!iso || iso.length <= 10) return "";
   if (isAllDayISO(iso)) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return toARTimeString(iso);
 }
 
-/** Combina fecha (YYYY-MM-DD) + hora (HH:MM opcional) en ISO para guardar. */
+/** Combina fecha (YYYY-MM-DD) + hora (HH:MM opcional) en ISO (hora interpretada como AR). */
 function combineToISO(fecha: string, hora: string): string | null {
   if (!fecha) return null;
   if (!hora) {
-    // All-day → UTC midnight para detección consistente.
     return `${fecha}T00:00:00.000Z`;
   }
-  const d = new Date(`${fecha}T${hora}:00`);
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString();
+  return combineARToISO(fecha, hora);
 }
 
-/** Combina fecha + horaFin en ISO (sin all-day fallback: si no hay hora, devolvemos null). */
+/** Combina fecha + horaFin en ISO (hora AR). */
 function combineFinToISO(fecha: string, horaFin: string): string | null {
   if (!fecha || !horaFin) return null;
-  const d = new Date(`${fecha}T${horaFin}:00`);
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString();
+  return combineARToISO(fecha, horaFin);
 }
 
 export default function EventoFormInline({ mode, initialValue, saving, onSubmit, onCancel, draftKey }: Props) {
