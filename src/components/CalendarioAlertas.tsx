@@ -246,7 +246,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
             {selectedIsPast && pasadosDelDiaSeleccionado.length > 0 && (
               <>
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground px-1">
-                  Eventos del {selectedDate?.toLocaleDateString("es-AR")} (pasados)
+                  Eventos del {selectedDate?.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })} (pasados)
                 </p>
                 {pasadosDelDiaSeleccionado.map((e, i) => renderEvento(e, i, true))}
               </>

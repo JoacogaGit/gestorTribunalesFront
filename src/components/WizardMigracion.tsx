@@ -1127,7 +1127,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
                 <p className="text-xs text-muted-foreground">
                   <span className="font-mono">{pendingResume.filename || "archivo sin nombre"}</span> ·
                   {" "}{pendingResume.resultadosOk.length} lote(s) ya procesados ·
-                  {" "}{new Date(pendingResume.timestamp).toLocaleString()}
+                  {" "}{new Date(pendingResume.timestamp).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button size="sm" onClick={handleRetomar}>

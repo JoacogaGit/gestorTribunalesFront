@@ -30,7 +30,7 @@ interface Props {
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("es-AR");
+  return new Date(d).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 }
 
 function diasHasta(d: string | null): number {

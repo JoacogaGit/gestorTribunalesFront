@@ -23,7 +23,7 @@ interface Props {
 function fmtFecha(d: string) {
   const dt = parseLocalDate(d);
   if (!dt) return d;
-  return dt.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return dt.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
 export default function EventoDetailDialog({ evento, onClose, onOpenCausa, onMutated }: Props) {

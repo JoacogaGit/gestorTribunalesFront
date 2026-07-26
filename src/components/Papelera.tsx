@@ -16,7 +16,7 @@ import {
 } from "@/hooks/useBorrados";
 
 function fmt(iso: string) {
-  try { return new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }); }
+  try { return new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short" }); }
   catch { return iso; }
 }
 

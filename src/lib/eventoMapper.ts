@@ -1,5 +1,5 @@
 // Helpers de calendario: mapping DB → eventos UI + semáforo cromático.
-import { parseLocalDate } from "@/lib/parseDate";
+import { parseLocalDate, toARTimeString } from "@/lib/parseDate";
 
 export type CalendarTipo = "evento" | "vencimiento_pp" | "vencimiento_pena" | "prescripcion";
 
@@ -143,17 +143,13 @@ export function mapDbEventoToCalendar(row: DbEventoRow): CalendarEvento | null {
   const fecha = row.fecha_hora;
   let hora: string | undefined;
   if (!isAllDayISO(fecha)) {
-    const dt = new Date(fecha);
-    if (!isNaN(dt.getTime())) {
-      hora = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
-    }
+    const t = toARTimeString(fecha);
+    if (t) hora = t;
   }
   let horaFin: string | undefined;
   if (row.fecha_hora_fin && !isAllDayISO(row.fecha_hora_fin)) {
-    const dt = new Date(row.fecha_hora_fin);
-    if (!isNaN(dt.getTime())) {
-      horaFin = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
-    }
+    const t = toARTimeString(row.fecha_hora_fin);
+    if (t) horaFin = t;
   }
   return {
     id: `evento-${row.id}`,
