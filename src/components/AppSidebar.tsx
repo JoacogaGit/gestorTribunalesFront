@@ -282,7 +282,8 @@ export default function AppSidebar({
 
           {!collapsed && customBoards.length > 0 && (
             <div className="pt-4 pb-1">
-              <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Tableros</span>
+              <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Vistas guardadas</span>
+
             </div>
           )}
 
