@@ -41,8 +41,15 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
 import CrearListaDialog from "@/components/listas/CrearListaDialog";
 import ListaPersonalizadaView from "@/components/listas/ListaPersonalizadaView";
+import { useTableros } from "@/hooks/useTableros";
+import CrearTableroDialog from "@/components/tableros/CrearTableroDialog";
+import TableroView from "@/components/tableros/TableroView";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Menu, Scale as ScaleIcon } from "lucide-react";
 
 import ZoomControl from "@/components/ZoomControl";
+
 
 const WizardMigracion = lazy(() => import("@/components/WizardMigracion"));
 
