@@ -67,10 +67,16 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .eq("sujetos.causas.vocalia_id", vocaliaId)
           .is("sujetos.borrado_en", null)
           .is("sujetos.causas.borrado_en", null),
+        supabase
+          .from("tablero_tarjetas")
+          .select("id,titulo,descripcion,fecha_hora,causa_id, columna:tablero_columnas!inner(id, tablero:tableros!inner(id,nombre,vocalia_id))")
+          .not("fecha_hora", "is", null)
+          .eq("columna.tablero.vocalia_id", vocaliaId),
       ]);
 
-      const firstErr = [evtRes, ppRes, penaRes, prescRes, prescMultiRes].find((r) => r.error)?.error;
+      const firstErr = [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes].find((r) => r.error)?.error;
       if (firstErr) throw new Error(firstErr.message);
+
 
       // Para cada sujeto, calcular el PP efectivo y armar la row de calendario manualmente.
       type PpRow = {
