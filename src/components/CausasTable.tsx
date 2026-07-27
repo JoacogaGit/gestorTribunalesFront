@@ -176,6 +176,10 @@ export default function CausasTable({
   const { ids: causasIdsConCategoria } = useCausasConCategoria(categoriaFiltroId);
   const categoriaFiltroNombre = categoriasVocalia.find((c) => c.id === categoriaFiltroId)?.nombre_categoria;
 
+  const isMobile = useIsMobile();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+
   // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
   const [localColors, setLocalColors] = useState<Record<string, string | null>>({});
   const colorOf = (c: Causa): string | null =>
