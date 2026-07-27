@@ -767,6 +767,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           if (id) setView(`lista-${id}`);
         }}
       />
+      <CrearTableroDialog
+        open={showCreateTablero}
+        onOpenChange={setShowCreateTablero}
+        onCrear={async (nombre, ambito) => {
+          const id = await tablerosHook.crearTablero(nombre, ambito);
+          if (id) setView(`tablero-${id}`);
+        }}
+      />
+
     </div>
   );
 }
