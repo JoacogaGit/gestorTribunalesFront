@@ -11,10 +11,20 @@ import {
 } from "@/lib/eventoMapper";
 import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 import { useEventosChanged } from "@/lib/eventosBus";
-import { parseLocalTime } from "@/lib/parseDate";
+import { parseLocalTime, toARTimeString } from "@/lib/parseDate";
 
 const ACTIVOS = ["tramite", "recurso"] as const;
 const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa,vocalia_id";
+
+interface TarjetaCalRow {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  fecha_hora: string | null;
+  causa_id: string | null;
+  columna?: { tablero?: { id: string; nombre: string; vocalia_id: string } | null } | null;
+}
+
 
 export function useCalendarioEventos(vocaliaId: string | null) {
   const [eventos, setEventos] = useState<CalendarEvento[]>([]);
