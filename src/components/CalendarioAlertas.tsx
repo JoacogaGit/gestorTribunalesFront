@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCalendarioEventos } from "@/hooks/useCalendarioEventos";
+import { LayoutDashboard } from "lucide-react";
 import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSemaforoDot } from "@/lib/eventoMapper";
 import RefreshButton from "@/components/RefreshButton";
 import EventoDetailDialog from "@/components/EventoDetailDialog";
@@ -17,6 +18,7 @@ const tipoIcons: Record<CalendarTipo, typeof Clock> = {
   vencimiento_pp: Clock,
   vencimiento_pena: FileCheck,
   prescripcion: AlertTriangle,
+  tarjeta: LayoutDashboard,
 };
 
 function fmtDate(d: string) {
