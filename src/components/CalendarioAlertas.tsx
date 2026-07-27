@@ -29,7 +29,7 @@ function eventoKey(e: CalendarEvento) {
 
 const STORAGE_KEY = "calendario-dismissed-v2";
 const FILTER_KEY = "calendario-tipos-ocultos-v2";
-const TIPOS: CalendarTipo[] = ["evento", "vencimiento_pp", "vencimiento_pena", "prescripcion"];
+const TIPOS: CalendarTipo[] = ["evento", "vencimiento_pp", "vencimiento_pena", "prescripcion", "tarjeta"];
 
 interface Props {
   vocaliaId: string | null;
