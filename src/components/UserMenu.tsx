@@ -17,9 +17,14 @@ interface Props {
   onUpdateProfile?: (data: { name: string; email: string }) => void;
   /** Si está presente, muestra "Abandonar tribunal" en el menú. Lo dispara cualquier miembro (admin o no). */
   onAbandonarTribunal?: () => void;
+  /** Oculta el bloque nombre/email junto al avatar (móvil). */
+  compact?: boolean;
+  /** Controles extra (tema, notificaciones, superadmin) dentro del menú. */
+  extraItems?: React.ReactNode;
 }
 
-export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal }: Props) {
+export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal, compact, extraItems }: Props) {
+
   const [profileOpen, setProfileOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
