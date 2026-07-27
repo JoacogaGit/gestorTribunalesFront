@@ -368,12 +368,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 onAbandonarTribunal={tribunalId ? () => abandonarRef.current?.start() : undefined}
                 compact
                 extraItems={
-                  <>
-                    <SuperadminLink variant="menu-item" />
-                    <ThemeToggle variant="menu-item" />
-                    <NotificationBell variant="menu-item" />
-                  </>
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    <ThemeToggle />
+                    <NotificationBell />
+                    <SuperadminLink variant="compact" />
+                  </div>
                 }
+
               />
             </div>
             <div className="mb-4">
