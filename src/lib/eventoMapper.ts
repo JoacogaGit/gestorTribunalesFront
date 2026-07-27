@@ -1,7 +1,7 @@
 // Helpers de calendario: mapping DB → eventos UI + semáforo cromático.
 import { parseLocalDate, toARTimeString } from "@/lib/parseDate";
 
-export type CalendarTipo = "evento" | "vencimiento_pp" | "vencimiento_pena" | "prescripcion";
+export type CalendarTipo = "evento" | "vencimiento_pp" | "vencimiento_pena" | "prescripcion" | "tarjeta";
 
 export interface CalendarEvento {
   id: string;
@@ -24,6 +24,7 @@ export const CALENDAR_TIPO_LABEL: Record<CalendarTipo, string> = {
   vencimiento_pp: "Vencimientos de Prisión Preventiva",
   vencimiento_pena: "Vencimientos de Pena",
   prescripcion: "Prescripciones",
+  tarjeta: "Tarjetas de tableros",
 };
 
 // ===== Semáforo cromático (usa tokens semánticos del design system) =====

@@ -17,9 +17,14 @@ interface Props {
   onUpdateProfile?: (data: { name: string; email: string }) => void;
   /** Si está presente, muestra "Abandonar tribunal" en el menú. Lo dispara cualquier miembro (admin o no). */
   onAbandonarTribunal?: () => void;
+  /** Oculta el bloque nombre/email junto al avatar (móvil). */
+  compact?: boolean;
+  /** Controles extra (tema, notificaciones, superadmin) dentro del menú. */
+  extraItems?: React.ReactNode;
 }
 
-export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal }: Props) {
+export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal, compact, extraItems }: Props) {
+
   const [profileOpen, setProfileOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
@@ -44,7 +49,7 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
           <div className="relative w-9 h-9 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shadow-soft ring-2 ring-transparent group-hover:ring-gold/50 transition-all">
             {initials}
           </div>
-          <div className="hidden md:flex flex-col items-start leading-tight pr-2">
+          <div className={`${compact ? "hidden" : "hidden md:flex"} flex-col items-start leading-tight pr-2`}>
             <span className="text-xs font-semibold text-foreground">{name}</span>
             <span className="text-[10px] text-muted-foreground">{email}</span>
           </div>
@@ -54,7 +59,14 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
             <span className="text-sm">{name}</span>
             <span className="text-[11px] text-muted-foreground font-normal">{email}</span>
           </DropdownMenuLabel>
+          {extraItems && (
+            <>
+              <DropdownMenuSeparator />
+              {extraItems}
+            </>
+          )}
           <DropdownMenuSeparator />
+
           <DropdownMenuItem onSelect={() => { setDraftName(name); setDraftEmail(email); setProfileOpen(true); }} className="gap-2">
             <UserCircle2 className="w-4 h-4" /> Mi perfil
           </DropdownMenuItem>
