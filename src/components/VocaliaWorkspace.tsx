@@ -155,9 +155,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
   const [showCreateCausa, setShowCreateCausa] = useState(false);
   const [showCreateLista, setShowCreateLista] = useState(false);
+  const [showCreateTablero, setShowCreateTablero] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
   const abandonarRef = useRef<AbandonarTribunalHandle>(null);
 
   const listasHook = useListasPersonalizadas(vocaliaId);
+  const tablerosHook = useTableros(vocaliaId);
+
 
   const navigateToCausa = async (causaId: string) => {
     const { data, error } = await supabase
