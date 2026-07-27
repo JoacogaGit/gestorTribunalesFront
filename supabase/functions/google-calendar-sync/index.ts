@@ -284,6 +284,76 @@ async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId:
 }
 
 // ============================================================
+// SYNC DE TARJETA DE TABLERO PERSONAL
+// ============================================================
+async function syncTarjeta(admin: any, action: string, tarjetaId: string, userId: string) {
+  const { data: tarjeta } = await admin
+    .from("tablero_tarjetas")
+    .select("id, titulo, descripcion, fecha_hora, google_event_id, columna:tablero_columnas!inner(id, tablero:tableros!inner(id, nombre, ambito, usuario_id, vocalia_id))")
+    .eq("id", tarjetaId)
+    .maybeSingle();
+
+  const tablero: any = (tarjeta as any)?.columna?.tablero;
+  if (!tarjeta || !tablero) return json({ ok: true, skipped: "no-tarjeta" });
+  // Sólo tableros personales del propio usuario se sincronizan.
+  if (tablero.ambito !== "personal" || tablero.usuario_id !== userId) {
+    return json({ ok: true, skipped: "no-personal" });
+  }
+
+  const { data: syncs } = await admin
+    .from("google_calendar_sync")
+    .select("id,user_id,vocalia_id,access_token,refresh_token,token_expires_at,google_calendar_id,activo")
+    .eq("vocalia_id", tablero.vocalia_id)
+    .eq("user_id", userId)
+    .eq("activo", true);
+  if (!syncs || syncs.length === 0) return json({ ok: true, skipped: "no-sync" });
+
+  const s = syncs[0];
+  try {
+    const accessToken = await ensureValidToken(admin, s);
+    const calId = encodeURIComponent(s.google_calendar_id);
+
+    if (action === "delete" || !tarjeta.fecha_hora) {
+      if (tarjeta.google_event_id) {
+        await gcalDelete(calId, tarjeta.google_event_id, accessToken);
+        if (action !== "delete") {
+          await admin.from("tablero_tarjetas").update({ google_event_id: null }).eq("id", tarjeta.id);
+        }
+      }
+      return json({ ok: true, action: action === "delete" ? "delete" : "sin-fecha" });
+    }
+
+    const desc = [tarjeta.descripcion?.trim(), `Tablero: ${tablero.nombre}`].filter(Boolean).join("\n\n");
+    const evBody = { ...buildEventBody(tarjeta.titulo || "Tarjeta", tarjeta.fecha_hora, null), description: desc };
+
+    if (tarjeta.google_event_id) {
+      const r = await gcalPatch(calId, tarjeta.google_event_id, evBody, accessToken);
+      if (r.status === 404 || r.status === 410) {
+        const ins = await gcalInsert(calId, evBody, accessToken);
+        const created = await ins.json();
+        if (ins.ok && created.id) {
+          await admin.from("tablero_tarjetas").update({ google_event_id: created.id }).eq("id", tarjeta.id);
+        }
+        return json({ ok: ins.ok, action: "recreate" });
+      }
+      await r.text();
+      return json({ ok: r.ok, action: "update" });
+    }
+
+    const ins = await gcalInsert(calId, evBody, accessToken);
+    const created = await ins.json();
+    if (ins.ok && created.id) {
+      await admin.from("tablero_tarjetas").update({ google_event_id: created.id }).eq("id", tarjeta.id);
+    }
+    return json({ ok: ins.ok, action: "create" });
+  } catch (err) {
+    console.error("syncTarjeta error", err);
+    return json({ ok: false, error: (err as Error).message }, 500);
+  }
+}
+
+// ============================================================
+
 // HELPERS GOOGLE CALENDAR
 // ============================================================
 function gcalInsert(calId: string, body: unknown, token: string) {
