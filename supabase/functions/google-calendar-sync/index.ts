@@ -34,8 +34,9 @@ Deno.serve(async (req) => {
     const userId = claims.claims.sub as string;
 
     const body = await req.json().catch(() => ({}));
-    const { action, evento_id, causa_id, vocalia_id } = body ?? {};
+    const { action, evento_id, causa_id, vocalia_id, tipo, tarjeta_id } = body ?? {};
     if (!action) return json({ error: "Faltan parámetros" }, 400);
+
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
