@@ -55,6 +55,8 @@ export default function AppSidebar({
   vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
   modoTribunal = "vocalias_separadas",
   listasPersonalizadas = [], onCreateLista,
+  tableros = [], onCreateTablero,
+
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
