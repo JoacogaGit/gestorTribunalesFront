@@ -74,8 +74,15 @@ Deno.serve(async (req) => {
       return json({ ok: true, bulk: { created: aggregated.ok, total: aggregated.total, failed: aggregated.failed } });
     }
 
+    // ========== SYNC DE TARJETA DE TABLERO (solo tableros personales) ==========
+    if (tipo === "tarjeta") {
+      if (!tarjeta_id) return json({ error: "Falta tarjeta_id" }, 400);
+      return await syncTarjeta(admin, action, tarjeta_id, userId);
+    }
+
     // ========== SYNC PUNTUAL DE EVENTO MANUAL ==========
     if (!evento_id) return json({ error: "Falta evento_id" }, 400);
+
 
     const { data: evento, error: evErr } = await admin
       .from("eventos")
