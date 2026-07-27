@@ -11,7 +11,10 @@ import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSe
 import RefreshButton from "@/components/RefreshButton";
 import EventoDetailDialog from "@/components/EventoDetailDialog";
 import GoogleCalendarSection from "@/components/GoogleCalendarSection";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { parseLocalDate, parseLocalTime, formatLocalDate } from "@/lib/parseDate";
+
 
 const tipoIcons: Record<CalendarTipo, typeof Clock> = {
   evento: CalIcon,
@@ -40,9 +43,13 @@ interface Props {
 
 export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
   const { eventos, loading, error, refetch } = useCalendarioEventos(vocaliaId);
+  const isMobile = useIsMobile();
+  const [mobileVista, setMobileVista] = useState<"mes" | "agenda">("agenda");
+  const [daySheetOpen, setDaySheetOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [openEvento, setOpenEvento] = useState<CalendarEvento | null>(null);
+
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try { return new Set<string>(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch { return new Set(); }
   });
@@ -154,12 +161,114 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
     );
   }
 
+  if (isMobile) {
+    const delDia = selectedDate
+      ? visibles
+          .filter((e) => parseLocalDate(e.fecha)?.toDateString() === selectedDate.toDateString())
+          .filter(matchesSearch)
+          .sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha))
+      : [];
+    const agenda = [...futuros].sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
+
+    return (
+      <div className="space-y-4 h-full overflow-y-auto px-1 pb-24">
+        <div className="glass-card rounded-lg p-3">
+          <GoogleCalendarSection />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border border-border overflow-hidden">
+            <button
+              onClick={() => setMobileVista("mes")}
+              className={`px-3 min-h-[44px] text-sm font-medium ${mobileVista === "mes" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground"}`}
+            >
+              Mes
+            </button>
+            <button
+              onClick={() => setMobileVista("agenda")}
+              className={`px-3 min-h-[44px] text-sm font-medium ${mobileVista === "agenda" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground"}`}
+            >
+              Agenda
+            </button>
+          </div>
+          <RefreshButton onRefresh={refetch} loading={loading} />
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar..."
+            className="w-full pl-9 pr-3 min-h-[44px] text-base bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        {mobileVista === "mes" ? (
+          <div className="glass-card rounded-lg p-2">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(d) => { setSelectedDate(d); if (d) setDaySheetOpen(true); }}
+              className="pointer-events-auto w-full [&_table]:w-full [&_td]:h-11 [&_button]:h-11 [&_button]:w-11 [&_button]:text-base"
+              modifiers={{ hasEvent: (date) => eventDates.has(date.toDateString()) }}
+              modifiersClassNames={{ hasEvent: "relative font-bold text-primary after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary" }}
+            />
+            <p className="text-xs text-muted-foreground text-center pb-2">
+              Tocá un día para ver sus eventos
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <h2 className="text-base font-display font-semibold text-foreground px-1">
+              Próximos eventos <span className="text-muted-foreground font-normal text-sm">({agenda.length})</span>
+            </h2>
+            {agenda.map((e, i) => renderEvento(e, i, false))}
+            {agenda.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">No hay eventos próximos</p>
+            )}
+            {pasadosTodos.length > 0 && (
+              <>
+                <h3 className="text-xs uppercase tracking-wider text-muted-foreground px-1 pt-4">Pasados ({pasadosTodos.length})</h3>
+                {pasadosTodos.slice(0, 30).map((e, i) => renderEvento(e, i, true))}
+              </>
+            )}
+          </div>
+        )}
+
+        <Sheet open={daySheetOpen} onOpenChange={setDaySheetOpen}>
+          <SheetContent side="bottom" className="max-h-[75vh] overflow-y-auto">
+            <SheetHeader className="text-left">
+              <SheetTitle className="text-base">
+                {selectedDate?.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long" })}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="space-y-2 mt-3">
+              {delDia.map((e, i) => renderEvento(e, i, parseLocalTime(e.fecha) < now))}
+              {delDia.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">Sin eventos este día</p>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <EventoDetailDialog
+          evento={openEvento}
+          onClose={() => setOpenEvento(null)}
+          onOpenCausa={(id) => { onOpenCausa?.(id); }}
+          onMutated={refetch}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 h-full overflow-y-auto pr-1">
       <div className="glass-card rounded-lg p-4">
         <GoogleCalendarSection />
       </div>
       <div className="flex items-start gap-6">
+
         {/* Left column */}
         <div className="shrink-0 w-[320px] space-y-4">
           <div className="glass-card rounded-lg p-2">
