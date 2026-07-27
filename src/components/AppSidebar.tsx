@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen, Lock } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
 import type { ModoTribunal } from "@/hooks/useTribunal";
 import type { ListaPersonalizada } from "@/hooks/useListasPersonalizadas";
+import type { Tablero } from "@/hooks/useTableros";
 
 const navBeforeTerminadas = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -18,6 +19,8 @@ const navAfterTerminadas = [
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },
   { id: "calendario", label: "Calendario / Alertas", icon: Calendar },
   { id: "categorias", label: "Categorías", icon: Tag },
+];
+const navFinal = [
   { id: "migrar", label: "Migrar causas", icon: Sparkles },
 ];
 
@@ -42,7 +45,10 @@ interface Props {
   modoTribunal?: ModoTribunal;
   listasPersonalizadas?: ListaPersonalizada[];
   onCreateLista?: () => void;
+  tableros?: Tablero[];
+  onCreateTablero?: () => void;
 }
+
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
