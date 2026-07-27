@@ -293,7 +293,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     || (listaActiva ? `Lista: ${listaActiva.nombre}` : null)
     || (tableroActivo ? tableroActivo.nombre : null)
     || customBoards.find((b) => b.id === view)?.label
-    || "Tablero";
+    || "Anotación";
 
   const remoteTableCommon = {
     onUpdateCausa: remoteNoop,

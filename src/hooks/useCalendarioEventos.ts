@@ -128,7 +128,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           descripcion: t.descripcion ?? undefined,
           tipo: "tarjeta",
           causaId: t.causa_id ?? "",
-          causaNumero: t.columna?.tablero?.nombre ?? "Tablero",
+          causaNumero: t.columna?.tablero?.nombre ?? "Anotación",
           causaCaratula: t.columna?.tablero?.nombre ?? "",
         })),
 

@@ -24,7 +24,7 @@ export const CALENDAR_TIPO_LABEL: Record<CalendarTipo, string> = {
   vencimiento_pp: "Vencimientos de Prisión Preventiva",
   vencimiento_pena: "Vencimientos de Pena",
   prescripcion: "Prescripciones",
-  tarjeta: "Tarjetas de tableros",
+  tarjeta: "Anotaciones",
 };
 
 // ===== Semáforo cromático (usa tokens semánticos del design system) =====
