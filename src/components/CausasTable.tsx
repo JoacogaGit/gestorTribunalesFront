@@ -809,8 +809,76 @@ export default function CausasTable({
         </div>
       </div>
 
-      <div className="elevated-card rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+      {isMobile && (
+        <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto pb-4">
+          {visibleRows.map((c, idx) => {
+            const rowColor = colorOf(c);
+            const expanded = expandedId === c.id;
+            return (
+              <div
+                key={c.id}
+                className="elevated-card rounded-xl p-3 border-l-4"
+                style={{ borderLeftColor: rowColor || "hsl(var(--border))" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setExpandedId(expanded ? null : c.id)}
+                  className="w-full text-left min-h-[44px]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm text-primary">{pageStart + idx + 1}. {c.numero}</p>
+                      <p className="text-sm font-medium text-foreground break-words">{getCaratula(c)}</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 shrink-0 mt-1 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+                    <span><span className="opacity-60">Estado:</span> {c.estadoCausa}</span>
+                    <span><span className="opacity-60">Imputado:</span> {c.imputados?.[0]?.nombre ?? "—"}</span>
+                    <span><span className="opacity-60">Prescripción:</span> {c.fechaPrescripcion || "—"}</span>
+                    <span><span className="opacity-60">Despachante:</span> {c.despachante || "—"}</span>
+                  </div>
+                </button>
+
+                {expanded && (
+                  <div className="mt-3 border-t border-border/60 pt-3 space-y-1.5">
+                    {visibleColumns.map((col) => (
+                      <div key={col.key} className="flex gap-2 text-[13px]">
+                        <span className="text-muted-foreground/70 shrink-0 min-w-[110px]">{col.label}</span>
+                        <span className="break-words min-w-0 text-foreground">{col.render(c)}</span>
+                      </div>
+                    ))}
+                    <Button className="w-full mt-2 min-h-[44px]" onClick={() => setSelected(c)}>
+                      Ver detalles
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {sorted.length === 0 && (
+            <p className="text-center text-muted-foreground py-8 text-sm">
+              {search ? "Sin resultados" : "Sin causas en esta categoría"}
+            </p>
+          )}
+          {onCreateCausa && !search && (
+            <button onClick={handleCreate} className="flex items-center justify-center gap-1.5 text-sm text-primary px-3 min-h-[44px] rounded-md border border-dashed border-primary/40">
+              <Plus className="w-4 h-4" /> Nueva causa
+            </button>
+          )}
+          {shouldPaginate && (
+            <div className="flex items-center justify-between gap-2 pt-2 text-xs text-muted-foreground">
+              <Button size="sm" variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
+              <span>{page} / {totalPages}</span>
+              <Button size="sm" variant="outline" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Siguiente</Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className={`elevated-card rounded-xl overflow-hidden flex-col flex-1 min-h-0 ${isMobile ? "hidden" : "flex"}`}>
         <div className="flex-1 min-h-0 overflow-auto">
+
           <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)}`}>
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
               <TableRow className="bg-transparent hover:bg-transparent">
