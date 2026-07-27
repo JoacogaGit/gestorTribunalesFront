@@ -286,8 +286,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const listaActiva = view.startsWith("lista-")
     ? listasHook.listas.find((l) => `lista-${l.id}` === view) ?? null
     : null;
+  const tableroActivo = view.startsWith("tablero-")
+    ? tablerosHook.tableros.find((t) => `tablero-${t.id}` === view) ?? null
+    : null;
   const title = defaultTitles[view]
     || (listaActiva ? `Lista: ${listaActiva.nombre}` : null)
+    || (tableroActivo ? tableroActivo.nombre : null)
     || customBoards.find((b) => b.id === view)?.label
     || "Tablero";
 
@@ -298,32 +302,86 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     onChangeEstado: remoteNoop,
   };
 
+  const handleNavigate = (v: string) => { setView(v); setSidebarOpen(false); };
+
+  const sidebar = (
+    <AppSidebar
+      active={view}
+      onNavigate={handleNavigate}
+      customBoards={customBoards}
+      onAddBoard={addBoard}
+      onRemoveBoard={removeBoard}
+      onRenameBoard={renameBoard}
+      vocaliaNombre={sidebarLabel}
+      vocaliasTribunal={vocaliasTribunal}
+      currentVocaliaId={vocaliaId}
+      onSwitchVocalia={handleSwitchVocalia}
+      onBack={onBack}
+      esAdmin={esAdmin}
+      modoTribunal={modoTribunal}
+      listasPersonalizadas={listasHook.listas}
+      onCreateLista={() => {
+        if (listasHook.listas.length >= 2) {
+          toast.error("Llegaste al límite de 2 listas personalizadas para esta vocalía");
+          return;
+        }
+        setShowCreateLista(true);
+      }}
+      tableros={tablerosHook.tableros}
+      onCreateTablero={() => setShowCreateTablero(true)}
+    />
+  );
+
   return (
     <div className="flex min-h-screen bg-background">
-      <AppSidebar
-        active={view}
-        onNavigate={setView}
-        customBoards={customBoards}
-        onAddBoard={addBoard}
-        onRemoveBoard={removeBoard}
-        onRenameBoard={renameBoard}
-        vocaliaNombre={sidebarLabel}
-        vocaliasTribunal={vocaliasTribunal}
-        currentVocaliaId={vocaliaId}
-        onSwitchVocalia={handleSwitchVocalia}
-        onBack={onBack}
-        esAdmin={esAdmin}
-        modoTribunal={modoTribunal}
-        listasPersonalizadas={listasHook.listas}
-        onCreateLista={() => {
-          if (listasHook.listas.length >= 2) {
-            toast.error("Llegaste al límite de 2 listas personalizadas para esta vocalía");
-            return;
-          }
-          setShowCreateLista(true);
-        }}
-      />
-      <main className="flex-1 p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
+      {!isMobile && sidebar}
+      {isMobile && (
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent side="left" className="w-64 p-0 border-sidebar-border overflow-y-auto">
+            {sidebar}
+          </SheetContent>
+        </Sheet>
+      )}
+      <main className="flex-1 px-4 py-4 md:p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
+        {isMobile ? (
+          <>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Abrir menú"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-foreground hover:bg-muted/60 transition-colors"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-1.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-gold">
+                  <ScaleIcon className="h-4 w-4 text-sidebar-primary-foreground" />
+                </div>
+                <span className="font-display text-base font-bold text-foreground">IusTrack</span>
+              </div>
+              <UserMenu
+                email={user.email}
+                name={user.name}
+                onLogout={onLogout}
+                onUpdateProfile={onUpdateUser}
+                onAbandonarTribunal={tribunalId ? () => abandonarRef.current?.start() : undefined}
+                compact
+                extraItems={
+                  <>
+                    <SuperadminLink variant="menu-item" />
+                    <ThemeToggle variant="menu-item" />
+                    <NotificationBell variant="menu-item" />
+                  </>
+                }
+              />
+            </div>
+            <div className="mb-4">
+              <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">{sidebarLabel}</span>
+              <h1 className="text-xl font-display font-bold text-foreground">{title}</h1>
+            </div>
+          </>
+        ) : (
         <div className="flex items-end justify-between mb-8 gap-4">
           <div className="flex flex-col">
             <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 mb-1">{sidebarLabel}</span>
@@ -377,6 +435,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             />
           </div>
         </div>
+        )}
+
 
         {tribunalId && (
           <AbandonarTribunal
