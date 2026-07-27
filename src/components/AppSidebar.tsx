@@ -225,7 +225,60 @@ export default function AppSidebar({
           )}
 
           {navAfterTerminadas.map(renderNavButton)}
+
+          {/* Tableros tipo Trello */}
+          {!collapsed && (tableros.length > 0 || onCreateTablero) && (
+            <div className="pt-3 pb-1">
+              <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Tableros</span>
+            </div>
+          )}
+          {tableros.map((tb) => {
+            const id = `tablero-${tb.id}`;
+            const isActive = active === id;
+            const btn = (
+              <button
+                key={id}
+                onClick={() => onNavigate(id)}
+                className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                }`}
+                aria-label={tb.nombre}
+              >
+                {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
+                <LayoutDashboard className={`w-4 h-4 shrink-0 ${isActive ? "text-sidebar-primary" : ""}`} />
+                {!collapsed && (
+                  <>
+                    <span className="truncate flex-1 text-left">{tb.nombre}</span>
+                    {tb.ambito === "personal"
+                      ? <Lock className="w-3 h-3 shrink-0 text-sidebar-foreground/40" />
+                      : <Users className="w-3 h-3 shrink-0 text-sidebar-foreground/40" />}
+                  </>
+                )}
+              </button>
+            );
+            if (!collapsed) return btn;
+            return (
+              <Tooltip key={id} delayDuration={150}>
+                <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                <TooltipContent side="right">{tb.nombre}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+          {!collapsed && onCreateTablero && (
+            <button
+              onClick={onCreateTablero}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors border border-dashed border-sidebar-border/50"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Nuevo tablero
+            </button>
+          )}
+
+          {navFinal.map(renderNavButton)}
           {esAdmin && adminItems.map(renderNavButton)}
+
 
           {!collapsed && customBoards.length > 0 && (
             <div className="pt-4 pb-1">
