@@ -700,6 +700,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 onNavigateToConexa={navigateToCausa}
               />
             )}
+            {tableroActivo && (
+              <TableroView key={tableroActivo.id} tablero={tableroActivo} vocaliaId={vocaliaId} />
+            )}
+
           </motion.div>
         </AnimatePresence>
 
