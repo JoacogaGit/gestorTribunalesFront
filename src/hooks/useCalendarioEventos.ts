@@ -109,6 +109,19 @@ export function useCalendarioEventos(vocaliaId: string | null) {
         ...((prescRes.data ?? []) as unknown as DbSujetoFechaRow[]).map((r) =>
           mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
         ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[]).map(mapPrescripcionToCalendar),
+        // Tarjetas de tableros con fecha
+        ...((tarjetasRes.data ?? []) as unknown as TarjetaCalRow[]).map((t): CalendarEvento => ({
+          id: `tarjeta-${t.id}`,
+          fecha: t.fecha_hora as string,
+          hora: toARTimeString(t.fecha_hora as string) || undefined,
+          titulo: t.titulo,
+          descripcion: t.descripcion ?? undefined,
+          tipo: "tarjeta",
+          causaId: t.causa_id ?? "",
+          causaNumero: t.columna?.tablero?.nombre ?? "Tablero",
+          causaCaratula: t.columna?.tablero?.nombre ?? "",
+        })),
+
       ].filter((e): e is CalendarEvento => e !== null)
        .sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
 
