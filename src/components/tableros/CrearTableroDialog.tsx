@@ -34,7 +34,7 @@ export default function CrearTableroDialog({ open, onOpenChange, onCrear }: Prop
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="font-display">Nuevo tablero</DialogTitle>
+          <DialogTitle className="font-display">Nueva anotación</DialogTitle>
         </DialogHeader>
         <div className="space-y-5">
           <div className="space-y-1.5">
@@ -47,6 +47,7 @@ export default function CrearTableroDialog({ open, onOpenChange, onCrear }: Prop
               placeholder="Ej: Audiencias de la semana"
               autoFocus
             />
+
           </div>
           <div className="space-y-2">
             <Label>Ámbito</Label>
@@ -70,8 +71,9 @@ export default function CrearTableroDialog({ open, onOpenChange, onCrear }: Prop
           <div className="flex gap-2 pt-1">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button className="flex-1" onClick={submit} disabled={!nombre.trim() || saving}>
-              {saving ? "Creando…" : "Crear tablero"}
+              {saving ? "Creando…" : "Crear anotación"}
             </Button>
+
           </div>
         </div>
       </DialogContent>
