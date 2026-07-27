@@ -795,6 +795,133 @@ export type Database = {
           },
         ]
       }
+      tablero_columnas: {
+        Row: {
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+          tablero_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+          tablero_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          tablero_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablero_columnas_tablero_id_fkey"
+            columns: ["tablero_id"]
+            isOneToOne: false
+            referencedRelation: "tableros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablero_tarjetas: {
+        Row: {
+          causa_id: string | null
+          columna_id: string
+          creado_por: string | null
+          created_at: string
+          descripcion: string | null
+          fecha_hora: string | null
+          fecha_hora_fin: string | null
+          google_event_id: string | null
+          id: string
+          orden: number
+          titulo: string
+        }
+        Insert: {
+          causa_id?: string | null
+          columna_id: string
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          fecha_hora?: string | null
+          fecha_hora_fin?: string | null
+          google_event_id?: string | null
+          id?: string
+          orden?: number
+          titulo: string
+        }
+        Update: {
+          causa_id?: string | null
+          columna_id?: string
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          fecha_hora?: string | null
+          fecha_hora_fin?: string | null
+          google_event_id?: string | null
+          id?: string
+          orden?: number
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablero_tarjetas_causa_id_fkey"
+            columns: ["causa_id"]
+            isOneToOne: false
+            referencedRelation: "causas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_columna_id_fkey"
+            columns: ["columna_id"]
+            isOneToOne: false
+            referencedRelation: "tablero_columnas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tableros: {
+        Row: {
+          ambito: string
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+          usuario_id: string
+          vocalia_id: string
+        }
+        Insert: {
+          ambito: string
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+          usuario_id: string
+          vocalia_id: string
+        }
+        Update: {
+          ambito?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          usuario_id?: string
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tableros_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tribunales: {
         Row: {
           codigo_acceso: string | null
@@ -894,6 +1021,14 @@ export type Database = {
       }
       es_miembro_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_superadmin: { Args: never; Returns: boolean }
+      puede_acceder_columna: {
+        Args: { p_columna_id: string }
+        Returns: boolean
+      }
+      puede_acceder_tablero: {
+        Args: { p_tablero_id: string }
+        Returns: boolean
+      }
       restaurar_tribunal: {
         Args: { p_tribunal_id: string }
         Returns: undefined
