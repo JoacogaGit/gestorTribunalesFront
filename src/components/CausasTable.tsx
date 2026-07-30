@@ -1088,6 +1088,15 @@ export default function CausasTable({
         mode="crear"
         onMutated={onMutated}
       />
+      {duplicarDe && (
+        <CausaFormDialog
+          open
+          onOpenChange={(o) => { if (!o) setDuplicarDe(null); }}
+          mode="crear"
+          duplicarDeId={duplicarDe.id}
+          onMutated={onMutated}
+        />
+      )}
 
       <Dialog open={showAddCol} onOpenChange={setShowAddCol}>
         <DialogContent className="max-w-sm bg-card border-border">
