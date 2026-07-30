@@ -78,6 +78,7 @@ export type Database = {
           numero_interno: string | null
           otros_intervinientes: string | null
           querella: string | null
+          subestado_tramite_id: string | null
           tipo_proceso: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           updated_at: string | null
@@ -104,6 +105,7 @@ export type Database = {
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
+          subestado_tramite_id?: string | null
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           updated_at?: string | null
@@ -130,6 +132,7 @@ export type Database = {
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
+          subestado_tramite_id?: string | null
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           updated_at?: string | null
@@ -162,6 +165,13 @@ export type Database = {
             columns: ["modificado_por"]
             isOneToOne: false
             referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "causas_subestado_tramite_id_fkey"
+            columns: ["subestado_tramite_id"]
+            isOneToOne: false
+            referencedRelation: "subestados_tramite"
             referencedColumns: ["id"]
           },
           {
@@ -588,6 +598,7 @@ export type Database = {
           id: string
           nombre_completo: string | null
           rol_global: Database["public"]["Enums"]["rol_global_enum"] | null
+          tutorial_completado: boolean
           updated_at: string | null
         }
         Insert: {
@@ -596,6 +607,7 @@ export type Database = {
           id: string
           nombre_completo?: string | null
           rol_global?: Database["public"]["Enums"]["rol_global_enum"] | null
+          tutorial_completado?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -604,6 +616,7 @@ export type Database = {
           id?: string
           nombre_completo?: string | null
           rol_global?: Database["public"]["Enums"]["rol_global_enum"] | null
+          tutorial_completado?: boolean
           updated_at?: string | null
         }
         Relationships: []
@@ -699,6 +712,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      subestados_tramite: {
+        Row: {
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+          vocalia_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+          vocalia_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subestados_tramite_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sujetos: {
         Row: {
@@ -799,6 +844,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          lista_id: string
           nombre: string
           orden: number
           tablero_id: string
@@ -806,6 +852,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          lista_id: string
           nombre: string
           orden?: number
           tablero_id: string
@@ -813,13 +860,59 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          lista_id?: string
           nombre?: string
           orden?: number
           tablero_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "tablero_columnas_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "tablero_listas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tablero_columnas_tablero_id_fkey"
+            columns: ["tablero_id"]
+            isOneToOne: false
+            referencedRelation: "tableros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablero_listas: {
+        Row: {
+          ambito: string
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+          tablero_id: string
+          usuario_id: string
+        }
+        Insert: {
+          ambito?: string
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+          tablero_id: string
+          usuario_id?: string
+        }
+        Update: {
+          ambito?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          tablero_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablero_listas_tablero_id_fkey"
             columns: ["tablero_id"]
             isOneToOne: false
             referencedRelation: "tableros"
@@ -886,7 +979,6 @@ export type Database = {
       }
       tableros: {
         Row: {
-          ambito: string
           created_at: string
           id: string
           nombre: string
@@ -895,7 +987,6 @@ export type Database = {
           vocalia_id: string
         }
         Insert: {
-          ambito: string
           created_at?: string
           id?: string
           nombre: string
@@ -904,7 +995,6 @@ export type Database = {
           vocalia_id: string
         }
         Update: {
-          ambito?: string
           created_at?: string
           id?: string
           nombre?: string
@@ -1015,6 +1105,7 @@ export type Database = {
         Returns: number
       }
       es_admin_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
+      es_lector_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_miembro_de_vocalia: {
         Args: { p_vocalia_id: string }
         Returns: boolean
@@ -1029,6 +1120,16 @@ export type Database = {
         Args: { p_tablero_id: string }
         Returns: boolean
       }
+      puede_editar_columna: { Args: { p_columna_id: string }; Returns: boolean }
+      puede_editar_lista_tablero: {
+        Args: { p_lista_id: string }
+        Returns: boolean
+      }
+      puede_editar_vocalia: { Args: { p_vocalia_id: string }; Returns: boolean }
+      puede_ver_lista_tablero: {
+        Args: { p_lista_id: string }
+        Returns: boolean
+      }
       restaurar_tribunal: {
         Args: { p_tribunal_id: string }
         Returns: undefined
@@ -1039,7 +1140,7 @@ export type Database = {
       estado_causa_enum: "tramite" | "recurso" | "terminada"
       modo_tribunal_enum: "lista_unica" | "vocalias_separadas"
       rol_global_enum: "superadmin" | "usuario"
-      rol_miembro_enum: "admin" | "miembro"
+      rol_miembro_enum: "admin" | "miembro" | "lector"
       situacion_libertad_enum:
         | "libre"
         | "detenido"
@@ -1047,7 +1148,12 @@ export type Database = {
         | "probation"
         | "condenado"
       tipo_proceso_enum: "unipersonal" | "colegiado"
-      tipo_recurso_enum: "casacion" | "rex" | "queja_corte"
+      tipo_recurso_enum:
+        | "casacion"
+        | "rex"
+        | "queja_corte"
+        | "apelacion"
+        | "tsj"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1178,7 +1284,7 @@ export const Constants = {
       estado_causa_enum: ["tramite", "recurso", "terminada"],
       modo_tribunal_enum: ["lista_unica", "vocalias_separadas"],
       rol_global_enum: ["superadmin", "usuario"],
-      rol_miembro_enum: ["admin", "miembro"],
+      rol_miembro_enum: ["admin", "miembro", "lector"],
       situacion_libertad_enum: [
         "libre",
         "detenido",
@@ -1187,7 +1293,7 @@ export const Constants = {
         "condenado",
       ],
       tipo_proceso_enum: ["unipersonal", "colegiado"],
-      tipo_recurso_enum: ["casacion", "rex", "queja_corte"],
+      tipo_recurso_enum: ["casacion", "rex", "queja_corte", "apelacion", "tsj"],
     },
   },
 } as const
