@@ -3,6 +3,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
+import { useSoloLectura } from "@/hooks/useSoloLectura";
 import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter } from "lucide-react";
 import { useCategoriasVocalia, useCausasConCategoria } from "@/hooks/useCategoriasVocalia";
 import { useVocaliaActual } from "@/context/VocaliaContext";
@@ -179,6 +180,8 @@ export default function CausasTable({
 
   const isMobile = useIsMobile();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const soloLectura = useSoloLectura();
+  const [duplicarDe, setDuplicarDe] = useState<Causa | null>(null);
 
 
   // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
@@ -936,9 +939,14 @@ export default function CausasTable({
                     <ContextMenuLabel className="text-xs font-mono">{c.numero}</ContextMenuLabel>
                     <ContextMenuSeparator />
                     <ContextMenuItem onSelect={() => setSelected(c)} className="text-xs">
-                      <Pencil className="w-3.5 h-3.5 mr-2" /> Abrir / Editar
+                      <Pencil className="w-3.5 h-3.5 mr-2" /> {soloLectura ? "Abrir" : "Abrir / Editar"}
                     </ContextMenuItem>
-                    {(onChangeEstado || onUpdateCausa) && (
+                    {!soloLectura && (
+                      <ContextMenuItem onSelect={() => setDuplicarDe(c)} className="text-xs">
+                        <Copy className="w-3.5 h-3.5 mr-2" /> Duplicar causa
+                      </ContextMenuItem>
+                    )}
+                    {!soloLectura && (onChangeEstado || onUpdateCausa) && (
                       <ContextMenuSub>
                         <ContextMenuSubTrigger className="text-xs">
                           Cambiar estado
@@ -961,6 +969,7 @@ export default function CausasTable({
                       </ContextMenuSub>
                     )}
                     <ContextMenuSeparator />
+                    {!soloLectura && (
                     <ContextMenuSub>
                       <ContextMenuSubTrigger className="text-xs">
                         <Palette className="w-3.5 h-3.5 mr-2" /> Pintar fila
@@ -981,13 +990,14 @@ export default function CausasTable({
                         </div>
                       </ContextMenuSubContent>
                     </ContextMenuSub>
-                    {rowColor && (
+                    )}
+                    {!soloLectura && rowColor && (
                       <ContextMenuItem onSelect={() => handleSetColor(c, null)} className="text-xs">
                         <Eraser className="w-3.5 h-3.5 mr-2" /> Quitar color
                       </ContextMenuItem>
                     )}
                     <ContextMenuSeparator />
-                    {extraRowAction && (
+                    {!soloLectura && extraRowAction && (
                       <ContextMenuItem
                         onSelect={() => extraRowAction.onClick(c)}
                         className={`text-xs ${extraRowAction.destructive ? "text-alert-urgent focus:text-alert-urgent" : ""}`}
@@ -995,12 +1005,14 @@ export default function CausasTable({
                         {extraRowAction.label}
                       </ContextMenuItem>
                     )}
-                    <ContextMenuItem
-                      onSelect={() => setConfirmDelete(c)}
-                      className="text-xs text-alert-urgent focus:text-alert-urgent"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
-                    </ContextMenuItem>
+                    {!soloLectura && (
+                      <ContextMenuItem
+                        onSelect={() => setConfirmDelete(c)}
+                        className="text-xs text-alert-urgent focus:text-alert-urgent"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
+                      </ContextMenuItem>
+                    )}
                   </ContextMenuContent>
                 </ContextMenu>
                 );
@@ -1012,7 +1024,7 @@ export default function CausasTable({
                   </TableCell>
                 </TableRow>
               )}
-              {(onCreateCausa || onImportCausa) && !search && (
+              {!soloLectura && (onCreateCausa || onImportCausa) && !search && (
                 <TableRow className="bg-muted/10">
                   <TableCell colSpan={visibleColumns.length + 1} className="py-2">
                     <div className="flex items-center justify-center gap-2">
