@@ -93,6 +93,10 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
         </DropdownMenuContent>
       </DropdownMenu>
 
+      <TutorialModal open={tutorialOpen} onOpenChange={setTutorialOpen} />
+
+
+
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent className="max-w-md bg-card border-border">
           <DialogHeader>
