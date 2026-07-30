@@ -37,6 +37,7 @@ import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
+import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
 import CrearListaDialog from "@/components/listas/CrearListaDialog";
@@ -470,7 +471,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             className={view === "migrar" ? "hidden" : "flex flex-col flex-1 min-h-0"}
           >
             {view === "dashboard" && (
-              <div className="space-y-8 flex flex-col flex-1 min-h-0">
+              <div className="space-y-8 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
                 <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
@@ -662,7 +663,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} />}
-            {view === "categorias" && vocaliaId && <CategoriasManager vocaliaId={vocaliaId} />}
+            {view === "categorias" && vocaliaId && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
+                <CategoriasManager vocaliaId={vocaliaId} />
+                <SubestadosManager vocaliaId={vocaliaId} />
+              </div>
+            )}
             {view === "miembros" && esAdmin && tribunalId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                 <MiembrosTribunal tribunalId={tribunalId} onAbandoned={onBack} />
