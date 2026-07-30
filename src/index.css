@@ -251,7 +251,7 @@
   border: 1px solid hsl(var(--border));
   border-radius: 0.9rem;
   box-shadow: 0 20px 45px -15px hsl(222 47% 4% / 0.55);
-  max-width: 21rem;
+  max-width: 24rem;
   animation: fade-in 0.25s ease-out;
 }
 .driver-popover.iustrack-tour .driver-popover-title {
@@ -284,7 +284,40 @@
   border-color: transparent;
   font-weight: 600;
 }
+.iustrack-tour-lead {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.iustrack-tour-callouts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.iustrack-tour-callouts li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  background: hsl(var(--muted) / 0.5);
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.55rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.iustrack-tour-callouts strong { color: hsl(var(--foreground)); }
+.iustrack-tour-arrow { color: hsl(var(--primary)); font-weight: 700; }
+.iustrack-tour-hint {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
 .iustrack-tour-progress {
+
   margin-top: 0.85rem;
   height: 4px;
   width: 100%;

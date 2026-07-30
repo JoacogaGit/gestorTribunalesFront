@@ -336,7 +336,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
   return (
     <div className="flex min-h-screen bg-background">
-      <TutorialTour onNavigate={(v) => setView(v as View)} onOpenSidebar={setSidebarOpen} isMobile={isMobile} />
+      <TutorialTour
+        onNavigate={(v) => setView(v as View)}
+        onOpenSidebar={setSidebarOpen}
+        isMobile={isMobile}
+        multiVocalia={vocaliasTribunal.length > 1}
+        esAdmin={esAdmin}
+        tableroView={tablerosHook.tableros[0] ? `tablero-${tablerosHook.tableros[0].id}` : null}
+      />
       {!isMobile && sidebar}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>

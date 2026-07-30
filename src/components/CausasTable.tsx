@@ -734,6 +734,7 @@ export default function CausasTable({
           {subestados.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger
+                data-tour="filtro-subestado"
                 className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
                   subestadoFiltroId ? "bg-primary/15 text-primary hover:bg-primary/20" : "text-muted-foreground hover:text-foreground bg-muted/40"
                 }`}

@@ -24,6 +24,7 @@ const navFinal = [
   { id: "migrar", label: "Migrar causas", icon: Sparkles },
 ];
 
+
 export interface CustomBoard {
   id: string;
   label: string;
@@ -85,6 +86,7 @@ export default function AppSidebar({
       <button
         key={item.id}
         onClick={() => onNavigate(item.id)}
+        data-tour={`nav-${item.id}`}
         className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
           isActive
             ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
@@ -124,7 +126,7 @@ export default function AppSidebar({
 
           {!collapsed && modoTribunal === "lista_unica" && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
+              <DropdownMenuTrigger data-tour="vocalia-selector" className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
                 <span className="truncate flex-1">{vocaliaNombre}</span>
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </DropdownMenuTrigger>
@@ -138,7 +140,7 @@ export default function AppSidebar({
 
           {!collapsed && modoTribunal !== "lista_unica" && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
+              <DropdownMenuTrigger data-tour="vocalia-selector" className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
                 <span className="truncate flex-1">{vocaliaNombre}</span>
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </DropdownMenuTrigger>
@@ -178,7 +180,7 @@ export default function AppSidebar({
 
           {/* Anotaciones (tableros) */}
           {!collapsed && (tableros.length > 0 || onCreateTablero) && (
-            <div className="pt-3 pb-1">
+            <div className="pt-3 pb-1" data-tour="anotaciones">
               <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Anotaciones</span>
             </div>
           )}
@@ -216,6 +218,7 @@ export default function AppSidebar({
           {!collapsed && onCreateTablero && (
             <button
               onClick={onCreateTablero}
+              data-tour="nueva-anotacion"
               className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors border border-dashed border-sidebar-border/50"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -225,53 +228,57 @@ export default function AppSidebar({
 
 
 
-          {/* Listas personalizadas: arriba de "Causas Terminadas" */}
-          {!collapsed && (listasPersonalizadas.length > 0 || onCreateLista) && (
-            <div className="pt-3 pb-1">
-              <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Listas</span>
-            </div>
-          )}
-          {listasPersonalizadas.map((lista) => {
-            const id = `lista-${lista.id}`;
-            const isActive = active === id;
-            const btn = (
+          {/* Listas personalizadas: título → crear → listas */}
+          <div data-tour="listas" className="space-y-1">
+            {!collapsed && (listasPersonalizadas.length > 0 || onCreateLista) && (
+              <div className="pt-3 pb-1">
+                <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Listas</span>
+              </div>
+            )}
+            {!collapsed && onCreateLista && listasPersonalizadas.length < 2 && (
               <button
-                key={id}
-                onClick={() => onNavigate(id)}
-                className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                }`}
-                aria-label={lista.nombre}
+                onClick={onCreateLista}
+                data-tour="crear-lista"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors border border-dashed border-sidebar-border/50"
               >
-                {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
-                <FolderOpen className={`w-4 h-4 shrink-0 ${isActive ? "text-sidebar-primary" : ""}`} />
-                {!collapsed && (
-                  <>
-                    <span className="truncate flex-1 text-left">{lista.nombre}</span>
-                    <span className="text-[10px] text-sidebar-foreground/50 tabular-nums">{lista.count}</span>
-                  </>
-                )}
+                <Plus className="w-3.5 h-3.5" />
+                Crear nueva lista
               </button>
-            );
-            if (!collapsed) return btn;
-            return (
-              <Tooltip key={id} delayDuration={150}>
-                <TooltipTrigger asChild>{btn}</TooltipTrigger>
-                <TooltipContent side="right">{lista.nombre} ({lista.count})</TooltipContent>
-              </Tooltip>
-            );
-          })}
-          {!collapsed && onCreateLista && listasPersonalizadas.length < 2 && (
-            <button
-              onClick={onCreateLista}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors border border-dashed border-sidebar-border/50"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Crear nueva lista
-            </button>
-          )}
+            )}
+            {listasPersonalizadas.map((lista) => {
+              const id = `lista-${lista.id}`;
+              const isActive = active === id;
+              const btn = (
+                <button
+                  key={id}
+                  onClick={() => onNavigate(id)}
+                  className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  }`}
+                  aria-label={lista.nombre}
+                >
+                  {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-gradient-gold" />}
+                  <FolderOpen className={`w-4 h-4 shrink-0 ${isActive ? "text-sidebar-primary" : ""}`} />
+                  {!collapsed && (
+                    <>
+                      <span className="truncate flex-1 text-left">{lista.nombre}</span>
+                      <span className="text-[10px] text-sidebar-foreground/50 tabular-nums">{lista.count}</span>
+                    </>
+                  )}
+                </button>
+              );
+              if (!collapsed) return btn;
+              return (
+                <Tooltip key={id} delayDuration={150}>
+                  <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                  <TooltipContent side="right">{lista.nombre} ({lista.count})</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+
 
           {navAfterTerminadas.map(renderNavButton)}
 
