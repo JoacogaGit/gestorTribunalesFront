@@ -518,7 +518,7 @@ export default function CausaFormDialog({
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Fecha de ingreso (354)</Label>
+                    <Label className="text-xs">Fecha de ingreso</Label>
                     <Input
                       type="date"
                       value={causa.fecha_ingreso ?? ""}

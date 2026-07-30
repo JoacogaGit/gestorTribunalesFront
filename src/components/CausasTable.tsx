@@ -88,7 +88,7 @@ const libertadBadge: Record<string, string> = {
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
-const estadosCausa: EstadoCausa[] = ["En trámite", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX"];
+const estadosCausa: EstadoCausa[] = ["En trámite", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ"];
 
 interface ColDef {
   key: string;
@@ -342,7 +342,7 @@ export default function CausasTable({
       },
     },
     {
-      key: "fechaIngreso", label: "Fecha 354", headClass: "whitespace-nowrap",
+      key: "fechaIngreso", label: "Fecha de ingreso", headClass: "whitespace-nowrap",
       cellClass: "text-xs text-muted-foreground whitespace-nowrap",
       sortValue: (c) => parseLocalTime(c.fechaIngreso),
       render: (c) => c.fechaIngreso ? fmtDate(c.fechaIngreso) : <span className="text-muted-foreground/60">—</span>,

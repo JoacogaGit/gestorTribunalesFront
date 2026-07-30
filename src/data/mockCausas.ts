@@ -1,7 +1,7 @@
 import { parseLocalTime } from "@/lib/parseDate";
 
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
-export type EstadoCausa = "En trámite" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX";
+export type EstadoCausa = "En trámite" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ";
 
 export interface Audiencia {
   tipo: string;
@@ -55,7 +55,7 @@ export interface Causa {
   fechaInicio: string;
   fechaElevacion?: string;
   fechaRadicacion?: string;
-  /** Fecha de ingreso (354). ISO YYYY-MM-DD. */
+  /** Fecha de ingreso. ISO YYYY-MM-DD. */
   fechaIngreso?: string | null;
   /** Tipo de proceso: UNIP/COL. */
   tipoProceso?: TipoProceso | null;

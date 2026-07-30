@@ -224,7 +224,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       case "detenidos": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Detenido"));
       case "rebeldes": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
       case "sjp": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP"));
-      case "recursos": return all.filter((c) => ["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa));
+      case "recursos": return all.filter((c) => ["Casación", "Queja en Corte", "REX", "Apelación", "TSJ"].includes(c.estadoCausa));
       default: return all;
     }
   })();
@@ -274,7 +274,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     detenidos: "Detenidos",
     rebeldes: "Rebeldes / Paraderos",
     sjp: "SJP en Trámite",
-    recursos: "Recursos (Casación / Queja / REX)",
+    recursos: "Recursos (Casación / Queja / REX / Apelación / TSJ)",
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
