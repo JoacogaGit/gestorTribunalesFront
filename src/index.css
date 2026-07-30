@@ -251,7 +251,7 @@
   border: 1px solid hsl(var(--border));
   border-radius: 0.9rem;
   box-shadow: 0 20px 45px -15px hsl(222 47% 4% / 0.55);
-  max-width: 21rem;
+  max-width: 24rem;
   animation: fade-in 0.25s ease-out;
 }
 .driver-popover.iustrack-tour .driver-popover-title {
