@@ -180,7 +180,7 @@ export default function AppSidebar({
 
           {/* Anotaciones (tableros) */}
           {!collapsed && (tableros.length > 0 || onCreateTablero) && (
-            <div className="pt-3 pb-1">
+            <div className="pt-3 pb-1" data-tour="anotaciones">
               <span className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-semibold">Anotaciones</span>
             </div>
           )}
@@ -218,6 +218,7 @@ export default function AppSidebar({
           {!collapsed && onCreateTablero && (
             <button
               onClick={onCreateTablero}
+              data-tour="nueva-anotacion"
               className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors border border-dashed border-sidebar-border/50"
             >
               <Plus className="w-3.5 h-3.5" />

@@ -8,6 +8,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggle}
+      data-tour="tema"
       title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       className="relative w-9 h-9 rounded-full bg-muted/60 hover:bg-muted border border-border flex items-center justify-center text-foreground/70 hover:text-primary transition-all overflow-hidden"
     >
