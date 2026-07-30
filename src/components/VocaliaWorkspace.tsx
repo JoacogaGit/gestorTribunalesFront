@@ -37,6 +37,7 @@ import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
+import TutorialModal from "@/components/TutorialModal";
 import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
@@ -335,6 +336,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
   return (
     <div className="flex min-h-screen bg-background">
+      <TutorialModal />
       {!isMobile && sidebar}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
