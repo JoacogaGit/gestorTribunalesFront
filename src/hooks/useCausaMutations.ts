@@ -12,6 +12,7 @@ export interface CausaInput {
   caratula: string | null;
 
   estado_causa: DbEstadoCausa;
+  subestado_tramite_id?: string | null;
   tipo_recurso: DbTipoRecurso;
   tipo_proceso?: DbTipoProceso;
   fecha_ingreso?: string | null;
