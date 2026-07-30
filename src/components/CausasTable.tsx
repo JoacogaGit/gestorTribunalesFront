@@ -686,7 +686,7 @@ export default function CausasTable({
 
   return (
     <>
-      <div className="flex flex-col flex-1 min-h-0 h-full">
+      <div className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-0 h-full"}`}>
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         {displayTitle && (
           <div className="flex items-center gap-2 group">
@@ -718,7 +718,7 @@ export default function CausasTable({
         )}
         <div className="flex items-center gap-2 ml-auto">
           {onCreateCausa && !soloLectura && (
-            <Button size="sm" onClick={handleCreate} className="shadow-sm">
+            <Button data-tour="nueva-causa" size="sm" onClick={handleCreate} className="shadow-sm">
               <Plus className="w-3.5 h-3.5 mr-1" /> Nueva causa
             </Button>
           )}
@@ -850,6 +850,7 @@ export default function CausasTable({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              data-tour="buscador"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar..."
@@ -860,7 +861,7 @@ export default function CausasTable({
       </div>
 
       {isMobile && (
-        <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto pb-4">
+        <div className="flex flex-col gap-2 pb-4">
           {visibleRows.map((c, idx) => {
             const rowColor = colorOf(c);
             const expanded = expandedId === c.id;
@@ -912,7 +913,7 @@ export default function CausasTable({
             </p>
           )}
           {onCreateCausa && !search && (
-            <button onClick={handleCreate} className="flex items-center justify-center gap-1.5 text-sm text-primary px-3 min-h-[44px] rounded-md border border-dashed border-primary/40">
+            <button data-tour="nueva-causa" onClick={handleCreate} className="flex items-center justify-center gap-1.5 text-sm text-primary px-3 min-h-[44px] rounded-md border border-dashed border-primary/40">
               <Plus className="w-4 h-4" /> Nueva causa
             </button>
           )}

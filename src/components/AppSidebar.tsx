@@ -108,7 +108,7 @@ export default function AppSidebar({
 
   return (
     <TooltipProvider>
-      <aside className={`${collapsed ? "w-16" : "w-56"} shrink-0 bg-gradient-sidebar text-sidebar-foreground flex flex-col min-h-screen border-r border-sidebar-border shadow-elevated transition-[width] duration-200`}>
+      <aside data-tour="sidebar" className={`${collapsed ? "w-16" : "w-56"} shrink-0 bg-gradient-sidebar text-sidebar-foreground flex flex-col min-h-screen border-r border-sidebar-border shadow-elevated transition-[width] duration-200`}>
         <div className={`${collapsed ? "px-2" : "px-5"} py-6`}>
           <div className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} mb-3`}>
             <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center shadow-soft shrink-0">

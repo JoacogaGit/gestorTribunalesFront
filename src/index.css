@@ -243,3 +243,80 @@
 }
 
 
+
+/* ===== Tutorial interactivo (driver.js) ===== */
+.driver-popover.iustrack-tour {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.9rem;
+  box-shadow: 0 20px 45px -15px hsl(222 47% 4% / 0.55);
+  max-width: 21rem;
+  animation: fade-in 0.25s ease-out;
+}
+.driver-popover.iustrack-tour .driver-popover-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  color: hsl(var(--foreground));
+}
+.driver-popover.iustrack-tour .driver-popover-description {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.driver-popover.iustrack-tour .driver-popover-arrow-side-bottom { border-bottom-color: hsl(var(--card)); }
+.driver-popover.iustrack-tour .driver-popover-arrow-side-top { border-top-color: hsl(var(--card)); }
+.driver-popover.iustrack-tour .driver-popover-arrow-side-left { border-left-color: hsl(var(--card)); }
+.driver-popover.iustrack-tour .driver-popover-arrow-side-right { border-right-color: hsl(var(--card)); }
+.driver-popover.iustrack-tour .driver-popover-navigation-btns { gap: 0.5rem; }
+.driver-popover.iustrack-tour button {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  text-shadow: none;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  font-size: 0.8rem;
+  padding: 0.45rem 0.8rem;
+}
+.driver-popover.iustrack-tour button.driver-popover-next-btn {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: transparent;
+  font-weight: 600;
+}
+.iustrack-tour-progress {
+  margin-top: 0.85rem;
+  height: 4px;
+  width: 100%;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  overflow: hidden;
+}
+.iustrack-tour-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  transition: width 0.3s ease-out;
+}
+.iustrack-tour-count {
+  margin-top: 0.35rem;
+  font-size: 0.65rem;
+  color: hsl(var(--muted-foreground));
+}
+.iustrack-confetti {
+  position: absolute;
+  top: -12px;
+  width: 7px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: iustrack-confetti-fall 2.4s ease-in forwards;
+}
+@keyframes iustrack-confetti-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(360px) rotate(540deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iustrack-confetti { animation: none; opacity: 0; }
+}

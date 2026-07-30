@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import TutorialModal from "@/components/TutorialModal";
+import { lanzarTutorial } from "@/components/TutorialTour";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
   email: string;
@@ -26,7 +28,7 @@ interface Props {
 
 export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal, compact, extraItems }: Props) {
 
-  const [tutorialOpen, setTutorialOpen] = useState(false);
+  const { user } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
@@ -47,7 +49,7 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="group flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-muted/60 transition-colors">
+        <DropdownMenuTrigger data-tour="usermenu" className="group flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-muted/60 transition-colors">
           <div className="relative w-9 h-9 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shadow-soft ring-2 ring-transparent group-hover:ring-gold/50 transition-all">
             {initials}
           </div>
@@ -72,8 +74,14 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
           <DropdownMenuItem onSelect={() => { setDraftName(name); setDraftEmail(email); setProfileOpen(true); }} className="gap-2">
             <UserCircle2 className="w-4 h-4" /> Mi perfil
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setTutorialOpen(true)} className="gap-2">
-            <HelpCircle className="w-4 h-4" /> Ayuda / Tutorial
+          <DropdownMenuItem
+            onSelect={async () => {
+              if (user) await supabase.from("perfiles").update({ tutorial_completado: false }).eq("id", user.id);
+              lanzarTutorial();
+            }}
+            className="gap-2"
+          >
+            <HelpCircle className="w-4 h-4" /> Ver tutorial de nuevo
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => toast.info("Próximamente")} className="gap-2">
             <Settings className="w-4 h-4" /> Preferencias
@@ -93,7 +101,6 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <TutorialModal open={tutorialOpen} onOpenChange={setTutorialOpen} />
 
 
 

@@ -16,7 +16,7 @@ import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Scale, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
@@ -37,7 +37,7 @@ import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
-import TutorialModal from "@/components/TutorialModal";
+import TutorialTour, { lanzarTutorial } from "@/components/TutorialTour";
 import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
@@ -336,7 +336,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
   return (
     <div className="flex min-h-screen bg-background">
-      <TutorialModal />
+      <TutorialTour onNavigate={(v) => setView(v as View)} onOpenSidebar={setSidebarOpen} isMobile={isMobile} />
       {!isMobile && sidebar}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -345,7 +345,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </SheetContent>
         </Sheet>
       )}
-      <main className="flex-1 px-4 py-4 md:p-6 lg:p-8 overflow-hidden flex flex-col h-screen">
+      <main className={`flex-1 px-4 py-4 md:p-6 lg:p-8 flex flex-col ${isMobile ? "min-h-screen w-full" : "h-screen overflow-hidden"}`}>
         {isMobile ? (
           <>
             <div className="flex items-center justify-between gap-2 mb-3">
@@ -358,6 +358,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <Menu className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  data-tour="ayuda"
+                  onClick={lanzarTutorial}
+                  aria-label="Ver tutorial"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-gold">
                   <ScaleIcon className="h-4 w-4 text-sidebar-primary-foreground" />
                 </div>
@@ -427,6 +436,16 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 </>
               );
             })()}
+            <button
+              type="button"
+              data-tour="ayuda"
+              onClick={lanzarTutorial}
+              aria-label="Ver tutorial"
+              title="Ver tutorial"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
             <SuperadminLink variant="compact" />
             <ThemeToggle />
             <NotificationBell />
@@ -470,10 +489,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className={view === "migrar" ? "hidden" : "flex flex-col flex-1 min-h-0"}
+            data-tour="main"
+            className={view === "migrar" ? "hidden" : `flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
           >
             {view === "dashboard" && (
-              <div className="space-y-8 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
+              <div className={`space-y-8 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-y-auto pr-1"}`}>
                 <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
