@@ -1,111 +1,45 @@
-# Fix de procesar-migracion-job: Gemini + logging robusto
+De las 8 mejoras, la base de datos ya quedó migrada para todas, pero en la interfaz solo se completó la #3 (Anotaciones con listas anidadas). Faltan las otras 7 en el frontend.
 
-## Contexto del bug
+Estado verificado hoy en el código:
+- Rol "lector" existe en la base (`rol_miembro_enum` y función `es_lector_tribunal`), pero `useRolTribunal` solo contempla "admin" | "miembro".
+- Los tipos de recurso en `causaMapper.ts` siguen siendo solo casación, REX y queja en Corte.
+- No hay ninguna referencia a subestados de trámite, duplicar causa ni tutorial en el frontend.
+- El texto "Fecha 354" sigue en la tabla de causas y en el formulario.
 
-`procesar-migracion-job/index.ts` tiene su propia función `callAnthropic` interna (líneas 95-119) que sigue usando Claude/Anthropic. No fue migrada cuando se migró `procesar-migracion`. Además, si `procesarLote()` lanza una excepción no controlada (timeout abrupto, OOM, error de red al actualizar la DB, etc.), el `try/catch` exterior la captura pero marca el job entero como `error` y corta todo el procesamiento — sin loguear stack, sin continuar con los lotes restantes.
+## Plan de trabajo
 
-## Cambios en `supabase/functions/procesar-migracion-job/index.ts`
+### 1. Scroll vertical del dashboard
+Revisar el contenedor principal de `VocaliaWorkspace` (hoy tiene `overflow-hidden` con alto fijo de pantalla) y asegurar que cada vista interna scrollee correctamente en escritorio y móvil, sin cortar contenido.
 
-### 1. Reemplazar `callAnthropic` por `callGemini`
+### 2. Rol Lector
+- Extender `useRolTribunal` con el rol "lector" y exponer un indicador `soloLectura`.
+- En `MiembrosTribunal`, permitir asignar/cambiar a "Lector" (con la protección de no dejar el tribunal sin admin).
+- Ocultar o deshabilitar botones de crear/editar/borrar para lectores en: causas, imputados, eventos, categorías, listas personalizadas y anotaciones de vocalía (las listas personales del propio usuario siguen editables).
 
-Replicar exactamente el patrón ya implementado en `procesar-migracion`:
+### 3. Anotaciones con listas anidadas — hecho
+Ya funciona: anotación → listas (personal o de vocalía) → columnas → tarjetas.
 
-- Endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
-- Body: `contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\n" + userMsg }] }]` con `generationConfig: { responseMimeType: "application/json", temperature: 0 }`.
-- Timeout: **55s** (dentro del límite de 60s de la invocación) — antes era 180s, inviable en una Edge Function.
-- Extraer texto desde `data.candidates[0].content.parts[0].text` y parsear con `extractJson`.
-- Devolver el mismo shape `{ ok: true; json } | { ok: false; code; status?; detail? }` para no tocar el resto.
+### 4. Quitar "354" de fecha de ingreso
+Reemplazar la etiqueta por "Fecha de ingreso" en la tabla de causas, el formulario y el comentario del modelo de datos.
 
-### 2. Acortar `SYSTEM_PROMPT`
+### 5. Nuevos tipos de recurso
+Agregar "Apelación" y "TSJ" a los tipos disponibles, con sus etiquetas, en el formulario de causa, filtros y vistas de recursos.
 
-Copiar el SYSTEM_PROMPT ya optimizado de `procesar-migracion` (sin ejemplos input→output, con las 8 reglas + esquema JSON + clasificación). Es el mismo que ya está corriendo en producción para el flujo síncrono.
+### 6. Subdivisiones del estado "Trámite"
+- Nuevo hook para leer los subestados de la vocalía (ya se crean por defecto: Para indagar, Indagado, Procesado, Elevado).
+- Selector de subestado en el formulario de causa cuando el estado es "trámite".
+- Mostrar el subestado como etiqueta en la tabla y permitir agrupar/filtrar por él en la vista de Trámite.
+- Pantalla simple para renombrar, agregar y borrar subestados de la vocalía (solo admin/miembro).
 
-### 3. Cambiar secret
+### 7. Duplicar causa
+Opción "Duplicar" en el menú contextual y en el detalle de la causa: abre el formulario de nueva causa precargado con todos los datos (carátula, intervinientes, imputados) y el número de expediente vacío para completarlo.
 
-Reemplazar `Deno.env.get("ANTHROPIC_API_KEY")` por `Deno.env.get("GEMINI_API_KEY")` y el mensaje de error `no_api_key`. `GEMINI_API_KEY` ya está configurado.
+### 8. Tutorial y ayuda contextual
+- Modal de bienvenida paso a paso la primera vez, usando el campo `tutorial_completado` del perfil.
+- Opción "Ver tutorial" en el menú de usuario para repetirlo.
+- Íconos de ayuda con tooltip breve en las secciones clave (causas, calendario, anotaciones, listas, migración).
 
-### 4. Ajustar constantes de timing
-
-Con timeout de 55s por intento y 2 intentos por lote, un lote tarda máximo ~110s. Por lo tanto:
-
-- `TIMEOUT_LOTE_MS = 55_000` (era 180_000)
-- `MAX_RUN_MS = 200_000` (era 370_000) — margen para 1 lote + chaining, lejos del wall-clock límite
-- `MAX_LOTES_PER_RUN = 1` (se mantiene; el chaining cubre el resto)
-
-### 5. Logging detallado dentro de `callGemini`
-
-Después del `fetch` a Gemini, loguear:
-
-```ts
-console.log("procesar-migracion-job:gemini_response", {
-  job_id, nro_lote,
-  status: res.status,
-  body_preview: rawText.slice(0, 500),
-});
-```
-
-(Pasar `job_id` y `nro_lote` como parámetros opcionales a `callGemini` para poder loguearlos.)
-
-### 6. Try-catch robusto por lote en el loop
-
-Envolver el cuerpo del `while` en su propio try-catch para que un crash de un lote NO mate la corrida entera:
-
-```ts
-while (pendientes.length > 0 && processedThisRun < MAX_LOTES_PER_RUN && (Date.now() - tStart) < MAX_RUN_MS) {
-  const lote = pendientes[0];
-  console.log("procesar-migracion-job:lote_start", { job_id: jobId, pestana: lote.pestana, nro_lote: lote.nro_lote, total_lotes: lote.total_lotes, filas: lote.filas });
-  try {
-    const r = await procesarLote(jobId, archivoMeta, lote);
-    pendientes.shift();
-    if (r.ok) {
-      lotesProcesados++;
-      // ...acumular resultado y filas_rojas...
-    } else {
-      lotesFallidos++;
-      console.log("procesar-migracion-job:lote_error", { job_id: jobId, nro_lote: lote.nro_lote, error: r.error });
-    }
-  } catch (err) {
-    // Crash inesperado dentro del lote: marcar como fallido y CONTINUAR
-    pendientes.shift();
-    lotesFallidos++;
-    const e = err as Error;
-    console.error("lote_crash", {
-      job_id: jobId,
-      nro_lote: lote.nro_lote,
-      pestana: lote.pestana,
-      error: e?.message ?? String(err),
-      stack: e?.stack,
-    });
-  }
-  processedThisRun++;
-  // Persistir progreso (también en try-catch para que un fallo de DB no mate el loop)
-  try {
-    await admin.from("migraciones_jobs").update({ lotes_procesados, lotes_fallidos, lotes_pendientes: pendientes, resultados, filas_rojas: filasRojasAcum }).eq("id", jobId);
-  } catch (dbErr) {
-    console.error("procesar-migracion-job:db_update_error", { job_id: jobId, msg: (dbErr as Error)?.message, stack: (dbErr as Error)?.stack });
-  }
-}
-```
-
-El try-catch exterior existente se mantiene como red de seguridad final.
-
-### 7. Borrar jobs trabados
-
-Migración SQL para limpiar:
-
-```sql
-DELETE FROM public.migraciones_jobs WHERE estado IN ('procesando', 'pendiente');
-```
-
-## Lo que NO se toca
-
-- `procesar-migracion/index.ts` (ya está en Gemini).
-- `validarResponse()`, `extractJson()` — se mantienen idénticos.
-- `src/lib/dividirEnLotes.ts` (TAMANO_LOTE queda en 8).
-- Frontend (`WizardMigracion`, polling, hooks).
-- `normalizarCausa.ts`, Google Calendar sync, `cargarEnBD`.
-- Estructura del chaining (fire-and-forget con service-role).
-
-## Verificación posterior
-
-Después del deploy, mirar `supabase--edge_function_logs` de `procesar-migracion-job` durante una migración real para confirmar que aparecen los `gemini_response` con status 200 y que, ante cualquier error, se loguea `lote_crash` con stack en vez de `Shutdown` silencioso.
+## Detalles técnicos
+- Archivos principales: `src/hooks/useRolTribunal.ts`, `src/components/MiembrosTribunal.tsx`, `src/lib/causaMapper.ts`, `src/components/forms/CausaFormDialog.tsx`, `src/components/CausasTable.tsx`, `src/components/VocaliaWorkspace.tsx`, `src/hooks/useCausaMutations.ts`, más hooks y componentes nuevos para subestados, duplicar y tutorial.
+- No hacen falta migraciones nuevas: las tablas `subestados_tramite`, el enum ampliado y `perfiles.tutorial_completado` ya existen.
+- Las restricciones de lector se aplican en la interfaz y ya están reforzadas por las políticas de acceso en la base.

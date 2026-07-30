@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
-export type RolInvitacion = "admin" | "miembro";
+export type RolInvitacion = "admin" | "miembro" | "lector";
 
 export interface InvitacionRow {
   id: string;

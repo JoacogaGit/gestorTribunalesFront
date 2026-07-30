@@ -15,6 +15,7 @@ import { ChevronDown, ExternalLink, Loader2, Plus, Trash2, X } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
+import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import { fetchPrescripcionesDeSujetos, syncPrescripcionesSujeto, PrescripcionDraft } from "@/hooks/usePrescripciones";
 import {
@@ -26,7 +27,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -37,6 +38,8 @@ interface Props {
   causaId?: string | null;
   /** Pre-rellenos sólo para modo "crear" (ej. detenidos pre-fija situación). */
   initialSujetoSituacion?: DbSituacionLibertad;
+  /** Modo "crear": precarga los datos de otra causa (duplicar), sin N° de expediente. */
+  duplicarDeId?: string | null;
   onMutated?: () => void;
 }
 
@@ -63,6 +66,7 @@ function emptyCausa(): CausaInput {
     caratula: "",
 
     estado_causa: "tramite",
+    subestado_tramite_id: null,
     tipo_recurso: null,
     tipo_proceso: null,
     fecha_ingreso: null,
@@ -102,10 +106,11 @@ function nullify<T extends Record<string, unknown>>(obj: T): T {
 }
 
 export default function CausaFormDialog({
-  open, onOpenChange, mode, causaId, initialSujetoSituacion, onMutated,
+  open, onOpenChange, mode, causaId, initialSujetoSituacion, duplicarDeId, onMutated,
 }: Props) {
   const muts = useCausaMutations();
   const { vocalia } = useVocaliaActual();
+  const { subestados } = useSubestadosTramite(vocalia?.id ?? null);
   const fireVocaliaResync = () => {
     if (!vocalia?.id) return;
     supabase.functions
@@ -124,12 +129,13 @@ export default function CausaFormDialog({
   const [openExtras, setOpenExtras] = useState(false);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
   // Clave de borrador local (por modo + causa)
-  const draftKey = `causa-form:${mode}:${causaId ?? "new"}`;
+  const duplicando = mode === "crear" && !!duplicarDeId;
+  const draftKey = `causa-form:${mode}:${causaId ?? (duplicarDeId ? `dup-${duplicarDeId}` : "new")}`;
 
   // Cargar datos en modo editar
   useEffect(() => {
     if (!open) return;
-    if (mode === "crear") {
+    if (mode === "crear" && !duplicarDeId) {
       const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
       if (draft?.causa) {
         setCausa(draft.causa);
@@ -142,14 +148,15 @@ export default function CausaFormDialog({
       return;
     }
 
-    if (mode === "editar" && causaId) {
+    const sourceId = mode === "editar" ? causaId : duplicarDeId;
+    if (sourceId) {
       let cancelled = false;
       setLoading(true);
       (async () => {
         const { data, error } = await supabase
           .from("causas")
           .select(CAUSA_FORM_SELECT)
-          .eq("id", causaId)
+          .eq("id", sourceId)
           .is("sujetos.borrado_en", null)
           .single();
         if (cancelled) return;
@@ -157,7 +164,7 @@ export default function CausaFormDialog({
           setErrorMsg(error?.message || "No se pudo cargar la causa.");
         } else {
           setCausa({
-            expediente_nro: data.expediente_nro ?? "",
+            expediente_nro: duplicando ? "" : (data.expediente_nro ?? ""),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             numero_interno: (data as any).numero_interno ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,6 +172,8 @@ export default function CausaFormDialog({
             caratula: data.caratula ?? "",
 
             estado_causa: data.estado_causa as DbEstadoCausa,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            subestado_tramite_id: (data as any).subestado_tramite_id ?? null,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             tipo_proceso: ((data as any).tipo_proceso ?? null) as "unipersonal" | "colegiado" | null,
@@ -199,8 +208,8 @@ export default function CausaFormDialog({
             } catch { /* noop: si falla, dejamos vacío */ }
           }
           setSujetos(list.map((s) => ({
-            _localKey: s.id,
-            id: s.id,
+            _localKey: duplicando ? `dup-${s.id}` : s.id,
+            id: duplicando ? undefined : s.id,
             nombre_completo: s.nombre_completo ?? "",
             delito: s.delito ?? "",
             situacion_libertad: s.situacion_libertad as DbSituacionLibertad,
@@ -211,7 +220,9 @@ export default function CausaFormDialog({
             vencimiento_pp: s.vencimiento_pp ?? null,
             vencimiento_pena: s.vencimiento_pena ?? null,
             observaciones: s.observaciones ?? "",
-            prescripciones: prescByID[s.id] ?? [],
+            prescripciones: duplicando
+              ? (prescByID[s.id] ?? []).map((pr) => ({ _key: `dup-${pr._key}`, fecha: pr.fecha, descripcion: pr.descripcion }))
+              : (prescByID[s.id] ?? []),
           })));
           // Si había un borrador local más reciente con cambios no guardados, restaurarlo encima.
           const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
@@ -224,7 +235,7 @@ export default function CausaFormDialog({
       })();
       return () => { cancelled = true; };
     }
-  }, [open, mode, causaId, initialSujetoSituacion, draftKey]);
+  }, [open, mode, causaId, duplicarDeId, duplicando, initialSujetoSituacion, draftKey]);
 
   // Persistencia local con debounce mientras el modal está abierto y no está cargando.
   useFormDraft(draftKey, { causa, sujetos }, open && !loading);
@@ -276,6 +287,7 @@ export default function CausaFormDialog({
       ...baseCausa,
       expediente_nro: causa.expediente_nro.trim(),
       estado_causa: causa.estado_causa,
+      subestado_tramite_id: causa.estado_causa === "tramite" ? (causa.subestado_tramite_id ?? null) : null,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
       causa_conexa_id: causa.causa_conexa_texto?.trim() ? (causa.causa_conexa_id ?? null) : null,
     };
@@ -487,6 +499,23 @@ export default function CausaFormDialog({
                       </SelectContent>
                     </Select>
                   </div>
+                  {causa.estado_causa === "tramite" && subestados.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Subestado de trámite</Label>
+                      <Select
+                        value={causa.subestado_tramite_id ?? "__none__"}
+                        onValueChange={(v) => updateCausa({ subestado_tramite_id: v === "__none__" ? null : v })}
+                      >
+                        <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">—</SelectItem>
+                          {subestados.map((se) => (
+                            <SelectItem key={se.id} value={se.id}>{se.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {causa.estado_causa === "recurso" && (
                     <div className="space-y-1.5">
                       <Label className="text-xs">Tipo de recurso *</Label>
@@ -518,7 +547,7 @@ export default function CausaFormDialog({
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Fecha de ingreso (354)</Label>
+                    <Label className="text-xs">Fecha de ingreso</Label>
                     <Input
                       type="date"
                       value={causa.fecha_ingreso ?? ""}

@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI } from "@/lib/causaMapper";
 
-const CAUSAS_LISTA_SELECT = "causa_id, causas!inner(id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,borrado_en,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en))";
+const CAUSAS_LISTA_SELECT = "causa_id, causas!inner(id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,subestados_tramite(nombre),tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,borrado_en,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en))";
 
 export function useCausasDeLista(listaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);

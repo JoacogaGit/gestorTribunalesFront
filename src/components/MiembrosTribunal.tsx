@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2, List, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -255,15 +256,29 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                     <TableCell className="text-xs text-muted-foreground">{fmtDate(m.created_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-1">
-                        <Button
-                          variant="ghost" size="sm"
+                        <Select
+                          value={m.rol}
                           disabled={miembrosHook.saving || ultimoAdmin}
-                          onClick={() => setConfirmCambio(m)}
-                          title={ultimoAdmin ? "No se puede degradar al único admin" : "Cambiar rol"}
+                          onValueChange={async (nuevo) => {
+                            if (nuevo === m.rol) return;
+                            if (m.rol === "admin" && miembrosHook.adminCount <= 1) {
+                              toast.error("No se puede degradar al único administrador del tribunal.");
+                              return;
+                            }
+                            const r = await miembrosHook.cambiarRol(m.id, nuevo as RolMiembro);
+                            if (r?.ok === false) toast.error(r.error);
+                            else toast.success("Rol actualizado");
+                          }}
                         >
-                          {m.rol === "admin" ? <ShieldOff className="w-3.5 h-3.5 mr-1" /> : <Shield className="w-3.5 h-3.5 mr-1" />}
-                          {m.rol === "admin" ? "Pasar a miembro" : "Pasar a admin"}
-                        </Button>
+                          <SelectTrigger className="h-8 w-[130px] text-xs" title={ultimoAdmin ? "No se puede degradar al único admin" : "Cambiar rol"}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="miembro">Miembro</SelectItem>
+                            <SelectItem value="lector">Lector (solo ver)</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <Button
                           variant="ghost" size="sm"
                           className="text-destructive hover:text-destructive"

@@ -3,6 +3,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
+import { useSoloLectura } from "@/hooks/useSoloLectura";
+import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
 import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter } from "lucide-react";
 import { useCategoriasVocalia, useCausasConCategoria } from "@/hooks/useCategoriasVocalia";
 import { useVocaliaActual } from "@/context/VocaliaContext";
@@ -88,7 +90,7 @@ const libertadBadge: Record<string, string> = {
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
-const estadosCausa: EstadoCausa[] = ["En trámite", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX"];
+const estadosCausa: EstadoCausa[] = ["En trámite", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ"];
 
 interface ColDef {
   key: string;
@@ -179,6 +181,11 @@ export default function CausasTable({
 
   const isMobile = useIsMobile();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const soloLectura = useSoloLectura();
+  const { subestados } = useSubestadosTramite(vocaliaActual?.id ?? null);
+  const [subestadoFiltroId, setSubestadoFiltroId] = useState<string | null>(null);
+  const subestadoFiltroNombre = subestados.find((s) => s.id === subestadoFiltroId)?.nombre;
+  const [duplicarDe, setDuplicarDe] = useState<Causa | null>(null);
 
 
   // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
@@ -328,6 +335,15 @@ export default function CausasTable({
       ),
     },
     { key: "estado", label: "Estado", cellClass: "text-xs text-foreground max-w-[120px] break-words whitespace-normal align-top", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
+    {
+      key: "subestado", label: "Subestado",
+      headClass: "whitespace-nowrap",
+      cellClass: "text-xs text-muted-foreground max-w-[140px] break-words whitespace-normal align-top",
+      sortValue: (c) => c.subestadoTramite || "",
+      render: (c) => c.subestadoTramite
+        ? <span className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80 text-[10px]">{c.subestadoTramite}</span>
+        : <span className="text-muted-foreground/60">—</span>,
+    },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
 
     {
@@ -342,7 +358,7 @@ export default function CausasTable({
       },
     },
     {
-      key: "fechaIngreso", label: "Fecha 354", headClass: "whitespace-nowrap",
+      key: "fechaIngreso", label: "Fecha de ingreso", headClass: "whitespace-nowrap",
       cellClass: "text-xs text-muted-foreground whitespace-nowrap",
       sortValue: (c) => parseLocalTime(c.fechaIngreso),
       render: (c) => c.fechaIngreso ? fmtDate(c.fechaIngreso) : <span className="text-muted-foreground/60">—</span>,
@@ -605,6 +621,7 @@ export default function CausasTable({
 
   const filtered = causas.filter((c) => {
     if (categoriaFiltroId && !causasIdsConCategoria.has(c.id)) return false;
+    if (subestadoFiltroId && c.subestadoTramiteId !== subestadoFiltroId) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -700,7 +717,7 @@ export default function CausasTable({
           </div>
         )}
         <div className="flex items-center gap-2 ml-auto">
-          {onCreateCausa && (
+          {onCreateCausa && !soloLectura && (
             <Button size="sm" onClick={handleCreate} className="shadow-sm">
               <Plus className="w-3.5 h-3.5 mr-1" /> Nueva causa
             </Button>
@@ -713,6 +730,34 @@ export default function CausasTable({
             >
               <X className="w-3 h-3" /> Orden: {fullColumns.find((c) => c.key === sortBy.key)?.label} ({sortBy.dir})
             </button>
+          )}
+          {subestados.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                  subestadoFiltroId ? "bg-primary/15 text-primary hover:bg-primary/20" : "text-muted-foreground hover:text-foreground bg-muted/40"
+                }`}
+                title="Filtrar por subestado de trámite"
+              >
+                <Filter className="w-3 h-3" />
+                {subestadoFiltroId ? `Subestado: ${subestadoFiltroNombre}` : "Subestado"}
+                <ChevronDown className="w-3 h-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-xs">Subestado de trámite</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSubestadoFiltroId(null); }} className="text-xs flex items-center gap-2">
+                  <input type="radio" readOnly checked={subestadoFiltroId === null} className="accent-primary" />
+                  Todos
+                </DropdownMenuItem>
+                {subestados.map((se) => (
+                  <DropdownMenuItem key={se.id} onSelect={(e) => { e.preventDefault(); setSubestadoFiltroId(se.id); }} className="text-xs flex items-center gap-2">
+                    <input type="radio" readOnly checked={subestadoFiltroId === se.id} className="accent-primary" />
+                    <span className="truncate">{se.nombre}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {categoriasVocalia.length > 0 && (
             <DropdownMenu>
@@ -936,9 +981,14 @@ export default function CausasTable({
                     <ContextMenuLabel className="text-xs font-mono">{c.numero}</ContextMenuLabel>
                     <ContextMenuSeparator />
                     <ContextMenuItem onSelect={() => setSelected(c)} className="text-xs">
-                      <Pencil className="w-3.5 h-3.5 mr-2" /> Abrir / Editar
+                      <Pencil className="w-3.5 h-3.5 mr-2" /> {soloLectura ? "Abrir" : "Abrir / Editar"}
                     </ContextMenuItem>
-                    {(onChangeEstado || onUpdateCausa) && (
+                    {!soloLectura && (
+                      <ContextMenuItem onSelect={() => setDuplicarDe(c)} className="text-xs">
+                        <Copy className="w-3.5 h-3.5 mr-2" /> Duplicar causa
+                      </ContextMenuItem>
+                    )}
+                    {!soloLectura && (onChangeEstado || onUpdateCausa) && (
                       <ContextMenuSub>
                         <ContextMenuSubTrigger className="text-xs">
                           Cambiar estado
@@ -961,6 +1011,7 @@ export default function CausasTable({
                       </ContextMenuSub>
                     )}
                     <ContextMenuSeparator />
+                    {!soloLectura && (
                     <ContextMenuSub>
                       <ContextMenuSubTrigger className="text-xs">
                         <Palette className="w-3.5 h-3.5 mr-2" /> Pintar fila
@@ -981,13 +1032,14 @@ export default function CausasTable({
                         </div>
                       </ContextMenuSubContent>
                     </ContextMenuSub>
-                    {rowColor && (
+                    )}
+                    {!soloLectura && rowColor && (
                       <ContextMenuItem onSelect={() => handleSetColor(c, null)} className="text-xs">
                         <Eraser className="w-3.5 h-3.5 mr-2" /> Quitar color
                       </ContextMenuItem>
                     )}
                     <ContextMenuSeparator />
-                    {extraRowAction && (
+                    {!soloLectura && extraRowAction && (
                       <ContextMenuItem
                         onSelect={() => extraRowAction.onClick(c)}
                         className={`text-xs ${extraRowAction.destructive ? "text-alert-urgent focus:text-alert-urgent" : ""}`}
@@ -995,12 +1047,14 @@ export default function CausasTable({
                         {extraRowAction.label}
                       </ContextMenuItem>
                     )}
-                    <ContextMenuItem
-                      onSelect={() => setConfirmDelete(c)}
-                      className="text-xs text-alert-urgent focus:text-alert-urgent"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
-                    </ContextMenuItem>
+                    {!soloLectura && (
+                      <ContextMenuItem
+                        onSelect={() => setConfirmDelete(c)}
+                        className="text-xs text-alert-urgent focus:text-alert-urgent"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Borrar causa
+                      </ContextMenuItem>
+                    )}
                   </ContextMenuContent>
                 </ContextMenu>
                 );
@@ -1012,7 +1066,7 @@ export default function CausasTable({
                   </TableCell>
                 </TableRow>
               )}
-              {(onCreateCausa || onImportCausa) && !search && (
+              {!soloLectura && (onCreateCausa || onImportCausa) && !search && (
                 <TableRow className="bg-muted/10">
                   <TableCell colSpan={visibleColumns.length + 1} className="py-2">
                     <div className="flex items-center justify-center gap-2">
@@ -1076,6 +1130,15 @@ export default function CausasTable({
         mode="crear"
         onMutated={onMutated}
       />
+      {duplicarDe && (
+        <CausaFormDialog
+          open
+          onOpenChange={(o) => { if (!o) setDuplicarDe(null); }}
+          mode="crear"
+          duplicarDeId={duplicarDe.id}
+          onMutated={onMutated}
+        />
+      )}
 
       <Dialog open={showAddCol} onOpenChange={setShowAddCol}>
         <DialogContent className="max-w-sm bg-card border-border">

@@ -4,11 +4,11 @@ import { parseLocalTime } from "@/lib/parseDate";
 
 export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "probation" | "condenado";
 export type DbEstadoCausa = "tramite" | "recurso" | "terminada";
-export type DbTipoRecurso = "casacion" | "rex" | "queja_corte" | null;
+export type DbTipoRecurso = "casacion" | "rex" | "queja_corte" | "apelacion" | "tsj" | null;
 
 export const SITUACIONES_LIBERTAD: DbSituacionLibertad[] = ["libre", "detenido", "rebelde", "probation", "condenado"];
 export const ESTADOS_CAUSA_DB: DbEstadoCausa[] = ["tramite", "recurso", "terminada"];
-export const TIPOS_RECURSO: Exclude<DbTipoRecurso, null>[] = ["casacion", "rex", "queja_corte"];
+export const TIPOS_RECURSO: Exclude<DbTipoRecurso, null>[] = ["casacion", "rex", "queja_corte", "apelacion", "tsj"];
 
 export const labelEstadoCausa: Record<DbEstadoCausa, string> = {
   tramite: "Trámite",
@@ -20,6 +20,8 @@ export const labelTipoRecurso: Record<Exclude<DbTipoRecurso, null>, string> = {
   casacion: "Casación",
   rex: "REX",
   queja_corte: "Queja en Corte",
+  apelacion: "Apelación",
+  tsj: "TSJ",
 };
 
 export const labelSituacionLibertad: Record<DbSituacionLibertad, string> = {
@@ -58,6 +60,8 @@ export type DbCausa = {
   caratula: string | null;
 
   estado_causa: DbEstadoCausa;
+  subestado_tramite_id?: string | null;
+  subestados_tramite?: { nombre: string } | null;
   tipo_recurso: DbTipoRecurso;
   tipo_proceso: DbTipoProceso;
   fecha_ingreso: string | null;
@@ -89,6 +93,8 @@ function mapEstadoCausa(estado: DbEstadoCausa, tipo: DbTipoRecurso): EstadoCausa
     case "casacion": return "Casación";
     case "rex": return "REX";
     case "queja_corte": return "Queja en Corte";
+    case "apelacion": return "Apelación";
+    case "tsj": return "TSJ";
     default: return "Casación";
   }
 }
@@ -182,6 +188,8 @@ export function dbCausaToUI(row: DbCausa): Causa {
     causaConexaTexto: row.causa_conexa_texto ?? null,
     link: row.link_externo ?? undefined,
     colorDestacado: row.color_destacado ?? null,
+    subestadoTramiteId: row.subestado_tramite_id ?? null,
+    subestadoTramite: row.subestados_tramite?.nombre ?? null,
     vocalia: 1,
   };
 }

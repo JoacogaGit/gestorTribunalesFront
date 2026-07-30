@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, LogOut, UserCircle2, Mail, Settings, DoorOpen } from "lucide-react";
+import { User, LogOut, UserCircle2, Mail, Settings, DoorOpen, HelpCircle } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import TutorialModal from "@/components/TutorialModal";
 
 interface Props {
   email: string;
@@ -25,6 +26,7 @@ interface Props {
 
 export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAbandonarTribunal, compact, extraItems }: Props) {
 
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
@@ -70,6 +72,9 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
           <DropdownMenuItem onSelect={() => { setDraftName(name); setDraftEmail(email); setProfileOpen(true); }} className="gap-2">
             <UserCircle2 className="w-4 h-4" /> Mi perfil
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setTutorialOpen(true)} className="gap-2">
+            <HelpCircle className="w-4 h-4" /> Ayuda / Tutorial
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => toast.info("Próximamente")} className="gap-2">
             <Settings className="w-4 h-4" /> Preferencias
           </DropdownMenuItem>
@@ -87,6 +92,10 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <TutorialModal open={tutorialOpen} onOpenChange={setTutorialOpen} />
+
+
 
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent className="max-w-md bg-card border-border">

@@ -98,10 +98,11 @@ export default function InvitarMiembroDialog({ open, onOpenChange, tribunalId, f
                   <SelectContent>
                     <SelectItem value="miembro">Miembro</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="lector">Lector (solo ver)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-muted-foreground">
-                  Los admins pueden invitar a otros miembros, cambiar roles y eliminar miembros.
+                  Los admins pueden invitar y gestionar miembros. Los lectores solo pueden ver: no crean, editan ni borran nada.
                 </p>
               </div>
             )}

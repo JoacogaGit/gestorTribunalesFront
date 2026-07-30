@@ -37,6 +37,8 @@ import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
+import TutorialModal from "@/components/TutorialModal";
+import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
 import CrearListaDialog from "@/components/listas/CrearListaDialog";
@@ -224,7 +226,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       case "detenidos": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Detenido"));
       case "rebeldes": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
       case "sjp": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP"));
-      case "recursos": return all.filter((c) => ["Casación", "Queja en Corte", "REX"].includes(c.estadoCausa));
+      case "recursos": return all.filter((c) => ["Casación", "Queja en Corte", "REX", "Apelación", "TSJ"].includes(c.estadoCausa));
       default: return all;
     }
   })();
@@ -274,7 +276,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     detenidos: "Detenidos",
     rebeldes: "Rebeldes / Paraderos",
     sjp: "SJP en Trámite",
-    recursos: "Recursos (Casación / Queja / REX)",
+    recursos: "Recursos (Casación / Queja / REX / Apelación / TSJ)",
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
@@ -334,6 +336,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
   return (
     <div className="flex min-h-screen bg-background">
+      <TutorialModal />
       {!isMobile && sidebar}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -470,7 +473,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             className={view === "migrar" ? "hidden" : "flex flex-col flex-1 min-h-0"}
           >
             {view === "dashboard" && (
-              <div className="space-y-8 flex flex-col flex-1 min-h-0">
+              <div className="space-y-8 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
                 <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
@@ -662,7 +665,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} />}
-            {view === "categorias" && vocaliaId && <CategoriasManager vocaliaId={vocaliaId} />}
+            {view === "categorias" && vocaliaId && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
+                <CategoriasManager vocaliaId={vocaliaId} />
+                <SubestadosManager vocaliaId={vocaliaId} />
+              </div>
+            )}
             {view === "miembros" && esAdmin && tribunalId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                 <MiembrosTribunal tribunalId={tribunalId} onAbandoned={onBack} />

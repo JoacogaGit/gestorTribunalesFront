@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
-export type RolTribunal = "admin" | "miembro" | null;
+export type RolTribunal = "admin" | "miembro" | "lector" | null;
 
 export function useRolTribunal(tribunalId: string | null | undefined) {
   const { user } = useAuth();
@@ -24,5 +24,5 @@ export function useRolTribunal(tribunalId: string | null | undefined) {
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  return { rol, esAdmin: rol === "admin", loading, refetch };
+  return { rol, esAdmin: rol === "admin", soloLectura: rol === "lector", loading, refetch };
 }
