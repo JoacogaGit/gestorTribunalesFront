@@ -5,6 +5,7 @@ import { emitEventosChanged } from "@/lib/eventosBus";
 export interface TableroColumna {
   id: string;
   tablero_id: string;
+  lista_id: string;
   nombre: string;
   orden: number;
 }
@@ -36,7 +37,7 @@ function fireTarjetaSync(action: "create" | "update" | "delete", tarjeta_id: str
     .catch((e) => console.warn("google-calendar-sync tarjeta error", e));
 }
 
-export function useTablero(tableroId: string | null, ambito: "personal" | "vocalia" = "personal") {
+export function useTablero(listaId: string | null, tableroId: string | null, ambito: "personal" | "vocalia" = "personal") {
   const [columnas, setColumnas] = useState<TableroColumna[]>([]);
   const [tarjetas, setTarjetas] = useState<TableroTarjeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,13 +46,13 @@ export function useTablero(tableroId: string | null, ambito: "personal" | "vocal
   const syncEnabled = ambito === "personal";
 
   const fetchData = useCallback(async () => {
-    if (!tableroId) { setColumnas([]); setTarjetas([]); setLoading(false); return; }
+    if (!listaId) { setColumnas([]); setTarjetas([]); setLoading(false); return; }
     setLoading(true);
     setError(null);
     const { data: cols, error: cErr } = await supabase
       .from("tablero_columnas")
-      .select("id, tablero_id, nombre, orden")
-      .eq("tablero_id", tableroId)
+      .select("id, tablero_id, lista_id, nombre, orden")
+      .eq("lista_id", listaId)
       .order("orden", { ascending: true });
     if (cErr) { setError(cErr.message); setLoading(false); return; }
     const colIds = (cols ?? []).map((c) => c.id);
@@ -68,16 +69,16 @@ export function useTablero(tableroId: string | null, ambito: "personal" | "vocal
     setColumnas((cols ?? []) as TableroColumna[]);
     setTarjetas(cards);
     setLoading(false);
-  }, [tableroId]);
+  }, [listaId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ===== Columnas =====
   const crearColumna = useCallback(async (nombre: string) => {
-    if (!tableroId) return;
-    await supabase.from("tablero_columnas").insert({ tablero_id: tableroId, nombre: nombre.trim(), orden: columnas.length });
+    if (!listaId || !tableroId) return;
+    await supabase.from("tablero_columnas").insert({ tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length });
     await fetchData();
-  }, [tableroId, columnas.length, fetchData]);
+  }, [listaId, tableroId, columnas.length, fetchData]);
 
   const renombrarColumna = useCallback(async (id: string, nombre: string) => {
     setColumnas((prev) => prev.map((c) => (c.id === id ? { ...c, nombre } : c)));

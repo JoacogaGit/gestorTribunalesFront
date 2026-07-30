@@ -201,9 +201,6 @@ export default function AppSidebar({
                 {!collapsed && (
                   <>
                     <span className="truncate flex-1 text-left">{tb.nombre}</span>
-                    {tb.ambito === "personal"
-                      ? <Lock className="w-3 h-3 shrink-0 text-sidebar-foreground/40" />
-                      : <Users className="w-3 h-3 shrink-0 text-sidebar-foreground/40" />}
                   </>
                 )}
               </button>

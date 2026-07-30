@@ -8,7 +8,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
-import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil } from "lucide-react";
+import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil, ArrowLeft, Lock, Users, ListChecks } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -18,6 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTablero, TableroTarjeta, TarjetaInput } from "@/hooks/useTablero";
 import type { Tablero } from "@/hooks/useTableros";
+import { useTableroListas, type TableroLista } from "@/hooks/useTableroListas";
+import CrearListaTableroDialog from "./CrearListaTableroDialog";
 import TarjetaFormDialog from "./TarjetaFormDialog";
 import { formatLocalDate, toARTimeString } from "@/lib/parseDate";
 import { isAllDayISO } from "@/lib/eventoMapper";
@@ -25,6 +27,7 @@ import { isAllDayISO } from "@/lib/eventoMapper";
 interface Props {
   tablero: Tablero;
   vocaliaId: string | null;
+  soloLectura?: boolean;
 }
 
 function TarjetaCard({ tarjeta, onEdit }: { tarjeta: TableroTarjeta; onEdit: () => void }) {
@@ -69,12 +72,13 @@ function TarjetaCard({ tarjeta, onEdit }: { tarjeta: TableroTarjeta; onEdit: () 
 }
 
 function Columna({
-  id, nombre, tarjetas, isMobile, onRename, onDelete, onAddCard, onEditCard,
+  id, nombre, tarjetas, isMobile, soloLectura, onRename, onDelete, onAddCard, onEditCard,
 }: {
   id: string;
   nombre: string;
   tarjetas: TableroTarjeta[];
   isMobile: boolean;
+  soloLectura?: boolean;
   onRename: (nombre: string) => void;
   onDelete: () => void;
   onAddCard: () => void;
@@ -127,6 +131,7 @@ function Columna({
           </button>
         )}
         <span className="text-[10px] tabular-nums text-muted-foreground">{tarjetas.length}</span>
+        {!soloLectura && (
         <DropdownMenu>
           <DropdownMenuTrigger className="p-1 text-muted-foreground hover:text-foreground" aria-label="Opciones de columna">
             <MoreHorizontal className="h-4 w-4" />
@@ -140,6 +145,7 @@ function Columna({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
 
       <div ref={setDropRef} className="flex-1 min-h-[80px] overflow-y-auto p-2 space-y-2">
@@ -153,23 +159,27 @@ function Columna({
         )}
       </div>
 
+      {!soloLectura && (
       <button
         onClick={onAddCard}
         className="m-2 flex min-h-[44px] items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
       >
         <Plus className="h-3.5 w-3.5" /> Agregar tarjeta
       </button>
+      )}
     </div>
   );
 }
 
-export default function TableroView({ tablero, vocaliaId }: Props) {
+function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
+  lista: TableroLista; tableroId: string; vocaliaId: string | null; soloLectura: boolean;
+}) {
   const isMobile = useIsMobile();
   const {
     columnas, tarjetas, loading,
     crearColumna, renombrarColumna, borrarColumna, reordenarColumnas,
     crearTarjeta, actualizarTarjeta, borrarTarjeta, aplicarMovimiento,
-  } = useTablero(tablero.id, tablero.ambito);
+  } = useTablero(lista.id, tableroId, lista.ambito);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nuevaColumna, setNuevaColumna] = useState(false);
@@ -276,6 +286,7 @@ export default function TableroView({ tablero, vocaliaId }: Props) {
                 nombre={c.nombre}
                 tarjetas={porColumna[c.id] ?? []}
                 isMobile={isMobile}
+                soloLectura={soloLectura}
                 onRename={(n) => renombrarColumna(c.id, n)}
                 onDelete={() => borrarColumna(c.id)}
                 onAddCard={() => abrirNueva(c.id)}
@@ -284,6 +295,7 @@ export default function TableroView({ tablero, vocaliaId }: Props) {
             ))}
           </SortableContext>
 
+          {!soloLectura && (
           <div className={`${isMobile ? "w-[85vw] shrink-0 snap-center" : "w-64 shrink-0"}`}>
             {nuevaColumna ? (
               <div className="rounded-xl border border-border/60 bg-muted/40 p-3 space-y-2">
@@ -322,6 +334,7 @@ export default function TableroView({ tablero, vocaliaId }: Props) {
               </button>
             )}
           </div>
+          )}
         </div>
 
         <DragOverlay>
@@ -354,6 +367,116 @@ export default function TableroView({ tablero, vocaliaId }: Props) {
           else if (columnaDestino) await crearTarjeta(columnaDestino, input);
         }}
         onDelete={editando ? async () => { await borrarTarjeta(editando.id); } : undefined}
+      />
+    </div>
+  );
+}
+
+export default function TableroView({ tablero, vocaliaId, soloLectura = false }: Props) {
+  const { listas, loading, crearLista, renombrarLista, borrarLista } = useTableroListas(tablero.id);
+  const [listaActiva, setListaActiva] = useState<string | null>(null);
+  const [showCrear, setShowCrear] = useState(false);
+  const [renombrando, setRenombrando] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+
+  const lista = listas.find((l) => l.id === listaActiva) ?? null;
+
+  if (lista) {
+    const puedeEditar = !soloLectura || lista.ambito === "personal";
+    return (
+      <div className="flex flex-1 min-h-0 flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setListaActiva(null)}>
+            <ArrowLeft className="h-4 w-4" /> Volver
+          </Button>
+          <span className="text-sm font-semibold text-foreground truncate">{lista.nombre}</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+            {lista.ambito === "personal" ? <Lock className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+            {lista.ambito === "personal" ? "Personal" : "Vocalía"}
+          </span>
+        </div>
+        <KanbanLista lista={lista} tableroId={tablero.id} vocaliaId={vocaliaId} soloLectura={!puedeEditar} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto">
+      {loading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {listas.map((l) => (
+            <div key={l.id} className="group relative rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors">
+              {renombrando === l.id ? (
+                <Input
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={() => { if (draft.trim()) renombrarLista(l.id, draft.trim()); setRenombrando(null); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { if (draft.trim()) renombrarLista(l.id, draft.trim()); setRenombrando(null); }
+                    if (e.key === "Escape") setRenombrando(null);
+                  }}
+                  className="h-9"
+                />
+              ) : (
+                <button onClick={() => setListaActiva(l.id)} className="w-full text-left min-h-[44px]">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <ListChecks className="h-4 w-4 text-primary shrink-0" />
+                    <span className="truncate">{l.nombre}</span>
+                  </span>
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {l.ambito === "personal" ? <Lock className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                    {l.ambito === "personal" ? "Personal" : "Vocalía"}
+                  </span>
+                </button>
+              )}
+              {(!soloLectura || l.ambito === "personal") && renombrando !== l.id && (
+                <div className="absolute right-2 top-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="p-1.5 text-muted-foreground hover:text-foreground" aria-label="Opciones de lista">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem className="text-xs gap-2" onSelect={() => { setDraft(l.nombre); setRenombrando(l.id); }}>
+                        <Pencil className="h-3.5 w-3.5" /> Renombrar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-xs gap-2 text-alert-urgent focus:text-alert-urgent" onSelect={() => borrarLista(l.id)}>
+                        <Trash2 className="h-3.5 w-3.5" /> Borrar lista
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </div>
+          ))}
+
+          <button
+            onClick={() => setShowCrear(true)}
+            className="flex min-h-[88px] items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Nueva lista
+          </button>
+        </div>
+      )}
+
+      {!loading && listas.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          Esta anotación todavía no tiene listas. Creá una para empezar a organizar tarjetas.
+        </p>
+      )}
+
+      <CrearListaTableroDialog
+        open={showCrear}
+        onOpenChange={setShowCrear}
+        permiteVocalia={!soloLectura}
+        onCrear={async (nombre, ambito) => {
+          const id = await crearLista(nombre, ambito);
+          if (id) setListaActiva(id);
+        }}
       />
     </div>
   );
