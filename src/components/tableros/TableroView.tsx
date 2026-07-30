@@ -8,7 +8,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
-import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil } from "lucide-react";
+import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil, ArrowLeft, Lock, Users, ListChecks } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -18,6 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTablero, TableroTarjeta, TarjetaInput } from "@/hooks/useTablero";
 import type { Tablero } from "@/hooks/useTableros";
+import { useTableroListas, type TableroLista } from "@/hooks/useTableroListas";
+import CrearListaTableroDialog from "./CrearListaTableroDialog";
 import TarjetaFormDialog from "./TarjetaFormDialog";
 import { formatLocalDate, toARTimeString } from "@/lib/parseDate";
 import { isAllDayISO } from "@/lib/eventoMapper";
@@ -25,6 +27,7 @@ import { isAllDayISO } from "@/lib/eventoMapper";
 interface Props {
   tablero: Tablero;
   vocaliaId: string | null;
+  soloLectura?: boolean;
 }
 
 function TarjetaCard({ tarjeta, onEdit }: { tarjeta: TableroTarjeta; onEdit: () => void }) {
@@ -69,12 +72,13 @@ function TarjetaCard({ tarjeta, onEdit }: { tarjeta: TableroTarjeta; onEdit: () 
 }
 
 function Columna({
-  id, nombre, tarjetas, isMobile, onRename, onDelete, onAddCard, onEditCard,
+  id, nombre, tarjetas, isMobile, soloLectura, onRename, onDelete, onAddCard, onEditCard,
 }: {
   id: string;
   nombre: string;
   tarjetas: TableroTarjeta[];
   isMobile: boolean;
+  soloLectura?: boolean;
   onRename: (nombre: string) => void;
   onDelete: () => void;
   onAddCard: () => void;
@@ -127,6 +131,7 @@ function Columna({
           </button>
         )}
         <span className="text-[10px] tabular-nums text-muted-foreground">{tarjetas.length}</span>
+        {!soloLectura && (
         <DropdownMenu>
           <DropdownMenuTrigger className="p-1 text-muted-foreground hover:text-foreground" aria-label="Opciones de columna">
             <MoreHorizontal className="h-4 w-4" />
@@ -140,6 +145,7 @@ function Columna({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
 
       <div ref={setDropRef} className="flex-1 min-h-[80px] overflow-y-auto p-2 space-y-2">
@@ -153,23 +159,27 @@ function Columna({
         )}
       </div>
 
+      {!soloLectura && (
       <button
         onClick={onAddCard}
         className="m-2 flex min-h-[44px] items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
       >
         <Plus className="h-3.5 w-3.5" /> Agregar tarjeta
       </button>
+      )}
     </div>
   );
 }
 
-export default function TableroView({ tablero, vocaliaId }: Props) {
+function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
+  lista: TableroLista; tableroId: string; vocaliaId: string | null; soloLectura: boolean;
+}) {
   const isMobile = useIsMobile();
   const {
     columnas, tarjetas, loading,
     crearColumna, renombrarColumna, borrarColumna, reordenarColumnas,
     crearTarjeta, actualizarTarjeta, borrarTarjeta, aplicarMovimiento,
-  } = useTablero(tablero.id, tablero.ambito);
+  } = useTablero(lista.id, tableroId, lista.ambito);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nuevaColumna, setNuevaColumna] = useState(false);
@@ -276,6 +286,7 @@ export default function TableroView({ tablero, vocaliaId }: Props) {
                 nombre={c.nombre}
                 tarjetas={porColumna[c.id] ?? []}
                 isMobile={isMobile}
+                soloLectura={soloLectura}
                 onRename={(n) => renombrarColumna(c.id, n)}
                 onDelete={() => borrarColumna(c.id)}
                 onAddCard={() => abrirNueva(c.id)}
@@ -284,6 +295,7 @@ export default function TableroView({ tablero, vocaliaId }: Props) {
             ))}
           </SortableContext>
 
+          {!soloLectura && (
           <div className={`${isMobile ? "w-[85vw] shrink-0 snap-center" : "w-64 shrink-0"}`}>
             {nuevaColumna ? (
               <div className="rounded-xl border border-border/60 bg-muted/40 p-3 space-y-2">
@@ -322,6 +334,7 @@ export default function TableroView({ tablero, vocaliaId }: Props) {
               </button>
             )}
           </div>
+          )}
         </div>
 
         <DragOverlay>
