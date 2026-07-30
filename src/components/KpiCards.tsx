@@ -54,7 +54,7 @@ export default function KpiCards({ kpis, loading, error, onRetry }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div data-tour="kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {KPI_DEFS.map((kpi, i) => {
         const value = kpis[kpi.key];
         return (

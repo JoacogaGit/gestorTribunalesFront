@@ -36,6 +36,7 @@ export default function NotificationBell() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          data-tour="notificaciones"
           variant="ghost"
           size="icon"
           aria-label={active ? "Notificaciones activadas" : "Notificaciones desactivadas"}
