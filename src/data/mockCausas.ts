@@ -83,6 +83,9 @@ export interface Causa {
   extra?: Record<string, string>;
   /** Color de fondo para destacar la fila (compartido entre todos los miembros del tribunal). */
   colorDestacado?: string | null;
+  /** Subestado dentro de "En trámite" (configurable por vocalía). */
+  subestadoTramiteId?: string | null;
+  subestadoTramite?: string | null;
 }
 
 export function createEmptyCausa(vocalia: number): Causa {

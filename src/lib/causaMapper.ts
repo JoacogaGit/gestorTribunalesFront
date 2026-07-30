@@ -60,6 +60,8 @@ export type DbCausa = {
   caratula: string | null;
 
   estado_causa: DbEstadoCausa;
+  subestado_tramite_id?: string | null;
+  subestados_tramite?: { nombre: string } | null;
   tipo_recurso: DbTipoRecurso;
   tipo_proceso: DbTipoProceso;
   fecha_ingreso: string | null;
@@ -186,6 +188,8 @@ export function dbCausaToUI(row: DbCausa): Causa {
     causaConexaTexto: row.causa_conexa_texto ?? null,
     link: row.link_externo ?? undefined,
     colorDestacado: row.color_destacado ?? null,
+    subestadoTramiteId: row.subestado_tramite_id ?? null,
+    subestadoTramite: row.subestados_tramite?.nombre ?? null,
     vocalia: 1,
   };
 }
