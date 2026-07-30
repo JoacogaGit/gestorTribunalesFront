@@ -24,6 +24,7 @@ const navFinal = [
   { id: "migrar", label: "Migrar causas", icon: Sparkles },
 ];
 
+
 export interface CustomBoard {
   id: string;
   label: string;
