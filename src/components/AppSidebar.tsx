@@ -86,6 +86,7 @@ export default function AppSidebar({
       <button
         key={item.id}
         onClick={() => onNavigate(item.id)}
+        data-tour={`nav-${item.id}`}
         className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
           isActive
             ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
@@ -125,7 +126,7 @@ export default function AppSidebar({
 
           {!collapsed && modoTribunal === "lista_unica" && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
+              <DropdownMenuTrigger data-tour="vocalia-selector" className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
                 <span className="truncate flex-1">{vocaliaNombre}</span>
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </DropdownMenuTrigger>
@@ -139,7 +140,7 @@ export default function AppSidebar({
 
           {!collapsed && modoTribunal !== "lista_unica" && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
+              <DropdownMenuTrigger data-tour="vocalia-selector" className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-primary transition-colors w-full text-left">
                 <span className="truncate flex-1">{vocaliaNombre}</span>
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </DropdownMenuTrigger>
