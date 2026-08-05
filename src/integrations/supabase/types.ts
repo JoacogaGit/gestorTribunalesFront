@@ -1048,6 +1048,8 @@ export type Database = {
       vocalias: {
         Row: {
           created_at: string | null
+          eliminado_en: string | null
+          eliminado_por: string | null
           id: string
           nombre: string
           tribunal_id: string
@@ -1055,6 +1057,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          eliminado_en?: string | null
+          eliminado_por?: string | null
           id?: string
           nombre: string
           tribunal_id: string
@@ -1062,6 +1066,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          eliminado_en?: string | null
+          eliminado_por?: string | null
           id?: string
           nombre?: string
           tribunal_id?: string
@@ -1104,6 +1110,7 @@ export type Database = {
         Args: { p_tribunal_id: string }
         Returns: number
       }
+      eliminar_vocalia: { Args: { p_vocalia_id: string }; Returns: undefined }
       es_admin_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_lector_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_miembro_de_vocalia: {
@@ -1112,6 +1119,19 @@ export type Database = {
       }
       es_miembro_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_superadmin: { Args: never; Returns: boolean }
+      listar_vocalias_papelera: {
+        Args: never
+        Returns: {
+          causas_count: number
+          eliminado_en: string
+          eliminado_por: string
+          eliminado_por_nombre: string
+          id: string
+          nombre: string
+          tribunal_id: string
+          tribunal_nombre: string
+        }[]
+      }
       puede_acceder_columna: {
         Args: { p_columna_id: string }
         Returns: boolean
@@ -1134,6 +1154,7 @@ export type Database = {
         Args: { p_tribunal_id: string }
         Returns: undefined
       }
+      restaurar_vocalia: { Args: { p_vocalia_id: string }; Returns: undefined }
       unirse_por_codigo: { Args: { p_codigo: string }; Returns: string }
     }
     Enums: {
