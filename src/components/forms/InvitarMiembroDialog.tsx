@@ -73,7 +73,7 @@ export default function InvitarMiembroDialog({ open, onOpenChange, tribunalId, f
           <DialogTitle>{resultado ? "Invitación creada" : "Invitar miembro"}</DialogTitle>
           {!resultado && (
             <DialogDescription className="text-xs">
-              Generá una invitación para sumar a alguien al tribunal.
+              Generá una invitación para sumar a alguien a la oficina.
             </DialogDescription>
           )}
         </DialogHeader>
@@ -88,7 +88,7 @@ export default function InvitarMiembroDialog({ open, onOpenChange, tribunalId, f
 
             {forceRol ? (
               <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
-                Esta persona será invitada como <strong>{forceRol === "admin" ? "Admin" : "Miembro"}</strong> del tribunal.
+                Esta persona será invitada como <strong>{forceRol === "admin" ? "Admin" : "Miembro"}</strong> de la oficina.
               </div>
             ) : (
               <div className="space-y-1.5">

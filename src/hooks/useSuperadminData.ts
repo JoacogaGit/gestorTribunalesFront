@@ -109,7 +109,7 @@ export function useTribunalDetalleSuperadmin(tribunalId: string | undefined) {
       if (tRes.error) throw tRes.error;
       if (vRes.error) throw vRes.error;
       if (mRes.error) throw mRes.error;
-      if (!tRes.data) throw new Error("Tribunal no encontrado");
+      if (!tRes.data) throw new Error("Oficina no encontrado");
 
       const vocaliaIds = (vRes.data ?? []).map((v) => v.id);
       const causasRes = vocaliaIds.length

@@ -18,7 +18,7 @@ interface Props {
   name: string;
   onLogout: () => void;
   onUpdateProfile?: (data: { name: string; email: string }) => void;
-  /** Si está presente, muestra "Abandonar tribunal" en el menú. Lo dispara cualquier miembro (admin o no). */
+  /** Si está presente, muestra "Abandonar oficina" en el menú. Lo dispara cualquier miembro (admin o no). */
   onAbandonarTribunal?: () => void;
   /** Oculta el bloque nombre/email junto al avatar (móvil). */
   compact?: boolean;
@@ -90,7 +90,7 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onAbandonarTribunal} className="gap-2">
-                <DoorOpen className="w-4 h-4" /> Abandonar tribunal
+                <DoorOpen className="w-4 h-4" /> Abandonar oficina
               </DropdownMenuItem>
             </>
           )}

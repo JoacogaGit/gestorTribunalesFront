@@ -25,7 +25,7 @@ export default function SuperadminBanner() {
       <div className="max-w-[1400px] mx-auto px-4 py-2 flex items-center gap-3">
         <AlertTriangle className="w-5 h-5 shrink-0" />
         <p className="text-xs md:text-sm font-medium flex-1 leading-tight">
-          <span className="font-semibold">Modo Superadmin:</span> estás viendo el tribunal{" "}
+          <span className="font-semibold">Modo Superadmin:</span> estás viendo la oficina{" "}
           <span className="font-bold">{mode.tribunalNombre}</span> como superadmin. Cualquier acción
           que hagas quedará registrada como tuya.
         </p>

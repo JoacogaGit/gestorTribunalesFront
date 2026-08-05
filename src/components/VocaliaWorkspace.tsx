@@ -280,7 +280,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
-    miembros: "Miembros del tribunal",
+    miembros: "Miembros de la oficina",
     papelera: "Papelera",
     migrar: "Migrar causas",
   };
@@ -324,7 +324,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       listasPersonalizadas={listasHook.listas}
       onCreateLista={() => {
         if (listasHook.listas.length >= 2) {
-          toast.error("Llegaste al límite de 2 listas personalizadas para esta vocalía");
+          toast.error("Llegaste al límite de 2 listas personalizadas para este espacio");
           return;
         }
         setShowCreateLista(true);
@@ -536,7 +536,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   loading={dashCausasRemote.loading}
                   error={dashCausasRemote.error}
                   isEmpty={dashCausas.length === 0}
-                  emptyTitle="Todavía no hay causas cargadas en esta vocalía"
+                  emptyTitle="Todavía no hay causas cargadas en este espacio"
                   emptyMessage="Empezá creando la primera causa para gestionarla acá."
                   onRetry={dashCausasRemote.refetch}
                   onCreateCausa={() => setShowCreateCausa(true)}
@@ -585,7 +585,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   loading={detenidosRemote.loading}
                   error={detenidosRemote.error}
                   isEmpty={detenidosRemote.causas.length === 0}
-                  emptyTitle="Todavía no hay detenidos en esta vocalía"
+                  emptyTitle="Todavía no hay detenidos en este espacio"
                   emptyMessage="Empezá creando la primera causa con un detenido."
                   onRetry={detenidosRemote.refetch}
                   onCreateCausa={() => setShowCreateCausa(true)}
@@ -605,7 +605,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 loading={rebeldesRemote.loading}
                 error={rebeldesRemote.error}
                 isEmpty={rebeldesRemote.causas.length === 0}
-                emptyTitle="Todavía no hay rebeldes en esta vocalía"
+                emptyTitle="Todavía no hay rebeldes en este espacio"
                 emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={rebeldesRemote.refetch}
                 onCreateCausa={() => setShowCreateCausa(true)}

@@ -31,7 +31,7 @@ export function useCategoriasVocalia(vocaliaId: string | null | undefined) {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const crear = useCallback(async (nombre: string): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
-    if (!vocaliaId) return { ok: false, error: "Sin vocalía" };
+    if (!vocaliaId) return { ok: false, error: "Sin espacio" };
     const { data, error: e } = await supabase.rpc("crear_categoria_con_eventos", {
       p_vocalia_id: vocaliaId,
       p_nombre: nombre,

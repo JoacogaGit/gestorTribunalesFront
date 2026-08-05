@@ -55,6 +55,7 @@ export function useVocalias() {
         .from("vocalias")
         .select("id, nombre, tribunal_id")
         .in("tribunal_id", tribunalIds)
+        .is("eliminado_en", null)
         .order("nombre", { ascending: true }),
     ]);
 

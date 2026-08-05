@@ -64,8 +64,8 @@ export default function CrearListaTableroDialog({ open, onOpenChange, onCrear, p
                 <label className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-muted/40">
                   <RadioGroupItem value="vocalia" id="lamb-vocalia" className="mt-0.5" />
                   <span>
-                    <span className="block text-sm font-medium text-foreground">Vocalía</span>
-                    <span className="block text-xs text-muted-foreground">Compartida con todos los miembros del tribunal.</span>
+                    <span className="block text-sm font-medium text-foreground">Oficina</span>
+                    <span className="block text-xs text-muted-foreground">Compartida con todos los miembros de la oficina.</span>
                   </span>
                 </label>
               )}

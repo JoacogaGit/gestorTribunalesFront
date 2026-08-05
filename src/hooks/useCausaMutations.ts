@@ -47,7 +47,7 @@ export function useCausaMutations() {
     causa: CausaInput,
     sujetos: SujetoInput[],
   ): Promise<{ ok: true; id: string; sujetoIds: string[] } | { ok: false; error: string }> => {
-    if (!vocalia) return { ok: false, error: "No hay vocalía seleccionada." };
+    if (!vocalia) return { ok: false, error: "No hay espacio seleccionado." };
     setSaving(true);
     try {
       const { data: causaData, error: causaErr } = await supabase

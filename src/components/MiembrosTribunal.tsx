@@ -54,7 +54,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     if (!tribunal) return;
     const nuevoModo = modo === "lista_unica" ? "vocalias_separadas" : "lista_unica";
     if (nuevoModo === "lista_unica" && cantidadVocalias !== 1) {
-      toast.error("Solo se puede cambiar a lista única si hay una sola vocalía.");
+      toast.error("Solo se puede cambiar a lista única si hay un solo espacio.");
       return;
     }
     setCambiandoModo(true);
@@ -63,8 +63,8 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
       .update({ modo: nuevoModo })
       .eq("id", tribunal.id);
     setCambiandoModo(false);
-    if (error) { toast.error("No se pudo cambiar el modo del tribunal."); return; }
-    toast.success(nuevoModo === "lista_unica" ? "Ahora el tribunal trabaja como lista única." : "Ahora el tribunal trabaja con vocalías separadas.");
+    if (error) { toast.error("No se pudo cambiar el modo de la oficina."); return; }
+    toast.success(nuevoModo === "lista_unica" ? "Ahora la oficina trabaja como lista única." : "Ahora la oficina trabaja con espacios separados.");
     refetchTribunal();
     refetchVocalias();
   };
@@ -75,6 +75,21 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
   const [confirmCambio, setConfirmCambio] = useState<MiembroRow | null>(null);
   const [confirmQuitar, setConfirmQuitar] = useState<MiembroRow | null>(null);
   const [confirmCancelInv, setConfirmCancelInv] = useState<InvitacionRow | null>(null);
+  const [confirmEliminarVocalia, setConfirmEliminarVocalia] = useState<{ id: string; nombre: string } | null>(null);
+  const [eliminandoVocalia, setEliminandoVocalia] = useState(false);
+
+  const soyAdmin = miembrosHook.miembros.some((m) => m.usuario_id === user?.id && m.rol === "admin");
+
+  const handleEliminarVocalia = async () => {
+    if (!confirmEliminarVocalia) return;
+    setEliminandoVocalia(true);
+    const { error } = await supabase.rpc("eliminar_vocalia", { p_vocalia_id: confirmEliminarVocalia.id });
+    setEliminandoVocalia(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Espacio "${confirmEliminarVocalia.nombre}" eliminado. Se puede recuperar durante 30 días.`);
+    setConfirmEliminarVocalia(null);
+    refetchVocalias();
+  };
 
   const copiar = async (texto: string, cb: () => void) => {
     await navigator.clipboard.writeText(texto);
@@ -87,7 +102,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     const nuevo: RolMiembro = confirmCambio.rol === "admin" ? "miembro" : "admin";
     // Bloquear degradación del último admin
     if (confirmCambio.rol === "admin" && miembrosHook.adminCount <= 1) {
-      toast.error("No se puede degradar al único administrador del tribunal.");
+      toast.error("No se puede degradar al único administrador de la oficina.");
       setConfirmCambio(null);
       return;
     }
@@ -111,7 +126,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     }
     const r = await miembrosHook.quitarMiembro(confirmQuitar.id);
     if (r.ok !== true) { toast.error(r.error); return; }
-    toast.success(`${confirmQuitar.nombre} fue quitado del tribunal`);
+    toast.success(`${confirmQuitar.nombre} fue quitado de la oficina`);
     setConfirmQuitar(null);
   };
 
@@ -142,7 +157,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
       <section className="rounded-xl border border-border bg-card/60 p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Tribunal</h2>
+            <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Oficina</h2>
             {tLoading ? (
               <Skeleton className="h-7 w-48 mt-1" />
             ) : (
@@ -179,19 +194,19 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
             </div>
             <div>
               <h3 className="text-sm font-display font-semibold text-foreground">
-                Modo: {modo === "lista_unica" ? "Lista única" : "Vocalías separadas"}
+                Modo: {modo === "lista_unica" ? "Lista única" : "Espacios separados"}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
                 {modo === "lista_unica"
                   ? "Todas las causas viven en un único listado. Ideal para juzgados unipersonales o estudios chicos."
-                  : "Cada vocalía u oficina tiene sus propias causas. Ideal para tribunales colegiados."}
+                  : "Cada espacio tiene sus propias causas. Ideal para oficinas con varios equipos."}
               </p>
             </div>
           </div>
           {modo === "lista_unica" ? (
             <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>
               {cambiandoModo && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-              Cambiar a modo vocalías separadas
+              Cambiar a modo espacios separados
             </Button>
           ) : cantidadVocalias === 1 ? (
             <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>
@@ -208,12 +223,49 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>Solo si hay una sola vocalía. Eliminá las otras primero.</TooltipContent>
+                <TooltipContent>Solo si hay un solo espacio. Eliminá las otras primero.</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
         </div>
       </section>
+
+      {/* Espacios de la oficina */}
+      <section className="space-y-3">
+        <h3 className="text-sm font-display font-semibold uppercase tracking-wider text-foreground/80">
+          Espacios de la oficina
+        </h3>
+        <div className="rounded-md border border-border divide-y divide-border">
+          {vocaliasDelTribunal.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">Esta oficina no tiene espacios activos.</p>
+          ) : (
+            vocaliasDelTribunal.map((v) => (
+              <div key={v.id} className="flex items-center justify-between gap-3 p-3">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Building2 className="w-4 h-4 text-muted-foreground" /> {v.nombre}
+                </span>
+                {soyAdmin && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-alert-urgent hover:text-alert-urgent"
+                    onClick={() => setConfirmEliminarVocalia({ id: v.id, nombre: v.nombre })}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Eliminar espacio
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+        {soyAdmin && (
+          <p className="text-xs text-muted-foreground">
+            Al eliminar un espacio se archiva con todas sus causas. Se puede recuperar durante 30 días.
+          </p>
+        )}
+      </section>
+
+
 
 
       {/* Miembros */}
@@ -262,7 +314,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                           onValueChange={async (nuevo) => {
                             if (nuevo === m.rol) return;
                             if (m.rol === "admin" && miembrosHook.adminCount <= 1) {
-                              toast.error("No se puede degradar al único administrador del tribunal.");
+                              toast.error("No se puede degradar al único administrador de la oficina.");
                               return;
                             }
                             const r = await miembrosHook.cambiarRol(m.id, nuevo as RolMiembro);
@@ -369,6 +421,29 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
         tribunalId={tribunalId}
       />
 
+      <AlertDialog open={!!confirmEliminarVocalia} onOpenChange={(o) => !o && setConfirmEliminarVocalia(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar el espacio "{confirmEliminarVocalia?.nombre}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se archivará el espacio junto con todas sus causas, eventos y listas. Vas a poder pedir su
+              recuperación durante los próximos 30 días.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={eliminandoVocalia}
+              onClick={(e) => { e.preventDefault(); handleEliminarVocalia(); }}
+            >
+              {eliminandoVocalia && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Eliminar espacio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <AlertDialog open={!!confirmCambio} onOpenChange={(o) => !o && setConfirmCambio(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -387,7 +462,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
       <AlertDialog open={!!confirmQuitar} onOpenChange={(o) => !o && setConfirmQuitar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Quitar a {confirmQuitar?.nombre} del tribunal?</AlertDialogTitle>
+            <AlertDialogTitle>¿Quitar a {confirmQuitar?.nombre} de la oficina?</AlertDialogTitle>
             <AlertDialogDescription>
               Ya no podrá acceder a las causas. Esta acción se puede revertir invitándolo de nuevo.
             </AlertDialogDescription>

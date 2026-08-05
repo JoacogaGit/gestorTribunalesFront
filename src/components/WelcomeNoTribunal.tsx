@@ -24,7 +24,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   // crear tribunal
   const [tribunalNombre, setTribunalNombre] = useState("");
   const [tribunalId, setTribunalId] = useState<string | null>(null);
-  const [vocaliaNombre, setVocaliaNombre] = useState("Vocalía 1");
+  const [vocaliaNombre, setVocaliaNombre] = useState("Espacio 1");
 
   // unirse
   const [codigo, setCodigo] = useState("");
@@ -41,7 +41,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
     if (error || !data) {
       setLoading(false);
-      toast.error(error?.message || "No se pudo crear el tribunal.");
+      toast.error(error?.message || "No se pudo crear la oficina.");
       return;
     }
     const newTribunalId = data as string;
@@ -53,24 +53,24 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
       .eq("id", newTribunalId);
     if (updErr) {
       setLoading(false);
-      toast.error("Tribunal creado pero no se pudo guardar el modo.");
+      toast.error("Oficina creado pero no se pudo guardar el modo.");
       return;
     }
 
     setTribunalId(newTribunalId);
 
     if (modoElegido === "lista_unica") {
-      // Crear vocalía "General" oculta y saltar el paso de vocalía
+      // Crear espacio "General" oculta y saltar el paso de vocalía
       const { error: vErr } = await supabase
         .from("vocalias")
         .insert({ tribunal_id: newTribunalId, nombre: "General" });
       setLoading(false);
-      if (vErr) { toast.error("No se pudo inicializar el tribunal."); return; }
-      toast.success("Tribunal creado");
+      if (vErr) { toast.error("No se pudo inicializar la oficina."); return; }
+      toast.success("Oficina creado");
       setMode("bienvenida");
     } else {
       setLoading(false);
-      toast.success("Tribunal creado");
+      toast.success("Oficina creado");
       setMode("vocalia");
     }
   };
@@ -83,8 +83,8 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
       .from("vocalias")
       .insert({ tribunal_id: tribunalId, nombre: vocaliaNombre.trim() });
     setLoading(false);
-    if (error) { toast.error("No se pudo crear la vocalía."); return; }
-    toast.success("Vocalía creada");
+    if (error) { toast.error("No se pudo crear el espacio."); return; }
+    toast.success("Espacio creada");
     setMode("bienvenida");
   };
 
@@ -94,7 +94,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     const { error } = await supabase.rpc("unirse_por_codigo", { p_codigo: codigo.trim() });
     setLoading(false);
     if (error) { toast.error("Código inválido."); return; }
-    toast.success("Te uniste al tribunal");
+    toast.success("Te uniste a la oficina");
     onCreated();
   };
 
@@ -143,8 +143,8 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
               <button onClick={() => setMode("crear")}
                 className="text-left p-6 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all">
                 <Building2 className="w-8 h-8 text-primary mb-3" />
-                <h3 className="font-display font-semibold text-foreground mb-1">Crear mi tribunal</h3>
-                <p className="text-sm text-muted-foreground">Sos el primer usuario y querés armar tu propio tribunal.</p>
+                <h3 className="font-display font-semibold text-foreground mb-1">Crear mi oficina</h3>
+                <p className="text-sm text-muted-foreground">Sos el primer usuario y querés armar tu propio oficina.</p>
               </button>
               <button onClick={() => setMode("codigo")}
                 className="text-left p-6 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all">
@@ -162,11 +162,11 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
 
           {mode === "crear" && (
             <form onSubmit={handleContinuarACrear} className="space-y-4">
-              <h3 className="font-display font-semibold text-foreground">Crear tribunal</h3>
+              <h3 className="font-display font-semibold text-foreground">Crear oficina</h3>
               <div className="space-y-1.5">
-                <Label htmlFor="tnombre">Nombre del tribunal</Label>
+                <Label htmlFor="tnombre">Nombre de la oficina</Label>
                 <Input id="tnombre" value={tribunalNombre} onChange={(e) => setTribunalNombre(e.target.value)}
-                  className="h-11" placeholder="Tribunal Oral en lo Criminal Federal Nº 1" required autoFocus />
+                  className="h-11" placeholder="Oficina Oral en lo Criminal Federal Nº 1" required autoFocus />
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setMode("menu")} disabled={loading}>Cancelar</Button>
@@ -180,7 +180,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
           {mode === "modo" && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-display font-semibold text-foreground">¿Cómo trabaja este tribunal?</h3>
+                <h3 className="font-display font-semibold text-foreground">¿Cómo trabaja esta oficina?</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Elegí la forma en la que querés organizar las causas. Después podés cambiarla desde configuración.
                 </p>
@@ -193,9 +193,9 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                   className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
                 >
                   <div className="text-2xl mb-2">🏛️</div>
-                  <h4 className="font-display font-semibold text-foreground mb-1">Con vocalías u oficinas separadas</h4>
+                  <h4 className="font-display font-semibold text-foreground mb-1">Con espacios u oficinas separadas</h4>
                   <p className="text-xs text-muted-foreground">
-                    Cada vocalía tiene sus propias causas. Ideal para tribunales colegiados, estudios con varios abogados.
+                    Cada espacio tiene sus propias causas. Ideal para oficinas colegiados, estudios con varios abogados.
                   </p>
                 </button>
                 <button
@@ -218,7 +218,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
               </div>
               {loading && (
                 <div className="flex items-center justify-center text-xs text-muted-foreground gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Creando tribunal…
+                  <Loader2 className="w-4 h-4 animate-spin" /> Creando oficina…
                 </div>
               )}
             </div>
@@ -227,19 +227,19 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
           {mode === "vocalia" && (
             <form onSubmit={handleCrearVocalia} className="space-y-4">
               <div>
-                <h3 className="font-display font-semibold text-foreground">Tu primera vocalía</h3>
+                <h3 className="font-display font-semibold text-foreground">Tu primera espacio</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Tu tribunal está creado. Para empezar, creá tu primera vocalía. Después podés agregar más.
+                  Tu oficina está creado. Para empezar, creá tu primera espacio. Después podés agregar más.
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="vnombre">Nombre de la vocalía</Label>
+                <Label htmlFor="vnombre">Nombre de el espacio</Label>
                 <Input id="vnombre" value={vocaliaNombre} onChange={(e) => setVocaliaNombre(e.target.value)}
-                  className="h-11" placeholder="Vocalía 1" required />
+                  className="h-11" placeholder="Espacio 1" required />
               </div>
               <Button type="submit" disabled={loading} className="w-full">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Crear vocalía
+                Crear espacio
               </Button>
             </form>
           )}
@@ -248,7 +248,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
             <form onSubmit={handleUnirseCodigo} className="space-y-4">
               <h3 className="font-display font-semibold text-foreground">Unirme con código</h3>
               <div className="space-y-1.5">
-                <Label htmlFor="codigo">Código del tribunal</Label>
+                <Label htmlFor="codigo">Código de la oficina</Label>
                 <Input id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())}
                   className="h-11 font-mono tracking-widest uppercase" maxLength={8} placeholder="ABCD1234" required />
               </div>

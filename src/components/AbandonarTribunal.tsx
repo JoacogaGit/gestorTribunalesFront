@@ -95,7 +95,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     const { error } = await supabase.from("miembros_tribunal").delete().eq("id", yo.id);
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Abandonaste ${tribunal?.nombre ?? "el tribunal"}`);
+    toast.success(`Abandonaste ${tribunal?.nombre ?? "la oficina"}`);
     setStep("idle");
     onAbandoned();
   };
@@ -106,7 +106,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     const { error } = await supabase.rpc("abandonar_tribunal_archivar", { p_tribunal_id: tribunalId });
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Tribunal archivado en papelera por 30 días");
+    toast.success("Oficina archivado en papelera por 30 días");
     setStep("idle");
     onAbandoned();
   };
@@ -117,7 +117,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     const { error } = await supabase.rpc("abandonar_tribunal_eliminar_todo", { p_tribunal_id: tribunalId });
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Tribunal eliminado definitivamente");
+    toast.success("Oficina eliminado definitivamente");
     setStep("idle");
     onAbandoned();
   };
@@ -148,14 +148,14 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
                 <LogOut className="w-5 h-5 text-destructive" />
               </div>
               <div>
-                <h3 className="text-sm font-display font-semibold text-foreground">Abandonar tribunal</h3>
+                <h3 className="text-sm font-display font-semibold text-foreground">Abandonar oficina</h3>
                 <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
                   Dejás de tener acceso a este tribunal. Esta acción no afecta a los demás miembros (salvo que seas el último).
                 </p>
               </div>
             </div>
             <Button variant="destructive" size="sm" onClick={start} disabled={!yo}>
-              <LogOut className="w-3.5 h-3.5 mr-1.5" /> Abandonar tribunal
+              <LogOut className="w-3.5 h-3.5 mr-1.5" /> Abandonar oficina
             </Button>
           </div>
         </section>
@@ -165,7 +165,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
       <AlertDialog open={step === "case1"} onOpenChange={(o) => !o && cerrar()}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Confirmás abandonar {tribunal?.nombre ?? "el tribunal"}?</AlertDialogTitle>
+            <AlertDialogTitle>¿Confirmás abandonar {tribunal?.nombre ?? "la oficina"}?</AlertDialogTitle>
             <AlertDialogDescription>
               Vas a perder el acceso a las causas, calendario y configuración. Si querés volver, alguien tiene que invitarte de nuevo.
             </AlertDialogDescription>
@@ -188,7 +188,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
       <Dialog open={step === "case2"} onOpenChange={(o) => !o && cerrar()}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Sos el único admin de este tribunal</DialogTitle>
+            <DialogTitle>Sos el único admin de esta oficina</DialogTitle>
             <DialogDescription>
               Antes de abandonar, nombrá a otro admin. Una vez que haya otro admin vas a poder abandonar normalmente.
             </DialogDescription>
@@ -196,7 +196,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
           <div className="space-y-3">
             <div className="rounded-md border border-border divide-y divide-border max-h-72 overflow-y-auto">
               {otros.length === 0 ? (
-                <div className="p-4 text-sm text-muted-foreground text-center">No hay otros miembros en el tribunal.</div>
+                <div className="p-4 text-sm text-muted-foreground text-center">No hay otros miembros en la oficina.</div>
               ) : otros.map((m) => (
                 <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2">
                   <div className="min-w-0">
@@ -225,9 +225,9 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              Sos el único miembro de {tribunal?.nombre ?? "este tribunal"}
+              Sos el único miembro de {tribunal?.nombre ?? "esta oficina"}
             </DialogTitle>
-            <DialogDescription>Si abandonás, nadie más queda. Elegí qué hacer con el tribunal.</DialogDescription>
+            <DialogDescription>Si abandonás, nadie más queda. Elegí qué hacer con la oficina.</DialogDescription>
           </DialogHeader>
 
           {tribunal?.codigo_acceso && (
@@ -260,7 +260,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
                 <div>
                   <p className="text-sm font-semibold">(B) Abandonar y eliminar todo ahora</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Se borra el tribunal + TODAS sus causas, eventos, imputados, prescripciones. <strong>NO se puede deshacer.</strong>
+                    Se borra la oficina + TODAS sus causas, eventos, imputados, prescripciones. <strong>NO se puede deshacer.</strong>
                   </p>
                 </div>
               </div>
@@ -307,7 +307,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">¿Eliminar TODO definitivamente?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se borra el tribunal, todas sus causas, sujetos, eventos y prescripciones. Esta acción <strong>no se puede deshacer</strong>.
+              Se borra la oficina, todas sus causas, sujetos, eventos y prescripciones. Esta acción <strong>no se puede deshacer</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -45,7 +45,7 @@ export function useInvitaciones(tribunalId: string | null | undefined) {
     rol: RolInvitacion,
     enviarMail: boolean,
   ): Promise<Result<{ invitacion: InvitacionRow; sent: boolean; reason?: string }>> => {
-    if (!tribunalId || !user) return { ok: false, error: "No hay tribunal o usuario" };
+    if (!tribunalId || !user) return { ok: false, error: "No hay oficina o usuario" };
     setSaving(true);
     try {
       const { data, error } = await supabase

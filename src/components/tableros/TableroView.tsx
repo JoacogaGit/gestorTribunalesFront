@@ -392,7 +392,7 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false }:
           <span className="text-sm font-semibold text-foreground truncate">{lista.nombre}</span>
           <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
             {lista.ambito === "personal" ? <Lock className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-            {lista.ambito === "personal" ? "Personal" : "Vocalía"}
+            {lista.ambito === "personal" ? "Personal" : "Oficina"}
           </span>
         </div>
         <KanbanLista lista={lista} tableroId={tablero.id} vocaliaId={vocaliaId} soloLectura={!puedeEditar} />
@@ -430,7 +430,7 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false }:
                   </span>
                   <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                     {l.ambito === "personal" ? <Lock className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-                    {l.ambito === "personal" ? "Personal" : "Vocalía"}
+                    {l.ambito === "personal" ? "Personal" : "Oficina"}
                   </span>
                 </button>
               )}

@@ -61,7 +61,7 @@ export default function CategoriasManager({ vocaliaId }: Props) {
             Categorías personalizadas
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Al crear una categoría, se agrega una entrada vacía a cada causa activa de la vocalía.
+            Al crear una categoría, se agrega una entrada vacía a cada causa activa del espacio.
             Cada causa puede completarla con descripción y fecha (opcional), y agregar varias entradas.
           </p>
         </div>
@@ -115,7 +115,7 @@ export default function CategoriasManager({ vocaliaId }: Props) {
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             />
             <p className="text-[11px] text-muted-foreground">
-              Se agregará una anotación vacía con este nombre en cada causa activa de la vocalía.
+              Se agregará una anotación vacía con este nombre en cada causa activa de el espacio.
             </p>
           </div>
           <DialogFooter>

@@ -34,7 +34,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [creating, setCreating] = useState(false);
 
-  // Cargar tribunales donde el usuario es admin para mostrar la tarjeta "Crear vocalía"
+  // Cargar tribunales donde el usuario es admin para mostrar la tarjeta "Crear espacio"
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -56,7 +56,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     vocalias.forEach((v) => {
       if (v.tribunal_modo !== "vocalias_separadas") return;
       if (!adminTribunalIds.has(v.tribunal_id)) return;
-      if (!map.has(v.tribunal_id)) map.set(v.tribunal_id, { id: v.tribunal_id, nombre: v.tribunal_nombre || "Tribunal" });
+      if (!map.has(v.tribunal_id)) map.set(v.tribunal_id, { id: v.tribunal_id, nombre: v.tribunal_nombre || "Oficina" });
     });
     return Array.from(map.values());
   }, [vocalias, adminTribunalIds]);
@@ -97,8 +97,8 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
       .select("id, nombre, tribunal_id")
       .single();
     setCreating(false);
-    if (e || !data) { toast.error(e?.message || "No se pudo crear la vocalía"); return; }
-    toast.success("Vocalía creada");
+    if (e || !data) { toast.error(e?.message || "No se pudo crear el espacio"); return; }
+    toast.success("Espacio creada");
     setCreateOpen(null);
     setNuevoNombre("");
     await refetch();
@@ -110,7 +110,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
       <div className="max-w-4xl w-full">
         <div className="flex justify-end items-center gap-1 mb-4">
           <SuperadminLink />
-          <RefreshButton onRefresh={refetch} loading={loading} label="Actualizar vocalías" />
+          <RefreshButton onRefresh={refetch} loading={loading} label="Actualizar espacios" />
           <Button variant="ghost" size="sm" onClick={onLogout}>
             <LogOut className="w-4 h-4 mr-1.5" />
             Volver al inicio de sesión
@@ -122,7 +122,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             <Scale className="w-10 h-10 text-primary" />
             <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">IusTrack</h1>
           </div>
-          <p className="text-muted-foreground text-lg">Elegí la vocalía con la que querés trabajar</p>
+          <p className="text-muted-foreground text-lg">Elegí el espacio con la que querés trabajar</p>
         </div>
 
         {loading && (
@@ -133,7 +133,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
 
         {error && (
           <Alert variant="destructive">
-            <AlertTitle>No se pudieron cargar las vocalías</AlertTitle>
+            <AlertTitle>No se pudieron cargar los espacios</AlertTitle>
             <AlertDescription className="flex items-center justify-between gap-4">
               <span className="text-xs">{error}</span>
               <Button size="sm" variant="outline" onClick={refetch}>
@@ -148,9 +148,9 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             <div className="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center mb-4">
               <Inbox className="w-6 h-6 text-muted-foreground" />
             </div>
-            <h3 className="font-display text-lg font-semibold text-foreground">No hay vocalías disponibles</h3>
+            <h3 className="font-display text-lg font-semibold text-foreground">No hay espacios disponibles</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Pedile a un administrador del tribunal que te dé acceso a una vocalía.
+              Pedile a un administrador de la oficina que te dé acceso a un espacio.
             </p>
           </div>
         )}
@@ -167,7 +167,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                 <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
                   <Plus className="w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-                <h2 className="text-lg font-display font-semibold text-foreground mb-1">Crear vocalía u oficina</h2>
+                <h2 className="text-lg font-display font-semibold text-foreground mb-1">Crear espacio u oficina</h2>
                 {tribunalesCreables.length > 1 && (
                   <p className="text-xs text-muted-foreground">en {t.nombre}</p>
                 )}
@@ -251,18 +251,18 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
       <Dialog open={!!createOpen} onOpenChange={(o) => { if (!o) { setCreateOpen(null); setNuevoNombre(""); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Crear vocalía u oficina</DialogTitle>
+            <DialogTitle>Crear espacio u oficina</DialogTitle>
             <DialogDescription className="text-xs">
               {createOpen ? `Se va a crear dentro de ${createOpen.nombre}.` : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="nuevo-vocalia">Nombre de la vocalía u oficina</Label>
+            <Label htmlFor="nuevo-vocalia">Nombre de el espacio u oficina</Label>
             <Input
               id="nuevo-vocalia"
               value={nuevoNombre}
               onChange={(e) => setNuevoNombre(e.target.value)}
-              placeholder="Vocalía 2"
+              placeholder="Espacio 2"
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") handleCrear(); }}
             />

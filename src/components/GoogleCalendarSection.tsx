@@ -45,7 +45,7 @@ export default function GoogleCalendarSection() {
   const vocaliaActual = sync ? vocalias.find((v) => v.id === sync.vocalia_id) : null;
 
   const iniciarVinculacion = async () => {
-    if (!vocaliaSel) { toast.error("Elegí una vocalía"); return; }
+    if (!vocaliaSel) { toast.error("Elegí un espacio"); return; }
     try {
       const { data: cfg, error } = await supabase.functions.invoke("google-calendar-oauth", {
         body: { action: "config" },
@@ -102,7 +102,7 @@ export default function GoogleCalendarSection() {
             IusTrack ya cuenta con un calendario interno donde podés ver todos tus eventos y vencimientos.
             Opcionalmente, podés vincular tu Google Calendar para recibir recordatorios automáticos en tu
             celular (3 días, 1 día y 1 hora antes de cada evento). Solo se sincronizarán los eventos con
-            fecha de la vocalía que elijas. Por privacidad, los eventos aparecerán solo con el número de
+            fecha del espacio que elijas. Por privacidad, los eventos aparecerán solo con el número de
             expediente, sin nombres de imputados. Podés desvincular en cualquier momento.
           </p>
         </div>
@@ -113,7 +113,7 @@ export default function GoogleCalendarSection() {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             <span className="text-sm">
-              Vinculado a <strong>{vocaliaActual?.nombre ?? "vocalía"}</strong>
+              Vinculado a <strong>{vocaliaActual?.nombre ?? "espacio"}</strong>
             </span>
           </div>
           <Button size="sm" variant="outline" onClick={() => setConfirmUnlink(true)}>
@@ -122,9 +122,9 @@ export default function GoogleCalendarSection() {
         </div>
       ) : (
         <div className="space-y-2">
-          <Label className="text-xs">Vocalía a sincronizar</Label>
+          <Label className="text-xs">Espacio a sincronizar</Label>
           <Select value={vocaliaSel} onValueChange={setVocaliaSel}>
-            <SelectTrigger><SelectValue placeholder="Elegí una vocalía" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Elegí un espacio" /></SelectTrigger>
             <SelectContent>
               {vocalias.map((v) => (
                 <SelectItem key={v.id} value={v.id}>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface Tablero {
   id: string;
@@ -34,16 +35,22 @@ export function useTableros(vocaliaId: string | null) {
 
   const crearTablero = useCallback(
     async (nombre: string): Promise<string | null> => {
-      if (!vocaliaId) return null;
+      if (!vocaliaId) { toast.error("No hay espacio seleccionado."); return null; }
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
-      if (!uid) return null;
+      if (!uid) { toast.error("Sesión expirada: volvé a iniciar sesión."); return null; }
       const { data, error } = await supabase
         .from("tableros")
         .insert({ vocalia_id: vocaliaId, usuario_id: uid, nombre: nombre.trim(), orden: tableros.length })
         .select("id")
         .maybeSingle();
-      if (error || !data) { setError(error?.message ?? "No se pudo crear la anotación"); return null; }
+      if (error || !data) {
+        console.error("[anotaciones] crearTablero falló", error);
+        const msg = error?.message ?? "No se pudo crear la anotación";
+        setError(msg);
+        toast.error(msg);
+        return null;
+      }
       await fetchData();
       return data.id;
     },

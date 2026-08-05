@@ -95,16 +95,16 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
     {
       target: '[data-tour="sidebar"]',
       titulo: "Tu menú principal",
-      texto: "Desde acá entrás a todas las secciones de la vocalía. Es tu punto de partida.",
+      texto: "Desde acá entrás a todas las secciones de el espacio. Es tu punto de partida.",
       abrirSidebar: true,
     },
   ];
 
   if (multiVocalia) {
     pasos.push({
-      target: '[data-tour="vocalia-selector"]',
-      titulo: "Cambiar entre vocalías",
-      texto: "Si sos miembro de varias vocalías, cambiá entre ellas desde acá. Cada vocalía tiene sus propias causas, calendarios y anotaciones.",
+      target: '[data-tour="espacio-selector"]',
+      titulo: "Cambiar entre espacios",
+      texto: "Si sos miembro de varias espacios, cambiá entre ellas desde acá. Cada espacio tiene sus propias causas, calendarios y anotaciones.",
       abrirSidebar: true,
     });
   }
@@ -120,7 +120,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
       view: "dashboard",
       target: '[data-tour="kpis"]',
       titulo: "Dashboard",
-      texto: "Un resumen rápido de tu vocalía: detenidos, juicios, prescripciones y más, siempre a la vista.",
+      texto: "Un resumen rápido de tu espacio: detenidos, juicios, prescripciones y más, siempre a la vista.",
     },
     {
       view: "tramite",
@@ -144,7 +144,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
     {
       target: '[data-tour="listas"]',
       titulo: "Listas personalizadas",
-      texto: "Creá tus propias listas de causas: Prioritarias, Para revisar, Casos difíciles… Las causas se agregan sin cambiar de estado: es una vista tuya (personal o compartida con la vocalía). Con “Crear nueva lista” arrancás.",
+      texto: "Creá tus propias listas de causas: Prioritarias, Para revisar, Casos difíciles… Las causas se agregan sin cambiar de estado: es una vista tuya (personal o compartida con el espacio). Con “Crear nueva lista” arrancás.",
       abrirSidebar: true,
     },
     {
@@ -176,7 +176,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
       target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
       titulo: "Anotaciones",
       texto:
-        "Tu espacio tipo Trello para organizar pendientes. Podés crear <strong>tableros</strong> → dentro de cada tablero, <strong>listas</strong> → dentro de cada lista, <strong>columnas con tarjetas arrastrables</strong>. Podés compartir tableros o listas con tu vocalía, o mantenerlos personales.",
+        "Tu pizarra para organizar pendientes. Podés crear <strong>anotaciones</strong> → dentro de cada anotación, <strong>listas</strong> → dentro de cada lista, <strong>columnas con tarjetas arrastrables</strong>. Podés compartir anotaciones o listas con tu oficina, o mantenerlas personales.",
       abrirSidebar: !tableroView,
     },
     {
@@ -197,7 +197,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
     pasos.push({
       target: '[data-tour="nav-papelera"]',
       titulo: "Papelera",
-      texto: "Si borrás una causa por error, no te preocupes: va a la Papelera y podés restaurarla cuando quieras.",
+      texto: "Si borrás una causa por error, no te preocupes: va a la Papelera y podés restaurarla durante <strong>30 días</strong>. Después de ese plazo se elimina definitivamente.",
       abrirSidebar: true,
     });
   }
@@ -205,8 +205,8 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
   pasos.push(
     {
       target: '[data-tour="usermenu"]',
-      titulo: "Abandonar tribunal",
-      texto: "Si en algún momento querés salir de este tribunal, podés hacerlo desde tu menú de usuario. Si sos único admin, tenés que designar a alguien más antes.",
+      titulo: "Abandonar oficina",
+      texto: "Si en algún momento querés salir de esta oficina, podés hacerlo desde tu menú de usuario. Si sos único admin, tenés que designar a alguien más antes.",
     },
     {
       target: '[data-tour="ayuda"]',
@@ -355,7 +355,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground">Bienvenido a IusTrack</h2>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Te muestro en un minuto cómo se maneja tu vocalía: causas, vencimientos, agenda y anotaciones.
+                Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones.
               </p>
             </div>
             <div className="w-full">

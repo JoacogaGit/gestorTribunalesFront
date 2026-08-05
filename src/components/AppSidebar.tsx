@@ -76,7 +76,7 @@ export default function AppSidebar({
   const otrasVocalias = vocaliasTribunal.filter((v) => v.id !== currentVocaliaId);
 
   const adminItems = [
-    { id: "miembros", label: "Miembros del tribunal", icon: UserCog },
+    { id: "miembros", label: "Miembros de la oficina", icon: UserCog },
     { id: "papelera", label: "Papelera", icon: Trash2 },
   ];
 
@@ -145,11 +145,11 @@ export default function AppSidebar({
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel className="text-xs">Cambiar de vocalía</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs">Cambiar de espacio</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {otrasVocalias.length === 0 && (
                   <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                    No hay otras vocalías
+                    No hay otros espacios
                   </DropdownMenuItem>
                 )}
                 {otrasVocalias.map((v) => (
