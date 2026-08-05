@@ -92,7 +92,7 @@ export default function SuperadminPanel() {
         <div className="mb-6">
           <h2 className="text-2xl font-display font-bold tracking-tight">Oficinas del sistema</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Vista global de todos los oficinas del sistema. Usar con responsabilidad.
+            Vista global de todos las oficinas del sistema. Usar con responsabilidad.
           </p>
         </div>
 
@@ -116,7 +116,7 @@ export default function SuperadminPanel() {
 
         {error && (
           <Alert variant="destructive" className="mb-4">
-            <AlertTitle>No se pudieron cargar los oficinas</AlertTitle>
+            <AlertTitle>No se pudieron cargar las oficinas</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}

@@ -63,8 +63,8 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
       .update({ modo: nuevoModo })
       .eq("id", tribunal.id);
     setCambiandoModo(false);
-    if (error) { toast.error("No se pudo cambiar el modo del oficina."); return; }
-    toast.success(nuevoModo === "lista_unica" ? "Ahora el oficina trabaja como lista única." : "Ahora el oficina trabaja con espacios separadas.");
+    if (error) { toast.error("No se pudo cambiar el modo de la oficina."); return; }
+    toast.success(nuevoModo === "lista_unica" ? "Ahora la oficina trabaja como lista única." : "Ahora la oficina trabaja con espacios separados.");
     refetchTribunal();
     refetchVocalias();
   };
@@ -87,7 +87,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     const nuevo: RolMiembro = confirmCambio.rol === "admin" ? "miembro" : "admin";
     // Bloquear degradación del último admin
     if (confirmCambio.rol === "admin" && miembrosHook.adminCount <= 1) {
-      toast.error("No se puede degradar al único administrador del oficina.");
+      toast.error("No se puede degradar al único administrador de la oficina.");
       setConfirmCambio(null);
       return;
     }
@@ -111,7 +111,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     }
     const r = await miembrosHook.quitarMiembro(confirmQuitar.id);
     if (r.ok !== true) { toast.error(r.error); return; }
-    toast.success(`${confirmQuitar.nombre} fue quitado del oficina`);
+    toast.success(`${confirmQuitar.nombre} fue quitado de la oficina`);
     setConfirmQuitar(null);
   };
 
@@ -262,7 +262,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                           onValueChange={async (nuevo) => {
                             if (nuevo === m.rol) return;
                             if (m.rol === "admin" && miembrosHook.adminCount <= 1) {
-                              toast.error("No se puede degradar al único administrador del oficina.");
+                              toast.error("No se puede degradar al único administrador de la oficina.");
                               return;
                             }
                             const r = await miembrosHook.cambiarRol(m.id, nuevo as RolMiembro);

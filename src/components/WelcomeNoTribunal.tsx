@@ -41,7 +41,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
     if (error || !data) {
       setLoading(false);
-      toast.error(error?.message || "No se pudo crear el oficina.");
+      toast.error(error?.message || "No se pudo crear la oficina.");
       return;
     }
     const newTribunalId = data as string;
@@ -65,7 +65,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
         .from("vocalias")
         .insert({ tribunal_id: newTribunalId, nombre: "General" });
       setLoading(false);
-      if (vErr) { toast.error("No se pudo inicializar el oficina."); return; }
+      if (vErr) { toast.error("No se pudo inicializar la oficina."); return; }
       toast.success("Oficina creado");
       setMode("bienvenida");
     } else {
@@ -83,7 +83,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
       .from("vocalias")
       .insert({ tribunal_id: tribunalId, nombre: vocaliaNombre.trim() });
     setLoading(false);
-    if (error) { toast.error("No se pudo crear la espacio."); return; }
+    if (error) { toast.error("No se pudo crear el espacio."); return; }
     toast.success("Espacio creada");
     setMode("bienvenida");
   };
@@ -94,7 +94,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     const { error } = await supabase.rpc("unirse_por_codigo", { p_codigo: codigo.trim() });
     setLoading(false);
     if (error) { toast.error("Código inválido."); return; }
-    toast.success("Te uniste al oficina");
+    toast.success("Te uniste a la oficina");
     onCreated();
   };
 
@@ -164,7 +164,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
             <form onSubmit={handleContinuarACrear} className="space-y-4">
               <h3 className="font-display font-semibold text-foreground">Crear oficina</h3>
               <div className="space-y-1.5">
-                <Label htmlFor="tnombre">Nombre del oficina</Label>
+                <Label htmlFor="tnombre">Nombre de la oficina</Label>
                 <Input id="tnombre" value={tribunalNombre} onChange={(e) => setTribunalNombre(e.target.value)}
                   className="h-11" placeholder="Oficina Oral en lo Criminal Federal Nº 1" required autoFocus />
               </div>
@@ -180,7 +180,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
           {mode === "modo" && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-display font-semibold text-foreground">¿Cómo trabaja este oficina?</h3>
+                <h3 className="font-display font-semibold text-foreground">¿Cómo trabaja esta oficina?</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Elegí la forma en la que querés organizar las causas. Después podés cambiarla desde configuración.
                 </p>
@@ -233,7 +233,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="vnombre">Nombre de la espacio</Label>
+                <Label htmlFor="vnombre">Nombre de el espacio</Label>
                 <Input id="vnombre" value={vocaliaNombre} onChange={(e) => setVocaliaNombre(e.target.value)}
                   className="h-11" placeholder="Espacio 1" required />
               </div>
@@ -248,7 +248,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
             <form onSubmit={handleUnirseCodigo} className="space-y-4">
               <h3 className="font-display font-semibold text-foreground">Unirme con código</h3>
               <div className="space-y-1.5">
-                <Label htmlFor="codigo">Código del oficina</Label>
+                <Label htmlFor="codigo">Código de la oficina</Label>
                 <Input id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())}
                   className="h-11 font-mono tracking-widest uppercase" maxLength={8} placeholder="ABCD1234" required />
               </div>

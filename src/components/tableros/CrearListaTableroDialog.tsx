@@ -65,7 +65,7 @@ export default function CrearListaTableroDialog({ open, onOpenChange, onCrear, p
                   <RadioGroupItem value="vocalia" id="lamb-vocalia" className="mt-0.5" />
                   <span>
                     <span className="block text-sm font-medium text-foreground">Espacio</span>
-                    <span className="block text-xs text-muted-foreground">Compartida con todos los miembros del oficina.</span>
+                    <span className="block text-xs text-muted-foreground">Compartida con todos los miembros de la oficina.</span>
                   </span>
                 </label>
               )}

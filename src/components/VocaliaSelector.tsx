@@ -97,7 +97,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
       .select("id, nombre, tribunal_id")
       .single();
     setCreating(false);
-    if (e || !data) { toast.error(e?.message || "No se pudo crear la espacio"); return; }
+    if (e || !data) { toast.error(e?.message || "No se pudo crear el espacio"); return; }
     toast.success("Espacio creada");
     setCreateOpen(null);
     setNuevoNombre("");
@@ -122,7 +122,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             <Scale className="w-10 h-10 text-primary" />
             <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">IusTrack</h1>
           </div>
-          <p className="text-muted-foreground text-lg">Elegí la espacio con la que querés trabajar</p>
+          <p className="text-muted-foreground text-lg">Elegí el espacio con la que querés trabajar</p>
         </div>
 
         {loading && (
@@ -133,7 +133,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
 
         {error && (
           <Alert variant="destructive">
-            <AlertTitle>No se pudieron cargar las espacios</AlertTitle>
+            <AlertTitle>No se pudieron cargar los espacios</AlertTitle>
             <AlertDescription className="flex items-center justify-between gap-4">
               <span className="text-xs">{error}</span>
               <Button size="sm" variant="outline" onClick={refetch}>
@@ -150,7 +150,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             </div>
             <h3 className="font-display text-lg font-semibold text-foreground">No hay espacios disponibles</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Pedile a un administrador del oficina que te dé acceso a una espacio.
+              Pedile a un administrador de la oficina que te dé acceso a un espacio.
             </p>
           </div>
         )}
@@ -257,7 +257,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="nuevo-vocalia">Nombre de la espacio u oficina</Label>
+            <Label htmlFor="nuevo-vocalia">Nombre de el espacio u oficina</Label>
             <Input
               id="nuevo-vocalia"
               value={nuevoNombre}

@@ -458,7 +458,7 @@ export default function CausaFormDialog({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Número interno del oficina</Label>
+                    <Label className="text-xs">Número interno de la oficina</Label>
                     <Input
                       value={causa.numero_interno ?? ""}
                       onChange={(e) => updateCausa({ numero_interno: e.target.value })}

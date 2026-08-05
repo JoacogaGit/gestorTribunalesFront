@@ -95,7 +95,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
     {
       target: '[data-tour="sidebar"]',
       titulo: "Tu menú principal",
-      texto: "Desde acá entrás a todas las secciones de la espacio. Es tu punto de partida.",
+      texto: "Desde acá entrás a todas las secciones de el espacio. Es tu punto de partida.",
       abrirSidebar: true,
     },
   ];
@@ -144,7 +144,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
     {
       target: '[data-tour="listas"]',
       titulo: "Listas personalizadas",
-      texto: "Creá tus propias listas de causas: Prioritarias, Para revisar, Casos difíciles… Las causas se agregan sin cambiar de estado: es una vista tuya (personal o compartida con la espacio). Con “Crear nueva lista” arrancás.",
+      texto: "Creá tus propias listas de causas: Prioritarias, Para revisar, Casos difíciles… Las causas se agregan sin cambiar de estado: es una vista tuya (personal o compartida con el espacio). Con “Crear nueva lista” arrancás.",
       abrirSidebar: true,
     },
     {
@@ -206,7 +206,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
     {
       target: '[data-tour="usermenu"]',
       titulo: "Abandonar oficina",
-      texto: "Si en algún momento querés salir de este oficina, podés hacerlo desde tu menú de usuario. Si sos único admin, tenés que designar a alguien más antes.",
+      texto: "Si en algún momento querés salir de esta oficina, podés hacerlo desde tu menú de usuario. Si sos único admin, tenés que designar a alguien más antes.",
     },
     {
       target: '[data-tour="ayuda"]',

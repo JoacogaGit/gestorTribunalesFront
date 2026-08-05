@@ -238,8 +238,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   if (!vocaliaId) {
     return (
       <Alert>
-        <AlertTitle>Seleccioná una espacio</AlertTitle>
-        <AlertDescription>Para migrar causas necesitás tener una espacio activa.</AlertDescription>
+        <AlertTitle>Seleccioná un espacio</AlertTitle>
+        <AlertDescription>Para migrar causas necesitás tener un espacio activa.</AlertDescription>
       </Alert>
     );
   }
@@ -1186,7 +1186,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
             { icon: Upload, title: "1. Subís", desc: "Tu planilla, lista de causas o documento de trabajo. No importa el formato exacto." },
             { icon: Wand2, title: "2. La IA interpreta", desc: "Detecta causas, sujetos, fechas, estados y los organiza según el esquema de IusTrack." },
             { icon: ShieldCheck, title: "3. Revisás", desc: "Editás lo que haga falta, marcás qué incluir y qué descartar. Las dudosas quedan marcadas." },
-            { icon: CheckCircle2, title: "4. Cargás", desc: "Confirmás y todo queda guardado en la espacio. Las filas que no pudieron procesarse quedan para revisión manual." },
+            { icon: CheckCircle2, title: "4. Cargás", desc: "Confirmás y todo queda guardado en el espacio. Las filas que no pudieron procesarse quedan para revisión manual." },
           ].map((s) => (
             <div key={s.title} className="p-4 rounded-lg border border-border/60 bg-card/50">
               <div className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-2">

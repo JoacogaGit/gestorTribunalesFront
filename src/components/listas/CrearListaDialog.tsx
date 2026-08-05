@@ -41,7 +41,7 @@ export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props)
           <DialogHeader>
             <DialogTitle>Nueva lista personalizada</DialogTitle>
             <DialogDescription>
-              Las listas son carpetas de acomodo compartidas dentro de la espacio. Podés tener hasta 2.
+              Las listas son carpetas de acomodo compartidas dentro de el espacio. Podés tener hasta 2.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-2">

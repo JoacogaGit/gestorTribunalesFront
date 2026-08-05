@@ -45,7 +45,7 @@ export default function GoogleCalendarSection() {
   const vocaliaActual = sync ? vocalias.find((v) => v.id === sync.vocalia_id) : null;
 
   const iniciarVinculacion = async () => {
-    if (!vocaliaSel) { toast.error("Elegí una espacio"); return; }
+    if (!vocaliaSel) { toast.error("Elegí un espacio"); return; }
     try {
       const { data: cfg, error } = await supabase.functions.invoke("google-calendar-oauth", {
         body: { action: "config" },
@@ -124,7 +124,7 @@ export default function GoogleCalendarSection() {
         <div className="space-y-2">
           <Label className="text-xs">Espacio a sincronizar</Label>
           <Select value={vocaliaSel} onValueChange={setVocaliaSel}>
-            <SelectTrigger><SelectValue placeholder="Elegí una espacio" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Elegí un espacio" /></SelectTrigger>
             <SelectContent>
               {vocalias.map((v) => (
                 <SelectItem key={v.id} value={v.id}>

@@ -44,7 +44,7 @@ export default function CrearTableroDialog({ open, onOpenChange, onCrear }: Prop
               autoFocus
             />
             <p className="text-xs text-muted-foreground">
-              Dentro de la anotación vas a poder crear listas personales o compartidas con la espacio.
+              Dentro de la anotación vas a poder crear listas personales o compartidas con el espacio.
             </p>
           </div>
           <div className="flex gap-2 pt-1">
