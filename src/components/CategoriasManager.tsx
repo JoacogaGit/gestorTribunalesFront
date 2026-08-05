@@ -61,7 +61,7 @@ export default function CategoriasManager({ vocaliaId }: Props) {
             Categorías personalizadas
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Al crear una categoría, se agrega una entrada vacía a cada causa activa de la vocalía.
+            Al crear una categoría, se agrega una entrada vacía a cada causa activa del espacio.
             Cada causa puede completarla con descripción y fecha (opcional), y agregar varias entradas.
           </p>
         </div>

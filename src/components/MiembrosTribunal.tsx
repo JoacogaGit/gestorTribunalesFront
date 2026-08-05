@@ -206,7 +206,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
           {modo === "lista_unica" ? (
             <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>
               {cambiandoModo && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-              Cambiar a modo vocalías separadas
+              Cambiar a modo espacios separados
             </Button>
           ) : cantidadVocalias === 1 ? (
             <Button size="sm" variant="outline" onClick={cambiarModoTribunal} disabled={cambiandoModo}>

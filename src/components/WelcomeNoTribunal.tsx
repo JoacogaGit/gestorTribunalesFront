@@ -60,7 +60,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     setTribunalId(newTribunalId);
 
     if (modoElegido === "lista_unica") {
-      // Crear vocalía "General" oculta y saltar el paso de vocalía
+      // Crear espacio "General" oculta y saltar el paso de vocalía
       const { error: vErr } = await supabase
         .from("vocalias")
         .insert({ tribunal_id: newTribunalId, nombre: "General" });
@@ -239,7 +239,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
               </div>
               <Button type="submit" disabled={loading} className="w-full">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Crear vocalía
+                Crear espacio
               </Button>
             </form>
           )}

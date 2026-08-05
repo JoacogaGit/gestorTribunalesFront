@@ -121,10 +121,10 @@ export default function SuperadminTribunalDetail() {
               </div>
             </section>
 
-            {/* Vocalías */}
+            {/* Espacios */}
             <section>
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Vocalías ({data.vocalias.length})
+                Espacios ({data.vocalias.length})
               </h2>
               {data.vocalias.length === 0 ? (
                 <div className="text-sm text-muted-foreground py-6 border border-dashed border-border rounded-lg text-center">

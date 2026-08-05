@@ -102,7 +102,7 @@ export default function GoogleCalendarSection() {
             IusTrack ya cuenta con un calendario interno donde podés ver todos tus eventos y vencimientos.
             Opcionalmente, podés vincular tu Google Calendar para recibir recordatorios automáticos en tu
             celular (3 días, 1 día y 1 hora antes de cada evento). Solo se sincronizarán los eventos con
-            fecha de la vocalía que elijas. Por privacidad, los eventos aparecerán solo con el número de
+            fecha del espacio que elijas. Por privacidad, los eventos aparecerán solo con el número de
             expediente, sin nombres de imputados. Podés desvincular en cualquier momento.
           </p>
         </div>

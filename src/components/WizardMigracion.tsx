@@ -1201,7 +1201,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
         {/* Aviso vocalía destino */}
         <Alert className="mt-6 border-accent/30 bg-accent/5">
           <AlertTriangle className="w-4 h-4 text-accent" />
-          <AlertTitle className="text-sm">Vocalía destino: {vocaliaNombre}</AlertTitle>
+          <AlertTitle className="text-sm">Espacio destino: {vocaliaNombre}</AlertTitle>
           <AlertDescription className="text-xs">
             Todo se va a cargar acá. Si querés usar otra espacio, cambiala desde el selector antes de subir el archivo.
           </AlertDescription>
