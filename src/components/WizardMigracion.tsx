@@ -238,8 +238,8 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   if (!vocaliaId) {
     return (
       <Alert>
-        <AlertTitle>Seleccioná una vocalía</AlertTitle>
-        <AlertDescription>Para migrar causas necesitás tener una vocalía activa.</AlertDescription>
+        <AlertTitle>Seleccioná una espacio</AlertTitle>
+        <AlertDescription>Para migrar causas necesitás tener una espacio activa.</AlertDescription>
       </Alert>
     );
   }
@@ -1203,7 +1203,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           <AlertTriangle className="w-4 h-4 text-accent" />
           <AlertTitle className="text-sm">Vocalía destino: {vocaliaNombre}</AlertTitle>
           <AlertDescription className="text-xs">
-            Todo se va a cargar acá. Si querés usar otra vocalía, cambiala desde el selector antes de subir el archivo.
+            Todo se va a cargar acá. Si querés usar otra espacio, cambiala desde el selector antes de subir el archivo.
           </AlertDescription>
         </Alert>
 

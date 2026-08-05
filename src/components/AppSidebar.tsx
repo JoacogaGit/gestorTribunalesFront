@@ -145,11 +145,11 @@ export default function AppSidebar({
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel className="text-xs">Cambiar de vocalía</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs">Cambiar de espacio</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {otrasVocalias.length === 0 && (
                   <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                    No hay otras vocalías
+                    No hay otras espacios
                   </DropdownMenuItem>
                 )}
                 {otrasVocalias.map((v) => (

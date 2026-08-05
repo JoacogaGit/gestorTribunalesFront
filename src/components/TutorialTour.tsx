@@ -355,7 +355,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground">Bienvenido a IusTrack</h2>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Te muestro en un minuto cómo se maneja tu vocalía: causas, vencimientos, agenda y anotaciones.
+                Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones.
               </p>
             </div>
             <div className="w-full">

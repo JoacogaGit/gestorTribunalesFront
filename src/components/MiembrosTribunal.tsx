@@ -87,7 +87,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     const nuevo: RolMiembro = confirmCambio.rol === "admin" ? "miembro" : "admin";
     // Bloquear degradación del último admin
     if (confirmCambio.rol === "admin" && miembrosHook.adminCount <= 1) {
-      toast.error("No se puede degradar al único administrador del tribunal.");
+      toast.error("No se puede degradar al único administrador del oficina.");
       setConfirmCambio(null);
       return;
     }
@@ -111,7 +111,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     }
     const r = await miembrosHook.quitarMiembro(confirmQuitar.id);
     if (r.ok !== true) { toast.error(r.error); return; }
-    toast.success(`${confirmQuitar.nombre} fue quitado del tribunal`);
+    toast.success(`${confirmQuitar.nombre} fue quitado del oficina`);
     setConfirmQuitar(null);
   };
 
@@ -142,7 +142,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
       <section className="rounded-xl border border-border bg-card/60 p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Tribunal</h2>
+            <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Oficina</h2>
             {tLoading ? (
               <Skeleton className="h-7 w-48 mt-1" />
             ) : (
@@ -208,7 +208,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>Solo si hay una sola vocalía. Eliminá las otras primero.</TooltipContent>
+                <TooltipContent>Solo si hay una sola espacio. Eliminá las otras primero.</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
@@ -262,7 +262,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                           onValueChange={async (nuevo) => {
                             if (nuevo === m.rol) return;
                             if (m.rol === "admin" && miembrosHook.adminCount <= 1) {
-                              toast.error("No se puede degradar al único administrador del tribunal.");
+                              toast.error("No se puede degradar al único administrador del oficina.");
                               return;
                             }
                             const r = await miembrosHook.cambiarRol(m.id, nuevo as RolMiembro);

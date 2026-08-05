@@ -23,7 +23,7 @@ export default function SubestadosManager({ vocaliaId }: Props) {
         <h3 className="text-sm font-display font-semibold text-foreground">Subestados de trámite</h3>
       </header>
       <p className="text-xs text-muted-foreground mb-4">
-        Subdivisiones del estado "Trámite" para esta vocalía. Se pueden asignar a cada causa desde su ficha.
+        Subdivisiones del estado "Trámite" para esta espacio. Se pueden asignar a cada causa desde su ficha.
       </p>
 
       {loading ? (

@@ -97,7 +97,7 @@ export default function AcceptInvitation() {
           <div className="w-12 h-12 rounded-xl bg-gradient-gold mx-auto flex items-center justify-center shadow-glow mb-4">
             <Scale className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-display font-bold mb-2">Te invitaron a un tribunal</h1>
+          <h1 className="text-2xl font-display font-bold mb-2">Te invitaron a un oficina</h1>
           <p className="text-sm text-muted-foreground mb-6">
             Para aceptar la invitación necesitás iniciar sesión o crear una cuenta.
           </p>
@@ -133,7 +133,7 @@ export default function AcceptInvitation() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-surface">
       <div className="max-w-md w-full elevated-card rounded-2xl p-8 text-center">
         <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-3" />
-        <h1 className="text-xl font-display font-bold mb-1">Invitación al tribunal</h1>
+        <h1 className="text-xl font-display font-bold mb-1">Invitación al oficina</h1>
         <p className="text-sm text-muted-foreground mb-6">
           Te invitaron a <strong className="text-foreground">{info?.tribunal_nombre}</strong> como{" "}
           <strong className="text-foreground">{info?.rol_a_asignar}</strong>.

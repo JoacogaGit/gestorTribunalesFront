@@ -47,7 +47,7 @@ const App = () => (
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/invitacion/:token" element={<AcceptInvitation />} />
                     <Route path="/superadmin" element={<SuperadminPanel />} />
-                    <Route path="/superadmin/tribunal/:id" element={<SuperadminTribunalDetail />} />
+                    <Route path="/superadmin/oficina/:id" element={<SuperadminTribunalDetail />} />
                     <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
                     <Route path="/" element={<Index />} />
                     <Route path="*" element={<NotFound />} />

@@ -122,9 +122,9 @@ export default function GoogleCalendarSection() {
         </div>
       ) : (
         <div className="space-y-2">
-          <Label className="text-xs">Vocalía a sincronizar</Label>
+          <Label className="text-xs">Espacio a sincronizar</Label>
           <Select value={vocaliaSel} onValueChange={setVocaliaSel}>
-            <SelectTrigger><SelectValue placeholder="Elegí una vocalía" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Elegí una espacio" /></SelectTrigger>
             <SelectContent>
               {vocalias.map((v) => (
                 <SelectItem key={v.id} value={v.id}>

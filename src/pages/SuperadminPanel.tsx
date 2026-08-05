@@ -90,9 +90,9 @@ export default function SuperadminPanel() {
 
       <main className="max-w-[1200px] mx-auto px-6 py-8">
         <div className="mb-6">
-          <h2 className="text-2xl font-display font-bold tracking-tight">Tribunales del sistema</h2>
+          <h2 className="text-2xl font-display font-bold tracking-tight">Oficinas del sistema</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Vista global de todos los tribunales del sistema. Usar con responsabilidad.
+            Vista global de todos los oficinas del sistema. Usar con responsabilidad.
           </p>
         </div>
 
@@ -116,7 +116,7 @@ export default function SuperadminPanel() {
 
         {error && (
           <Alert variant="destructive" className="mb-4">
-            <AlertTitle>No se pudieron cargar los tribunales</AlertTitle>
+            <AlertTitle>No se pudieron cargar los oficinas</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -134,8 +134,8 @@ export default function SuperadminPanel() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium">Tribunal</th>
-                  <th className="text-center px-3 py-2.5 font-medium">Vocalías</th>
+                  <th className="text-left px-4 py-2.5 font-medium">Oficina</th>
+                  <th className="text-center px-3 py-2.5 font-medium">Espacios</th>
                   <th className="text-center px-3 py-2.5 font-medium">Miembros</th>
                   <th className="text-center px-3 py-2.5 font-medium">Causas</th>
                   <th className="text-left px-3 py-2.5 font-medium">Creado</th>
@@ -188,21 +188,21 @@ export default function SuperadminPanel() {
         <section className="mt-12">
           <div className="flex items-center gap-2 mb-3">
             <Trash2 className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-lg font-display font-bold tracking-tight">Tribunales en papelera</h2>
+            <h2 className="text-lg font-display font-bold tracking-tight">Oficinas en papelera</h2>
             <span className="text-xs text-muted-foreground ml-2">
               {papelera.length} {papelera.length === 1 ? "tribunal" : "tribunales"}
             </span>
           </div>
           {papelera.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-              No hay tribunales en la papelera.
+              No hay oficinas en la papelera.
             </div>
           ) : (
             <div className="rounded-lg border border-border overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="text-left px-4 py-2.5 font-medium">Tribunal</th>
+                    <th className="text-left px-4 py-2.5 font-medium">Oficina</th>
                     <th className="text-left px-3 py-2.5 font-medium">Archivado</th>
                     <th className="text-center px-3 py-2.5 font-medium">Causas</th>
                     <th className="text-right px-4 py-2.5 font-medium"></th>

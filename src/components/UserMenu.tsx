@@ -90,7 +90,7 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onAbandonarTribunal} className="gap-2">
-                <DoorOpen className="w-4 h-4" /> Abandonar tribunal
+                <DoorOpen className="w-4 h-4" /> Abandonar oficina
               </DropdownMenuItem>
             </>
           )}

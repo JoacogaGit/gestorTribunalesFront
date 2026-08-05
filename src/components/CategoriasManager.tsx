@@ -115,7 +115,7 @@ export default function CategoriasManager({ vocaliaId }: Props) {
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             />
             <p className="text-[11px] text-muted-foreground">
-              Se agregará una anotación vacía con este nombre en cada causa activa de la vocalía.
+              Se agregará una anotación vacía con este nombre en cada causa activa de la espacio.
             </p>
           </div>
           <DialogFooter>

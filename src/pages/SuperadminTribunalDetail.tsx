@@ -68,7 +68,7 @@ export default function SuperadminTribunalDetail() {
           </Button>
           <div className="flex items-center gap-2 ml-2 text-xs text-muted-foreground">
             <Shield className="w-3.5 h-3.5 text-indigo-500" />
-            Vista superadmin del tribunal
+            Vista superadmin del oficina
           </div>
         </div>
       </header>
@@ -128,7 +128,7 @@ export default function SuperadminTribunalDetail() {
               </h2>
               {data.vocalias.length === 0 ? (
                 <div className="text-sm text-muted-foreground py-6 border border-dashed border-border rounded-lg text-center">
-                  Este tribunal no tiene vocalías.
+                  Este oficina no tiene espacios.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -172,7 +172,7 @@ export default function SuperadminTribunalDetail() {
               </h2>
               {data.miembros.length === 0 ? (
                 <div className="text-sm text-muted-foreground py-6 border border-dashed border-border rounded-lg text-center">
-                  No hay miembros registrados en este tribunal.
+                  No hay miembros registrados en este oficina.
                 </div>
               ) : (
                 <div className="rounded-lg border border-border overflow-hidden">
