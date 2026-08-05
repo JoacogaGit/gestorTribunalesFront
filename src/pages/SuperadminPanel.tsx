@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Shield, Search, Building2, Users, Folder, Calendar, ArrowRight, Loader2, RefreshCw, AlertTriangle, ArrowLeft, Trash2, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,21 @@ export default function SuperadminPanel() {
     if (!term) return activos;
     return activos.filter((t) => t.nombre.toLowerCase().includes(term));
   }, [activos, q]);
+
+  const [vocaliasPapelera, setVocaliasPapelera] = useState<any[]>([]);
+  const fetchVocaliasPapelera = useCallback(async () => {
+    const { data, error } = await supabase.rpc("listar_vocalias_papelera");
+    if (error) { console.error("[superadmin] papelera espacios", error); return; }
+    setVocaliasPapelera((data as any[]) ?? []);
+  }, []);
+  useEffect(() => { fetchVocaliasPapelera(); }, [fetchVocaliasPapelera]);
+
+  const restaurarEspacio = async (id: string, nombre: string) => {
+    const { error } = await supabase.rpc("restaurar_vocalia", { p_vocalia_id: id });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Espacio ${nombre} restaurado`);
+    fetchVocaliasPapelera();
+  };
 
   const restaurar = async (id: string, nombre: string) => {
     const { error } = await supabase.rpc("restaurar_tribunal", { p_tribunal_id: id });
@@ -226,6 +241,54 @@ export default function SuperadminPanel() {
                       <td className="text-center px-3 py-3 tabular-nums text-muted-foreground">{t.causas_count}</td>
                       <td className="text-right px-4 py-3">
                         <Button size="sm" variant="outline" onClick={() => restaurar(t.id, t.nombre)} className="gap-1.5">
+                          <RotateCcw className="w-3.5 h-3.5" /> Restaurar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Espacios en papelera */}
+        <section className="mt-12">
+          <div className="flex items-center gap-2 mb-3">
+            <Trash2 className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-lg font-display font-bold tracking-tight">Espacios en papelera</h2>
+            <span className="text-xs text-muted-foreground ml-2">
+              {vocaliasPapelera.length} {vocaliasPapelera.length === 1 ? "espacio" : "espacios"}
+            </span>
+          </div>
+          {vocaliasPapelera.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+              No hay espacios en la papelera.
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-2.5 font-medium">Espacio</th>
+                    <th className="text-left px-3 py-2.5 font-medium">Oficina</th>
+                    <th className="text-left px-3 py-2.5 font-medium">Eliminado</th>
+                    <th className="text-center px-3 py-2.5 font-medium">Causas</th>
+                    <th className="text-right px-4 py-2.5 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vocaliasPapelera.map((v) => (
+                    <tr key={v.id} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-3 font-medium">{v.nombre}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{v.tribunal_nombre}</td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground">
+                        {v.eliminado_en ? new Date(v.eliminado_en).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" }) : "—"}
+                        {v.eliminado_por_nombre ? ` · ${v.eliminado_por_nombre}` : ""}
+                      </td>
+                      <td className="text-center px-3 py-3 tabular-nums text-muted-foreground">{v.causas_count}</td>
+                      <td className="text-right px-4 py-3">
+                        <Button size="sm" variant="outline" onClick={() => restaurarEspacio(v.id, v.nombre)} className="gap-1.5">
                           <RotateCcw className="w-3.5 h-3.5" /> Restaurar
                         </Button>
                       </td>
