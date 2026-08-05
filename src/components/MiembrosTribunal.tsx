@@ -215,6 +215,43 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
         </div>
       </section>
 
+      {/* Espacios de la oficina */}
+      <section className="space-y-3">
+        <h3 className="text-sm font-display font-semibold uppercase tracking-wider text-foreground/80">
+          Espacios de la oficina
+        </h3>
+        <div className="rounded-md border border-border divide-y divide-border">
+          {vocaliasDelTribunal.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">Esta oficina no tiene espacios activos.</p>
+          ) : (
+            vocaliasDelTribunal.map((v) => (
+              <div key={v.id} className="flex items-center justify-between gap-3 p-3">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Building2 className="w-4 h-4 text-muted-foreground" /> {v.nombre}
+                </span>
+                {soyAdmin && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-alert-urgent hover:text-alert-urgent"
+                    onClick={() => setConfirmEliminarVocalia({ id: v.id, nombre: v.nombre })}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Eliminar espacio
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+        {soyAdmin && (
+          <p className="text-xs text-muted-foreground">
+            Al eliminar un espacio se archiva con todas sus causas. Se puede recuperar durante 30 días.
+          </p>
+        )}
+      </section>
+
+
+
 
       {/* Miembros */}
       <section className="space-y-3">
