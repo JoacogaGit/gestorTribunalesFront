@@ -54,7 +54,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     if (!tribunal) return;
     const nuevoModo = modo === "lista_unica" ? "vocalias_separadas" : "lista_unica";
     if (nuevoModo === "lista_unica" && cantidadVocalias !== 1) {
-      toast.error("Solo se puede cambiar a lista única si hay una sola espacio.");
+      toast.error("Solo se puede cambiar a lista única si hay un solo espacio.");
       return;
     }
     setCambiandoModo(true);
@@ -179,12 +179,12 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
             </div>
             <div>
               <h3 className="text-sm font-display font-semibold text-foreground">
-                Modo: {modo === "lista_unica" ? "Lista única" : "Espacios separadas"}
+                Modo: {modo === "lista_unica" ? "Lista única" : "Espacios separados"}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
                 {modo === "lista_unica"
                   ? "Todas las causas viven en un único listado. Ideal para juzgados unipersonales o estudios chicos."
-                  : "Cada espacio u oficina tiene sus propias causas. Ideal para oficinas colegiados."}
+                  : "Cada espacio tiene sus propias causas. Ideal para oficinas con varios equipos."}
               </p>
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>Solo si hay una sola espacio. Eliminá las otras primero.</TooltipContent>
+                <TooltipContent>Solo si hay un solo espacio. Eliminá las otras primero.</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}

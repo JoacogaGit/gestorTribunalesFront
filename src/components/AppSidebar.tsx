@@ -149,7 +149,7 @@ export default function AppSidebar({
                 <DropdownMenuSeparator />
                 {otrasVocalias.length === 0 && (
                   <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                    No hay otras espacios
+                    No hay otros espacios
                   </DropdownMenuItem>
                 )}
                 {otrasVocalias.map((v) => (
