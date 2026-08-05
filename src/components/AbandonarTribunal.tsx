@@ -95,7 +95,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     const { error } = await supabase.from("miembros_tribunal").delete().eq("id", yo.id);
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Abandonaste ${tribunal?.nombre ?? "el tribunal"}`);
+    toast.success(`Abandonaste ${tribunal?.nombre ?? "la oficina"}`);
     setStep("idle");
     onAbandoned();
   };
@@ -165,7 +165,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
       <AlertDialog open={step === "case1"} onOpenChange={(o) => !o && cerrar()}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Confirmás abandonar {tribunal?.nombre ?? "el tribunal"}?</AlertDialogTitle>
+            <AlertDialogTitle>¿Confirmás abandonar {tribunal?.nombre ?? "la oficina"}?</AlertDialogTitle>
             <AlertDialogDescription>
               Vas a perder el acceso a las causas, calendario y configuración. Si querés volver, alguien tiene que invitarte de nuevo.
             </AlertDialogDescription>
@@ -225,7 +225,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              Sos el único miembro de {tribunal?.nombre ?? "este tribunal"}
+              Sos el único miembro de {tribunal?.nombre ?? "esta oficina"}
             </DialogTitle>
             <DialogDescription>Si abandonás, nadie más queda. Elegí qué hacer con la oficina.</DialogDescription>
           </DialogHeader>

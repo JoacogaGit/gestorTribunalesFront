@@ -45,7 +45,7 @@ export default function AcceptInvitation() {
         setInfo({
           rol_a_asignar: data.rol_a_asignar as "admin" | "miembro",
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          tribunal_nombre: (data as any).tribunales?.nombre ?? "el tribunal",
+          tribunal_nombre: (data as any).tribunales?.nombre ?? "la oficina",
           expira_en: data.expira_en,
         });
       }

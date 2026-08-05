@@ -462,7 +462,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
       <AlertDialog open={!!confirmQuitar} onOpenChange={(o) => !o && setConfirmQuitar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Quitar a {confirmQuitar?.nombre} del tribunal?</AlertDialogTitle>
+            <AlertDialogTitle>¿Quitar a {confirmQuitar?.nombre} de la oficina?</AlertDialogTitle>
             <AlertDialogDescription>
               Ya no podrá acceder a las causas. Esta acción se puede revertir invitándolo de nuevo.
             </AlertDialogDescription>

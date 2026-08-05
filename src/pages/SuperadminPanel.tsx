@@ -125,7 +125,7 @@ export default function SuperadminPanel() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Actualizar
           </Button>
           <span className="text-xs text-muted-foreground ml-auto">
-            {filtrados.length} {filtrados.length === 1 ? "tribunal" : "tribunales"}
+            {filtrados.length} {filtrados.length === 1 ? "oficina" : "oficinas"}
           </span>
         </div>
 
@@ -205,7 +205,7 @@ export default function SuperadminPanel() {
             <Trash2 className="w-4 h-4 text-muted-foreground" />
             <h2 className="text-lg font-display font-bold tracking-tight">Oficinas en papelera</h2>
             <span className="text-xs text-muted-foreground ml-2">
-              {papelera.length} {papelera.length === 1 ? "tribunal" : "tribunales"}
+              {papelera.length} {papelera.length === 1 ? "oficina" : "oficinas"}
             </span>
           </div>
           {papelera.length === 0 ? (
