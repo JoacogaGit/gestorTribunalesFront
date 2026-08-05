@@ -46,7 +46,7 @@ export function useListasPersonalizadas(vocaliaId: string | null) {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const crearLista = useCallback(async (nombre: string) => {
-    if (!vocaliaId) throw new Error("Sin vocalía");
+    if (!vocaliaId) throw new Error("Sin espacio");
     const { data, error } = await supabase.rpc("crear_lista_personalizada", {
       p_vocalia_id: vocaliaId,
       p_nombre: nombre,

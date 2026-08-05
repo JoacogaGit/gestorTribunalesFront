@@ -69,7 +69,7 @@ export default function AcceptInvitation() {
       if (msg.includes("inválida") || msg.includes("expirada") || msg.includes("usada")) {
         toast.error("La invitación es inválida, expirada o ya fue usada.");
       } else if (msg.includes("ya")) {
-        toast.message("Ya sos miembro de este tribunal.");
+        toast.message("Ya sos miembro de este oficina.");
         navigate("/", { replace: true });
       } else {
         toast.error("No pudimos aceptar la invitación. Intentá de nuevo.");
@@ -77,7 +77,7 @@ export default function AcceptInvitation() {
       return;
     }
     localStorage.removeItem(PENDING_KEY);
-    toast.success("¡Listo! Te uniste al tribunal");
+    toast.success("¡Listo! Te uniste al oficina");
     navigate("/", { replace: true });
   };
 

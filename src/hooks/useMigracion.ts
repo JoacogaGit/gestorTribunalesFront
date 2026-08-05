@@ -127,7 +127,7 @@ export function useMigracion() {
       if (error) { setError(error.message); return null; }
       if (!data?.ok) {
         const msg = data?.error === "no_api_key" ? "Falta configurar la API key de IA."
-          : data?.error === "forbidden" ? "No tenés permisos sobre esta vocalía."
+          : data?.error === "forbidden" ? "No tenés permisos sobre esta espacio."
           : data?.error === "payload_too_large" ? "El archivo es demasiado grande para procesar."
           : data?.error === "json_invalido" ? "La IA devolvió un formato inválido. Probá de nuevo."
           : data?.error === "ai_error" ? "Error consultando a la IA. Intentá de nuevo en unos minutos."

@@ -24,7 +24,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   // crear tribunal
   const [tribunalNombre, setTribunalNombre] = useState("");
   const [tribunalId, setTribunalId] = useState<string | null>(null);
-  const [vocaliaNombre, setVocaliaNombre] = useState("Vocalía 1");
+  const [vocaliaNombre, setVocaliaNombre] = useState("Espacio 1");
 
   // unirse
   const [codigo, setCodigo] = useState("");
@@ -41,7 +41,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
     if (error || !data) {
       setLoading(false);
-      toast.error(error?.message || "No se pudo crear el tribunal.");
+      toast.error(error?.message || "No se pudo crear el oficina.");
       return;
     }
     const newTribunalId = data as string;
@@ -53,7 +53,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
       .eq("id", newTribunalId);
     if (updErr) {
       setLoading(false);
-      toast.error("Tribunal creado pero no se pudo guardar el modo.");
+      toast.error("Oficina creado pero no se pudo guardar el modo.");
       return;
     }
 
@@ -65,12 +65,12 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
         .from("vocalias")
         .insert({ tribunal_id: newTribunalId, nombre: "General" });
       setLoading(false);
-      if (vErr) { toast.error("No se pudo inicializar el tribunal."); return; }
-      toast.success("Tribunal creado");
+      if (vErr) { toast.error("No se pudo inicializar el oficina."); return; }
+      toast.success("Oficina creado");
       setMode("bienvenida");
     } else {
       setLoading(false);
-      toast.success("Tribunal creado");
+      toast.success("Oficina creado");
       setMode("vocalia");
     }
   };
@@ -83,8 +83,8 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
       .from("vocalias")
       .insert({ tribunal_id: tribunalId, nombre: vocaliaNombre.trim() });
     setLoading(false);
-    if (error) { toast.error("No se pudo crear la vocalía."); return; }
-    toast.success("Vocalía creada");
+    if (error) { toast.error("No se pudo crear la espacio."); return; }
+    toast.success("Espacio creada");
     setMode("bienvenida");
   };
 
@@ -94,7 +94,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     const { error } = await supabase.rpc("unirse_por_codigo", { p_codigo: codigo.trim() });
     setLoading(false);
     if (error) { toast.error("Código inválido."); return; }
-    toast.success("Te uniste al tribunal");
+    toast.success("Te uniste al oficina");
     onCreated();
   };
 
@@ -166,7 +166,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
               <div className="space-y-1.5">
                 <Label htmlFor="tnombre">Nombre del oficina</Label>
                 <Input id="tnombre" value={tribunalNombre} onChange={(e) => setTribunalNombre(e.target.value)}
-                  className="h-11" placeholder="Tribunal Oral en lo Criminal Federal Nº 1" required autoFocus />
+                  className="h-11" placeholder="Oficina Oral en lo Criminal Federal Nº 1" required autoFocus />
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setMode("menu")} disabled={loading}>Cancelar</Button>
@@ -235,7 +235,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
               <div className="space-y-1.5">
                 <Label htmlFor="vnombre">Nombre de la espacio</Label>
                 <Input id="vnombre" value={vocaliaNombre} onChange={(e) => setVocaliaNombre(e.target.value)}
-                  className="h-11" placeholder="Vocalía 1" required />
+                  className="h-11" placeholder="Espacio 1" required />
               </div>
               <Button type="submit" disabled={loading} className="w-full">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

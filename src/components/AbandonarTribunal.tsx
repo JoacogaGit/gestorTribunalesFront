@@ -106,7 +106,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     const { error } = await supabase.rpc("abandonar_tribunal_archivar", { p_tribunal_id: tribunalId });
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Tribunal archivado en papelera por 30 días");
+    toast.success("Oficina archivado en papelera por 30 días");
     setStep("idle");
     onAbandoned();
   };
@@ -117,7 +117,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     const { error } = await supabase.rpc("abandonar_tribunal_eliminar_todo", { p_tribunal_id: tribunalId });
     setProcessing(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Tribunal eliminado definitivamente");
+    toast.success("Oficina eliminado definitivamente");
     setStep("idle");
     onAbandoned();
   };

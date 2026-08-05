@@ -33,7 +33,7 @@ export default function GoogleCalendarCallback() {
         return;
       }
       setStatus("ok");
-      setMsg(`Vinculado a ${(data as any)?.vocalia_nombre ?? "tu vocalía"}. Sincronizando eventos…`);
+      setMsg(`Vinculado a ${(data as any)?.vocalia_nombre ?? "tu espacio"}. Sincronizando eventos…`);
       toast.success("Google Calendar vinculado");
 
       // Bulk sync inicial: sube todos los eventos existentes de la vocalía.

@@ -34,7 +34,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [creating, setCreating] = useState(false);
 
-  // Cargar tribunales donde el usuario es admin para mostrar la tarjeta "Crear vocalía"
+  // Cargar tribunales donde el usuario es admin para mostrar la tarjeta "Crear espacio"
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -56,7 +56,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     vocalias.forEach((v) => {
       if (v.tribunal_modo !== "vocalias_separadas") return;
       if (!adminTribunalIds.has(v.tribunal_id)) return;
-      if (!map.has(v.tribunal_id)) map.set(v.tribunal_id, { id: v.tribunal_id, nombre: v.tribunal_nombre || "Tribunal" });
+      if (!map.has(v.tribunal_id)) map.set(v.tribunal_id, { id: v.tribunal_id, nombre: v.tribunal_nombre || "Oficina" });
     });
     return Array.from(map.values());
   }, [vocalias, adminTribunalIds]);
@@ -97,8 +97,8 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
       .select("id, nombre, tribunal_id")
       .single();
     setCreating(false);
-    if (e || !data) { toast.error(e?.message || "No se pudo crear la vocalía"); return; }
-    toast.success("Vocalía creada");
+    if (e || !data) { toast.error(e?.message || "No se pudo crear la espacio"); return; }
+    toast.success("Espacio creada");
     setCreateOpen(null);
     setNuevoNombre("");
     await refetch();
@@ -262,7 +262,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
               id="nuevo-vocalia"
               value={nuevoNombre}
               onChange={(e) => setNuevoNombre(e.target.value)}
-              placeholder="Vocalía 2"
+              placeholder="Espacio 2"
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") handleCrear(); }}
             />

@@ -54,7 +54,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     if (!tribunal) return;
     const nuevoModo = modo === "lista_unica" ? "vocalias_separadas" : "lista_unica";
     if (nuevoModo === "lista_unica" && cantidadVocalias !== 1) {
-      toast.error("Solo se puede cambiar a lista única si hay una sola vocalía.");
+      toast.error("Solo se puede cambiar a lista única si hay una sola espacio.");
       return;
     }
     setCambiandoModo(true);
@@ -63,8 +63,8 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
       .update({ modo: nuevoModo })
       .eq("id", tribunal.id);
     setCambiandoModo(false);
-    if (error) { toast.error("No se pudo cambiar el modo del tribunal."); return; }
-    toast.success(nuevoModo === "lista_unica" ? "Ahora el tribunal trabaja como lista única." : "Ahora el tribunal trabaja con vocalías separadas.");
+    if (error) { toast.error("No se pudo cambiar el modo del oficina."); return; }
+    toast.success(nuevoModo === "lista_unica" ? "Ahora el oficina trabaja como lista única." : "Ahora el oficina trabaja con espacios separadas.");
     refetchTribunal();
     refetchVocalias();
   };
@@ -179,12 +179,12 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
             </div>
             <div>
               <h3 className="text-sm font-display font-semibold text-foreground">
-                Modo: {modo === "lista_unica" ? "Lista única" : "Vocalías separadas"}
+                Modo: {modo === "lista_unica" ? "Lista única" : "Espacios separadas"}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
                 {modo === "lista_unica"
                   ? "Todas las causas viven en un único listado. Ideal para juzgados unipersonales o estudios chicos."
-                  : "Cada vocalía u oficina tiene sus propias causas. Ideal para tribunales colegiados."}
+                  : "Cada espacio u oficina tiene sus propias causas. Ideal para oficinas colegiados."}
               </p>
             </div>
           </div>

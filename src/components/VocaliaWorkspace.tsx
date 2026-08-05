@@ -280,7 +280,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
-    miembros: "Miembros del tribunal",
+    miembros: "Miembros del oficina",
     papelera: "Papelera",
     migrar: "Migrar causas",
   };
@@ -324,7 +324,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       listasPersonalizadas={listasHook.listas}
       onCreateLista={() => {
         if (listasHook.listas.length >= 2) {
-          toast.error("Llegaste al límite de 2 listas personalizadas para esta vocalía");
+          toast.error("Llegaste al límite de 2 listas personalizadas para esta espacio");
           return;
         }
         setShowCreateLista(true);

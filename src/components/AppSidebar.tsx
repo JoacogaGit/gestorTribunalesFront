@@ -76,7 +76,7 @@ export default function AppSidebar({
   const otrasVocalias = vocaliasTribunal.filter((v) => v.id !== currentVocaliaId);
 
   const adminItems = [
-    { id: "miembros", label: "Miembros del tribunal", icon: UserCog },
+    { id: "miembros", label: "Miembros del oficina", icon: UserCog },
     { id: "papelera", label: "Papelera", icon: Trash2 },
   ];
 

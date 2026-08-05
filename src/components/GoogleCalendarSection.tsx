@@ -45,7 +45,7 @@ export default function GoogleCalendarSection() {
   const vocaliaActual = sync ? vocalias.find((v) => v.id === sync.vocalia_id) : null;
 
   const iniciarVinculacion = async () => {
-    if (!vocaliaSel) { toast.error("Elegí una vocalía"); return; }
+    if (!vocaliaSel) { toast.error("Elegí una espacio"); return; }
     try {
       const { data: cfg, error } = await supabase.functions.invoke("google-calendar-oauth", {
         body: { action: "config" },
@@ -113,7 +113,7 @@ export default function GoogleCalendarSection() {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             <span className="text-sm">
-              Vinculado a <strong>{vocaliaActual?.nombre ?? "vocalía"}</strong>
+              Vinculado a <strong>{vocaliaActual?.nombre ?? "espacio"}</strong>
             </span>
           </div>
           <Button size="sm" variant="outline" onClick={() => setConfirmUnlink(true)}>

@@ -157,7 +157,7 @@ export default function SuperadminTribunalDetail() {
                         className="mt-auto gap-1.5"
                         onClick={() => entrarVocalia(v.id, v.nombre)}
                       >
-                        Operar en esta vocalía <ArrowRight className="w-3.5 h-3.5" />
+                        Operar en esta espacio <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   ))}

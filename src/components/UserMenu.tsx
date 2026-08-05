@@ -18,7 +18,7 @@ interface Props {
   name: string;
   onLogout: () => void;
   onUpdateProfile?: (data: { name: string; email: string }) => void;
-  /** Si está presente, muestra "Abandonar tribunal" en el menú. Lo dispara cualquier miembro (admin o no). */
+  /** Si está presente, muestra "Abandonar oficina" en el menú. Lo dispara cualquier miembro (admin o no). */
   onAbandonarTribunal?: () => void;
   /** Oculta el bloque nombre/email junto al avatar (móvil). */
   compact?: boolean;

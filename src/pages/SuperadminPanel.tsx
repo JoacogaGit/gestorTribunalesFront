@@ -64,7 +64,7 @@ export default function SuperadminPanel() {
 
   const entrar = (id: string, nombre: string) => {
     exit(); // limpiar cualquier modo previo
-    navigate(`/superadmin/tribunal/${id}`);
+    navigate(`/superadmin/oficina/${id}`);
   };
 
   return (
@@ -102,7 +102,7 @@ export default function SuperadminPanel() {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar tribunal por nombre…"
+              placeholder="Buscar oficina por nombre…"
               className="pl-9"
             />
           </div>
@@ -127,7 +127,7 @@ export default function SuperadminPanel() {
           </div>
         ) : filtrados.length === 0 ? (
           <div className="py-16 text-center text-sm text-muted-foreground">
-            {q ? "Ningún tribunal coincide con la búsqueda." : "No hay tribunales en el sistema."}
+            {q ? "Ningún oficina coincide con la búsqueda." : "No hay oficinas en el sistema."}
           </div>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
