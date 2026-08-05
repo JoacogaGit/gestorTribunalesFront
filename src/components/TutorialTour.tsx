@@ -176,7 +176,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
       target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
       titulo: "Anotaciones",
       texto:
-        "Tu espacio tipo Trello para organizar pendientes. Podés crear <strong>tableros</strong> → dentro de cada tablero, <strong>listas</strong> → dentro de cada lista, <strong>columnas con tarjetas arrastrables</strong>. Podés compartir tableros o listas con tu espacio, o mantenerlos personales.",
+        "Tu pizarra para organizar pendientes. Podés crear <strong>anotaciones</strong> → dentro de cada anotación, <strong>listas</strong> → dentro de cada lista, <strong>columnas con tarjetas arrastrables</strong>. Podés compartir anotaciones o listas con tu oficina, o mantenerlas personales.",
       abrirSidebar: !tableroView,
     },
     {
@@ -197,7 +197,7 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
     pasos.push({
       target: '[data-tour="nav-papelera"]',
       titulo: "Papelera",
-      texto: "Si borrás una causa por error, no te preocupes: va a la Papelera y podés restaurarla cuando quieras.",
+      texto: "Si borrás una causa por error, no te preocupes: va a la Papelera y podés restaurarla durante <strong>30 días</strong>. Después de ese plazo se elimina definitivamente.",
       abrirSidebar: true,
     });
   }
