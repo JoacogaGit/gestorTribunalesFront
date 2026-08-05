@@ -75,6 +75,21 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
   const [confirmCambio, setConfirmCambio] = useState<MiembroRow | null>(null);
   const [confirmQuitar, setConfirmQuitar] = useState<MiembroRow | null>(null);
   const [confirmCancelInv, setConfirmCancelInv] = useState<InvitacionRow | null>(null);
+  const [confirmEliminarVocalia, setConfirmEliminarVocalia] = useState<{ id: string; nombre: string } | null>(null);
+  const [eliminandoVocalia, setEliminandoVocalia] = useState(false);
+
+  const soyAdmin = miembrosHook.miembros.some((m) => m.usuario_id === user?.id && m.rol === "admin");
+
+  const handleEliminarVocalia = async () => {
+    if (!confirmEliminarVocalia) return;
+    setEliminandoVocalia(true);
+    const { error } = await supabase.rpc("eliminar_vocalia", { p_vocalia_id: confirmEliminarVocalia.id });
+    setEliminandoVocalia(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Espacio "${confirmEliminarVocalia.nombre}" eliminado. Se puede recuperar durante 30 días.`);
+    setConfirmEliminarVocalia(null);
+    refetchVocalias();
+  };
 
   const copiar = async (texto: string, cb: () => void) => {
     await navigator.clipboard.writeText(texto);
