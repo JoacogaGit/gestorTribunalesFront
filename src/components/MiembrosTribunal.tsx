@@ -421,6 +421,29 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
         tribunalId={tribunalId}
       />
 
+      <AlertDialog open={!!confirmEliminarVocalia} onOpenChange={(o) => !o && setConfirmEliminarVocalia(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar el espacio "{confirmEliminarVocalia?.nombre}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se archivará el espacio junto con todas sus causas, eventos y listas. Vas a poder pedir su
+              recuperación durante los próximos 30 días.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={eliminandoVocalia}
+              onClick={(e) => { e.preventDefault(); handleEliminarVocalia(); }}
+            >
+              {eliminandoVocalia && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Eliminar espacio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <AlertDialog open={!!confirmCambio} onOpenChange={(o) => !o && setConfirmCambio(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
