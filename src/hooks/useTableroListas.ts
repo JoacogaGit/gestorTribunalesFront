@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type AmbitoLista = "personal" | "vocalia";
 
@@ -36,21 +37,28 @@ export function useTableroListas(tableroId: string | null) {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const crearLista = useCallback(async (nombre: string, ambito: AmbitoLista): Promise<string | null> => {
-    if (!tableroId) return null;
+    if (!tableroId) { toast.error("No hay anotación activa."); return null; }
     const { data: userRes } = await supabase.auth.getUser();
     const uid = userRes.user?.id;
-    if (!uid) return null;
+    if (!uid) { toast.error("Sesión expirada: volvé a iniciar sesión."); return null; }
     const { data, error } = await supabase
       .from("tablero_listas")
       .insert({ tablero_id: tableroId, usuario_id: uid, nombre: nombre.trim(), ambito, orden: listas.length })
       .select("id")
       .maybeSingle();
-    if (error || !data) { setError(error?.message ?? "No se pudo crear la lista"); return null; }
-    await supabase.from("tablero_columnas").insert([
+    if (error || !data) {
+      console.error("[anotaciones] crearLista falló", error);
+      const msg = error?.message ?? "No se pudo crear la lista";
+      setError(msg);
+      toast.error(msg);
+      return null;
+    }
+    const { error: colErr } = await supabase.from("tablero_columnas").insert([
       { tablero_id: tableroId, lista_id: data.id, nombre: "Pendiente", orden: 0 },
       { tablero_id: tableroId, lista_id: data.id, nombre: "En curso", orden: 1 },
       { tablero_id: tableroId, lista_id: data.id, nombre: "Listo", orden: 2 },
     ]);
+    if (colErr) { console.error("[anotaciones] columnas iniciales", colErr); toast.error(colErr.message); }
     await fetchData();
     return data.id;
   }, [tableroId, listas.length, fetchData]);

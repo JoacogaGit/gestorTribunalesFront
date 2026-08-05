@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { emitEventosChanged } from "@/lib/eventosBus";
+import { toast } from "sonner";
 
 export interface TableroColumna {
   id: string;
@@ -75,8 +76,16 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
 
   // ===== Columnas =====
   const crearColumna = useCallback(async (nombre: string) => {
-    if (!listaId || !tableroId) return;
-    await supabase.from("tablero_columnas").insert({ tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length });
+    if (!listaId || !tableroId) { toast.error("No hay lista activa."); return; }
+    const { error } = await supabase
+      .from("tablero_columnas")
+      .insert({ tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length });
+    if (error) {
+      console.error("[anotaciones] crearColumna falló", error);
+      setError(error.message);
+      toast.error(error.message);
+      return;
+    }
     await fetchData();
   }, [listaId, tableroId, columnas.length, fetchData]);
 
@@ -115,7 +124,12 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
       })
       .select("id")
       .maybeSingle();
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[anotaciones] crearTarjeta falló", error);
+      setError(error.message);
+      toast.error(error.message);
+      return;
+    }
     await fetchData();
     emitEventosChanged();
     if (syncEnabled && data?.id && input.fecha_hora) fireTarjetaSync("create", data.id);
@@ -129,7 +143,12 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
       fecha_hora_fin: input.fecha_hora_fin ?? null,
       causa_id: input.causa_id,
     }).eq("id", id);
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[anotaciones] actualizarTarjeta falló", error);
+      setError(error.message);
+      toast.error(error.message);
+      return;
+    }
     await fetchData();
     emitEventosChanged();
     if (syncEnabled) fireTarjetaSync("update", id);
