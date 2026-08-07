@@ -38,30 +38,38 @@ export function useTableroListas(tableroId: string | null) {
 
   const crearLista = useCallback(async (nombre: string, ambito: AmbitoLista): Promise<string | null> => {
     if (!tableroId) { toast.error("No hay anotación activa."); return null; }
-    const { data: userRes } = await supabase.auth.getUser();
-    const uid = userRes.user?.id;
-    if (!uid) { toast.error("Sesión expirada: volvé a iniciar sesión."); return null; }
+    // La sesión debe estar activa: RLS evalúa auth.uid() con el JWT del cliente.
+    const { data: sessRes } = await supabase.auth.getSession();
+    if (!sessRes.session?.user?.id) {
+      toast.error("Sesión expirada: volvé a iniciar sesión.");
+      return null;
+    }
+    // usuario_id lo setea la BD (DEFAULT auth.uid()) → no enviarlo.
+    const payload = { tablero_id: tableroId, nombre: nombre.trim(), ambito, orden: listas.length };
+    console.log("[anotaciones] insert tablero_listas payload", payload);
     const { data, error } = await supabase
       .from("tablero_listas")
-      .insert({ tablero_id: tableroId, usuario_id: uid, nombre: nombre.trim(), ambito, orden: listas.length })
+      .insert(payload)
       .select("id")
       .maybeSingle();
     if (error || !data) {
-      console.error("[anotaciones] crearLista falló", error);
+      console.error("[anotaciones] crearLista falló", { payload, error });
       const msg = error?.message ?? "No se pudo crear la lista";
       setError(msg);
       toast.error(msg);
       return null;
     }
-    const { error: colErr } = await supabase.from("tablero_columnas").insert([
+    const cols = [
       { tablero_id: tableroId, lista_id: data.id, nombre: "Pendiente", orden: 0 },
       { tablero_id: tableroId, lista_id: data.id, nombre: "En curso", orden: 1 },
       { tablero_id: tableroId, lista_id: data.id, nombre: "Listo", orden: 2 },
-    ]);
-    if (colErr) { console.error("[anotaciones] columnas iniciales", colErr); toast.error(colErr.message); }
+    ];
+    const { error: colErr } = await supabase.from("tablero_columnas").insert(cols);
+    if (colErr) { console.error("[anotaciones] columnas iniciales", { cols, error: colErr }); toast.error(colErr.message); }
     await fetchData();
     return data.id;
   }, [tableroId, listas.length, fetchData]);
+
 
   const renombrarLista = useCallback(async (id: string, nombre: string) => {
     await supabase.from("tablero_listas").update({ nombre: nombre.trim() }).eq("id", id);

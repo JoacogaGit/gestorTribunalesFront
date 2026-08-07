@@ -77,17 +77,20 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
   // ===== Columnas =====
   const crearColumna = useCallback(async (nombre: string) => {
     if (!listaId || !tableroId) { toast.error("No hay lista activa."); return; }
-    const { error } = await supabase
-      .from("tablero_columnas")
-      .insert({ tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length });
+    const { data: sessRes } = await supabase.auth.getSession();
+    if (!sessRes.session?.user?.id) { toast.error("Sesión expirada: volvé a iniciar sesión."); return; }
+    const payload = { tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length };
+    console.log("[anotaciones] insert tablero_columnas payload", payload);
+    const { error } = await supabase.from("tablero_columnas").insert(payload);
     if (error) {
-      console.error("[anotaciones] crearColumna falló", error);
+      console.error("[anotaciones] crearColumna falló", { payload, error });
       setError(error.message);
       toast.error(error.message);
       return;
     }
     await fetchData();
   }, [listaId, tableroId, columnas.length, fetchData]);
+
 
   const renombrarColumna = useCallback(async (id: string, nombre: string) => {
     setColumnas((prev) => prev.map((c) => (c.id === id ? { ...c, nombre } : c)));
@@ -109,23 +112,27 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
   // ===== Tarjetas =====
   const crearTarjeta = useCallback(async (columnaId: string, input: TarjetaInput) => {
     const orden = tarjetas.filter((t) => t.columna_id === columnaId).length;
-    const { data: userRes } = await supabase.auth.getUser();
+    const { data: sessRes } = await supabase.auth.getSession();
+    const uid = sessRes.session?.user?.id;
+    if (!uid) { toast.error("Sesión expirada: volvé a iniciar sesión."); return; }
+    const payload = {
+      columna_id: columnaId,
+      titulo: input.titulo.trim(),
+      descripcion: input.descripcion?.trim() || null,
+      fecha_hora: input.fecha_hora,
+      fecha_hora_fin: input.fecha_hora_fin ?? null,
+      causa_id: input.causa_id,
+      orden,
+      creado_por: uid,
+    };
+    console.log("[anotaciones] insert tablero_tarjetas payload", payload);
     const { data, error } = await supabase
       .from("tablero_tarjetas")
-      .insert({
-        columna_id: columnaId,
-        titulo: input.titulo.trim(),
-        descripcion: input.descripcion?.trim() || null,
-        fecha_hora: input.fecha_hora,
-        fecha_hora_fin: input.fecha_hora_fin ?? null,
-        causa_id: input.causa_id,
-        orden,
-        creado_por: userRes.user?.id ?? null,
-      })
+      .insert(payload)
       .select("id")
       .maybeSingle();
     if (error) {
-      console.error("[anotaciones] crearTarjeta falló", error);
+      console.error("[anotaciones] crearTarjeta falló", { payload, error });
       setError(error.message);
       toast.error(error.message);
       return;
@@ -134,6 +141,7 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
     emitEventosChanged();
     if (syncEnabled && data?.id && input.fecha_hora) fireTarjetaSync("create", data.id);
   }, [tarjetas, fetchData, syncEnabled]);
+
 
   const actualizarTarjeta = useCallback(async (id: string, input: TarjetaInput) => {
     const { error } = await supabase.from("tablero_tarjetas").update({

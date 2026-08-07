@@ -36,21 +36,24 @@ export function useTableros(vocaliaId: string | null) {
   const crearTablero = useCallback(
     async (nombre: string): Promise<string | null> => {
       if (!vocaliaId) { toast.error("No hay espacio seleccionado."); return null; }
-      const { data: userRes } = await supabase.auth.getUser();
-      const uid = userRes.user?.id;
+      const { data: sessRes } = await supabase.auth.getSession();
+      const uid = sessRes.session?.user?.id;
       if (!uid) { toast.error("Sesión expirada: volvé a iniciar sesión."); return null; }
+      const payload = { vocalia_id: vocaliaId, usuario_id: uid, nombre: nombre.trim(), orden: tableros.length };
+      console.log("[anotaciones] insert tableros payload", payload);
       const { data, error } = await supabase
         .from("tableros")
-        .insert({ vocalia_id: vocaliaId, usuario_id: uid, nombre: nombre.trim(), orden: tableros.length })
+        .insert(payload)
         .select("id")
         .maybeSingle();
       if (error || !data) {
-        console.error("[anotaciones] crearTablero falló", error);
+        console.error("[anotaciones] crearTablero falló", { payload, error });
         const msg = error?.message ?? "No se pudo crear la anotación";
         setError(msg);
         toast.error(msg);
         return null;
       }
+
       await fetchData();
       return data.id;
     },
