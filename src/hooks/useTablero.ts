@@ -109,23 +109,27 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
   // ===== Tarjetas =====
   const crearTarjeta = useCallback(async (columnaId: string, input: TarjetaInput) => {
     const orden = tarjetas.filter((t) => t.columna_id === columnaId).length;
-    const { data: userRes } = await supabase.auth.getUser();
+    const { data: sessRes } = await supabase.auth.getSession();
+    const uid = sessRes.session?.user?.id;
+    if (!uid) { toast.error("Sesión expirada: volvé a iniciar sesión."); return; }
+    const payload = {
+      columna_id: columnaId,
+      titulo: input.titulo.trim(),
+      descripcion: input.descripcion?.trim() || null,
+      fecha_hora: input.fecha_hora,
+      fecha_hora_fin: input.fecha_hora_fin ?? null,
+      causa_id: input.causa_id,
+      orden,
+      creado_por: uid,
+    };
+    console.log("[anotaciones] insert tablero_tarjetas payload", payload);
     const { data, error } = await supabase
       .from("tablero_tarjetas")
-      .insert({
-        columna_id: columnaId,
-        titulo: input.titulo.trim(),
-        descripcion: input.descripcion?.trim() || null,
-        fecha_hora: input.fecha_hora,
-        fecha_hora_fin: input.fecha_hora_fin ?? null,
-        causa_id: input.causa_id,
-        orden,
-        creado_por: userRes.user?.id ?? null,
-      })
+      .insert(payload)
       .select("id")
       .maybeSingle();
     if (error) {
-      console.error("[anotaciones] crearTarjeta falló", error);
+      console.error("[anotaciones] crearTarjeta falló", { payload, error });
       setError(error.message);
       toast.error(error.message);
       return;
@@ -134,6 +138,7 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
     emitEventosChanged();
     if (syncEnabled && data?.id && input.fecha_hora) fireTarjetaSync("create", data.id);
   }, [tarjetas, fetchData, syncEnabled]);
+
 
   const actualizarTarjeta = useCallback(async (id: string, input: TarjetaInput) => {
     const { error } = await supabase.from("tablero_tarjetas").update({
