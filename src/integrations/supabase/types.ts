@@ -1145,6 +1145,7 @@ export type Database = {
         Args: { p_lista_id: string }
         Returns: boolean
       }
+      puede_editar_tablero: { Args: { p_tablero_id: string }; Returns: boolean }
       puede_editar_vocalia: { Args: { p_vocalia_id: string }; Returns: boolean }
       puede_ver_lista_tablero: {
         Args: { p_lista_id: string }
