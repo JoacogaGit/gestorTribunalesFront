@@ -363,7 +363,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       )}
 
       {/* Paso 1 — Bienvenida */}
-      <Dialog open={fase === "bienvenida"} onOpenChange={(o) => { if (!o) terminar(false); }}>
+      <Dialog open={fase === "bienvenida"} onOpenChange={(o) => { if (!o && fase === "bienvenida") terminar(false); }}>
         <DialogContent className="sm:max-w-md text-center animate-scale-in">
           <div className="flex flex-col items-center gap-4 py-2">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-gold shadow-soft">
@@ -383,6 +383,16 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
               <Button variant="ghost" className="flex-1" onClick={() => terminar(false)}>Saltar tutorial</Button>
               <Button className="flex-1" onClick={arrancarRecorrido}>Empezar recorrido</Button>
             </div>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+              onClick={() => terminar(false)}
+            >
+              No volver a mostrar automáticamente
+            </button>
+            <p className="text-[11px] text-muted-foreground">
+              Siempre podés volver a verlo desde tu menú de usuario.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
