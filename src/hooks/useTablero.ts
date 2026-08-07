@@ -77,17 +77,20 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
   // ===== Columnas =====
   const crearColumna = useCallback(async (nombre: string) => {
     if (!listaId || !tableroId) { toast.error("No hay lista activa."); return; }
-    const { error } = await supabase
-      .from("tablero_columnas")
-      .insert({ tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length });
+    const { data: sessRes } = await supabase.auth.getSession();
+    if (!sessRes.session?.user?.id) { toast.error("Sesión expirada: volvé a iniciar sesión."); return; }
+    const payload = { tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length };
+    console.log("[anotaciones] insert tablero_columnas payload", payload);
+    const { error } = await supabase.from("tablero_columnas").insert(payload);
     if (error) {
-      console.error("[anotaciones] crearColumna falló", error);
+      console.error("[anotaciones] crearColumna falló", { payload, error });
       setError(error.message);
       toast.error(error.message);
       return;
     }
     await fetchData();
   }, [listaId, tableroId, columnas.length, fetchData]);
+
 
   const renombrarColumna = useCallback(async (id: string, nombre: string) => {
     setColumnas((prev) => prev.map((c) => (c.id === id ? { ...c, nombre } : c)));
