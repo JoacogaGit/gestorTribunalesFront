@@ -227,7 +227,15 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
   const [total, setTotal] = useState(construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView }).length + 2);
 
   const marcarCompletado = useCallback(async () => {
-    if (user) await supabase.from("perfiles").update({ tutorial_completado: true }).eq("id", user.id);
+    try {
+      localStorage.setItem("iustrack:tutorial_completado", "1");
+    } catch { /* noop */ }
+    if (!user) return;
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ tutorial_completado: true })
+      .eq("id", user.id);
+    if (error) console.error("[tutorial] no se pudo guardar tutorial_completado", error);
   }, [user]);
 
   // Auto-arranque la primera vez
@@ -235,12 +243,20 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     if (!user) return;
     let cancelled = false;
     (async () => {
+      let visto = false;
+      try { visto = localStorage.getItem("iustrack:tutorial_completado") === "1"; } catch { /* noop */ }
+      if (visto) return;
       const { data } = await supabase
         .from("perfiles")
         .select("tutorial_completado")
         .eq("id", user.id)
         .maybeSingle();
-      if (!cancelled && data && data.tutorial_completado === false) setFase("bienvenida");
+      if (cancelled) return;
+      if (data?.tutorial_completado) {
+        try { localStorage.setItem("iustrack:tutorial_completado", "1"); } catch { /* noop */ }
+        return;
+      }
+      if (data && data.tutorial_completado === false) setFase("bienvenida");
     })();
     return () => { cancelled = true; };
   }, [user]);
@@ -251,6 +267,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     window.addEventListener(TUTORIAL_EVENT, handler);
     return () => window.removeEventListener(TUTORIAL_EVENT, handler);
   }, []);
+
 
   const prepararPaso = useCallback(
     async (i: number) => {
@@ -346,7 +363,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       )}
 
       {/* Paso 1 — Bienvenida */}
-      <Dialog open={fase === "bienvenida"} onOpenChange={(o) => { if (!o) terminar(false); }}>
+      <Dialog open={fase === "bienvenida"} onOpenChange={(o) => { if (!o && fase === "bienvenida") terminar(false); }}>
         <DialogContent className="sm:max-w-md text-center animate-scale-in">
           <div className="flex flex-col items-center gap-4 py-2">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-gold shadow-soft">
@@ -366,6 +383,16 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
               <Button variant="ghost" className="flex-1" onClick={() => terminar(false)}>Saltar tutorial</Button>
               <Button className="flex-1" onClick={arrancarRecorrido}>Empezar recorrido</Button>
             </div>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+              onClick={() => terminar(false)}
+            >
+              No volver a mostrar automáticamente
+            </button>
+            <p className="text-[11px] text-muted-foreground">
+              Siempre podés volver a verlo desde tu menú de usuario.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

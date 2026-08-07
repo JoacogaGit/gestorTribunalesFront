@@ -76,6 +76,7 @@ export default function UserMenu({ email, name, onLogout, onUpdateProfile, onAba
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={async () => {
+              try { localStorage.removeItem("iustrack:tutorial_completado"); } catch { /* noop */ }
               if (user) await supabase.from("perfiles").update({ tutorial_completado: false }).eq("id", user.id);
               lanzarTutorial();
             }}
