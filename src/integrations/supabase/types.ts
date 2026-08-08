@@ -843,6 +843,7 @@ export type Database = {
       tablero_columnas: {
         Row: {
           ambito: string
+          color: string | null
           created_at: string
           id: string
           lista_id: string
@@ -852,6 +853,7 @@ export type Database = {
         }
         Insert: {
           ambito?: string
+          color?: string | null
           created_at?: string
           id?: string
           lista_id: string
@@ -861,6 +863,7 @@ export type Database = {
         }
         Update: {
           ambito?: string
+          color?: string | null
           created_at?: string
           id?: string
           lista_id?: string
@@ -888,6 +891,7 @@ export type Database = {
       tablero_listas: {
         Row: {
           ambito: string
+          color: string | null
           created_at: string
           id: string
           nombre: string
@@ -897,6 +901,7 @@ export type Database = {
         }
         Insert: {
           ambito?: string
+          color?: string | null
           created_at?: string
           id?: string
           nombre: string
@@ -906,6 +911,7 @@ export type Database = {
         }
         Update: {
           ambito?: string
+          color?: string | null
           created_at?: string
           id?: string
           nombre?: string
