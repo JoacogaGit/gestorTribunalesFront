@@ -22,7 +22,7 @@ interface TarjetaCalRow {
   descripcion: string | null;
   fecha_hora: string | null;
   causa_id: string | null;
-  columna?: { tablero?: { id: string; nombre: string; vocalia_id: string } | null } | null;
+  columna?: { id: string; nombre: string; tablero?: { id: string; nombre: string; vocalia_id: string } | null } | null;
 }
 
 
@@ -79,7 +79,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .is("sujetos.causas.borrado_en", null),
         supabase
           .from("tablero_tarjetas")
-          .select("id,titulo,descripcion,fecha_hora,causa_id, columna:tablero_columnas!inner(id, tablero:tableros!inner(id,nombre,vocalia_id))")
+          .select("id,titulo,descripcion,fecha_hora,causa_id, columna:tablero_columnas!inner(id,nombre, tablero:tableros!inner(id,nombre,vocalia_id))")
           .not("fecha_hora", "is", null)
           .eq("columna.tablero.vocalia_id", vocaliaId),
       ]);
@@ -124,7 +124,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           id: `tarjeta-${t.id}`,
           fecha: t.fecha_hora as string,
           hora: toARTimeString(t.fecha_hora as string) || undefined,
-          titulo: t.titulo,
+          titulo: t.columna?.nombre ? `${t.columna.nombre} — ${t.titulo}` : t.titulo,
           descripcion: t.descripcion ?? undefined,
           tipo: "tarjeta",
           causaId: t.causa_id ?? "",
