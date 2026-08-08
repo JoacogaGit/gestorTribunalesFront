@@ -31,7 +31,7 @@ export interface TarjetaInput {
   causa_id: string | null;
 }
 
-/** Fire-and-forget: sólo para tableros personales. */
+/** Fire-and-forget: nunca bloquea la operación. */
 function fireTarjetaSync(action: "create" | "update" | "delete", tarjeta_id: string) {
   supabase.functions
     .invoke("google-calendar-sync", { body: { action, tipo: "tarjeta", tarjeta_id } })
@@ -43,8 +43,6 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
   const [tarjetas, setTarjetas] = useState<TableroTarjeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const syncEnabled = ambito === "personal";
 
   const fetchData = useCallback(async () => {
     if (!listaId) { setColumnas([]); setTarjetas([]); setLoading(false); return; }
@@ -139,8 +137,8 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
     }
     await fetchData();
     emitEventosChanged();
-    if (syncEnabled && data?.id && input.fecha_hora) fireTarjetaSync("create", data.id);
-  }, [tarjetas, fetchData, syncEnabled]);
+    if (data?.id) fireTarjetaSync("create", data.id);
+  }, [tarjetas, fetchData]);
 
 
   const actualizarTarjeta = useCallback(async (id: string, input: TarjetaInput) => {
@@ -159,15 +157,15 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
     }
     await fetchData();
     emitEventosChanged();
-    if (syncEnabled) fireTarjetaSync("update", id);
-  }, [fetchData, syncEnabled]);
+    fireTarjetaSync("update", id);
+  }, [fetchData]);
 
   const borrarTarjeta = useCallback(async (id: string) => {
-    if (syncEnabled) fireTarjetaSync("delete", id);
+    fireTarjetaSync("delete", id);
     await supabase.from("tablero_tarjetas").delete().eq("id", id);
     await fetchData();
     emitEventosChanged();
-  }, [fetchData, syncEnabled]);
+  }, [fetchData]);
 
   /** Aplica un nuevo estado de tarjetas (post drag & drop) y persiste columna_id + orden. */
   const aplicarMovimiento = useCallback(async (next: TableroTarjeta[]) => {
