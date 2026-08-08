@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTablero, TableroTarjeta, TarjetaInput } from "@/hooks/useTablero";
@@ -184,6 +185,7 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nuevaColumna, setNuevaColumna] = useState(false);
   const [nombreColumna, setNombreColumna] = useState("");
+  const [ambitoColumna, setAmbitoColumna] = useState<"compartida" | "personal">("compartida");
   const [formOpen, setFormOpen] = useState(false);
   const [editando, setEditando] = useState<TableroTarjeta | null>(null);
   const [columnaDestino, setColumnaDestino] = useState<string | null>(null);
