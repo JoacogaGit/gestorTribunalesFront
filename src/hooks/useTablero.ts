@@ -73,11 +73,11 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ===== Columnas =====
-  const crearColumna = useCallback(async (nombre: string) => {
+  const crearColumna = useCallback(async (nombre: string, ambitoColumna: "compartida" | "personal" = "compartida") => {
     if (!listaId || !tableroId) { toast.error("No hay lista activa."); return; }
     const { data: sessRes } = await supabase.auth.getSession();
     if (!sessRes.session?.user?.id) { toast.error("Sesión expirada: volvé a iniciar sesión."); return; }
-    const payload = { tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length };
+    const payload = { tablero_id: tableroId, lista_id: listaId, nombre: nombre.trim(), orden: columnas.length, ambito: ambitoColumna };
     console.log("[anotaciones] insert tablero_columnas payload", payload);
     const { error } = await supabase.from("tablero_columnas").insert(payload);
     if (error) {
