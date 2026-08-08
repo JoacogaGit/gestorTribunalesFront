@@ -22,6 +22,8 @@ import type { Tablero } from "@/hooks/useTableros";
 import { useTableroListas, type TableroLista } from "@/hooks/useTableroListas";
 import CrearListaTableroDialog from "./CrearListaTableroDialog";
 import TarjetaFormDialog from "./TarjetaFormDialog";
+import ColorPicker from "./ColorPicker";
+import { colorSoftBg, colorBorde } from "@/lib/tableroColores";
 import { formatLocalDate, toARTimeString } from "@/lib/parseDate";
 import { isAllDayISO } from "@/lib/eventoMapper";
 
@@ -31,7 +33,7 @@ interface Props {
   soloLectura?: boolean;
 }
 
-function TarjetaCard({ tarjeta, onEdit }: { tarjeta: TableroTarjeta; onEdit: () => void }) {
+function TarjetaCard({ tarjeta, onEdit, onDelete }: { tarjeta: TableroTarjeta; onEdit: () => void; onDelete?: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tarjeta.id,
     data: { type: "tarjeta", columnaId: tarjeta.columna_id },
@@ -49,9 +51,21 @@ function TarjetaCard({ tarjeta, onEdit }: { tarjeta: TableroTarjeta; onEdit: () 
       {...attributes}
       {...listeners}
       onClick={onEdit}
-      className="rounded-lg border border-border/70 bg-card p-3 shadow-soft cursor-grab active:cursor-grabbing hover:border-primary/40 transition-colors"
+      className="group/tarjeta relative rounded-lg border border-border/70 bg-card p-3 shadow-soft cursor-grab active:cursor-grabbing hover:border-primary/40 transition-colors"
     >
-      <p className="text-sm font-medium text-foreground break-words">{tarjeta.titulo}</p>
+      {onDelete && (
+        <button
+          type="button"
+          aria-label="Borrar tarjeta"
+          title="Borrar tarjeta"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="absolute right-1.5 top-1.5 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-alert-urgent focus:opacity-100 group-hover/tarjeta:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+      <p className="text-sm font-medium text-foreground break-words pr-6">{tarjeta.titulo}</p>
       {tarjeta.descripcion && (
         <p className="mt-1 text-xs text-muted-foreground line-clamp-3 break-words">{tarjeta.descripcion}</p>
       )}
@@ -73,10 +87,11 @@ function TarjetaCard({ tarjeta, onEdit }: { tarjeta: TableroTarjeta; onEdit: () 
 }
 
 function Columna({
-  id, nombre, tarjetas, isMobile, soloLectura, onRename, onDelete, onAddCard, onEditCard,
+  id, nombre, color, tarjetas, isMobile, soloLectura, onRename, onDelete, onAddCard, onEditCard, onColor, onDeleteCard,
 }: {
   id: string;
   nombre: string;
+  color: string | null;
   tarjetas: TableroTarjeta[];
   isMobile: boolean;
   soloLectura?: boolean;
@@ -84,6 +99,8 @@ function Columna({
   onDelete: () => void;
   onAddCard: () => void;
   onEditCard: (t: TableroTarjeta) => void;
+  onColor: (color: string | null) => void;
+  onDeleteCard: (t: TableroTarjeta) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id, data: { type: "columna" },
@@ -96,16 +113,19 @@ function Columna({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    backgroundColor: colorSoftBg(color),
+    borderColor: colorBorde(color),
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col rounded-xl bg-muted/40 border border-border/60 ${
+      className={`flex flex-col overflow-hidden rounded-xl bg-muted/40 border border-border/60 ${
         isMobile ? "w-[85vw] shrink-0 snap-center" : "w-72 shrink-0"
       } max-h-full`}
     >
+      <div className="h-1 w-full" style={{ backgroundColor: colorBorde(color) ?? "transparent" }} />
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border/60">
         <button {...attributes} {...listeners} className="p-1 text-muted-foreground/60 hover:text-foreground cursor-grab" aria-label="Mover columna">
           <GripVertical className="h-4 w-4" />
@@ -141,6 +161,7 @@ function Columna({
             <DropdownMenuItem onSelect={() => { setDraft(nombre); setEditing(true); }} className="text-xs gap-2">
               <Pencil className="h-3.5 w-3.5" /> Renombrar
             </DropdownMenuItem>
+            <ColorPicker value={color} onChange={onColor} />
             <DropdownMenuItem onSelect={onDelete} className="text-xs gap-2 text-alert-urgent focus:text-alert-urgent">
               <Trash2 className="h-3.5 w-3.5" /> Borrar columna
             </DropdownMenuItem>
@@ -152,7 +173,7 @@ function Columna({
       <div ref={setDropRef} className="flex-1 min-h-[80px] overflow-y-auto p-2 space-y-2">
         <SortableContext items={tarjetas.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {tarjetas.map((t) => (
-            <TarjetaCard key={t.id} tarjeta={t} onEdit={() => onEditCard(t)} />
+            <TarjetaCard key={t.id} tarjeta={t} onEdit={() => onEditCard(t)} onDelete={soloLectura ? undefined : () => onDeleteCard(t)} />
           ))}
         </SortableContext>
         {tarjetas.length === 0 && (
@@ -178,7 +199,7 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
   const isMobile = useIsMobile();
   const {
     columnas, tarjetas, loading,
-    crearColumna, renombrarColumna, borrarColumna, reordenarColumnas,
+    crearColumna, renombrarColumna, borrarColumna, reordenarColumnas, cambiarColorColumna,
     crearTarjeta, actualizarTarjeta, borrarTarjeta, aplicarMovimiento,
   } = useTablero(lista.id, tableroId, lista.ambito);
 
@@ -286,12 +307,15 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
                 key={c.id}
                 id={c.id}
                 nombre={c.nombre}
+                color={c.color}
                 tarjetas={porColumna[c.id] ?? []}
                 isMobile={isMobile}
                 soloLectura={soloLectura}
                 onRename={(n) => renombrarColumna(c.id, n)}
                 onDelete={() => borrarColumna(c.id)}
                 onAddCard={() => abrirNueva(c.id)}
+                onColor={(color) => cambiarColorColumna(c.id, color)}
+                onDeleteCard={(t) => borrarTarjeta(t.id)}
                 onEditCard={(t) => { setEditando(t); setColumnaDestino(c.id); setFormOpen(true); }}
               />
             ))}
@@ -389,7 +413,7 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
 }
 
 export default function TableroView({ tablero, vocaliaId, soloLectura = false }: Props) {
-  const { listas, loading, crearLista, renombrarLista, borrarLista } = useTableroListas(tablero.id);
+  const { listas, loading, crearLista, renombrarLista, borrarLista, cambiarColorLista } = useTableroListas(tablero.id);
   const [listaActiva, setListaActiva] = useState<string | null>(null);
   const [showCrear, setShowCrear] = useState(false);
   const [renombrando, setRenombrando] = useState<string | null>(null);
@@ -425,7 +449,12 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false }:
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {listas.map((l) => (
-            <div key={l.id} className="group relative rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors">
+            <div
+              key={l.id}
+              className="group relative overflow-hidden rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors"
+              style={{ backgroundColor: colorSoftBg(l.color), borderColor: colorBorde(l.color) }}
+            >
+              <span className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: colorBorde(l.color) ?? "transparent" }} />
               {renombrando === l.id ? (
                 <Input
                   autoFocus
@@ -460,6 +489,7 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false }:
                       <DropdownMenuItem className="text-xs gap-2" onSelect={() => { setDraft(l.nombre); setRenombrando(l.id); }}>
                         <Pencil className="h-3.5 w-3.5" /> Renombrar
                       </DropdownMenuItem>
+                      <ColorPicker value={l.color} onChange={(color) => cambiarColorLista(l.id, color)} />
                       <DropdownMenuItem className="text-xs gap-2 text-alert-urgent focus:text-alert-urgent" onSelect={() => borrarLista(l.id)}>
                         <Trash2 className="h-3.5 w-3.5" /> Borrar lista
                       </DropdownMenuItem>
