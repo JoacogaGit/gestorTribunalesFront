@@ -11,6 +11,7 @@ export interface TableroLista {
   nombre: string;
   ambito: AmbitoLista;
   orden: number;
+  color: string | null;
   created_at: string;
 }
 
