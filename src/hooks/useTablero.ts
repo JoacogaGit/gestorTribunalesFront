@@ -9,6 +9,7 @@ export interface TableroColumna {
   lista_id: string;
   nombre: string;
   orden: number;
+  color: string | null;
 }
 
 export interface TableroTarjeta {
@@ -50,7 +51,7 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
     setError(null);
     const { data: cols, error: cErr } = await supabase
       .from("tablero_columnas")
-      .select("id, tablero_id, lista_id, nombre, orden")
+      .select("id, tablero_id, lista_id, nombre, orden, color")
       .eq("lista_id", listaId)
       .order("orden", { ascending: true });
     if (cErr) { setError(cErr.message); setLoading(false); return; }
@@ -94,6 +95,12 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
     setColumnas((prev) => prev.map((c) => (c.id === id ? { ...c, nombre } : c)));
     await supabase.from("tablero_columnas").update({ nombre: nombre.trim() }).eq("id", id);
   }, []);
+
+  const cambiarColorColumna = useCallback(async (id: string, color: string | null) => {
+    setColumnas((prev) => prev.map((c) => (c.id === id ? { ...c, color } : c)));
+    const { error } = await supabase.from("tablero_columnas").update({ color }).eq("id", id);
+    if (error) { toast.error(error.message); await fetchData(); }
+  }, [fetchData]);
 
   const borrarColumna = useCallback(async (id: string) => {
     await supabase.from("tablero_columnas").delete().eq("id", id);
@@ -183,7 +190,7 @@ export function useTablero(listaId: string | null, tableroId: string | null, amb
 
   return {
     columnas, tarjetas, loading, error, refetch: fetchData,
-    crearColumna, renombrarColumna, borrarColumna, reordenarColumnas,
+    crearColumna, renombrarColumna, borrarColumna, reordenarColumnas, cambiarColorColumna,
     crearTarjeta, actualizarTarjeta, borrarTarjeta, aplicarMovimiento,
   };
 }
