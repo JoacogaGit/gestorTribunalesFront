@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTablero, TableroTarjeta, TarjetaInput } from "@/hooks/useTablero";
@@ -184,6 +185,7 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nuevaColumna, setNuevaColumna] = useState(false);
   const [nombreColumna, setNombreColumna] = useState("");
+  const [ambitoColumna, setAmbitoColumna] = useState<"compartida" | "personal">("compartida");
   const [formOpen, setFormOpen] = useState(false);
   const [editando, setEditando] = useState<TableroTarjeta | null>(null);
   const [columnaDestino, setColumnaDestino] = useState<string | null>(null);
@@ -305,22 +307,36 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
                   onChange={(e) => setNombreColumna(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && nombreColumna.trim()) {
-                      crearColumna(nombreColumna); setNombreColumna(""); setNuevaColumna(false);
+                      crearColumna(nombreColumna, ambitoColumna); setNombreColumna(""); setAmbitoColumna("compartida"); setNuevaColumna(false);
                     }
-                    if (e.key === "Escape") { setNuevaColumna(false); setNombreColumna(""); }
+                    if (e.key === "Escape") { setNuevaColumna(false); setNombreColumna(""); setAmbitoColumna("compartida"); }
                   }}
                   placeholder="Nombre de la columna"
                   className="h-9"
                 />
+                <div className="space-y-1">
+                  <Select value={ambitoColumna} onValueChange={(v) => setAmbitoColumna(v as "compartida" | "personal")}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Ámbito" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="compartida">Compartida</SelectItem>
+                      <SelectItem value="personal">Personal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    Compartida: los eventos de sus tarjetas van al calendario de todo el equipo. Personal: solo al calendario de quien creó la tarjeta. No se puede cambiar después.
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     className="flex-1"
-                    onClick={() => { if (nombreColumna.trim()) { crearColumna(nombreColumna); setNombreColumna(""); setNuevaColumna(false); } }}
+                    onClick={() => { if (nombreColumna.trim()) { crearColumna(nombreColumna, ambitoColumna); setNombreColumna(""); setAmbitoColumna("compartida"); setNuevaColumna(false); } }}
                   >
                     Agregar
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setNuevaColumna(false); setNombreColumna(""); }}>
+                  <Button size="sm" variant="ghost" onClick={() => { setNuevaColumna(false); setNombreColumna(""); setAmbitoColumna("compartida"); }}>
                     Cancelar
                   </Button>
                 </div>
