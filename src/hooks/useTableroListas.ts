@@ -26,7 +26,7 @@ export function useTableroListas(tableroId: string | null) {
     setError(null);
     const { data, error } = await supabase
       .from("tablero_listas")
-      .select("id, tablero_id, usuario_id, nombre, ambito, orden, created_at")
+      .select("id, tablero_id, usuario_id, nombre, ambito, orden, color, created_at")
       .eq("tablero_id", tableroId)
       .order("orden", { ascending: true })
       .order("created_at", { ascending: true });
@@ -77,10 +77,16 @@ export function useTableroListas(tableroId: string | null) {
     await fetchData();
   }, [fetchData]);
 
+  const cambiarColorLista = useCallback(async (id: string, color: string | null) => {
+    setListas((prev) => prev.map((l) => (l.id === id ? { ...l, color } : l)));
+    const { error } = await supabase.from("tablero_listas").update({ color }).eq("id", id);
+    if (error) { toast.error(error.message); await fetchData(); }
+  }, [fetchData]);
+
   const borrarLista = useCallback(async (id: string) => {
     await supabase.from("tablero_listas").delete().eq("id", id);
     await fetchData();
   }, [fetchData]);
 
-  return { listas, loading, error, refetch: fetchData, crearLista, renombrarLista, borrarLista };
+  return { listas, loading, error, refetch: fetchData, crearLista, renombrarLista, borrarLista, cambiarColorLista };
 }
