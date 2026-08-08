@@ -842,6 +842,7 @@ export type Database = {
       }
       tablero_columnas: {
         Row: {
+          ambito: string
           created_at: string
           id: string
           lista_id: string
@@ -850,6 +851,7 @@ export type Database = {
           tablero_id: string
         }
         Insert: {
+          ambito?: string
           created_at?: string
           id?: string
           lista_id: string
@@ -858,6 +860,7 @@ export type Database = {
           tablero_id: string
         }
         Update: {
+          ambito?: string
           created_at?: string
           id?: string
           lista_id?: string
