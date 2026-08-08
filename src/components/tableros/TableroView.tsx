@@ -305,22 +305,36 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
                   onChange={(e) => setNombreColumna(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && nombreColumna.trim()) {
-                      crearColumna(nombreColumna); setNombreColumna(""); setNuevaColumna(false);
+                      crearColumna(nombreColumna, ambitoColumna); setNombreColumna(""); setAmbitoColumna("compartida"); setNuevaColumna(false);
                     }
-                    if (e.key === "Escape") { setNuevaColumna(false); setNombreColumna(""); }
+                    if (e.key === "Escape") { setNuevaColumna(false); setNombreColumna(""); setAmbitoColumna("compartida"); }
                   }}
                   placeholder="Nombre de la columna"
                   className="h-9"
                 />
+                <div className="space-y-1">
+                  <Select value={ambitoColumna} onValueChange={(v) => setAmbitoColumna(v as "compartida" | "personal")}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Ámbito" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="compartida">Compartida</SelectItem>
+                      <SelectItem value="personal">Personal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    Compartida: los eventos de sus tarjetas van al calendario de todo el equipo. Personal: solo al calendario de quien creó la tarjeta. No se puede cambiar después.
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     className="flex-1"
-                    onClick={() => { if (nombreColumna.trim()) { crearColumna(nombreColumna); setNombreColumna(""); setNuevaColumna(false); } }}
+                    onClick={() => { if (nombreColumna.trim()) { crearColumna(nombreColumna, ambitoColumna); setNombreColumna(""); setAmbitoColumna("compartida"); setNuevaColumna(false); } }}
                   >
                     Agregar
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setNuevaColumna(false); setNombreColumna(""); }}>
+                  <Button size="sm" variant="ghost" onClick={() => { setNuevaColumna(false); setNombreColumna(""); setAmbitoColumna("compartida"); }}>
                     Cancelar
                   </Button>
                 </div>
