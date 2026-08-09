@@ -25,6 +25,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   const [tribunalNombre, setTribunalNombre] = useState("");
   const [tribunalId, setTribunalId] = useState<string | null>(null);
   const [vocaliaNombre, setVocaliaNombre] = useState("Espacio 1");
+  const [tipoOficina, setTipoOficina] = useState<"judicial" | "estudio" | null>(null);
 
   // unirse
   const [codigo, setCodigo] = useState("");
