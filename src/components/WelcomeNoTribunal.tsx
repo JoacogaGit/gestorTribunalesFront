@@ -25,6 +25,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   const [tribunalNombre, setTribunalNombre] = useState("");
   const [tribunalId, setTribunalId] = useState<string | null>(null);
   const [vocaliaNombre, setVocaliaNombre] = useState("Espacio 1");
+  const [tipoOficina, setTipoOficina] = useState<"judicial" | "estudio" | null>(null);
 
   // unirse
   const [codigo, setCodigo] = useState("");
@@ -37,6 +38,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   };
 
   const handleElegirModo = async (modoElegido: ModoTribunal) => {
+    if (!tipoOficina) { toast.error("Elegí el tipo de oficina."); return; }
     setLoading(true);
     const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
     if (error || !data) {
@@ -46,10 +48,10 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     }
     const newTribunalId = data as string;
 
-    // Persistir el modo elegido
+    // Persistir el modo y el tipo elegidos
     const { error: updErr } = await supabase
       .from("tribunales")
-      .update({ modo: modoElegido })
+      .update({ modo: modoElegido, tipo_oficina: tipoOficina })
       .eq("id", newTribunalId);
     if (updErr) {
       setLoading(false);
@@ -178,39 +180,79 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
           )}
 
           {mode === "modo" && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-display font-semibold text-foreground">¿Cómo trabaja esta oficina?</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Elegí la forma en la que querés organizar las causas. Después podés cambiarla desde configuración.
-                </p>
-              </div>
-              <div className="grid md:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleElegirModo("vocalias_separadas")}
-                  className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
-                >
-                  <div className="text-2xl mb-2">🏛️</div>
-                  <h4 className="font-display font-semibold text-foreground mb-1">Con espacios u oficinas separadas</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Cada espacio tiene sus propias causas. Ideal para oficinas colegiados, estudios con varios abogados.
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div>
+                  <h3 className="font-display font-semibold text-foreground">¿Qué tipo de oficina es?</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Esta elección se define al crear y no se puede cambiar después.
                   </p>
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleElegirModo("lista_unica")}
-                  className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
-                >
-                  <div className="text-2xl mb-2">📋</div>
-                  <h4 className="font-display font-semibold text-foreground mb-1">Como lista única</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Todas las causas en un solo lugar. Ideal para juzgados unipersonales, defensorías, estudios chicos.
-                  </p>
-                </button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setTipoOficina("judicial")}
+                    className={`text-left p-5 rounded-xl border transition-all disabled:opacity-50 ${tipoOficina === "judicial" ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border hover:border-primary/60"}`}
+                  >
+                    <div className="text-2xl mb-2">⚖️</div>
+                    <h4 className="font-display font-semibold text-foreground mb-1">Dependencia judicial</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Para juzgados, tribunales, fiscalías y defensorías. Registro completo con todos los campos del seguimiento judicial.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setTipoOficina("estudio")}
+                    className={`text-left p-5 rounded-xl border transition-all disabled:opacity-50 ${tipoOficina === "estudio" ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border hover:border-primary/60"}`}
+                  >
+                    <div className="text-2xl mb-2">💼</div>
+                    <h4 className="font-display font-semibold text-foreground mb-1">Estudio jurídico</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Para estudios y abogados particulares. Registro más simple, enfocado en el seguimiento de las causas propias del estudio.
+                    </p>
+                  </button>
+                </div>
               </div>
+
+              <div className="space-y-3">
+                <div>
+                  <h3 className="font-display font-semibold text-foreground">¿Cómo se estructura?</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {tipoOficina
+                      ? "Elegí la forma en la que querés organizar las causas."
+                      : "Primero elegí el tipo de oficina."}
+                  </p>
+                </div>
+                <div className={`grid md:grid-cols-2 gap-3 ${tipoOficina ? "" : "opacity-50 pointer-events-none"}`}>
+                  <button
+                    type="button"
+                    disabled={loading || !tipoOficina}
+                    onClick={() => handleElegirModo("lista_unica")}
+                    className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
+                  >
+                    <div className="text-2xl mb-2">📋</div>
+                    <h4 className="font-display font-semibold text-foreground mb-1">Única</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Todas las causas en una sola lista compartida. Ideal para equipos chicos que trabajan sobre un mismo conjunto de causas, sin divisiones internas.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading || !tipoOficina}
+                    onClick={() => handleElegirModo("vocalias_separadas")}
+                    className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
+                  >
+                    <div className="text-2xl mb-2">🏛️</div>
+                    <h4 className="font-display font-semibold text-foreground mb-1">Múltiple</h4>
+                    <p className="text-xs text-muted-foreground">
+                      La oficina se divide en varios espacios independientes (por ejemplo, una vocalía por cada juez). Cada espacio tiene sus propias causas. Ideal para dependencias grandes con equipos separados.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex justify-start">
                 <Button type="button" variant="ghost" size="sm" onClick={() => setMode("crear")} disabled={loading}>
                   <ArrowLeft className="w-4 h-4 mr-1.5" /> Volver
@@ -223,6 +265,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
               )}
             </div>
           )}
+
 
           {mode === "vocalia" && (
             <form onSubmit={handleCrearVocalia} className="space-y-4">
