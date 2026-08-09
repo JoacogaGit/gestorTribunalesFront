@@ -1030,6 +1030,7 @@ export type Database = {
           id: string
           modo: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
+          tipo_oficina: string
           updated_at: string | null
         }
         Insert: {
@@ -1040,6 +1041,7 @@ export type Database = {
           id?: string
           modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
+          tipo_oficina: string
           updated_at?: string | null
         }
         Update: {
@@ -1050,6 +1052,7 @@ export type Database = {
           id?: string
           modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre?: string
+          tipo_oficina?: string
           updated_at?: string | null
         }
         Relationships: []
