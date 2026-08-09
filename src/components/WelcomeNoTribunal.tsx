@@ -38,6 +38,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   };
 
   const handleElegirModo = async (modoElegido: ModoTribunal) => {
+    if (!tipoOficina) { toast.error("Elegí el tipo de oficina."); return; }
     setLoading(true);
     const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
     if (error || !data) {
@@ -47,10 +48,10 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     }
     const newTribunalId = data as string;
 
-    // Persistir el modo elegido
+    // Persistir el modo y el tipo elegidos
     const { error: updErr } = await supabase
       .from("tribunales")
-      .update({ modo: modoElegido })
+      .update({ modo: modoElegido, tipo_oficina: tipoOficina })
       .eq("id", newTribunalId);
     if (updErr) {
       setLoading(false);
