@@ -244,7 +244,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => handleElegirModo("vocalias_separadas")}
                     className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
                   >
-                    <div className="text-2xl mb-2">🏛️</div>
+                    <Layers className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Múltiple</h4>
                     <p className="text-xs text-muted-foreground">
                       La oficina se divide en varios espacios independientes (por ejemplo, una vocalía por cada juez). Cada espacio tiene sus propias causas. Ideal para dependencias grandes con equipos separados.
