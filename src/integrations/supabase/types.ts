@@ -1117,7 +1117,12 @@ export type Database = {
         Args: { p_nombre: string; p_vocalia_id: string }
         Returns: string
       }
-      crear_tribunal: { Args: { p_nombre: string }; Returns: string }
+      crear_tribunal:
+        | { Args: { p_nombre: string }; Returns: string }
+        | {
+            Args: { p_nombre: string; p_tipo_oficina: string }
+            Returns: string
+          }
       cuenta_admins_tribunal: {
         Args: { p_tribunal_id: string }
         Returns: number

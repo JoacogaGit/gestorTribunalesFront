@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Scale, Building2, KeyRound, Ticket, LogOut, Loader2, ArrowLeft } from "lucide-react";
+import { Scale, Building2, KeyRound, Ticket, LogOut, Loader2, ArrowLeft, Landmark, Briefcase, FileText, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +40,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   const handleElegirModo = async (modoElegido: ModoTribunal) => {
     if (!tipoOficina) { toast.error("Elegí el tipo de oficina."); return; }
     setLoading(true);
-    const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
+    const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim(), p_tipo_oficina: tipoOficina });
     if (error || !data) {
       setLoading(false);
       toast.error(error?.message || "No se pudo crear la oficina.");
@@ -195,7 +195,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => setTipoOficina("judicial")}
                     className={`text-left p-5 rounded-xl border transition-all disabled:opacity-50 ${tipoOficina === "judicial" ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border hover:border-primary/60"}`}
                   >
-                    <div className="text-2xl mb-2">⚖️</div>
+                    <Landmark className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Dependencia judicial</h4>
                     <p className="text-xs text-muted-foreground">
                       Para juzgados, tribunales, fiscalías y defensorías. Registro completo con todos los campos del seguimiento judicial.
@@ -207,7 +207,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => setTipoOficina("estudio")}
                     className={`text-left p-5 rounded-xl border transition-all disabled:opacity-50 ${tipoOficina === "estudio" ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border hover:border-primary/60"}`}
                   >
-                    <div className="text-2xl mb-2">💼</div>
+                    <Briefcase className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Estudio jurídico</h4>
                     <p className="text-xs text-muted-foreground">
                       Para estudios y abogados particulares. Registro más simple, enfocado en el seguimiento de las causas propias del estudio.
@@ -232,7 +232,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => handleElegirModo("lista_unica")}
                     className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
                   >
-                    <div className="text-2xl mb-2">📋</div>
+                    <FileText className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Única</h4>
                     <p className="text-xs text-muted-foreground">
                       Todas las causas en una sola lista compartida. Ideal para equipos chicos que trabajan sobre un mismo conjunto de causas, sin divisiones internas.
@@ -244,7 +244,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => handleElegirModo("vocalias_separadas")}
                     className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
                   >
-                    <div className="text-2xl mb-2">🏛️</div>
+                    <Layers className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Múltiple</h4>
                     <p className="text-xs text-muted-foreground">
                       La oficina se divide en varios espacios independientes (por ejemplo, una vocalía por cada juez). Cada espacio tiene sus propias causas. Ideal para dependencias grandes con equipos separados.
