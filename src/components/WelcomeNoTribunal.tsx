@@ -232,7 +232,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => handleElegirModo("lista_unica")}
                     className="text-left p-5 rounded-xl border border-border hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all disabled:opacity-50"
                   >
-                    <div className="text-2xl mb-2">📋</div>
+                    <FileText className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Única</h4>
                     <p className="text-xs text-muted-foreground">
                       Todas las causas en una sola lista compartida. Ideal para equipos chicos que trabajan sobre un mismo conjunto de causas, sin divisiones internas.
