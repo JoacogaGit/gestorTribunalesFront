@@ -195,7 +195,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => setTipoOficina("judicial")}
                     className={`text-left p-5 rounded-xl border transition-all disabled:opacity-50 ${tipoOficina === "judicial" ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border hover:border-primary/60"}`}
                   >
-                    <div className="text-2xl mb-2">⚖️</div>
+                    <Landmark className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Dependencia judicial</h4>
                     <p className="text-xs text-muted-foreground">
                       Para juzgados, tribunales, fiscalías y defensorías. Registro completo con todos los campos del seguimiento judicial.
