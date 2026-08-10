@@ -207,7 +207,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                     onClick={() => setTipoOficina("estudio")}
                     className={`text-left p-5 rounded-xl border transition-all disabled:opacity-50 ${tipoOficina === "estudio" ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border hover:border-primary/60"}`}
                   >
-                    <div className="text-2xl mb-2">💼</div>
+                    <Briefcase className="w-6 h-6 mb-2 text-primary" strokeWidth={1.5} />
                     <h4 className="font-display font-semibold text-foreground mb-1">Estudio jurídico</h4>
                     <p className="text-xs text-muted-foreground">
                       Para estudios y abogados particulares. Registro más simple, enfocado en el seguimiento de las causas propias del estudio.
