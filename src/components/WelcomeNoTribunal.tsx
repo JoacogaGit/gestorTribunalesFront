@@ -40,7 +40,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
   const handleElegirModo = async (modoElegido: ModoTribunal) => {
     if (!tipoOficina) { toast.error("Elegí el tipo de oficina."); return; }
     setLoading(true);
-    const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim() });
+    const { data, error } = await supabase.rpc("crear_tribunal", { p_nombre: tribunalNombre.trim(), p_tipo_oficina: tipoOficina });
     if (error || !data) {
       setLoading(false);
       toast.error(error?.message || "No se pudo crear la oficina.");
