@@ -33,6 +33,7 @@ export interface CausaInput {
   fiscalia?: string | null;
   tribunal_interviniente?: string | null;
   tribunal_direccion?: string | null;
+  estado_procesal?: string | null;
 }
 
 export interface SujetoInput {

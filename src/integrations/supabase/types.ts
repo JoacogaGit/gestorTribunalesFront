@@ -72,6 +72,7 @@ export type Database = {
           despachante: string | null
           empleado_a_cargo: string | null
           estado_causa: Database["public"]["Enums"]["estado_causa_enum"]
+          estado_procesal: string | null
           expediente_nro: string
           fecha_ingreso: string | null
           fiscal: string | null
@@ -108,6 +109,7 @@ export type Database = {
           despachante?: string | null
           empleado_a_cargo?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
+          estado_procesal?: string | null
           expediente_nro: string
           fecha_ingreso?: string | null
           fiscal?: string | null
@@ -144,6 +146,7 @@ export type Database = {
           despachante?: string | null
           empleado_a_cargo?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
+          estado_procesal?: string | null
           expediente_nro?: string
           fecha_ingreso?: string | null
           fiscal?: string | null
