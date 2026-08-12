@@ -22,6 +22,17 @@ export interface CausaInput {
   causa_conexa_texto: string | null;
   causa_conexa_id: string | null;
   link_externo?: string | null;
+
+  // Campos exclusivos de oficinas tipo "estudio"
+  fuero?: string | null;
+  rol_estudio?: string | null;
+  damnificado?: string | null;
+  empleado_a_cargo?: string | null;
+  juez?: string | null;
+  fiscal?: string | null;
+  fiscalia?: string | null;
+  tribunal_interviniente?: string | null;
+  tribunal_direccion?: string | null;
 }
 
 export interface SujetoInput {
