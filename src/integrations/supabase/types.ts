@@ -68,19 +68,28 @@ export type Database = {
           color_destacado: string | null
           creado_por: string | null
           created_at: string | null
+          damnificado: string | null
           despachante: string | null
+          empleado_a_cargo: string | null
           estado_causa: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro: string
           fecha_ingreso: string | null
+          fiscal: string | null
+          fiscalia: string | null
+          fuero: string | null
           id: string
+          juez: string | null
           link_externo: string | null
           modificado_por: string | null
           numero_interno: string | null
           otros_intervinientes: string | null
           querella: string | null
+          rol_estudio: string | null
           subestado_tramite_id: string | null
           tipo_proceso: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso: Database["public"]["Enums"]["tipo_recurso_enum"] | null
+          tribunal_direccion: string | null
+          tribunal_interviniente: string | null
           updated_at: string | null
           vocalia_id: string
         }
@@ -95,19 +104,28 @@ export type Database = {
           color_destacado?: string | null
           creado_por?: string | null
           created_at?: string | null
+          damnificado?: string | null
           despachante?: string | null
+          empleado_a_cargo?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro: string
           fecha_ingreso?: string | null
+          fiscal?: string | null
+          fiscalia?: string | null
+          fuero?: string | null
           id?: string
+          juez?: string | null
           link_externo?: string | null
           modificado_por?: string | null
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
+          rol_estudio?: string | null
           subestado_tramite_id?: string | null
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
+          tribunal_direccion?: string | null
+          tribunal_interviniente?: string | null
           updated_at?: string | null
           vocalia_id: string
         }
@@ -122,19 +140,28 @@ export type Database = {
           color_destacado?: string | null
           creado_por?: string | null
           created_at?: string | null
+          damnificado?: string | null
           despachante?: string | null
+          empleado_a_cargo?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           expediente_nro?: string
           fecha_ingreso?: string | null
+          fiscal?: string | null
+          fiscalia?: string | null
+          fuero?: string | null
           id?: string
+          juez?: string | null
           link_externo?: string | null
           modificado_por?: string | null
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
+          rol_estudio?: string | null
           subestado_tramite_id?: string | null
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
+          tribunal_direccion?: string | null
+          tribunal_interviniente?: string | null
           updated_at?: string | null
           vocalia_id?: string
         }
