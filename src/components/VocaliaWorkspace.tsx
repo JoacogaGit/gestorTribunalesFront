@@ -16,7 +16,7 @@ import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useVocaliaActual, VocaliaActual } from "@/context/VocaliaContext";
 import { useVocalias } from "@/hooks/useVocalias";
 import { useTribunal } from "@/hooks/useTribunal";
+import { useTipoOficina } from "@/hooks/useTipoOficina";
 import { supabase } from "@/integrations/supabase/client";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
@@ -213,8 +214,20 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
   const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
   const detenidosRemote = useDetenidos(vocaliaId);
+  const { esEstudio } = useTipoOficina(tribunalId);
   const dashboardKpis = useDashboardKpis(vocaliaId);
-  const dashCausasRemote = useCausasDashboard(vocaliaId);
+  const dashCausasRemote = useCausasDashboard(vocaliaId, esEstudio);
+  const [mostrarKpis, setMostrarKpis] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("iustrack_dash_kpis") !== "0";
+  });
+  const toggleKpis = () => {
+    setMostrarKpis((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("iustrack_dash_kpis", next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
   const dashCausas = (() => {
@@ -501,7 +514,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           >
             {view === "dashboard" && (
               <div className={`space-y-8 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-y-auto pr-1"}`}>
-                <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
+                <div className="flex justify-end">
+                  <Button size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
+                    {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
+                    {mostrarKpis ? "Ocultar estadísticas" : "Mostrar estadísticas"}
+                  </Button>
+                </div>
+                {mostrarKpis && (
+                  <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
+                )}
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-card/80 border border-border/60 rounded-full shadow-soft transition-colors">
@@ -543,7 +564,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 >
                   <CausasTable
                     causas={dashCausas}
-                    title={`Causas — ${dashFilterLabels[dashFilter]}`}
+                    title={esEstudio && dashFilter === "all" ? "Todas las causas del estudio" : `Causas — ${dashFilterLabels[dashFilter]}`}
                     listKey="todas"
                     allCausas={dashCausasRemote.causas}
                     onMutated={dashCausasRemote.refetch}
