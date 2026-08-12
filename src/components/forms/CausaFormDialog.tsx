@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
 import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
 import { useVocaliaActual } from "@/context/VocaliaContext";
+import { useTipoOficina } from "@/hooks/useTipoOficina";
 import { fetchPrescripcionesDeSujetos, syncPrescripcionesSujeto, PrescripcionDraft } from "@/hooks/usePrescripciones";
 import {
   DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso,
@@ -27,7 +28,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -76,8 +77,28 @@ function emptyCausa(): CausaInput {
     causa_conexa_texto: "",
     causa_conexa_id: null,
     link_externo: "",
+
+    fuero: "",
+    rol_estudio: "",
+    damnificado: "",
+    empleado_a_cargo: "",
+    juez: "",
+    fiscal: "",
+    fiscalia: "",
+    tribunal_interviniente: "",
+    tribunal_direccion: "",
   };
 }
+
+const FUEROS_SUGERIDOS = [
+  "Criminal y Correccional",
+  "Federal",
+  "Provincia",
+  "Penal Económico",
+  "Contravencional",
+];
+
+const ROLES_ESTUDIO = ["Defensa", "Querella", "Denunciante"];
 
 function emptySujeto(situacion: DbSituacionLibertad = "libre"): SujetoState {
   return {
@@ -111,6 +132,7 @@ export default function CausaFormDialog({
   const muts = useCausaMutations();
   const { vocalia } = useVocaliaActual();
   const { subestados } = useSubestadosTramite(vocalia?.id ?? null);
+  const { esEstudio } = useTipoOficina(vocalia?.tribunalId ?? null);
   const fireVocaliaResync = () => {
     if (!vocalia?.id) return;
     supabase.functions
@@ -186,6 +208,24 @@ export default function CausaFormDialog({
             causa_conexa_id: data.causa_conexa_id ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             link_externo: (data as any).link_externo ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fuero: (data as any).fuero ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            rol_estudio: (data as any).rol_estudio ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            damnificado: (data as any).damnificado ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            empleado_a_cargo: (data as any).empleado_a_cargo ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            juez: (data as any).juez ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fiscal: (data as any).fiscal ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fiscalia: (data as any).fiscalia ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            tribunal_interviniente: (data as any).tribunal_interviniente ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            tribunal_direccion: (data as any).tribunal_direccion ?? "",
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list: any[] = (data.sujetos ?? []).slice().sort((a: any, b: any) => {
@@ -556,6 +596,81 @@ export default function CausaFormDialog({
                   </div>
                 </div>
               </section>
+
+              {/* Datos del estudio (solo oficinas tipo estudio) */}
+              {esEstudio && (
+                <section className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Datos del estudio
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fuero</Label>
+                      <Input
+                        list="fueros-sugeridos"
+                        value={causa.fuero ?? ""}
+                        onChange={(e) => updateCausa({ fuero: e.target.value })}
+                        placeholder="Elegí o escribí uno"
+                      />
+                      <datalist id="fueros-sugeridos">
+                        {FUEROS_SUGERIDOS.map((f) => <option key={f} value={f} />)}
+                      </datalist>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Rol del estudio</Label>
+                      <Select
+                        value={causa.rol_estudio || "__none__"}
+                        onValueChange={(v) => updateCausa({ rol_estudio: v === "__none__" ? "" : v })}
+                      >
+                        <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">—</SelectItem>
+                          {ROLES_ESTUDIO.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Damnificado</Label>
+                      <Input value={causa.damnificado ?? ""} onChange={(e) => updateCausa({ damnificado: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Empleado a cargo</Label>
+                      <Input
+                        value={causa.empleado_a_cargo ?? ""}
+                        onChange={(e) => updateCausa({ empleado_a_cargo: e.target.value })}
+                        maxLength={10}
+                        placeholder="Iniciales"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Juez</Label>
+                      <Input value={causa.juez ?? ""} onChange={(e) => updateCausa({ juez: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fiscal</Label>
+                      <Input value={causa.fiscal ?? ""} onChange={(e) => updateCausa({ fiscal: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fiscalía</Label>
+                      <Input value={causa.fiscalia ?? ""} onChange={(e) => updateCausa({ fiscalia: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Tribunal interviniente</Label>
+                      <Input
+                        value={causa.tribunal_interviniente ?? ""}
+                        onChange={(e) => updateCausa({ tribunal_interviniente: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-xs">Dirección del tribunal</Label>
+                      <Input
+                        value={causa.tribunal_direccion ?? ""}
+                        onChange={(e) => updateCausa({ tribunal_direccion: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* Datos complementarios */}
               <Collapsible open={openExtras} onOpenChange={setOpenExtras}>
