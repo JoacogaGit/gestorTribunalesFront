@@ -35,7 +35,7 @@ export function useCausasDashboard(vocaliaId: string | null, incluirTodos = fals
       setCausas((data as any[]).map(dbCausaToUI));
     }
     setLoading(false);
-  }, [vocaliaId]);
+  }, [vocaliaId, incluirTodos]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
