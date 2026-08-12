@@ -28,7 +28,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -87,6 +87,7 @@ function emptyCausa(): CausaInput {
     fiscalia: "",
     tribunal_interviniente: "",
     tribunal_direccion: "",
+    estado_procesal: "",
   };
 }
 
@@ -99,6 +100,25 @@ const FUEROS_SUGERIDOS = [
 ];
 
 const ROLES_ESTUDIO = ["Defensa", "Querella", "Denunciante"];
+
+const ESTADOS_PROCESALES = [
+  "Denuncia/Inicio",
+  "En investigación",
+  "Para indagar",
+  "Indagado",
+  "Procesado",
+  "Procesamiento recurrido",
+  "Falta de mérito",
+  "Sobreseído",
+  "Elevado a juicio",
+  "Juicio",
+  "Casación",
+  "Tribunal Superior",
+  "Corte",
+  "Absuelto",
+  "Condenado",
+  "Ejecución",
+];
 
 function emptySujeto(situacion: DbSituacionLibertad = "libre"): SujetoState {
   return {
@@ -133,6 +153,26 @@ export default function CausaFormDialog({
   const { vocalia } = useVocaliaActual();
   const { subestados } = useSubestadosTramite(vocalia?.id ?? null);
   const { esEstudio } = useTipoOficina(vocalia?.tribunalId ?? null);
+  // Lista editable: opciones base + valores ya usados por el estudio.
+  const [estadosCustom, setEstadosCustom] = useState<string[]>([]);
+  useEffect(() => {
+    if (!esEstudio || !vocalia?.id) return;
+    let cancel = false;
+    (async () => {
+      const { data } = await supabase
+        .from("causas")
+        .select("estado_procesal")
+        .eq("vocalia_id", vocalia.id)
+        .not("estado_procesal", "is", null)
+        .limit(500);
+      if (cancel) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const vals = ((data as any[]) ?? []).map((r) => (r.estado_procesal as string) ?? "").filter(Boolean);
+      setEstadosCustom(Array.from(new Set(vals)));
+    })();
+    return () => { cancel = true; };
+  }, [esEstudio, vocalia?.id]);
+  const opcionesEstadoProcesal = Array.from(new Set([...ESTADOS_PROCESALES, ...estadosCustom]));
   const fireVocaliaResync = () => {
     if (!vocalia?.id) return;
     supabase.functions
@@ -226,6 +266,8 @@ export default function CausaFormDialog({
             tribunal_interviniente: (data as any).tribunal_interviniente ?? "",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             tribunal_direccion: (data as any).tribunal_direccion ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            estado_procesal: (data as any).estado_procesal ?? "",
           });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list: any[] = (data.sujetos ?? []).slice().sort((a: any, b: any) => {
@@ -614,6 +656,18 @@ export default function CausaFormDialog({
                       />
                       <datalist id="fueros-sugeridos">
                         {FUEROS_SUGERIDOS.map((f) => <option key={f} value={f} />)}
+                      </datalist>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Estado procesal</Label>
+                      <Input
+                        list="estados-procesales"
+                        value={causa.estado_procesal ?? ""}
+                        onChange={(e) => updateCausa({ estado_procesal: e.target.value })}
+                        placeholder="Elegí o escribí uno"
+                      />
+                      <datalist id="estados-procesales">
+                        {opcionesEstadoProcesal.map((v) => <option key={v} value={v} />)}
                       </datalist>
                     </div>
                     <div className="space-y-1.5">
