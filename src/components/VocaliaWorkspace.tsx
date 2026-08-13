@@ -52,6 +52,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, Scale as ScaleIcon } from "lucide-react";
 
 import ZoomControl from "@/components/ZoomControl";
+import AgrupadasView from "@/components/estudio/AgrupadasView";
 
 
 const WizardMigracion = lazy(() => import("@/components/WizardMigracion"));
@@ -244,6 +245,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     }
   })();
 
+  const EP_INSTRUCCION = ["Denuncia/Inicio", "En investigación", "Para indagar", "Indagado", "Procesado", "Procesamiento recurrido", "Falta de mérito"];
+  const EP_ELEVADAS = ["Elevado a juicio", "Juicio"];
+  const EP_RECURRIDAS = ["Procesamiento recurrido", "Casación", "Tribunal Superior", "Corte"];
+  const porEstadoProcesal = (estados: string[]) =>
+    dashCausasRemote.causas.filter((c) => estados.includes((c.estadoProcesal || "").trim()));
+
   const addBoard = () => {
     if (customBoards.length >= 2) return;
     const id = `custom-${Date.now()}`;
@@ -296,6 +303,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     miembros: "Miembros de la oficina",
     papelera: "Papelera",
     migrar: "Migrar causas",
+    fueros: "Fueros",
+    delitos: "Delitos",
+    instruccion: "Instrucción",
+    elevadas: "Elevadas a juicio",
+    recurridas: "Recurridas",
   };
 
   const listaActiva = view.startsWith("lista-")
@@ -344,6 +356,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       }}
       tableros={tablerosHook.tableros}
       onCreateTablero={() => setShowCreateTablero(true)}
+      esEstudio={esEstudio}
     />
   );
 
@@ -712,6 +725,55 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 />
               </RemoteListSection>
             )}
+            {esEstudio && (view === "fueros" || view === "delitos") && (
+              <RemoteListSection
+                loading={dashCausasRemote.loading}
+                error={dashCausasRemote.error}
+                isEmpty={dashCausasRemote.causas.length === 0}
+                emptyTitle="Todavía no hay causas cargadas en este espacio"
+                onRetry={dashCausasRemote.refetch}
+                onCreateCausa={() => setShowCreateCausa(true)}
+              >
+                <AgrupadasView
+                  key={view}
+                  causas={dashCausasRemote.causas}
+                  criterio={view === "fueros" ? "fuero" : "delito"}
+                  onMutated={dashCausasRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                />
+              </RemoteListSection>
+            )}
+            {esEstudio && (view === "instruccion" || view === "elevadas" || view === "recurridas") && (() => {
+              const conf = view === "instruccion"
+                ? { estados: EP_INSTRUCCION, title: "Instrucción" }
+                : view === "elevadas"
+                  ? { estados: EP_ELEVADAS, title: "Elevadas a juicio" }
+                  : { estados: EP_RECURRIDAS, title: "Recurridas" };
+              const lista = porEstadoProcesal(conf.estados);
+              return (
+                <RemoteListSection
+                  loading={dashCausasRemote.loading}
+                  error={dashCausasRemote.error}
+                  isEmpty={lista.length === 0}
+                  emptyTitle={`Todavía no hay causas en ${conf.title.toLowerCase()}`}
+                  emptyMessage="Cargá el estado procesal en las causas para verlas acá."
+                  onRetry={dashCausasRemote.refetch}
+                  onCreateCausa={() => setShowCreateCausa(true)}
+                >
+                  <CausasTable
+                    causas={lista}
+                    title={conf.title}
+                    listKey={view}
+                    allCausas={lista}
+                    onMutated={dashCausasRemote.refetch}
+                    onNavigateToConexa={navigateToCausa}
+                    openCausaId={pendingOpenCausaId}
+                    onOpenedCausa={consumePending}
+                    {...remoteTableCommon}
+                  />
+                </RemoteListSection>
+              );
+            })()}
             {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} />}
             {view === "categorias" && vocaliaId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">

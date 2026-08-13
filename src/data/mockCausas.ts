@@ -86,6 +86,12 @@ export interface Causa {
   /** Subestado dentro de "En trámite" (configurable por vocalía). */
   subestadoTramiteId?: string | null;
   subestadoTramite?: string | null;
+  /** Modo estudio: fuero de la causa. */
+  fuero?: string | null;
+  /** Modo estudio: estado procesal. */
+  estadoProcesal?: string | null;
+  /** Delitos de todos los sujetos (únicos). */
+  delitos?: string[];
 }
 
 export function createEmptyCausa(vocalia: number): Causa {
