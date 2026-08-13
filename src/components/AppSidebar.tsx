@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen, Lock } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen, Lock, Landmark, Gavel, Search } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
@@ -19,6 +19,16 @@ const navAfterTerminadas = [
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },
   { id: "calendario", label: "Calendario / Alertas", icon: Calendar },
   { id: "categorias", label: "Categorías", icon: Tag },
+];
+const navEstudio = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "fueros", label: "Fueros", icon: Landmark },
+  { id: "delitos", label: "Delitos", icon: Gavel },
+  { id: "instruccion", label: "Instrucción", icon: Search },
+  { id: "elevadas", label: "Elevadas a juicio", icon: Scale },
+  { id: "recurridas", label: "Recurridas", icon: Users },
+  { id: "detenidos", label: "Detenidos", icon: Shield },
+  { id: "sjp", label: "SJP", icon: Pause },
 ];
 const navFinal = [
   { id: "migrar", label: "Migrar causas", icon: Sparkles },
@@ -48,6 +58,7 @@ interface Props {
   onCreateLista?: () => void;
   tableros?: Tablero[];
   onCreateTablero?: () => void;
+  esEstudio?: boolean;
 }
 
 
@@ -56,7 +67,7 @@ export default function AppSidebar({
   vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
   modoTribunal = "vocalias_separadas",
   listasPersonalizadas = [], onCreateLista,
-  tableros = [], onCreateTablero,
+  tableros = [], onCreateTablero, esEstudio = false,
 
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -176,7 +187,7 @@ export default function AppSidebar({
         </div>
 
         <nav className={`flex-1 ${collapsed ? "px-2" : "px-3"} space-y-1 overflow-y-auto`}>
-          {navBeforeTerminadas.map(renderNavButton)}
+          {(esEstudio ? navEstudio : navBeforeTerminadas).map(renderNavButton)}
 
           {/* Anotaciones (tableros) */}
           {!collapsed && (tableros.length > 0 || onCreateTablero) && (
@@ -280,7 +291,8 @@ export default function AppSidebar({
           </div>
 
 
-          {navAfterTerminadas.map(renderNavButton)}
+          {!esEstudio && navAfterTerminadas.map(renderNavButton)}
+          {esEstudio && [{ id: "calendario", label: "Calendario / Alertas", icon: Calendar }, { id: "categorias", label: "Categorías", icon: Tag }].map(renderNavButton)}
 
 
 
