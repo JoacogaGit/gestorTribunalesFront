@@ -11,8 +11,28 @@ export interface LotePestana {
 }
 
 export function dividirPestanaEnLotes(pestana: PestanaParseada, tamanoLote = TAMANO_LOTE): LotePestana[] {
+  // Texto plano (docx sin tablas / txt): se lotea igual, línea por línea,
+  // conservando la primera línea (encabezado) en cada lote.
   if (typeof pestana.contenido === "string") {
-    return [{ pestana, nro_lote: 1, total_lotes: 1, filas: pestana.contenido.split("\n").filter((l) => l.trim()).length }];
+    const lineas = pestana.contenido.split("\n").filter((l) => l.trim());
+    if (lineas.length <= 1) {
+      return [{ pestana, nro_lote: 1, total_lotes: 1, filas: lineas.length }];
+    }
+    const encabezado = lineas[0];
+    const datos = lineas.slice(1);
+    if (datos.length <= tamanoLote) {
+      return [{ pestana, nro_lote: 1, total_lotes: 1, filas: datos.length }];
+    }
+    const totalLotes = Math.ceil(datos.length / tamanoLote);
+    return Array.from({ length: totalLotes }, (_, idx) => {
+      const chunk = datos.slice(idx * tamanoLote, (idx + 1) * tamanoLote);
+      return {
+        pestana: { ...pestana, contenido: [encabezado, ...chunk].join("\n") },
+        nro_lote: idx + 1,
+        total_lotes: totalLotes,
+        filas: chunk.length,
+      };
+    });
   }
 
   const filas = pestana.contenido.filter((r) => r.some((c) => String(c ?? "").trim() !== ""));
