@@ -48,9 +48,15 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
 
   if (lower.endsWith(".docx")) {
     const buf = await file.arrayBuffer();
+    const { value: html } = await mammoth.convertToHtml({ arrayBuffer: buf });
+    const filas = extraerFilasDocx(html);
+    if (filas.length > 0) {
+      return { tipo: "docx", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: filas }] };
+    }
     const { value } = await mammoth.extractRawText({ arrayBuffer: buf });
     return { tipo: "docx", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: value }] };
   }
+
 
   if (lower.endsWith(".txt")) {
     const text = await file.text();
