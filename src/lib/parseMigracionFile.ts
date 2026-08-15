@@ -65,3 +65,55 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
 
   throw new Error("Formato no soportado. Usá .xlsx, .xls, .csv, .docx o .txt.");
 }
+
+// ============================================================
+// Extracción estructurada de tablas de Word (.docx)
+// Cada fila se convierte en una línea con columnas separadas por " | ".
+// Las filas de título de sección (todas las celdas con el mismo texto
+// en mayúsculas) se marcan como "### SECCIÓN: X".
+// No se recorta contenido: se devuelven todas las filas.
+// ============================================================
+
+function esFilaSeccion(celdas: string[]): boolean {
+  const noVacias = celdas.filter((c) => c !== "");
+  if (noVacias.length === 0) return false;
+  const primera = noVacias[0];
+  const todasIguales = noVacias.every((c) => c === primera);
+  const esMayus = primera === primera.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(primera);
+  // Fila de una sola celda larga en mayúsculas o fila con todas las celdas repetidas
+  return esMayus && (todasIguales || noVacias.length === 1) && primera.length > 3;
+}
+
+/** Convierte el HTML de mammoth en filas listas para el prompt de la IA. */
+export function extraerFilasDocx(html: string): string[][] {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const tablas = Array.from(doc.querySelectorAll("table"));
+  if (tablas.length === 0) return [];
+
+  const filasSalida: string[][] = [];
+
+  tablas.forEach((tabla, idxTabla) => {
+    if (tablas.length > 1) filasSalida.push([`### TABLA ${idxTabla + 1}`]);
+    let seccionActual = "";
+
+    const filas = Array.from(tabla.querySelectorAll("tr"));
+    for (const tr of filas) {
+      const celdas = Array.from(tr.querySelectorAll("th, td")).map((td) =>
+        (td.textContent ?? "").replace(/\s+/g, " ").trim(),
+      );
+      if (celdas.length === 0) continue;
+      if (celdas.every((c) => c === "")) continue; // omitir filas vacías
+
+      if (esFilaSeccion(celdas)) {
+        seccionActual = celdas.find((c) => c !== "") ?? "";
+        filasSalida.push([`### SECCIÓN: ${seccionActual}`]);
+        continue;
+      }
+
+      const linea = celdas.join(" | ");
+      filasSalida.push([seccionActual ? `${linea} | SECCIÓN: ${seccionActual}` : linea]);
+    }
+  });
+
+  return filasSalida;
+}
