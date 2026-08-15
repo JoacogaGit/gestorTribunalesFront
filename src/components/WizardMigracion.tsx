@@ -291,7 +291,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           pestana: nombre,
           nro_lote: s.nro_lote,
           total_lotes: s.total_lotes,
-          contenido: s.pestana.contenido as string[][],
+          contenido: s.pestana.contenido,
           filas: s.filas,
           estado: "pendiente",
         });
