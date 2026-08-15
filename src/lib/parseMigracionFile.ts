@@ -93,7 +93,6 @@ export function extraerFilasDocx(html: string): string[][] {
   const filasSalida: string[][] = [];
 
   tablas.forEach((tabla, idxTabla) => {
-    if (tablas.length > 1) filasSalida.push([`### TABLA ${idxTabla + 1}`]);
     let seccionActual = "";
 
     const filas = Array.from(tabla.querySelectorAll("tr"));
@@ -105,8 +104,9 @@ export function extraerFilasDocx(html: string): string[][] {
       if (celdas.every((c) => c === "")) continue; // omitir filas vacías
 
       if (esFilaSeccion(celdas)) {
+        // No se emite una fila propia: la sección se arrastra en cada fila de datos
+        // para que no se pierda al dividir en lotes.
         seccionActual = celdas.find((c) => c !== "") ?? "";
-        filasSalida.push([`### SECCIÓN: ${seccionActual}`]);
         continue;
       }
 

@@ -24,7 +24,7 @@ interface LoteTrabajo {
   pestana: string;
   nro_lote: number;
   total_lotes: number;
-  contenido: string[][];
+  contenido: string[][] | string;
   filas: number;
   estado: EstadoLote;
   errorCode?: string;
@@ -291,7 +291,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           pestana: nombre,
           nro_lote: s.nro_lote,
           total_lotes: s.total_lotes,
-          contenido: s.pestana.contenido as string[][],
+          contenido: s.pestana.contenido,
           filas: s.filas,
           estado: "pendiente",
         });
