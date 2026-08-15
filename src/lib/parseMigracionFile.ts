@@ -93,7 +93,6 @@ export function extraerFilasDocx(html: string): string[][] {
   const filasSalida: string[][] = [];
 
   tablas.forEach((tabla, idxTabla) => {
-    if (tablas.length > 1) filasSalida.push([`### TABLA ${idxTabla + 1}`]);
     let seccionActual = "";
 
     const filas = Array.from(tabla.querySelectorAll("tr"));
