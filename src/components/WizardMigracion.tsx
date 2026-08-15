@@ -24,7 +24,7 @@ interface LoteTrabajo {
   pestana: string;
   nro_lote: number;
   total_lotes: number;
-  contenido: string[][];
+  contenido: string[][] | string;
   filas: number;
   estado: EstadoLote;
   errorCode?: string;
