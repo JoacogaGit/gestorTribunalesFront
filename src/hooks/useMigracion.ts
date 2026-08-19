@@ -19,6 +19,15 @@ export interface CausaIA {
   actor_civil: string | null;
   otros_intervinientes: string | null;
   causa_conexa_texto: string | null;
+  // Campos modo estudio
+  fuero?: string | null;
+  rol_estudio?: string | null;
+  damnificado?: string | null;
+  juez?: string | null;
+  fiscal?: string | null;
+  fiscalia?: string | null;
+  tribunal_interviniente?: string | null;
+  estado_procesal?: string | null;
   confianza: "verde" | "amarillo" | "rojo";
   notas_ia?: string;
   origen_pestanas?: string[];
@@ -237,6 +246,14 @@ export function useMigracion() {
           actor_civil: c.actor_civil,
           otros_intervinientes: c.otros_intervinientes,
           causa_conexa_texto: c.causa_conexa_texto,
+          fuero: c.fuero ?? null,
+          rol_estudio: c.rol_estudio ?? null,
+          damnificado: c.damnificado ?? null,
+          juez: c.juez ?? null,
+          fiscal: c.fiscal ?? null,
+          fiscalia: c.fiscalia ?? null,
+          tribunal_interviniente: c.tribunal_interviniente ?? null,
+          estado_procesal: c.estado_procesal ?? null,
         };
         const { data: causaRow, error: causaErr } = await supabase
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
