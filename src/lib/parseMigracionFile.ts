@@ -123,3 +123,25 @@ export function extraerFilasDocx(html: string): string[][] {
 
   return filasSalida;
 }
+
+// ============================================================
+// Detección de formato Lex100 (justicia argentina)
+// El encabezado real no está en la primera fila: se busca la fila
+// cuya primera columna sea exactamente "Clave Expediente" y que
+// tenga ~94 columnas.
+// ============================================================
+
+const LEX100_MIN_COLUMNAS = 60;
+
+/** Devuelve el índice de la fila de encabezados Lex100, o -1 si no es Lex100. */
+export function detectarFilaEncabezadoLex100(filas: string[][]): number {
+  const limite = Math.min(filas.length, 15);
+  for (let i = 0; i < limite; i++) {
+    const fila = filas[i] ?? [];
+    const primera = String(fila[0] ?? "").trim().toLowerCase();
+    if (primera !== "clave expediente") continue;
+    const noVacias = fila.filter((c) => String(c ?? "").trim() !== "").length;
+    if (noVacias >= LEX100_MIN_COLUMNAS) return i;
+  }
+  return -1;
+}
