@@ -1011,6 +1011,25 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
                         setEditable((arr) => arr.map((x, i) => i === idx ? { ...x, caratula: v } : x));
                       }} placeholder="Carátula" />
                     </div>
+                    {(c.fuero || c.rol_estudio || c.estado_procesal || c.damnificado || c.juez || c.fiscal || c.fiscalia || c.tribunal_interviniente) && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 text-xs p-2 rounded bg-muted/40">
+                        {([
+                          ["Fuero", c.fuero],
+                          ["Rol", c.rol_estudio],
+                          ["Estado procesal", c.estado_procesal],
+                          ["Damnificado", c.damnificado],
+                          ["Juez", c.juez],
+                          ["Fiscal", c.fiscal],
+                          ["Fiscalía", c.fiscalia],
+                          ["Tribunal", c.tribunal_interviniente],
+                        ] as [string, string | null | undefined][]).filter(([, v]) => !!v).map(([k, v]) => (
+                          <div key={k} className="min-w-0">
+                            <span className="text-muted-foreground">{k}: </span>
+                            <span className="break-words">{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {c.sujetos.length > 0 && (
                       <div className="space-y-1.5">
                         <p className="text-xs font-semibold text-muted-foreground">Sujetos</p>
