@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import mammoth from "mammoth";
 
-export type TipoArchivo = "excel" | "csv" | "docx" | "txt";
+export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100";
 
 export interface PestanaParseada {
   nombre: string;
@@ -27,13 +27,19 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
   if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: "array" });
+    let esLex100 = false;
     const pestanas: PestanaParseada[] = wb.SheetNames.map((sheetName) => {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, blankrows: false, defval: "" });
       const norm = rows.map((row) => (row ?? []).map((c) => String(c ?? "").trim()));
+      const idxLex = detectarFilaEncabezadoLex100(norm);
+      if (idxLex >= 0) {
+        esLex100 = true;
+        return { nombre: sheetName, contenido: norm.slice(idxLex) };
+      }
       return { nombre: sheetName, contenido: norm };
     });
-    return { tipo: "excel", nombreArchivo: file.name, pestanas };
+    return { tipo: esLex100 ? "lex100" : "excel", nombreArchivo: file.name, pestanas };
   }
 
   if (lower.endsWith(".csv")) {
