@@ -985,6 +985,9 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
                         <span className="font-mono text-sm font-semibold">{c.expediente_nro || "(sin nº)"}</span>
                         <span className="text-sm truncate">{c.caratula || "—"}</span>
                         <Badge variant="outline" className="text-[10px]">{c.estado_causa}</Badge>
+                        {c.fuero && <Badge variant="secondary" className="text-[10px]">{c.fuero}</Badge>}
+                        {c.rol_estudio && <Badge variant="secondary" className="text-[10px]">{c.rol_estudio}</Badge>}
+                        {c.estado_procesal && <Badge variant="secondary" className="text-[10px]">{c.estado_procesal}</Badge>}
                         <span className="text-xs text-muted-foreground ml-auto">
                           {c.sujetos.length} suj · {c.eventos.length} ev
                         </span>
