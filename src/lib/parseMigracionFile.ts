@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import mammoth from "mammoth";
 
-export type TipoArchivo = "excel" | "csv" | "docx" | "txt";
+export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100";
 
 export interface PestanaParseada {
   nombre: string;
@@ -27,13 +27,19 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
   if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: "array" });
+    let esLex100 = false;
     const pestanas: PestanaParseada[] = wb.SheetNames.map((sheetName) => {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, blankrows: false, defval: "" });
       const norm = rows.map((row) => (row ?? []).map((c) => String(c ?? "").trim()));
+      const idxLex = detectarFilaEncabezadoLex100(norm);
+      if (idxLex >= 0) {
+        esLex100 = true;
+        return { nombre: sheetName, contenido: norm.slice(idxLex) };
+      }
       return { nombre: sheetName, contenido: norm };
     });
-    return { tipo: "excel", nombreArchivo: file.name, pestanas };
+    return { tipo: esLex100 ? "lex100" : "excel", nombreArchivo: file.name, pestanas };
   }
 
   if (lower.endsWith(".csv")) {
@@ -116,4 +122,26 @@ export function extraerFilasDocx(html: string): string[][] {
   });
 
   return filasSalida;
+}
+
+// ============================================================
+// Detección de formato Lex100 (justicia argentina)
+// El encabezado real no está en la primera fila: se busca la fila
+// cuya primera columna sea exactamente "Clave Expediente" y que
+// tenga ~94 columnas.
+// ============================================================
+
+const LEX100_MIN_COLUMNAS = 60;
+
+/** Devuelve el índice de la fila de encabezados Lex100, o -1 si no es Lex100. */
+export function detectarFilaEncabezadoLex100(filas: string[][]): number {
+  const limite = Math.min(filas.length, 15);
+  for (let i = 0; i < limite; i++) {
+    const fila = filas[i] ?? [];
+    const primera = String(fila[0] ?? "").trim().toLowerCase();
+    if (primera !== "clave expediente") continue;
+    const noVacias = fila.filter((c) => String(c ?? "").trim() !== "").length;
+    if (noVacias >= LEX100_MIN_COLUMNAS) return i;
+  }
+  return -1;
 }
