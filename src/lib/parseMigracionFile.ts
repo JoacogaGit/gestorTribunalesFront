@@ -66,14 +66,23 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
 
 
   if (lower.endsWith(".pdf")) {
-    const texto = await extraerTextoPdf(await file.arrayBuffer());
+    const lineas = await extraerLineasPdf(await file.arrayBuffer());
+    const texto = lineasATexto(lineas);
     if (!texto.trim()) {
       throw new Error(
         "Este PDF parece ser una imagen escaneada y no se puede leer automáticamente. Probá exportando en Excel.",
       );
     }
+    if (esLex100Pdf(texto)) {
+      return {
+        tipo: "lex100pdf",
+        nombreArchivo: file.name,
+        pestanas: [{ nombre: file.name, contenido: construirLineasLex100Pdf(lineas) }],
+      };
+    }
     return { tipo: "pdf", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: texto }] };
   }
+
 
   if (lower.endsWith(".txt")) {
     const text = await file.text();
