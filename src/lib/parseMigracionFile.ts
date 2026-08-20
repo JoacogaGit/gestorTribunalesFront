@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import mammoth from "mammoth";
 
-export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100" | "pdf";
+export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100" | "pdf" | "lex100pdf";
 
 export interface PestanaParseada {
   nombre: string;
@@ -66,14 +66,23 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
 
 
   if (lower.endsWith(".pdf")) {
-    const texto = await extraerTextoPdf(await file.arrayBuffer());
+    const lineas = await extraerLineasPdf(await file.arrayBuffer());
+    const texto = lineasATexto(lineas);
     if (!texto.trim()) {
       throw new Error(
         "Este PDF parece ser una imagen escaneada y no se puede leer automáticamente. Probá exportando en Excel.",
       );
     }
+    if (esLex100Pdf(texto)) {
+      return {
+        tipo: "lex100pdf",
+        nombreArchivo: file.name,
+        pestanas: [{ nombre: file.name, contenido: construirLineasLex100Pdf(lineas) }],
+      };
+    }
     return { tipo: "pdf", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: texto }] };
   }
+
 
   if (lower.endsWith(".txt")) {
     const text = await file.text();
@@ -202,21 +211,33 @@ export function construirTextoLex100(filas: string[][]): string {
 
 // ============================================================
 // Extracción de texto de PDF (pdfjs-dist), página por página,
-// agrupando ítems por línea según su coordenada Y.
+// agrupando ítems por línea según su coordenada Y y en celdas
+// según los saltos horizontales.
 // ============================================================
 
-async function extraerTextoPdf(buf: ArrayBuffer): Promise<string> {
+interface CeldaPdf {
+  x: number;
+  texto: string;
+}
+
+interface LineaPdf {
+  celdas: CeldaPdf[];
+}
+
+const GAP_CELDA = 6;
+
+async function extraerLineasPdf(buf: ArrayBuffer): Promise<LineaPdf[]> {
   const pdfjs = await import("pdfjs-dist");
   const workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
   const doc = await pdfjs.getDocument({ data: buf }).promise;
-  const paginas: string[] = [];
+  const salida: LineaPdf[] = [];
 
   for (let n = 1; n <= doc.numPages; n++) {
     const page = await doc.getPage(n);
     const content = await page.getTextContent();
-    const lineas = new Map<number, { x: number; str: string }[]>();
+    const lineas = new Map<number, { x: number; ancho: number; str: string }[]>();
 
     for (const item of content.items as any[]) {
       const str = String(item.str ?? "");
@@ -224,24 +245,144 @@ async function extraerTextoPdf(buf: ArrayBuffer): Promise<string> {
       const x = item.transform?.[4] ?? 0;
       const y = Math.round((item.transform?.[5] ?? 0) / 3) * 3; // tolerancia vertical
       const arr = lineas.get(y) ?? [];
-      arr.push({ x, str });
+      arr.push({ x, ancho: item.width ?? 0, str });
       lineas.set(y, arr);
     }
 
-    const ordenadas = Array.from(lineas.entries())
+    Array.from(lineas.entries())
       .sort((a, b) => b[0] - a[0])
-      .map(([, items]) =>
-        items
-          .sort((a, b) => a.x - b.x)
-          .map((i) => i.str.trim())
-          .join(" ")
-          .replace(/\s+/g, " ")
-          .trim(),
-      )
-      .filter(Boolean);
-
-    paginas.push(ordenadas.join("\n"));
+      .forEach(([, items]) => {
+        const ordenados = items.sort((a, b) => a.x - b.x);
+        const celdas: CeldaPdf[] = [];
+        let actual: CeldaPdf | null = null;
+        let finPrev = -Infinity;
+        for (const it of ordenados) {
+          if (!actual || it.x - finPrev > GAP_CELDA) {
+            actual = { x: it.x, texto: it.str.trim() };
+            celdas.push(actual);
+          } else {
+            actual.texto = `${actual.texto} ${it.str.trim()}`.replace(/\s+/g, " ").trim();
+          }
+          finPrev = it.x + it.ancho;
+        }
+        const limpias = celdas.filter((c) => c.texto !== "");
+        if (limpias.length > 0) salida.push({ celdas: limpias });
+      });
   }
 
-  return paginas.join("\n").trim();
+  return salida;
 }
+
+function lineasATexto(lineas: LineaPdf[]): string {
+  return lineas
+    .map((l) => l.celdas.map((c) => c.texto).join(" ").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+// ============================================================
+// Lex100 PDF ("Gestión Integral de Expedientes Judiciales")
+// ============================================================
+
+const LEX100_PDF_COLUMNAS = ["Expte", "Actor", "Demandado", "Abogado", "Ingreso"] as const;
+
+const ALIAS_COL_PDF: Record<string, string[]> = {
+  Expte: ["nº expte", "n° expte", "no expte", "nro expte", "expte"],
+  Actor: ["actor"],
+  Demandado: ["demandado"],
+  Abogado: ["abogado", "abogados"],
+  Ingreso: ["ingreso", "fecha ingreso"],
+  Objeto: ["objeto"],
+  Juzg: ["juzg", "juzgado"],
+  Sala: ["sala"],
+};
+
+function etiquetaColumna(texto: string): string | null {
+  const t = normHeader(texto).replace(/[:.]/g, "").trim();
+  for (const [etiqueta, alias] of Object.entries(ALIAS_COL_PDF)) {
+    if (alias.some((a) => t === normHeader(a))) return etiqueta;
+  }
+  return null;
+}
+
+/** Detecta si el texto de un PDF corresponde a un listado Lex100. */
+export function esLex100Pdf(texto: string): boolean {
+  const t = normHeader(texto);
+  const marca =
+    t.includes("gestion integral de expedientes judiciales") ||
+    t.includes("listado de causas seleccionadas");
+  const columnas =
+    t.includes("expte") && t.includes("actor") && t.includes("demandado") && t.includes("objeto");
+  return marca && columnas;
+}
+
+/**
+ * Arma una línea por causa a partir de las líneas del PDF Lex100,
+ * usando las posiciones X de los encabezados para asignar columnas.
+ */
+export function construirLineasLex100Pdf(lineas: LineaPdf[]): string {
+  const salida: string[] = [];
+  let columnas: { etiqueta: string; x: number }[] = [];
+  let pendiente: Record<string, string> | null = null;
+
+  const vaciar = () => {
+    if (!pendiente) return;
+    const linea = LEX100_PDF_COLUMNAS.map(
+      (c) => `${c === "Expte" ? "Expte" : c}: ${(pendiente?.[c] ?? "").trim()}`,
+    ).join(" | ");
+    if ((pendiente.Expte ?? "").trim() !== "") salida.push(linea);
+    pendiente = null;
+  };
+
+  for (const linea of lineas) {
+    const etiquetas = linea.celdas
+      .map((c) => ({ etiqueta: etiquetaColumna(c.texto), x: c.x }))
+      .filter((e): e is { etiqueta: string; x: number } => e.etiqueta !== null);
+
+    // Fila de encabezados: al menos 3 columnas reconocidas
+    if (etiquetas.length >= 3) {
+      vaciar();
+      columnas = etiquetas.sort((a, b) => a.x - b.x);
+      continue;
+    }
+
+    if (columnas.length === 0) continue;
+
+    const asignar = (x: number): string | null => {
+      let mejor: { etiqueta: string; x: number } | null = null;
+      for (const col of columnas) {
+        if (x + 4 >= col.x && (!mejor || col.x > mejor.x)) mejor = col;
+      }
+      return mejor?.etiqueta ?? columnas[0].etiqueta;
+    };
+
+    const fila: Record<string, string> = {};
+    for (const celda of linea.celdas) {
+      const col = asignar(celda.x);
+      if (!col) continue;
+      fila[col] = fila[col] ? `${fila[col]} ${celda.texto}` : celda.texto;
+    }
+
+    const exp = (fila.Expte ?? "").trim();
+    const esNuevaCausa = /\d/.test(exp) && exp !== "";
+
+    if (esNuevaCausa) {
+      vaciar();
+      pendiente = fila;
+    } else if (pendiente) {
+      // Continuación de la fila anterior (nombres partidos en varias líneas)
+      for (const [k, v] of Object.entries(fila)) {
+        if (k === "Expte") continue;
+        pendiente[k] = pendiente[k] ? `${pendiente[k]} ${v}` : v;
+      }
+    }
+  }
+  vaciar();
+
+  const encabezado = LEX100_PDF_COLUMNAS.map((c) => `${c}: <valor>`).join(" | ");
+  return [encabezado, ...salida].join("\n");
+}
+
+export { extraerLineasPdf, lineasATexto };
+
