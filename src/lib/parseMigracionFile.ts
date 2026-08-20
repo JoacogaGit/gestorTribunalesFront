@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import mammoth from "mammoth";
 
-export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100";
+export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100" | "pdf";
 
 export interface PestanaParseada {
   nombre: string;
@@ -65,12 +65,22 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
   }
 
 
+  if (lower.endsWith(".pdf")) {
+    const texto = await extraerTextoPdf(await file.arrayBuffer());
+    if (!texto.trim()) {
+      throw new Error(
+        "Este PDF parece ser una imagen escaneada y no se puede leer automáticamente. Probá exportando en Excel.",
+      );
+    }
+    return { tipo: "pdf", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: texto }] };
+  }
+
   if (lower.endsWith(".txt")) {
     const text = await file.text();
     return { tipo: "txt", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: text }] };
   }
 
-  throw new Error("Formato no soportado. Usá .xlsx, .xls, .csv, .docx o .txt.");
+  throw new Error("Formato no soportado. Usá .xlsx, .xls, .csv, .docx, .pdf o .txt.");
 }
 
 // ============================================================
@@ -189,3 +199,49 @@ export function construirTextoLex100(filas: string[][]): string {
   return [lineaEncabezado, ...lineas].join("\n");
 }
 
+
+// ============================================================
+// Extracción de texto de PDF (pdfjs-dist), página por página,
+// agrupando ítems por línea según su coordenada Y.
+// ============================================================
+
+async function extraerTextoPdf(buf: ArrayBuffer): Promise<string> {
+  const pdfjs = await import("pdfjs-dist");
+  const workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+
+  const doc = await pdfjs.getDocument({ data: buf }).promise;
+  const paginas: string[] = [];
+
+  for (let n = 1; n <= doc.numPages; n++) {
+    const page = await doc.getPage(n);
+    const content = await page.getTextContent();
+    const lineas = new Map<number, { x: number; str: string }[]>();
+
+    for (const item of content.items as any[]) {
+      const str = String(item.str ?? "");
+      if (!str.trim()) continue;
+      const x = item.transform?.[4] ?? 0;
+      const y = Math.round((item.transform?.[5] ?? 0) / 3) * 3; // tolerancia vertical
+      const arr = lineas.get(y) ?? [];
+      arr.push({ x, str });
+      lineas.set(y, arr);
+    }
+
+    const ordenadas = Array.from(lineas.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map(([, items]) =>
+        items
+          .sort((a, b) => a.x - b.x)
+          .map((i) => i.str.trim())
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim(),
+      )
+      .filter(Boolean);
+
+    paginas.push(ordenadas.join("\n"));
+  }
+
+  return paginas.join("\n").trim();
+}
