@@ -35,12 +35,13 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
       const idxLex = detectarFilaEncabezadoLex100(norm);
       if (idxLex >= 0) {
         esLex100 = true;
-        return { nombre: sheetName, contenido: norm.slice(idxLex) };
+        return { nombre: sheetName, contenido: construirTextoLex100(norm.slice(idxLex)) };
       }
       return { nombre: sheetName, contenido: norm };
     });
     return { tipo: esLex100 ? "lex100" : "excel", nombreArchivo: file.name, pestanas };
   }
+
 
   if (lower.endsWith(".csv")) {
     const text = await file.text();
@@ -131,17 +132,60 @@ export function extraerFilasDocx(html: string): string[][] {
 // tenga ~94 columnas.
 // ============================================================
 
-const LEX100_MIN_COLUMNAS = 60;
-
 /** Devuelve el índice de la fila de encabezados Lex100, o -1 si no es Lex100. */
 export function detectarFilaEncabezadoLex100(filas: string[][]): number {
-  const limite = Math.min(filas.length, 15);
+  const limite = Math.min(filas.length, 20);
   for (let i = 0; i < limite; i++) {
     const fila = filas[i] ?? [];
     const primera = String(fila[0] ?? "").trim().toLowerCase();
-    if (primera !== "clave expediente") continue;
-    const noVacias = fila.filter((c) => String(c ?? "").trim() !== "").length;
-    if (noVacias >= LEX100_MIN_COLUMNAS) return i;
+    if (primera === "clave expediente") return i;
   }
   return -1;
 }
+
+/** Columnas útiles de Lex100: etiqueta a mostrar -> posibles encabezados. */
+const LEX100_COLUMNAS: { etiqueta: string; alias: string[] }[] = [
+  { etiqueta: "Expediente", alias: ["clave expediente"] },
+  { etiqueta: "Autos", alias: ["autos"] },
+  { etiqueta: "En trámite", alias: ["en tramite", "en trámite"] },
+  { etiqueta: "Cerrado", alias: ["cerrado"] },
+  { etiqueta: "Con detenidos", alias: ["con detendidos", "con detenidos"] },
+  { etiqueta: "Con menores", alias: ["con menores"] },
+];
+
+const normHeader = (s: string) =>
+  String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+/**
+ * Convierte una planilla Lex100 (encabezado en la primera fila recibida) en
+ * líneas de texto legibles con sólo las columnas útiles.
+ */
+export function construirTextoLex100(filas: string[][]): string {
+  if (filas.length === 0) return "";
+  const encabezado = (filas[0] ?? []).map(normHeader);
+  const indices = LEX100_COLUMNAS.map(({ etiqueta, alias }) => ({
+    etiqueta,
+    idx: encabezado.findIndex((h) => alias.some((a) => h === normHeader(a))),
+  }));
+
+  const lineaEncabezado = indices.map(({ etiqueta }) => `${etiqueta}: <valor>`).join(" | ");
+
+  const lineas = filas
+    .slice(1)
+    .map((fila) =>
+      indices
+        .map(({ etiqueta, idx }) => `${etiqueta}: ${idx >= 0 ? String(fila[idx] ?? "").trim() : ""}`)
+        .join(" | "),
+    )
+    .filter((linea) => {
+      const valores = linea.split(" | ").map((p) => p.split(": ").slice(1).join(": ").trim());
+      return valores.some((v) => v !== "" && v !== "<valor>");
+    });
+
+  return [lineaEncabezado, ...lineas].join("\n");
+}
+
