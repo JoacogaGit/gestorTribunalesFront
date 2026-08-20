@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import mammoth from "mammoth";
 
-export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100" | "pdf";
+export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100" | "pdf" | "lex100pdf";
 
 export interface PestanaParseada {
   nombre: string;
