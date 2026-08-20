@@ -72,7 +72,7 @@ interface Props {
   onStatusChange?: (s: MigracionStatus) => void;
 }
 
-const ACCEPT = ".xlsx,.xls,.csv,.docx,.txt";
+const ACCEPT = ".xlsx,.xls,.csv,.docx,.pdf,.txt";
 
 export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onStatusChange }: Props) {
   const { loading, error, procesar, procesarUnLote, cargarEnBD } = useMigracion();
@@ -1133,6 +1133,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
             <Badge variant="secondary" className="text-[10px]">.xls</Badge>
             <Badge variant="secondary" className="text-[10px]">.csv</Badge>
             <Badge variant="secondary" className="text-[10px]">.docx</Badge>
+            <Badge variant="secondary" className="text-[10px]">.pdf</Badge>
             <Badge variant="secondary" className="text-[10px]">.txt</Badge>
             <span className="text-[10px] text-muted-foreground">· máx 10 MB</span>
           </div>
