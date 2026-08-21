@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Search, Clock, AlertTriangle, Calendar as CalIcon, FileCheck, X, RefreshCw, Inbox, Scale } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,7 +13,7 @@ import EventoDetailDialog from "@/components/EventoDetailDialog";
 import GoogleCalendarSection from "@/components/GoogleCalendarSection";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { parseLocalDate, parseLocalTime, formatLocalDate } from "@/lib/parseDate";
+import { parseLocalDate, parseLocalTime, formatLocalDate, toARDateString } from "@/lib/parseDate";
 
 
 const tipoIcons: Record<CalendarTipo, typeof Clock> = {
