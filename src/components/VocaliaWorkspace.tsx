@@ -105,7 +105,7 @@ function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, 
       </div>
     );
   }
-  return <>{children}</>;
+  return <div className="flex-1 min-h-0 flex flex-col">{children}</div>;
 }
 
 type View = string;
@@ -526,7 +526,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             className={view === "migrar" ? "hidden" : `flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
           >
             {view === "dashboard" && (
-              <div className={`space-y-8 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-y-auto pr-1"}`}>
+              <div className={`space-y-4 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-y-auto pr-1"}`}>
                 <div className="flex justify-end">
                   <Button size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
