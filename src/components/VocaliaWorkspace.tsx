@@ -369,6 +369,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         multiVocalia={vocaliasTribunal.length > 1}
         esAdmin={esAdmin}
         tableroView={tablerosHook.tableros[0] ? `tablero-${tablerosHook.tableros[0].id}` : null}
+        esEstudio={esEstudio}
       />
       {!isMobile && sidebar}
       {isMobile && (

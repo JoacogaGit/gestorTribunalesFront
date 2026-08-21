@@ -88,9 +88,94 @@ interface Props {
   esAdmin?: boolean;
   /** Vista del primer tablero de anotaciones (si existe), para mostrarlo en vivo. */
   tableroView?: string | null;
+  /** Oficina tipo estudio jurídico: recorrido distinto. */
+  esEstudio?: boolean;
 }
 
-function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
+function construirPasosEstudio({ esAdmin, tableroView }: Props): Paso[] {
+  const pasos: Paso[] = [
+    {
+      view: "dashboard",
+      target: '[data-tour="kpis"]',
+      titulo: "Dashboard del estudio",
+      texto: "Acá ves <strong>todas las causas del estudio</strong> en una sola lista, con estadísticas arriba que podés ocultar cuando quieras más espacio.",
+    },
+    {
+      target: '[data-tour="sidebar"]',
+      titulo: "Tus listas de causas",
+      texto: "Fueros, Delitos, Instrucción, Elevadas a juicio, Recurridas, Detenidos y SJP. Cada una filtra tus causas por fuero, delito, estado procesal o situación de libertad.",
+      abrirSidebar: true,
+    },
+    {
+      view: "dashboard",
+      target: '[data-tour="nueva-causa"]',
+      titulo: "Cargar una causa",
+      texto: "Al crear una causa completás los campos propios del estudio: <strong>fuero</strong>, <strong>rol del estudio</strong>, <strong>estado procesal</strong>, <strong>juez</strong>, <strong>fiscal</strong> y <strong>damnificado</strong>.",
+    },
+    {
+      view: "calendario",
+      target: '[data-tour="main"]',
+      titulo: "El calendario: el corazón del sistema",
+      texto:
+        `<p class="iustrack-tour-lead">Este es el diferencial de IusTrack.</p>
+         <ul class="iustrack-tour-callouts">
+           <li><span class="iustrack-tour-arrow">→</span><span><strong>Automático:</strong> todo vencimiento o evento que cargues en una causa aparece acá solo.</span></li>
+           <li><span class="iustrack-tour-arrow">→</span><span><strong>Todo conectado:</strong> listas y anotaciones también se vinculan al calendario.</span></li>
+           <li><span class="iustrack-tour-arrow">→</span><span><strong>Resultado:</strong> no se te pasa ningún vencimiento ni fecha clave.</span></li>
+         </ul>`,
+    },
+    {
+      view: "calendario",
+      target: '[data-tour="google-calendar"]',
+      titulo: "Y además, en tu Google Calendar",
+      texto: "Vinculá tu cuenta de Google y los eventos se sincronizan solos, con recordatorios automáticos.",
+    },
+    {
+      view: tableroView ?? "dashboard",
+      target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
+      titulo: "Anotaciones (kanban)",
+      texto:
+        "Tu pizarra de pendientes: tableros → listas → columnas con tarjetas arrastrables. Las columnas <strong>compartidas</strong> van al calendario de todo el equipo; las <strong>personales</strong>, solo al tuyo.",
+      abrirSidebar: !tableroView,
+    },
+    {
+      target: '[data-tour="listas"]',
+      titulo: "Categorías y listas personalizadas",
+      texto: "Armá tus propias listas (Prioritarias, Para revisar…) y categorías de eventos para ordenar el trabajo del estudio a tu manera.",
+      abrirSidebar: true,
+    },
+  ];
+
+  if (esAdmin) {
+    pasos.push({
+      target: '[data-tour="nav-miembros"]',
+      titulo: "Miembros del estudio",
+      texto: "Invitá a las personas de tu estudio por email y asignales un rol: administrador, miembro o lector.",
+      abrirSidebar: true,
+    });
+  }
+
+  pasos.push(
+    {
+      view: "migrar",
+      target: '[data-tour="main"]',
+      titulo: "Migrar causas existentes",
+      texto: "¿Ya tenés tus causas en Excel, Word o PDF? La IA te las importa en minutos.",
+    },
+    {
+      target: '[data-tour="ayuda"]',
+      titulo: "Ayuda cuando quieras",
+      texto: "Tocá el signo de pregunta en cualquier momento para volver a ver este recorrido.",
+    }
+  );
+
+  return pasos;
+}
+
+function construirPasos(props: Props): Paso[] {
+  if (props.esEstudio) return construirPasosEstudio(props);
+  const { multiVocalia, esAdmin, tableroView } = props;
+
   const pasos: Paso[] = [
     {
       target: '[data-tour="sidebar"]',
@@ -218,13 +303,13 @@ function construirPasos({ multiVocalia, esAdmin, tableroView }: Props): Paso[] {
   return pasos;
 }
 
-export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, multiVocalia, esAdmin, tableroView }: Props) {
+export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, multiVocalia, esAdmin, tableroView, esEstudio }: Props) {
   const { user } = useAuth();
   const [fase, setFase] = useState<"idle" | "bienvenida" | "recorrido" | "final">("idle");
   const driverRef = useRef<Driver | null>(null);
   const idxRef = useRef(0);
   const pasosRef = useRef<Paso[]>([]);
-  const [total, setTotal] = useState(construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView }).length + 2);
+  const [total, setTotal] = useState(construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView, esEstudio }).length + 2);
 
   const marcarCompletado = useCallback(async () => {
     try {
@@ -292,7 +377,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
   );
 
   const arrancarRecorrido = useCallback(async () => {
-    const pasos = construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView });
+    const pasos = construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView, esEstudio });
     pasosRef.current = pasos;
     const TOTAL = pasos.length + 2;
     setTotal(TOTAL);
@@ -345,7 +430,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
     driverRef.current = d;
     d.drive();
-  }, [prepararPaso, terminar, onNavigate, multiVocalia, esAdmin, tableroView]);
+  }, [prepararPaso, terminar, onNavigate, multiVocalia, esAdmin, tableroView, esEstudio]);
 
   useEffect(() => () => { driverRef.current?.destroy(); }, []);
 
@@ -372,7 +457,9 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground">Bienvenido a IusTrack</h2>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones.
+                {esEstudio
+                  ? "Te muestro en un minuto cómo se maneja tu estudio jurídico: causas, vencimientos, agenda y anotaciones, todo conectado."
+                  : "Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones."}
               </p>
             </div>
             <div className="w-full">
