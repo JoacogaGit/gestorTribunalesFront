@@ -224,7 +224,7 @@ interface LineaPdf {
   celdas: CeldaPdf[];
 }
 
-const GAP_CELDA = 6;
+const GAP_CELDA = 4;
 
 async function extraerLineasPdf(buf: ArrayBuffer): Promise<LineaPdf[]> {
   const pdfjs = await import("pdfjs-dist");
