@@ -526,7 +526,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             className={view === "migrar" ? "hidden" : `flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
           >
             {view === "dashboard" && (
-              <div className={`space-y-4 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-y-auto pr-1"}`}>
+              <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-hidden pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
                 <div className="flex justify-end">
                   <Button size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
