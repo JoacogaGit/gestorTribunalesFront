@@ -84,19 +84,42 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
     );
   };
 
-  const matchesDate = (e: CalendarEvento) =>
-    !selectedDate || (parseLocalDate(e.fecha)?.toDateString() === selectedDate.toDateString());
+  const todayStr = toARDateString(new Date());
+  const selectedDateStr = selectedDate ? toARDateString(selectedDate) : undefined;
+  const todayDate = parseLocalDate(todayStr) ?? new Date();
 
-  const now = Date.now();
-  const futuros = visibles.filter((e) => parseLocalTime(e.fecha) >= now && matchesSearch(e) && matchesDate(e));
-  const pasadosTodos = visibles.filter((e) => parseLocalTime(e.fecha) < now && matchesSearch(e) && matchesDate(e))
+  const matchesDate = (e: CalendarEvento) =>
+    !selectedDateStr || toARDateString(parseLocalDate(e.fecha)) === selectedDateStr;
+
+  const isEventActive = (e: CalendarEvento) => {
+    const eventDateStr = toARDateString(parseLocalDate(e.fecha));
+    return eventDateStr >= todayStr;
+  };
+
+  const futuros = visibles
+    .filter((e) => isEventActive(e) && matchesSearch(e) && matchesDate(e))
+    .sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
+  const pasadosTodos = visibles
+    .filter((e) => !isEventActive(e) && matchesSearch(e) && matchesDate(e))
     .sort((a, b) => parseLocalTime(b.fecha) - parseLocalTime(a.fecha));
   // Si el usuario seleccionó una fecha pasada, mostramos sus eventos en el panel principal en gris.
-  const selectedIsPast = !!selectedDate && selectedDate.getTime() < new Date(new Date().toDateString()).getTime();
+  const selectedIsPast = !!selectedDateStr && selectedDateStr < todayStr;
   const pasadosDelDiaSeleccionado = selectedIsPast ? pasadosTodos : [];
   const pasados = pasadosTodos;
 
-  const eventDates = new Set(visibles.map((e) => parseLocalDate(e.fecha)?.toDateString()).filter(Boolean) as string[]);
+  const eventDates = new Set(visibles.map((e) => toARDateString(parseLocalDate(e.fecha))).filter(Boolean) as string[]);
+
+  function grupoPasado(eventDate: Date): "ayer" | "anteayer" | "anteriores" {
+    const diff = Math.floor((todayDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 1) return "ayer";
+    if (diff === 2) return "anteayer";
+    return "anteriores";
+  }
+  const grupoLabel: Record<ReturnType<typeof grupoPasado>, string> = {
+    ayer: "Ayer",
+    anteayer: "Anteayer",
+    anteriores: "Anteriores",
+  };
 
   const renderEvento = (e: CalendarEvento, i: number, isPast = false) => {
     const Icon = isPast ? Clock : (tipoIcons[e.tipo] ?? Scale);
