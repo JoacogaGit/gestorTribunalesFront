@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Search, Clock, AlertTriangle, Calendar as CalIcon, FileCheck, X, RefreshCw, Inbox, Scale } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,7 +13,7 @@ import EventoDetailDialog from "@/components/EventoDetailDialog";
 import GoogleCalendarSection from "@/components/GoogleCalendarSection";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { parseLocalDate, parseLocalTime, formatLocalDate } from "@/lib/parseDate";
+import { parseLocalDate, parseLocalTime, formatLocalDate, toARDateString } from "@/lib/parseDate";
 
 
 const tipoIcons: Record<CalendarTipo, typeof Clock> = {
@@ -84,19 +84,42 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
     );
   };
 
-  const matchesDate = (e: CalendarEvento) =>
-    !selectedDate || (parseLocalDate(e.fecha)?.toDateString() === selectedDate.toDateString());
+  const todayStr = toARDateString(new Date());
+  const selectedDateStr = selectedDate ? toARDateString(selectedDate) : undefined;
+  const todayDate = parseLocalDate(todayStr) ?? new Date();
 
-  const now = Date.now();
-  const futuros = visibles.filter((e) => parseLocalTime(e.fecha) >= now && matchesSearch(e) && matchesDate(e));
-  const pasadosTodos = visibles.filter((e) => parseLocalTime(e.fecha) < now && matchesSearch(e) && matchesDate(e))
+  const matchesDate = (e: CalendarEvento) =>
+    !selectedDateStr || toARDateString(parseLocalDate(e.fecha)) === selectedDateStr;
+
+  const isEventActive = (e: CalendarEvento) => {
+    const eventDateStr = toARDateString(parseLocalDate(e.fecha));
+    return eventDateStr >= todayStr;
+  };
+
+  const futuros = visibles
+    .filter((e) => isEventActive(e) && matchesSearch(e) && matchesDate(e))
+    .sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
+  const pasadosTodos = visibles
+    .filter((e) => !isEventActive(e) && matchesSearch(e) && matchesDate(e))
     .sort((a, b) => parseLocalTime(b.fecha) - parseLocalTime(a.fecha));
   // Si el usuario seleccionó una fecha pasada, mostramos sus eventos en el panel principal en gris.
-  const selectedIsPast = !!selectedDate && selectedDate.getTime() < new Date(new Date().toDateString()).getTime();
+  const selectedIsPast = !!selectedDateStr && selectedDateStr < todayStr;
   const pasadosDelDiaSeleccionado = selectedIsPast ? pasadosTodos : [];
   const pasados = pasadosTodos;
 
-  const eventDates = new Set(visibles.map((e) => parseLocalDate(e.fecha)?.toDateString()).filter(Boolean) as string[]);
+  const eventDates = new Set(visibles.map((e) => toARDateString(parseLocalDate(e.fecha))).filter(Boolean) as string[]);
+
+  function grupoPasado(eventDate: Date): "ayer" | "anteayer" | "anteriores" {
+    const diff = Math.floor((todayDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 1) return "ayer";
+    if (diff === 2) return "anteayer";
+    return "anteriores";
+  }
+  const grupoLabel: Record<ReturnType<typeof grupoPasado>, string> = {
+    ayer: "Ayer",
+    anteayer: "Anteayer",
+    anteriores: "Anteriores",
+  };
 
   const renderEvento = (e: CalendarEvento, i: number, isPast = false) => {
     const Icon = isPast ? Clock : (tipoIcons[e.tipo] ?? Scale);
@@ -211,7 +234,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               selected={selectedDate}
               onSelect={(d) => { setSelectedDate(d); if (d) setDaySheetOpen(true); }}
               className="pointer-events-auto w-full [&_table]:w-full [&_td]:h-11 [&_button]:h-11 [&_button]:w-11 [&_button]:text-base"
-              modifiers={{ hasEvent: (date) => eventDates.has(date.toDateString()) }}
+modifiers={{ hasEvent: (date) => eventDates.has(toARDateString(date)) }}
               modifiersClassNames={{ hasEvent: "relative font-bold text-primary after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary" }}
             />
             <p className="text-xs text-muted-foreground text-center pb-2">
@@ -230,7 +253,24 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
             {pasadosTodos.length > 0 && (
               <>
                 <h3 className="text-xs uppercase tracking-wider text-muted-foreground px-1 pt-4">Pasados ({pasadosTodos.length})</h3>
-                {pasadosTodos.slice(0, 30).map((e, i) => renderEvento(e, i, true))}
+                {(() => {
+                  let lastBucket: string | null = null;
+                  return pasadosTodos.slice(0, 30).map((e, i) => {
+                    const bucket = grupoPasado(parseLocalDate(e.fecha) ?? new Date());
+                    const showHeader = bucket !== lastBucket;
+                    lastBucket = bucket;
+                    return (
+                      <Fragment key={`${e.id}-${i}-grp`}>
+                        {showHeader && (
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 px-1 pt-2 font-semibold">
+                            {grupoLabel[bucket]}
+                          </div>
+                        )}
+                        {renderEvento(e, i, true)}
+                      </Fragment>
+                    );
+                  });
+                })()}
               </>
             )}
           </div>
@@ -244,7 +284,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               </SheetTitle>
             </SheetHeader>
             <div className="space-y-2 mt-3">
-              {delDia.map((e, i) => renderEvento(e, i, parseLocalTime(e.fecha) < now))}
+              {delDia.map((e, i) => renderEvento(e, i, toARDateString(parseLocalDate(e.fecha)) < todayStr))}
               {delDia.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">Sin eventos este día</p>
               )}
@@ -277,7 +317,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               selected={selectedDate}
               onSelect={setSelectedDate}
               className="pointer-events-auto"
-              modifiers={{ hasEvent: (date) => eventDates.has(date.toDateString()) }}
+              modifiers={{ hasEvent: (date) => eventDates.has(toARDateString(date)) }}
               modifiersClassNames={{ hasEvent: "bg-primary/20 font-bold text-primary" }}
             />
             {selectedDate && (
@@ -324,7 +364,24 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               )}
             </div>
             <div className="space-y-1.5 max-h-[40vh] overflow-y-auto pr-1">
-              {pasados.map((e, i) => renderEvento(e, i, true))}
+              {(() => {
+                let lastBucket: string | null = null;
+                return pasados.map((e, i) => {
+                  const bucket = grupoPasado(parseLocalDate(e.fecha) ?? new Date());
+                  const showHeader = bucket !== lastBucket;
+                  lastBucket = bucket;
+                  return (
+                    <Fragment key={`${e.id}-${i}-grp`}>
+                      {showHeader && (
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 px-1 pt-2 font-semibold">
+                          {grupoLabel[bucket]}
+                        </div>
+                      )}
+                      {renderEvento(e, i, true)}
+                    </Fragment>
+                  );
+                });
+              })()}
               {pasados.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-3">Sin eventos pasados</p>
               )}
