@@ -303,13 +303,13 @@ function construirPasos(props: Props): Paso[] {
   return pasos;
 }
 
-export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, multiVocalia, esAdmin, tableroView }: Props) {
+export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, multiVocalia, esAdmin, tableroView, esEstudio }: Props) {
   const { user } = useAuth();
   const [fase, setFase] = useState<"idle" | "bienvenida" | "recorrido" | "final">("idle");
   const driverRef = useRef<Driver | null>(null);
   const idxRef = useRef(0);
   const pasosRef = useRef<Paso[]>([]);
-  const [total, setTotal] = useState(construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView }).length + 2);
+  const [total, setTotal] = useState(construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView, esEstudio }).length + 2);
 
   const marcarCompletado = useCallback(async () => {
     try {
@@ -377,7 +377,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
   );
 
   const arrancarRecorrido = useCallback(async () => {
-    const pasos = construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView });
+    const pasos = construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView, esEstudio });
     pasosRef.current = pasos;
     const TOTAL = pasos.length + 2;
     setTotal(TOTAL);
@@ -430,7 +430,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
     driverRef.current = d;
     d.drive();
-  }, [prepararPaso, terminar, onNavigate, multiVocalia, esAdmin, tableroView]);
+  }, [prepararPaso, terminar, onNavigate, multiVocalia, esAdmin, tableroView, esEstudio]);
 
   useEffect(() => () => { driverRef.current?.destroy(); }, []);
 
@@ -457,7 +457,9 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground">Bienvenido a IusTrack</h2>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones.
+                {esEstudio
+                  ? "Te muestro en un minuto cómo se maneja tu estudio jurídico: causas, vencimientos, agenda y anotaciones, todo conectado."
+                  : "Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones."}
               </p>
             </div>
             <div className="w-full">
