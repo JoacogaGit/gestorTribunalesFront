@@ -130,7 +130,7 @@ interface Props {
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
 }
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 100;
 
 interface CausaRowProps {
   causa: Causa;
