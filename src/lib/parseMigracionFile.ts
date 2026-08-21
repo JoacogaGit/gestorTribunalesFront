@@ -224,7 +224,7 @@ interface LineaPdf {
   celdas: CeldaPdf[];
 }
 
-const GAP_CELDA = 6;
+const GAP_CELDA = 4;
 
 async function extraerLineasPdf(buf: ArrayBuffer): Promise<LineaPdf[]> {
   const pdfjs = await import("pdfjs-dist");
@@ -309,12 +309,10 @@ function etiquetaColumna(texto: string): string | null {
 /** Detecta si el texto de un PDF corresponde a un listado Lex100. */
 export function esLex100Pdf(texto: string): boolean {
   const t = normHeader(texto);
-  const marca =
+  return (
     t.includes("gestion integral de expedientes judiciales") ||
-    t.includes("listado de causas seleccionadas");
-  const columnas =
-    t.includes("expte") && t.includes("actor") && t.includes("demandado") && t.includes("objeto");
-  return marca && columnas;
+    t.includes("listado de causas seleccionadas")
+  );
 }
 
 /**
@@ -328,9 +326,7 @@ export function construirLineasLex100Pdf(lineas: LineaPdf[]): string {
 
   const vaciar = () => {
     if (!pendiente) return;
-    const linea = LEX100_PDF_COLUMNAS.map(
-      (c) => `${c === "Expte" ? "Expte" : c}: ${(pendiente?.[c] ?? "").trim()}`,
-    ).join(" | ");
+    const linea = LEX100_PDF_COLUMNAS.map((c) => `${c}: ${(pendiente?.[c] ?? "").trim()}`).join(" || ");
     if ((pendiente.Expte ?? "").trim() !== "") salida.push(linea);
     pendiente = null;
   };
@@ -349,18 +345,23 @@ export function construirLineasLex100Pdf(lineas: LineaPdf[]): string {
 
     if (columnas.length === 0) continue;
 
-    const asignar = (x: number): string | null => {
-      let mejor: { etiqueta: string; x: number } | null = null;
+    // Asigna cada celda a la columna cuyo X esté más cerca
+    const asignar = (x: number): string => {
+      let mejor = columnas[0];
+      let dist = Math.abs(x - columnas[0].x);
       for (const col of columnas) {
-        if (x + 4 >= col.x && (!mejor || col.x > mejor.x)) mejor = col;
+        const d = Math.abs(x - col.x);
+        if (d < dist) {
+          dist = d;
+          mejor = col;
+        }
       }
-      return mejor?.etiqueta ?? columnas[0].etiqueta;
+      return mejor.etiqueta;
     };
 
     const fila: Record<string, string> = {};
     for (const celda of linea.celdas) {
       const col = asignar(celda.x);
-      if (!col) continue;
       fila[col] = fila[col] ? `${fila[col]} ${celda.texto}` : celda.texto;
     }
 
@@ -380,9 +381,10 @@ export function construirLineasLex100Pdf(lineas: LineaPdf[]): string {
   }
   vaciar();
 
-  const encabezado = LEX100_PDF_COLUMNAS.map((c) => `${c}: <valor>`).join(" | ");
+  const encabezado = LEX100_PDF_COLUMNAS.map((c) => `${c}: <valor>`).join(" || ");
   return [encabezado, ...salida].join("\n");
 }
+
 
 export { extraerLineasPdf, lineasATexto };
 
