@@ -267,7 +267,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               </SheetTitle>
             </SheetHeader>
             <div className="space-y-2 mt-3">
-              {delDia.map((e, i) => renderEvento(e, i, parseLocalTime(e.fecha) < now))}
+              {delDia.map((e, i) => renderEvento(e, i, toARDateString(parseLocalDate(e.fecha)) < todayStr))}
               {delDia.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">Sin eventos este día</p>
               )}
