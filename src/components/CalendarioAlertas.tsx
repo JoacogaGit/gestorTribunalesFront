@@ -234,7 +234,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               selected={selectedDate}
               onSelect={(d) => { setSelectedDate(d); if (d) setDaySheetOpen(true); }}
               className="pointer-events-auto w-full [&_table]:w-full [&_td]:h-11 [&_button]:h-11 [&_button]:w-11 [&_button]:text-base"
-              modifiers={{ hasEvent: (date) => eventDates.has(date.toDateString()) }}
+modifiers={{ hasEvent: (date) => eventDates.has(toARDateString(date)) }}
               modifiersClassNames={{ hasEvent: "relative font-bold text-primary after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary" }}
             />
             <p className="text-xs text-muted-foreground text-center pb-2">
@@ -317,7 +317,7 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               selected={selectedDate}
               onSelect={setSelectedDate}
               className="pointer-events-auto"
-              modifiers={{ hasEvent: (date) => eventDates.has(date.toDateString()) }}
+              modifiers={{ hasEvent: (date) => eventDates.has(toARDateString(date)) }}
               modifiersClassNames={{ hasEvent: "bg-primary/20 font-bold text-primary" }}
             />
             {selectedDate && (
