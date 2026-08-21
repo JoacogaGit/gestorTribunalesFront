@@ -253,7 +253,24 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
             {pasadosTodos.length > 0 && (
               <>
                 <h3 className="text-xs uppercase tracking-wider text-muted-foreground px-1 pt-4">Pasados ({pasadosTodos.length})</h3>
-                {pasadosTodos.slice(0, 30).map((e, i) => renderEvento(e, i, true))}
+                {(() => {
+                  let lastBucket: string | null = null;
+                  return pasadosTodos.slice(0, 30).map((e, i) => {
+                    const bucket = grupoPasado(parseLocalDate(e.fecha) ?? new Date());
+                    const showHeader = bucket !== lastBucket;
+                    lastBucket = bucket;
+                    return (
+                      <Fragment key={`${e.id}-${i}-grp`}>
+                        {showHeader && (
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 px-1 pt-2 font-semibold">
+                            {grupoLabel[bucket]}
+                          </div>
+                        )}
+                        {renderEvento(e, i, true)}
+                      </Fragment>
+                    );
+                  });
+                })()}
               </>
             )}
           </div>
@@ -347,7 +364,24 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
               )}
             </div>
             <div className="space-y-1.5 max-h-[40vh] overflow-y-auto pr-1">
-              {pasados.map((e, i) => renderEvento(e, i, true))}
+              {(() => {
+                let lastBucket: string | null = null;
+                return pasados.map((e, i) => {
+                  const bucket = grupoPasado(parseLocalDate(e.fecha) ?? new Date());
+                  const showHeader = bucket !== lastBucket;
+                  lastBucket = bucket;
+                  return (
+                    <Fragment key={`${e.id}-${i}-grp`}>
+                      {showHeader && (
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 px-1 pt-2 font-semibold">
+                          {grupoLabel[bucket]}
+                        </div>
+                      )}
+                      {renderEvento(e, i, true)}
+                    </Fragment>
+                  );
+                });
+              })()}
               {pasados.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-3">Sin eventos pasados</p>
               )}
