@@ -20,7 +20,8 @@ interface Props {
 }
 
 export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrada, onNavigateToConexa }: Props) {
-  const { causas, loading, error, refetch, agregarCausa, sacarCausa } = useCausasDeLista(lista.id);
+  const { causas: causasRaw, loading, error, refetch, agregarCausa, sacarCausa } = useCausasDeLista(lista.id);
+  const causas = useMemo(() => filtrarCausas ? filtrarCausas(causasRaw) : causasRaw, [causasRaw, filtrarCausas]);
   const { borrarLista, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
   const [showAdd, setShowAdd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
