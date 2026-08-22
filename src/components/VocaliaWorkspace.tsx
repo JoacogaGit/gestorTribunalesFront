@@ -52,6 +52,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, Scale as ScaleIcon } from "lucide-react";
 
 import ZoomControl from "@/components/ZoomControl";
+import ResponsableFilterButton from "@/components/ResponsableFilterButton";
+import { useResponsableFilter } from "@/hooks/useResponsableFilter";
 import AgrupadasView from "@/components/estudio/AgrupadasView";
 
 
@@ -216,6 +218,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
   const detenidosRemote = useDetenidos(vocaliaId);
   const { esEstudio } = useTipoOficina(tribunalId);
+  const responsableFiltro = useResponsableFilter(vocaliaId, esEstudio);
   const dashboardKpis = useDashboardKpis(vocaliaId);
   const dashCausasRemote = useCausasDashboard(vocaliaId, esEstudio);
   const [mostrarKpis, setMostrarKpis] = useState<boolean>(() => {
@@ -232,7 +235,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
   const dashCausas = (() => {
-    const all = dashCausasRemote.causas;
+    const all = responsableFiltro.filtrar(dashCausasRemote.causas);
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
         (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
@@ -249,7 +252,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const EP_ELEVADAS = ["Elevado a juicio", "Juicio"];
   const EP_RECURRIDAS = ["Procesamiento recurrido", "Casación", "Tribunal Superior", "Corte"];
   const porEstadoProcesal = (estados: string[]) =>
-    dashCausasRemote.causas.filter((c) => estados.includes((c.estadoProcesal || "").trim()));
+    responsableFiltro.filtrar(dashCausasRemote.causas).filter((c) => estados.includes((c.estadoProcesal || "").trim()));
 
   const addBoard = () => {
     if (customBoards.length >= 2) return;
@@ -580,7 +583,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     causas={dashCausas}
                     title={esEstudio && dashFilter === "all" ? "Todas las causas del estudio" : `Causas — ${dashFilterLabels[dashFilter]}`}
                     listKey="todas"
-                    allCausas={dashCausasRemote.causas}
+                    allCausas={dashCausas}
                     onMutated={dashCausasRemote.refetch}
                     onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
@@ -595,17 +598,17 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <RemoteListSection
                 loading={tramiteRemote.loading}
                 error={tramiteRemote.error}
-                isEmpty={tramiteRemote.causas.length === 0}
+                isEmpty={responsableFiltro.filtrar(tramiteRemote.causas).length === 0}
                 emptyTitle="Todavía no hay causas en trámite"
                 emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={tramiteRemote.refetch}
                 onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
-                  causas={tramiteRemote.causas}
+                  causas={responsableFiltro.filtrar(tramiteRemote.causas)}
                   title="Causas en Trámite"
                   listKey="tramite"
-                  allCausas={tramiteRemote.causas}
+                  allCausas={responsableFiltro.filtrar(tramiteRemote.causas)}
                   onMutated={tramiteRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
@@ -619,14 +622,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <RemoteListSection
                   loading={detenidosRemote.loading}
                   error={detenidosRemote.error}
-                  isEmpty={detenidosRemote.causas.length === 0}
+                  isEmpty={responsableFiltro.filtrar(detenidosRemote.causas).length === 0}
                   emptyTitle="Todavía no hay detenidos en este espacio"
                   emptyMessage="Empezá creando la primera causa con un detenido."
                   onRetry={detenidosRemote.refetch}
                   onCreateCausa={() => setShowCreateCausa(true)}
                 >
                   <DetenidosList
-                    causas={detenidosRemote.causas}
+                    causas={responsableFiltro.filtrar(detenidosRemote.causas)}
                     onUpdateCausa={remoteNoop}
                     onDeleteCausa={remoteNoop}
                     onCreateCausa={remoteNoop}
@@ -639,17 +642,17 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <RemoteListSection
                 loading={rebeldesRemote.loading}
                 error={rebeldesRemote.error}
-                isEmpty={rebeldesRemote.causas.length === 0}
+                isEmpty={responsableFiltro.filtrar(rebeldesRemote.causas).length === 0}
                 emptyTitle="Todavía no hay rebeldes en este espacio"
                 emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={rebeldesRemote.refetch}
                 onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
-                  causas={rebeldesRemote.causas}
+                  causas={responsableFiltro.filtrar(rebeldesRemote.causas)}
                   title="Rebeldes / Paraderos"
                   listKey="rebeldes"
-                  allCausas={rebeldesRemote.causas}
+                  allCausas={responsableFiltro.filtrar(rebeldesRemote.causas)}
                   onMutated={rebeldesRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
@@ -662,17 +665,17 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <RemoteListSection
                 loading={sjpRemote.loading}
                 error={sjpRemote.error}
-                isEmpty={sjpRemote.causas.length === 0}
+                isEmpty={responsableFiltro.filtrar(sjpRemote.causas).length === 0}
                 emptyTitle="Todavía no hay causas con SJP"
                 emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={sjpRemote.refetch}
                 onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
-                  causas={sjpRemote.causas}
+                  causas={responsableFiltro.filtrar(sjpRemote.causas)}
                   title="SJP en Trámite"
                   listKey="sjp"
-                  allCausas={sjpRemote.causas}
+                  allCausas={responsableFiltro.filtrar(sjpRemote.causas)}
                   onMutated={sjpRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
@@ -685,17 +688,17 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <RemoteListSection
                 loading={recursosRemote.loading}
                 error={recursosRemote.error}
-                isEmpty={recursosRemote.causas.length === 0}
+                isEmpty={responsableFiltro.filtrar(recursosRemote.causas).length === 0}
                 emptyTitle="Todavía no hay causas con recurso"
                 emptyMessage="Empezá creando la primera causa para gestionarla acá."
                 onRetry={recursosRemote.refetch}
                 onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
-                  causas={recursosRemote.causas}
+                  causas={responsableFiltro.filtrar(recursosRemote.causas)}
                   title="Recursos"
                   listKey="recursos"
-                  allCausas={recursosRemote.causas}
+                  allCausas={responsableFiltro.filtrar(recursosRemote.causas)}
                   onMutated={recursosRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
@@ -708,16 +711,16 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <RemoteListSection
                 loading={terminadasRemote.loading}
                 error={terminadasRemote.error}
-                isEmpty={terminadasRemote.causas.length === 0}
+                isEmpty={responsableFiltro.filtrar(terminadasRemote.causas).length === 0}
                 emptyTitle="Todavía no hay causas terminadas"
                 emptyMessage="Las causas terminadas aparecerán acá cuando cambies el estado de una causa existente."
                 onRetry={terminadasRemote.refetch}
               >
                 <CausasTable
-                  causas={terminadasRemote.causas}
+                  causas={responsableFiltro.filtrar(terminadasRemote.causas)}
                   title="Causas Terminadas"
                   listKey="terminadas"
-                  allCausas={terminadasRemote.causas}
+                  allCausas={responsableFiltro.filtrar(terminadasRemote.causas)}
                   onMutated={terminadasRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
@@ -730,14 +733,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <RemoteListSection
                 loading={dashCausasRemote.loading}
                 error={dashCausasRemote.error}
-                isEmpty={dashCausasRemote.causas.length === 0}
+                isEmpty={dashCausas.length === 0}
                 emptyTitle="Todavía no hay causas cargadas en este espacio"
                 onRetry={dashCausasRemote.refetch}
                 onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <AgrupadasView
                   key={view}
-                  causas={dashCausasRemote.causas}
+                  causas={dashCausas}
                   criterio={view === "fueros" ? "fuero" : "delito"}
                   onMutated={dashCausasRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
@@ -775,7 +778,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 </RemoteListSection>
               );
             })()}
-            {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} />}
+            {view === "calendario" && <CalendarioAlertas vocaliaId={vocaliaId} onOpenCausa={navigateToCausa} causaIdsPermitidos={responsableFiltro.causaIdsPermitidos} />}
             {view === "categorias" && vocaliaId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
                 <CategoriasManager vocaliaId={vocaliaId} />
