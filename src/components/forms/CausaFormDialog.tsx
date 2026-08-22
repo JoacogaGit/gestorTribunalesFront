@@ -534,7 +534,7 @@ export default function CausaFormDialog({
               causa={causa}
               sujetos={visibleSujetos}
               causaId={causaId ?? null}
-              onEditar={() => setVistaResumen(true === false ? true : false)}
+              onEditar={() => setVistaResumen(false)}
               onCerrar={() => handleOpenChange(false)}
             />
           ) : (
