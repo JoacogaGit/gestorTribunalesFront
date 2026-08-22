@@ -1198,8 +1198,8 @@ function ResumenEstudio({
 
       <Seccion titulo="Estado">
         <Campo label="Estado procesal" value={causa.estado_procesal} />
-        <Campo label="Estado" value={causa.estado_causa ? labelEstadoCausa(causa.estado_causa) : null} />
-        <Campo label="Recurso" value={causa.tipo_recurso ? labelTipoRecurso(causa.tipo_recurso) : null} />
+        <Campo label="Estado" value={causa.estado_causa ? labelEstadoCausa[causa.estado_causa] : null} />
+        <Campo label="Recurso" value={causa.tipo_recurso ? labelTipoRecurso[causa.tipo_recurso] : null} />
       </Seccion>
 
       {partes.length > 0 && (
@@ -1213,7 +1213,7 @@ function ResumenEstudio({
                 <p className="text-sm font-medium text-foreground break-words">{s.nombre_completo}</p>
                 <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                   <Campo label="Delito" value={s.delito} />
-                  <Campo label="Situación" value={s.situacion_libertad ? labelSituacionLibertad(s.situacion_libertad) : null} />
+                  <Campo label="Situación" value={s.situacion_libertad ? labelSituacionLibertad[s.situacion_libertad] : null} />
                   <Campo label="Defensor" value={s.defensor} />
                   <Campo label="Detención" value={s.fecha_detencion} />
                   <Campo label="Alojamiento" value={s.lugar_alojamiento} />
