@@ -112,6 +112,12 @@ function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, 
 
 type View = string;
 
+/** Vistas donde aplica el filtro por responsable. */
+const VISTAS_CON_FILTRO: string[] = [
+  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "terminadas",
+  "calendario", "fueros", "delitos", "instruccion", "elevadas", "recurridas",
+];
+
 interface Props {
   onBack: () => void;
   user: { name: string; email: string };
@@ -429,6 +435,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             <div className="mb-4">
               <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">{sidebarLabel}</span>
               <h1 className="text-xl font-display font-bold text-foreground">{title}</h1>
+              {VISTAS_CON_FILTRO.includes(view) && (
+                <div className="mt-2">
+                  <ResponsableFilterButton filtro={responsableFiltro} />
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -451,6 +462,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <CheckCircle2 className="w-3 h-3" />
                 {migracionStatus.hasExito ? "Migración lista" : "Migración pendiente"}
               </button>
+            )}
+
+            {VISTAS_CON_FILTRO.includes(view) && (
+              <ResponsableFilterButton filtro={responsableFiltro} />
             )}
 
             {(() => {
