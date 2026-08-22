@@ -435,7 +435,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             <div className="mb-4">
               <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">{sidebarLabel}</span>
               <h1 className="text-xl font-display font-bold text-foreground">{title}</h1>
-              {VISTAS_CON_FILTRO.includes(view) && (
+              {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
                 <div className="mt-2">
                   <ResponsableFilterButton filtro={responsableFiltro} />
                 </div>
@@ -464,7 +464,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </button>
             )}
 
-            {VISTAS_CON_FILTRO.includes(view) && (
+            {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
               <ResponsableFilterButton filtro={responsableFiltro} />
             )}
 
@@ -835,6 +835,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 vocaliaId={vocaliaId}
                 onListaBorrada={() => { listasHook.refetch(); setView("dashboard"); }}
                 onNavigateToConexa={navigateToCausa}
+                filtrarCausas={responsableFiltro.filtrar}
               />
             )}
             {tableroActivo && (

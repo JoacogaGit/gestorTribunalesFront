@@ -17,9 +17,11 @@ interface Props {
   vocaliaId: string;
   onListaBorrada: () => void;
   onNavigateToConexa?: (causaId: string) => void;
+  /** Filtro global por responsable. */
+  filtrarCausas?: (causas: Causa[]) => Causa[];
 }
 
-export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrada, onNavigateToConexa }: Props) {
+export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrada, onNavigateToConexa, filtrarCausas }: Props) {
   const { causas: causasRaw, loading, error, refetch, agregarCausa, sacarCausa } = useCausasDeLista(lista.id);
   const causas = useMemo(() => filtrarCausas ? filtrarCausas(causasRaw) : causasRaw, [causasRaw, filtrarCausas]);
   const { borrarLista, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
