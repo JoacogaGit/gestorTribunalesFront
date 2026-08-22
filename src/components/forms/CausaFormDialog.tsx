@@ -189,6 +189,11 @@ export default function CausaFormDialog({
     mode === "crear" && initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []
   );
   const [openExtras, setOpenExtras] = useState(false);
+  /** Modo estudio: al abrir una causa existente mostramos primero un resumen limpio. */
+  const [vistaResumen, setVistaResumen] = useState(false);
+  useEffect(() => {
+    if (open) setVistaResumen(esEstudio && mode === "editar");
+  }, [open, esEstudio, mode]);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
   // Clave de borrador local (por modo + causa)
   const duplicando = mode === "crear" && !!duplicarDeId;
@@ -511,7 +516,7 @@ export default function CausaFormDialog({
                 )}
               </DialogTitle>
             </DialogHeader>
-            {mode === "editar" && !loading && (
+            {mode === "editar" && !loading && !vistaResumen && (
               <Button type="button" size="sm" onClick={handleSubmit} disabled={muts.saving}>
                 {muts.saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
                 Guardar cambios
@@ -524,6 +529,14 @@ export default function CausaFormDialog({
             <div className="flex items-center justify-center py-16 text-muted-foreground gap-2 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" /> Cargando…
             </div>
+          ) : vistaResumen ? (
+            <ResumenEstudio
+              causa={causa}
+              sujetos={visibleSujetos}
+              causaId={causaId ?? null}
+              onEditar={() => setVistaResumen(true === false ? true : false)}
+              onCerrar={() => handleOpenChange(false)}
+            />
           ) : (
             <div className="space-y-5 text-sm">
               {/* Datos generales */}
@@ -547,6 +560,7 @@ export default function CausaFormDialog({
                       placeholder="Ej. 7019"
                     />
                   </div>
+                  {!esEstudio && (
                   <div className="space-y-1.5">
                     <Label className="text-xs">Despachante</Label>
                     <Input
@@ -556,6 +570,7 @@ export default function CausaFormDialog({
                       placeholder="3 letras"
                     />
                   </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <Label className="text-xs">Carátula</Label>
@@ -614,6 +629,7 @@ export default function CausaFormDialog({
                       </Select>
                     </div>
                   )}
+                  {!esEstudio && (
                   <div className="space-y-1.5">
                     <Label className="text-xs">Tipo de proceso</Label>
                     <Select
@@ -628,6 +644,7 @@ export default function CausaFormDialog({
                       </SelectContent>
                     </Select>
                   </div>
+                  )}
                   <div className="space-y-1.5">
                     <Label className="text-xs">Fecha de ingreso</Label>
                     <Input
