@@ -39,9 +39,11 @@ const TIPOS: CalendarTipo[] = ["evento", "vencimiento_pp", "vencimiento_pena", "
 interface Props {
   vocaliaId: string | null;
   onOpenCausa?: (causaId: string) => void;
+  /** Filtro global por responsable: IDs de causas permitidas (null = sin filtro). */
+  causaIdsPermitidos?: Set<string> | null;
 }
 
-export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
+export default function CalendarioAlertas({ vocaliaId, onOpenCausa, causaIdsPermitidos = null }: Props) {
   const { eventos, loading, error, refetch } = useCalendarioEventos(vocaliaId);
   const isMobile = useIsMobile();
   const [mobileVista, setMobileVista] = useState<"mes" | "agenda">("agenda");
@@ -62,8 +64,9 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa }: Props) {
 
   const visibles = useMemo(() => eventos
     .filter((e) => !dismissed.has(eventoKey(e)))
-    .filter((e) => !hiddenTipos.has(e.tipo)),
-    [eventos, dismissed, hiddenTipos]);
+    .filter((e) => !hiddenTipos.has(e.tipo))
+    .filter((e) => !causaIdsPermitidos || (e.causaId ? causaIdsPermitidos.has(e.causaId) : false)),
+    [eventos, dismissed, hiddenTipos, causaIdsPermitidos]);
 
   const dismiss = (e: CalendarEvento) => setDismissed((prev) => new Set(prev).add(eventoKey(e)));
   const restoreAll = () => setDismissed(new Set());
