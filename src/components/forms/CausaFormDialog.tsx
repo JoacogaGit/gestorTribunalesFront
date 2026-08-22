@@ -1105,3 +1105,140 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
     </div>
   );
 }
+
+/* ────────────────────────── Resumen (modo estudio) ────────────────────────── */
+
+function Campo({ label, value }: { label: string; value?: string | null }) {
+  const v = (value ?? "").toString().trim();
+  if (!v) return null;
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-sm text-foreground break-words">{v}</p>
+    </div>
+  );
+}
+
+function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  const hayContenido = Array.isArray(children)
+    ? (children as React.ReactNode[]).some(Boolean)
+    : Boolean(children);
+  if (!hayContenido) return null;
+  return (
+    <section className="space-y-2">
+      <h3 className="text-xs font-display font-semibold uppercase tracking-wide text-muted-foreground">
+        {titulo}
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function ResumenEstudio({
+  causa, sujetos, causaId, onEditar, onCerrar,
+}: {
+  causa: CausaInput;
+  sujetos: SujetoState[];
+  causaId: string | null;
+  onEditar: () => void;
+  onCerrar: () => void;
+}) {
+  const partes = sujetos.filter((s) => !s._markedForDelete && (s.nombre_completo ?? "").trim());
+
+  return (
+    <div className="space-y-5 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-base font-display font-semibold text-foreground break-words">
+            {causa.caratula || "Sin carátula"}
+          </p>
+          <p className="text-xs text-muted-foreground break-words">
+            {[causa.expediente_nro, causa.numero_interno].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+        <Button type="button" size="sm" variant="outline" onClick={onEditar} className="shrink-0">
+          Editar
+        </Button>
+      </div>
+
+      <Seccion titulo="Datos de la causa">
+        <Campo label="Fuero" value={causa.fuero} />
+        <Campo label="Rol del estudio" value={causa.rol_estudio} />
+        <Campo label="Fecha de ingreso" value={causa.fecha_ingreso} />
+        <Campo label="Empleado a cargo" value={causa.empleado_a_cargo} />
+        <Campo label="Causa conexa" value={causa.causa_conexa_texto} />
+        {causa.link_externo ? (
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Link externo</p>
+            <a
+              href={causa.link_externo}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-primary hover:underline inline-flex items-center gap-1 break-all"
+            >
+              Abrir <ExternalLink className="w-3 h-3 shrink-0" />
+            </a>
+          </div>
+        ) : null}
+      </Seccion>
+
+      <Seccion titulo="Intervinientes">
+        <Campo label="Juez" value={causa.juez} />
+        <Campo label="Fiscal" value={causa.fiscal} />
+        <Campo label="Fiscalía" value={causa.fiscalia} />
+        <Campo label="Tribunal interviniente" value={causa.tribunal_interviniente} />
+        <Campo label="Dirección del tribunal" value={causa.tribunal_direccion} />
+        <Campo label="Damnificado" value={causa.damnificado} />
+        <Campo label="Querella" value={causa.querella} />
+        <Campo label="Actor civil" value={causa.actor_civil} />
+        <Campo label="Otros" value={causa.otros_intervinientes} />
+      </Seccion>
+
+      <Seccion titulo="Estado">
+        <Campo label="Estado procesal" value={causa.estado_procesal} />
+        <Campo label="Estado" value={causa.estado_causa ? labelEstadoCausa(causa.estado_causa) : null} />
+        <Campo label="Recurso" value={causa.tipo_recurso ? labelTipoRecurso(causa.tipo_recurso) : null} />
+      </Seccion>
+
+      {partes.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-xs font-display font-semibold uppercase tracking-wide text-muted-foreground">
+            Personas ({partes.length})
+          </h3>
+          <div className="space-y-2">
+            {partes.map((s) => (
+              <div key={s._localKey} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p className="text-sm font-medium text-foreground break-words">{s.nombre_completo}</p>
+                <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                  <Campo label="Delito" value={s.delito} />
+                  <Campo label="Situación" value={s.situacion_libertad ? labelSituacionLibertad(s.situacion_libertad) : null} />
+                  <Campo label="Defensor" value={s.defensor} />
+                  <Campo label="Detención" value={s.fecha_detencion} />
+                  <Campo label="Alojamiento" value={s.lugar_alojamiento} />
+                  <Campo label="Prescripción" value={s.prescripcion_fecha} />
+                  <Campo label="Venc. prisión preventiva" value={s.vencimiento_pp} />
+                  <Campo label="Venc. pena" value={s.vencimiento_pena} />
+                  <Campo label="Observaciones" value={s.observaciones} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {causaId && (
+        <>
+          <Separator />
+          <AnotacionesSection causaId={causaId} />
+        </>
+      )}
+
+      <div className="flex justify-end gap-2 pt-1">
+        <Button type="button" variant="ghost" size="sm" onClick={onCerrar}>Cerrar</Button>
+        <Button type="button" size="sm" onClick={onEditar}>Editar causa</Button>
+      </div>
+    </div>
+  );
+}
