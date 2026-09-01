@@ -605,22 +605,30 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
       {/* Paso 1 — Bienvenida */}
       <Dialog open={fase === "bienvenida"} onOpenChange={(o) => { if (!o && fase === "bienvenida") terminar(false); }}>
-        <DialogContent className="sm:max-w-md text-center animate-scale-in">
-          <div className="flex flex-col items-center gap-4 py-2">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-gold shadow-soft">
-              <Scale className="h-8 w-8 text-sidebar-primary-foreground" />
+        <DialogContent className="sm:max-w-2xl text-center animate-scale-in">
+          <div className="flex flex-col items-center gap-5 py-3">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-gold shadow-soft">
+              <Scale className="h-10 w-10 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold text-foreground">Bienvenido a IusTrack</h2>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
+                Bienvenido a IusTrack
+              </h2>
+              <p className="mt-4 text-xl sm:text-2xl font-medium text-foreground leading-snug">
+                Nunca más se te va a pasar un vencimiento.
+              </p>
+              <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
                 {esEstudio
-                  ? "Te muestro en un minuto cómo se maneja tu estudio jurídico: causas, vencimientos, agenda y anotaciones, todo conectado."
-                  : "Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones."}
+                  ? "Desde hoy, todas las causas del estudio, sus fechas y sus pendientes van a estar ordenados en un solo lugar, y IusTrack te va a avisar a tiempo. Menos papeles sueltos, menos preocupaciones, más tranquilidad."
+                  : "Desde hoy, todas las causas, sus vencimientos y sus pendientes van a estar ordenados en un solo lugar, y IusTrack te va a avisar a tiempo. Menos papeles sueltos, menos preocupaciones, más tranquilidad."}
+              </p>
+              <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
+                Te acompaño paso a paso, con calma. En unos minutos vas a manejarlo todo.
               </p>
             </div>
             <div className="w-full">
               <div className="iustrack-tour-progress"><span style={{ width: `${(1 / total) * 100}%` }} /></div>
-              <p className="mt-1 text-[11px] text-muted-foreground">Paso 1 de {total}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">Paso 1 de {total}</p>
             </div>
             <div className="flex w-full gap-2">
               <Button variant="ghost" className="flex-1" onClick={() => terminar(false)}>Saltar tutorial</Button>
