@@ -54,6 +54,7 @@ import { Menu, Scale as ScaleIcon } from "lucide-react";
 
 import ZoomControl from "@/components/ZoomControl";
 import ResponsableFilterButton from "@/components/ResponsableFilterButton";
+import ExportarListasButton from "@/components/ExportarListasButton";
 import { useResponsableFilter } from "@/hooks/useResponsableFilter";
 import AgrupadasView from "@/components/estudio/AgrupadasView";
 import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
@@ -438,8 +439,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">{sidebarLabel}</span>
               <h1 className="text-xl font-display font-bold text-foreground">{title}</h1>
               {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
-                <div className="mt-2">
+                <div className="mt-2 flex items-center gap-2">
                   <ResponsableFilterButton filtro={responsableFiltro} />
+                  <ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} />
                 </div>
               )}
             </div>
@@ -467,7 +469,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
             {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
-              <ResponsableFilterButton filtro={responsableFiltro} />
+              <>
+                <ResponsableFilterButton filtro={responsableFiltro} />
+                <ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} />
+              </>
             )}
 
             {(() => {
