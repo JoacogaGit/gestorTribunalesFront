@@ -1,4 +1,5 @@
-import { parseLocalTime } from "@/lib/parseDate";
+import { isFechaPasadaAR, parseLocalTime } from "@/lib/parseDate";
+
 
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
 export type EstadoCausa = "En trámite" | "Delegada" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ";
