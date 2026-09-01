@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
@@ -62,6 +62,7 @@ import { useEventosProximos30d } from "@/hooks/useEventosProximos30d";
 import { useEstadisticasCustom } from "@/hooks/useEstadisticasCustom";
 import { buscarCriterio, cumpleEstadistica } from "@/lib/estadisticasCustom";
 import { useEventosPorCausa } from "@/hooks/useEventosPorCausa";
+import { ESTADOS_PROCESALES_LISTA } from "@/lib/estadosProcesales";
 import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
 import KpiCardsCustom from "@/components/estadisticas/KpiCardsCustom";
 import NuevaEstadisticaDialog from "@/components/estadisticas/NuevaEstadisticaDialog";
@@ -1073,7 +1074,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         esEstudio={esEstudio}
         causas={dashCausasRemote.causas}
         subestados={subestadosEspacio.subestados.map((s) => s.nombre)}
-        estadosProcesales={ESTADOS_PROCESALES_OPCIONES}
+        estadosProcesales={ESTADOS_PROCESALES_LISTA}
         onCrear={estadisticasCustom.crear}
       />
       <CrearListaDialog
