@@ -14,6 +14,7 @@ const navBeforeTerminadas = [
   { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle },
   { id: "sjp", label: "SJP en Trámite", icon: Pause },
   { id: "recursos", label: "Recursos", icon: Users },
+  { id: "delegadas", label: "Delegadas", icon: FolderOpen },
 ];
 const navAfterTerminadas = [
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },

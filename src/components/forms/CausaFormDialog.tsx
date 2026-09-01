@@ -110,6 +110,8 @@ const ESTADOS_PROCESALES = [
   "Procesamiento recurrido",
   "Falta de mérito",
   "Sobreseído",
+  "Para fijar juicio",
+  "Para proveer prueba",
   "Elevado a juicio",
   "Juicio",
   "Casación",
@@ -590,7 +592,7 @@ export default function CausaFormDialog({
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {ESTADOS_CAUSA_DB.map((e) => (
+                        {ESTADOS_CAUSA_DB.filter((e) => e !== "delegada" || !esEstudio).map((e) => (
                           <SelectItem key={e} value={e}>{labelEstadoCausa[e]}</SelectItem>
                         ))}
                       </SelectContent>

@@ -40,6 +40,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatLocalDate, parseLocalTime } from "@/lib/parseDate";
+import { expedienteSortKey } from "@/lib/expedienteSort";
 
 const PALETA_COLORES: { hex: string; label: string }[] = [
   { hex: "#FCA5A5", label: "Rojo" },
@@ -90,7 +91,7 @@ const libertadBadge: Record<string, string> = {
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
-const estadosCausa: EstadoCausa[] = ["En trámite", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ"];
+const estadosCausa: EstadoCausa[] = ["En trámite", "Delegada", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ"];
 
 interface ColDef {
   key: string;
@@ -241,7 +242,7 @@ export default function CausasTable({
       label: "N° Causa",
       headClass: "whitespace-nowrap",
       cellClass: "font-mono text-sm font-bold whitespace-nowrap",
-      sortValue: (c) => c.numero,
+      sortValue: (c) => expedienteSortKey(c.numero),
       render: (c) => {
         const conexaId = c.causaConexaId ?? null;
         const conexaTexto = c.causaConexaTexto ?? null;
