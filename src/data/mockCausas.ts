@@ -91,6 +91,8 @@ export interface Causa {
   fuero?: string | null;
   /** Modo estudio: estado procesal. */
   estadoProcesal?: string | null;
+  /** Modo estudio: rol del estudio en la causa. */
+  rolEstudio?: string | null;
   /** Delitos de todos los sujetos (únicos). */
   delitos?: string[];
 }

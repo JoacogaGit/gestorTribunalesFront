@@ -17,7 +17,7 @@ import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff, Plus } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
@@ -59,6 +59,10 @@ import { useResponsableFilter } from "@/hooks/useResponsableFilter";
 import AgrupadasView from "@/components/estudio/AgrupadasView";
 import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
 import { useEventosProximos30d } from "@/hooks/useEventosProximos30d";
+import { useEstadisticasCustom } from "@/hooks/useEstadisticasCustom";
+import { buscarCampo, cumpleEstadistica } from "@/lib/estadisticasCustom";
+import KpiCardsCustom from "@/components/estadisticas/KpiCardsCustom";
+import NuevaEstadisticaDialog from "@/components/estadisticas/NuevaEstadisticaDialog";
 import { parseLocalTime } from "@/lib/parseDate";
 import type { Causa } from "@/data/mockCausas";
 
@@ -131,9 +135,11 @@ interface Props {
   onUpdateUser: (u: { name: string; email: string }) => void;
 }
 
-type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "instruccion" | "elevadas" | "recurridas" | "eventos30d";
+type DashboardBaseFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "instruccion" | "elevadas" | "recurridas" | "eventos30d";
+/** Además de los filtros base, admite `custom:<id>` de estadísticas personalizadas. */
+type DashboardFilter = DashboardBaseFilter | string;
 
-const dashFilterLabels: Record<DashboardFilter, string> = {
+const dashFilterLabels: Record<DashboardBaseFilter, string> = {
   all: "Todas (trámite + recurso)",
   tramite: "En trámite",
   detenidos: "Con detenidos",
@@ -147,7 +153,7 @@ const dashFilterLabels: Record<DashboardFilter, string> = {
 };
 
 /** Columna que se prioriza (3er lugar) en la tabla según el filtro activo del dashboard. */
-const COLUMNA_PRIORITARIA: Partial<Record<DashboardFilter, string>> = {
+const COLUMNA_PRIORITARIA: Partial<Record<DashboardBaseFilter, string>> = {
   detenidos: "libertad",
   rebeldes: "libertad",
   sjp: "libertad",
@@ -159,7 +165,7 @@ const COLUMNA_PRIORITARIA: Partial<Record<DashboardFilter, string>> = {
   eventos30d: "eventosConFecha",
 };
 
-const FILTROS_JUDICIAL: DashboardFilter[] = ["all", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "eventos30d"];
+const FILTROS_JUDICIAL: DashboardBaseFilter[] = ["all", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "eventos30d"];
 
 /** true si la causa tiene algún vencimiento propio dentro de los próximos 30 días. */
 function tieneVencimientoProximo(c: Causa): boolean {
@@ -179,7 +185,7 @@ function tieneVencimientoProximo(c: Causa): boolean {
     return t >= desde && t <= hasta;
   });
 }
-const FILTROS_ESTUDIO: DashboardFilter[] = ["all", "instruccion", "elevadas", "recurridas", "detenidos"];
+const FILTROS_ESTUDIO: DashboardBaseFilter[] = ["all", "instruccion", "elevadas", "recurridas", "detenidos"];
 
 export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser }: Props) {
   const { vocalia, setVocalia } = useVocaliaActual();
@@ -211,6 +217,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
   const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
   const [showCreateCausa, setShowCreateCausa] = useState(false);
+  const [showNuevaEstadistica, setShowNuevaEstadistica] = useState(false);
   const [showCreateLista, setShowCreateLista] = useState(false);
   const [showCreateTablero, setShowCreateTablero] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -288,8 +295,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   };
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
+  const estadisticasCustom = useEstadisticasCustom(vocaliaId);
+  const estadisticaActiva = dashFilter.startsWith("custom:")
+    ? estadisticasCustom.estadisticas.find((e) => e.id === dashFilter.slice(7)) ?? null
+    : null;
+  const campoActivo = estadisticaActiva ? buscarCampo(esEstudio, estadisticaActiva.campo) : null;
+
   const dashCausas = (() => {
     const all = responsableFiltro.filtrar(dashCausasRemote.causas);
+    if (estadisticaActiva) return all.filter((c) => cumpleEstadistica(c, campoActivo, estadisticaActiva.valor));
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
         (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
@@ -305,6 +319,22 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       default: return all;
     }
   })();
+
+  const labelFiltro = (f: DashboardFilter) =>
+    f.startsWith("custom:")
+      ? (estadisticasCustom.estadisticas.find((e) => e.id === f.slice(7))?.nombre ?? "Estadística")
+      : dashFilterLabels[f as DashboardBaseFilter];
+
+  const columnaPrioritaria = estadisticaActiva
+    ? campoActivo?.columna ?? null
+    : COLUMNA_PRIORITARIA[dashFilter as DashboardBaseFilter] ?? null;
+
+  const eliminarEstadistica = async (id: string) => {
+    const { error } = await estadisticasCustom.eliminar(id);
+    if (error) { toast.error(error); return; }
+    if (dashFilter === `custom:${id}`) setDashFilter("all");
+    toast.success("Estadística eliminada");
+  };
 
   const causasEventos30dCount = responsableFiltro
     .filtrar(dashCausasRemote.causas)
@@ -604,7 +634,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           >
             {view === "dashboard" && (
               <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-hidden pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
+                    <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
                     {mostrarKpis ? "Ocultar estadísticas" : "Mostrar estadísticas"}
@@ -618,7 +651,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       animate={{ opacity: 1, height: "auto", y: 0 }}
                       exit={{ opacity: 0, height: 0, y: -8 }}
                       transition={{ duration: 0.28, ease: "easeInOut" }}
-                      className="overflow-hidden shrink-0"
+                      className="overflow-hidden shrink-0 space-y-4"
                     >
                       {esEstudio
                         ? <KpiCardsEstudio
@@ -635,6 +668,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                             activeFilter={dashFilter}
                             onSelectFilter={(f) => setDashFilter(f as DashboardFilter)}
                           />}
+                      <KpiCardsCustom
+                        estadisticas={estadisticasCustom.estadisticas}
+                        causas={responsableFiltro.filtrar(dashCausasRemote.causas)}
+                        esEstudio={esEstudio}
+                        activeFilter={dashFilter}
+                        onSelectFilter={(f) => setDashFilter(f)}
+                        onEliminar={eliminarEstadistica}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -642,7 +683,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-card/80 border border-border/60 rounded-full shadow-soft transition-colors">
                       <Filter className="w-3.5 h-3.5" />
-                      Filtrar: <span className="text-foreground font-semibold">{dashFilterLabels[dashFilter]}</span>
+                      Filtrar: <span className="text-foreground font-semibold">{labelFiltro(dashFilter)}</span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-56">
                       <DropdownMenuLabel className="text-xs">Filtrar por lista</DropdownMenuLabel>
@@ -656,6 +697,21 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                           {dashFilterLabels[f]}
                         </DropdownMenuItem>
                       ))}
+                      {estadisticasCustom.estadisticas.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-xs">Personalizadas</DropdownMenuLabel>
+                          {estadisticasCustom.estadisticas.map((e) => (
+                            <DropdownMenuItem
+                              key={e.id}
+                              onSelect={() => setDashFilter(`custom:${e.id}`)}
+                              className={`text-xs ${dashFilter === `custom:${e.id}` ? "bg-primary/10 text-primary" : ""}`}
+                            >
+                              {e.nombre}
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {dashFilter !== "all" && (
@@ -663,7 +719,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       onClick={() => setDashFilter("all")}
                       className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
                     >
-                      {dashFilterLabels[dashFilter]}
+                      {labelFiltro(dashFilter)}
                       <X className="w-3 h-3" /> Quitar filtro
                     </button>
                   )}
@@ -680,14 +736,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 >
                   <CausasTable
                     causas={dashCausas}
-                    title={esEstudio && dashFilter === "all" ? "Todas las causas del estudio" : `Causas — ${dashFilterLabels[dashFilter]}`}
+                    title={esEstudio && dashFilter === "all" ? "Todas las causas del estudio" : `Causas — ${labelFiltro(dashFilter)}`}
                     listKey="todas"
                     allCausas={dashCausas}
                     onMutated={dashCausasRemote.refetch}
                     onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}
-                  priorityColumnKey={COLUMNA_PRIORITARIA[dashFilter] ?? null}
+                  priorityColumnKey={columnaPrioritaria}
                   {...remoteTableCommon}
                   />
                 </RemoteListSection>
@@ -1004,6 +1060,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           delegadasRemote.refetch();
           dashboardKpis.refetch();
         }}
+      />
+      <NuevaEstadisticaDialog
+        open={showNuevaEstadistica}
+        onOpenChange={setShowNuevaEstadistica}
+        esEstudio={esEstudio}
+        causas={dashCausasRemote.causas}
+        onCrear={estadisticasCustom.crear}
       />
       <CrearListaDialog
         open={showCreateLista}
