@@ -163,7 +163,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
       {/* CASO 1 — simple */}
       <AlertDialog open={step === "case1"} onOpenChange={(o) => !o && cerrar()}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Confirmás abandonar {tribunal?.nombre ?? "la oficina"}?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -186,7 +186,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
       {/* CASO 2 — único admin con otros miembros */}
       <Dialog open={step === "case2"} onOpenChange={(o) => !o && cerrar()}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Sos el único admin de esta oficina</DialogTitle>
             <DialogDescription>
@@ -221,7 +221,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
       {/* CASO 3 — único miembro */}
       <Dialog open={step === "case3"} onOpenChange={(o) => !o && cerrar()}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
@@ -281,7 +281,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
       {/* CONFIRM ARCHIVE */}
       <AlertDialog open={step === "confirm-archive"} onOpenChange={(o) => !o && setStep("case3")}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Archivar {tribunal?.nombre}?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -303,7 +303,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
       {/* CONFIRM DELETE ALL */}
       <AlertDialog open={step === "confirm-delete"} onOpenChange={(o) => !o && setStep("case3")}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">¿Eliminar TODO definitivamente?</AlertDialogTitle>
             <AlertDialogDescription>

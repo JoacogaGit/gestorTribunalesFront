@@ -240,7 +240,7 @@ export default function CausasTable({
       key: "numero",
       label: "N° Causa",
       headClass: "whitespace-nowrap",
-      cellClass: "font-mono text-xs font-semibold whitespace-nowrap",
+      cellClass: "font-mono text-sm font-bold whitespace-nowrap",
       sortValue: (c) => c.numero,
       render: (c) => {
         const conexaId = c.causaConexaId ?? null;
@@ -315,7 +315,7 @@ export default function CausasTable({
 
     {
       key: "caratula", label: "Carátula",
-      cellClass: "text-sm font-medium text-foreground max-w-[250px] break-words whitespace-normal align-top",
+      cellClass: "text-[15px] font-semibold text-foreground max-w-[250px] break-words whitespace-normal align-top",
       sortValue: (c) => getCaratula(c),
       render: (c) => c.link
         ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-baseline gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a>
