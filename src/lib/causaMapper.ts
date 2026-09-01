@@ -77,6 +77,7 @@ export type DbCausa = {
   color_destacado: string | null;
   fuero?: string | null;
   estado_procesal?: string | null;
+  rol_estudio?: string | null;
   sujetos?: DbSujeto[];
 };
 
@@ -196,6 +197,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
     subestadoTramite: row.subestados_tramite?.nombre ?? null,
     fuero: row.fuero ?? null,
     estadoProcesal: row.estado_procesal ?? null,
+    rolEstudio: row.rol_estudio ?? null,
     delitos: Array.from(new Set(sujetos.map((s) => (s.delito || "").trim()).filter(Boolean))),
     vocalia: 1,
   };
