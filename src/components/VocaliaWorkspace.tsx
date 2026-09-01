@@ -633,7 +633,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           >
             {view === "dashboard" && (
               <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-hidden pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
+                    <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
                     {mostrarKpis ? "Ocultar estadísticas" : "Mostrar estadísticas"}
@@ -647,7 +650,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       animate={{ opacity: 1, height: "auto", y: 0 }}
                       exit={{ opacity: 0, height: 0, y: -8 }}
                       transition={{ duration: 0.28, ease: "easeInOut" }}
-                      className="overflow-hidden shrink-0"
+                      className="overflow-hidden shrink-0 space-y-4"
                     >
                       {esEstudio
                         ? <KpiCardsEstudio
@@ -664,6 +667,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                             activeFilter={dashFilter}
                             onSelectFilter={(f) => setDashFilter(f as DashboardFilter)}
                           />}
+                      <KpiCardsCustom
+                        estadisticas={estadisticasCustom.estadisticas}
+                        causas={responsableFiltro.filtrar(dashCausasRemote.causas)}
+                        esEstudio={esEstudio}
+                        activeFilter={dashFilter}
+                        onSelectFilter={(f) => setDashFilter(f)}
+                        onEliminar={eliminarEstadistica}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -671,7 +682,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-card/80 border border-border/60 rounded-full shadow-soft transition-colors">
                       <Filter className="w-3.5 h-3.5" />
-                      Filtrar: <span className="text-foreground font-semibold">{dashFilterLabels[dashFilter]}</span>
+                      Filtrar: <span className="text-foreground font-semibold">{labelFiltro(dashFilter)}</span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-56">
                       <DropdownMenuLabel className="text-xs">Filtrar por lista</DropdownMenuLabel>
@@ -685,6 +696,21 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                           {dashFilterLabels[f]}
                         </DropdownMenuItem>
                       ))}
+                      {estadisticasCustom.estadisticas.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-xs">Personalizadas</DropdownMenuLabel>
+                          {estadisticasCustom.estadisticas.map((e) => (
+                            <DropdownMenuItem
+                              key={e.id}
+                              onSelect={() => setDashFilter(`custom:${e.id}`)}
+                              className={`text-xs ${dashFilter === `custom:${e.id}` ? "bg-primary/10 text-primary" : ""}`}
+                            >
+                              {e.nombre}
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {dashFilter !== "all" && (
@@ -692,7 +718,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       onClick={() => setDashFilter("all")}
                       className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
                     >
-                      {dashFilterLabels[dashFilter]}
+                      {labelFiltro(dashFilter)}
                       <X className="w-3 h-3" /> Quitar filtro
                     </button>
                   )}
