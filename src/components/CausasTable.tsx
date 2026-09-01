@@ -321,8 +321,8 @@ export default function CausasTable({
       cellClass: "text-[15px] font-semibold text-foreground max-w-[250px] break-words whitespace-normal align-top",
       sortValue: (c) => getCaratula(c),
       render: (c) => c.link
-        ? <a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-baseline gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a>
-        : getCaratula(c),
+        ? <span className="line-clamp-2"><a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-baseline gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a></span>
+        : <span className="line-clamp-2">{getCaratula(c)}</span>,
     },
     { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[250px] break-words whitespace-normal align-top", sortValue: (c) => c.delito, render: (c) => c.delito },
     {
@@ -330,7 +330,7 @@ export default function CausasTable({
       cellClass: "max-w-[140px] align-top",
       sortValue: (c) => c.imputados[0]?.estadoLibertad,
       render: (c) => (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 max-h-[48px] overflow-hidden">
           {c.imputados.map((imp, i) => (
             <span key={i} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${libertadBadge[imp.estadoLibertad]}`}>{imp.estadoLibertad}</span>
           ))}
@@ -415,7 +415,7 @@ export default function CausasTable({
         if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
         items.sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
         return (
-          <div className="space-y-0.5 text-xs whitespace-nowrap">
+          <div className="space-y-0.5 text-xs whitespace-nowrap max-h-[48px] overflow-hidden">
             {items.map((it, i) => (
               <div key={i} className={getProximityColor(it.fecha)}>{fmtDate(it.fecha)}</div>
             ))}
@@ -428,7 +428,7 @@ export default function CausasTable({
       cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top",
       sortValue: (c) => (c.otrosIntervinientes || []).map((o) => o.nombre).join(", "),
       render: (c) => (c.otrosIntervinientes && c.otrosIntervinientes.length > 0)
-        ? <div className="space-y-0.5">{c.otrosIntervinientes.map((o, i) => <div key={i}><span className="font-medium text-foreground/80">{o.rol}:</span> {o.nombre}</div>)}</div>
+        ? <div className="space-y-0.5 max-h-[48px] overflow-hidden">{c.otrosIntervinientes.map((o, i) => <div key={i}><span className="font-medium text-foreground/80">{o.rol}:</span> {o.nombre}</div>)}</div>
         : <span className="text-muted-foreground">—</span>,
     },
     {
@@ -685,7 +685,7 @@ export default function CausasTable({
 
   return (
     <>
-      <div className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-[480px]"}`}>
+      <div className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}>
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap shrink-0">
         {displayTitle && (
           <div className="flex items-center gap-2 group">
@@ -924,8 +924,8 @@ export default function CausasTable({
         </div>
       )}
 
-      <div className={`elevated-card rounded-xl overflow-hidden flex-col flex-1 min-h-[420px] ${isMobile ? "hidden" : "flex"}`}>
-        <div className="flex-1 min-h-[360px] overflow-auto">
+      <div className={`elevated-card rounded-xl overflow-hidden flex-col flex-1 min-h-0 ${isMobile ? "hidden" : "flex"}`}>
+        <div className="flex-1 min-h-0 overflow-auto">
 
 
           <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)}`}>
