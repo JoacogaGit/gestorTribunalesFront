@@ -22,12 +22,12 @@ export default function KpiCardsEstudio({ causas, loading, activeFilter, onSelec
     const delitos = new Set(causas.flatMap((c) => c.delitos ?? []).filter(Boolean));
 
     return [
-      { key: "total", filter: "all", label: "Causas del estudio", value: causas.length, icon: Briefcase, color: "bg-alert-ok/10 text-alert-ok", glow: "shadow-[0_0_0_1px_hsl(var(--alert-ok)/0.45),0_0_14px_hsl(var(--alert-ok)/0.35)]", empty: "Sin causas cargadas" },
-      { key: "instruccion", filter: "instruccion", label: "En instrucción", value: cuenta(EP_INSTRUCCION), icon: Search, color: "bg-alert-info/10 text-alert-info", glow: "shadow-[0_0_0_1px_hsl(var(--alert-info)/0.45),0_0_14px_hsl(var(--alert-info)/0.35)]", empty: "Sin causas en instrucción" },
-      { key: "elevadas", filter: "elevadas", label: "Elevadas a juicio", value: cuenta(EP_ELEVADAS), icon: Scale, color: "bg-accent/10 text-accent", glow: "shadow-[0_0_0_1px_hsl(var(--accent)/0.5),0_0_14px_hsl(var(--accent)/0.4)]", empty: "Sin causas elevadas" },
-      { key: "recurridas", filter: "recurridas", label: "Recurridas", value: cuenta(EP_RECURRIDAS), icon: Gavel, color: "bg-alert-warning/10 text-alert-warning", glow: "shadow-[0_0_0_1px_hsl(var(--alert-warning)/0.45),0_0_14px_hsl(var(--alert-warning)/0.35)]", empty: "Sin recursos" },
-      { key: "detenidos", filter: "detenidos", label: "Con detenidos", value: detenidos, icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", glow: "shadow-[0_0_0_1px_hsl(var(--alert-urgent)/0.45),0_0_14px_hsl(var(--alert-urgent)/0.35)]", empty: "No hay detenidos" },
-      { key: "fueros", label: "Fueros / delitos", value: fueros.size, icon: Landmark, color: "bg-primary/10 text-primary", glow: "shadow-[0_0_0_1px_hsl(var(--primary)/0.45),0_0_14px_hsl(var(--primary)/0.35)]", empty: "Sin fueros cargados", sub: `${delitos.size} delitos` },
+      { key: "total", filter: "all", label: "Causas del estudio", value: causas.length, icon: Briefcase, color: "bg-alert-ok/10 text-alert-ok", glow: "kpi-glow-ok", empty: "Sin causas cargadas" },
+      { key: "instruccion", filter: "instruccion", label: "En instrucción", value: cuenta(EP_INSTRUCCION), icon: Search, color: "bg-alert-info/10 text-alert-info", glow: "kpi-glow-info", empty: "Sin causas en instrucción" },
+      { key: "elevadas", filter: "elevadas", label: "Elevadas a juicio", value: cuenta(EP_ELEVADAS), icon: Scale, color: "bg-accent/10 text-accent", glow: "kpi-glow-accent", empty: "Sin causas elevadas" },
+      { key: "recurridas", filter: "recurridas", label: "Recurridas", value: cuenta(EP_RECURRIDAS), icon: Gavel, color: "bg-alert-warning/10 text-alert-warning", glow: "kpi-glow-warning", empty: "Sin recursos" },
+      { key: "detenidos", filter: "detenidos", label: "Con detenidos", value: detenidos, icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", glow: "kpi-glow-urgent", empty: "No hay detenidos" },
+      { key: "fueros", label: "Fueros / delitos", value: fueros.size, icon: Landmark, color: "bg-primary/10 text-primary", glow: "kpi-glow-primary", empty: "Sin fueros cargados", sub: `${delitos.size} delitos` },
     ];
   }, [causas]);
 

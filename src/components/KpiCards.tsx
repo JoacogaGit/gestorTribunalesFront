@@ -17,11 +17,11 @@ interface KpiDef {
 }
 
 const KPI_DEFS: KpiDef[] = [
-  { key: "detenidos", label: "Detenidos", icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", glow: "shadow-[0_0_0_1px_hsl(var(--alert-urgent)/0.45),0_0_14px_hsl(var(--alert-urgent)/0.35)]", empty: "No hay detenidos", filter: "detenidos" },
-  { key: "ppProximas", label: "PP próximas", icon: Clock, color: "bg-alert-warning/10 text-alert-warning", glow: "shadow-[0_0_0_1px_hsl(var(--alert-warning)/0.45),0_0_14px_hsl(var(--alert-warning)/0.35)]", empty: "Sin PP próximas" },
-  { key: "rebeldes", label: "Rebeldes", icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", glow: "shadow-[0_0_0_1px_hsl(var(--alert-warning)/0.45),0_0_14px_hsl(var(--alert-warning)/0.35)]", empty: "No hay rebeldes", filter: "rebeldes" },
-  { key: "eventos30d", label: "Eventos 30 días", icon: Scale, color: "bg-accent/10 text-accent", glow: "shadow-[0_0_0_1px_hsl(var(--accent)/0.5),0_0_14px_hsl(var(--accent)/0.4)]", empty: "Sin eventos próximos", filter: "eventos30d" },
-  { key: "totalCausas", label: "Total causas", icon: Users, color: "bg-alert-ok/10 text-alert-ok", glow: "shadow-[0_0_0_1px_hsl(var(--alert-ok)/0.45),0_0_14px_hsl(var(--alert-ok)/0.35)]", empty: "No hay causas activas", filter: "all" },
+  { key: "detenidos", label: "Detenidos", icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", glow: "kpi-glow-urgent", empty: "No hay detenidos", filter: "detenidos" },
+  { key: "ppProximas", label: "PP próximas", icon: Clock, color: "bg-alert-warning/10 text-alert-warning", glow: "kpi-glow-warning", empty: "Sin PP próximas" },
+  { key: "rebeldes", label: "Rebeldes", icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", glow: "kpi-glow-warning", empty: "No hay rebeldes", filter: "rebeldes" },
+  { key: "eventos30d", label: "Eventos 30 días", icon: Scale, color: "bg-accent/10 text-accent", glow: "kpi-glow-accent", empty: "Sin eventos próximos", filter: "eventos30d" },
+  { key: "totalCausas", label: "Total causas", icon: Users, color: "bg-alert-ok/10 text-alert-ok", glow: "kpi-glow-ok", empty: "No hay causas activas", filter: "all" },
 ];
 
 

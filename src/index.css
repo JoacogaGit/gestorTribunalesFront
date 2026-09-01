@@ -178,6 +178,14 @@
     box-shadow: var(--shadow-elevated);
   }
 
+  /* Resplandor sutil al activar una tarjeta de estadística (mismo color que su ícono). */
+  .kpi-glow-urgent { box-shadow: 0 0 0 1px hsl(var(--alert-urgent) / 0.5), 0 0 16px 2px hsl(var(--alert-urgent) / 0.35) !important; }
+  .kpi-glow-warning { box-shadow: 0 0 0 1px hsl(var(--alert-warning) / 0.5), 0 0 16px 2px hsl(var(--alert-warning) / 0.35) !important; }
+  .kpi-glow-info { box-shadow: 0 0 0 1px hsl(var(--alert-info) / 0.5), 0 0 16px 2px hsl(var(--alert-info) / 0.35) !important; }
+  .kpi-glow-ok { box-shadow: 0 0 0 1px hsl(var(--alert-ok) / 0.5), 0 0 16px 2px hsl(var(--alert-ok) / 0.35) !important; }
+  .kpi-glow-accent { box-shadow: 0 0 0 1px hsl(var(--accent) / 0.55), 0 0 16px 2px hsl(var(--accent) / 0.4) !important; }
+  .kpi-glow-primary { box-shadow: 0 0 0 1px hsl(var(--primary) / 0.5), 0 0 16px 2px hsl(var(--primary) / 0.35) !important; }
+
   .title-underline {
     position: relative;
     display: inline-block;
