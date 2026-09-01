@@ -130,7 +130,7 @@ export function getProximityLevel(fecha: string): ProximityLevel {
 
 export function getProximityColor(fecha: string): string {
   switch (getProximityLevel(fecha)) {
-    case "vencido": return "text-red-600 font-bold";
+    case "vencido": return "text-muted-foreground font-normal";
     case "critico": return "text-red-500 font-semibold";
     case "urgente": return "text-orange-600 font-semibold";
     case "proximo": return "text-orange-500";

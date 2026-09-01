@@ -680,6 +680,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Podés <strong>seguir usando la app en otras pestañas</strong>. La migración corre en esta.</span></li>
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Si <strong>cambiás de pestaña por mucho tiempo</strong>, el navegador puede ralentizar el proceso.</span></li>
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Las causas <strong>ya existentes en {vocaliaNombre} serán omitidas</strong> automáticamente para evitar duplicados.</span></li>
+              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Es posible que <strong>algunos lotes no se procesen y muestren error</strong>. No te preocupes: esos lotes quedan separados y podés volver a migrarlos con el botón de <strong>reintentar</strong>. El resto se procesa normalmente.</span></li>
             </ul>
             <label className="flex items-start gap-2.5 pt-2 cursor-pointer">
               <Checkbox checked={confirmacionOk} onCheckedChange={(v) => setConfirmacionOk(!!v)} className="mt-0.5" />
@@ -872,6 +873,13 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
               <> {" "}<span className="text-amber-600 dark:text-amber-400">Se omitieron <strong>{omitidas.length}</strong> causa{omitidas.length === 1 ? "" : "s"} duplicada{omitidas.length === 1 ? "" : "s"}.</span></>
             )}
           </p>
+          <Alert className="mb-6 text-left border-accent/40 bg-accent/5">
+            <CheckCircle2 className="w-4 h-4 text-accent" />
+            <AlertTitle>¡Listo!</AlertTitle>
+            <AlertDescription>
+              Si no ves las causas todavía, no te asustes: tocá el ícono de <strong>recargar</strong> para actualizar y empezar a trabajar.
+            </AlertDescription>
+          </Alert>
           <Button onClick={() => { setExito(null); handleDescartar(); onDone?.(); }}>
             Ir al panel <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
