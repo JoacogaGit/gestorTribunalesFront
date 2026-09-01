@@ -128,7 +128,7 @@ interface Props {
   onUpdateUser: (u: { name: string; email: string }) => void;
 }
 
-type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos";
+type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "instruccion" | "elevadas" | "recurridas";
 
 const dashFilterLabels: Record<DashboardFilter, string> = {
   all: "Todas (trámite + recurso)",
@@ -137,7 +137,13 @@ const dashFilterLabels: Record<DashboardFilter, string> = {
   rebeldes: "Rebeldes",
   sjp: "SJP / Probation",
   recursos: "Recursos",
+  instruccion: "En instrucción",
+  elevadas: "Elevadas a juicio",
+  recurridas: "Recurridas",
 };
+
+const FILTROS_JUDICIAL: DashboardFilter[] = ["all", "tramite", "detenidos", "rebeldes", "sjp", "recursos"];
+const FILTROS_ESTUDIO: DashboardFilter[] = ["all", "instruccion", "elevadas", "recurridas", "detenidos"];
 
 export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser }: Props) {
   const { vocalia, setVocalia } = useVocaliaActual();
@@ -255,6 +261,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       case "rebeldes": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
       case "sjp": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP"));
       case "recursos": return all.filter((c) => ["Casación", "Queja en Corte", "REX", "Apelación", "TSJ"].includes(c.estadoCausa));
+      case "instruccion": return all.filter((c) => EP_INSTRUCCION.includes((c.estadoProcesal || "").trim()));
+      case "elevadas": return all.filter((c) => EP_ELEVADAS.includes((c.estadoProcesal || "").trim()));
+      case "recurridas": return all.filter((c) => EP_RECURRIDAS.includes((c.estadoProcesal || "").trim()));
       default: return all;
     }
   })();
@@ -559,10 +568,34 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     {mostrarKpis ? "Ocultar estadísticas" : "Mostrar estadísticas"}
                   </Button>
                 </div>
-                {mostrarKpis && (esEstudio
-                  ? <KpiCardsEstudio causas={dashCausas} loading={dashCausasRemote.loading} />
-                  : <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
-                )}
+                <AnimatePresence initial={false}>
+                  {mostrarKpis && (
+                    <motion.div
+                      key="kpis"
+                      initial={{ opacity: 0, height: 0, y: -8 }}
+                      animate={{ opacity: 1, height: "auto", y: 0 }}
+                      exit={{ opacity: 0, height: 0, y: -8 }}
+                      transition={{ duration: 0.28, ease: "easeInOut" }}
+                      className="overflow-hidden shrink-0"
+                    >
+                      {esEstudio
+                        ? <KpiCardsEstudio
+                            causas={responsableFiltro.filtrar(dashCausasRemote.causas)}
+                            loading={dashCausasRemote.loading}
+                            activeFilter={dashFilter}
+                            onSelectFilter={(f) => setDashFilter(f as DashboardFilter)}
+                          />
+                        : <KpiCards
+                            kpis={dashboardKpis.kpis}
+                            loading={dashboardKpis.loading}
+                            error={dashboardKpis.error}
+                            onRetry={dashboardKpis.refetch}
+                            activeFilter={dashFilter}
+                            onSelectFilter={(f) => setDashFilter(f as DashboardFilter)}
+                          />}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-card/80 border border-border/60 rounded-full shadow-soft transition-colors">
@@ -572,7 +605,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     <DropdownMenuContent align="start" className="w-56">
                       <DropdownMenuLabel className="text-xs">Filtrar por lista</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      {(Object.keys(dashFilterLabels) as DashboardFilter[]).map((f) => (
+                      {(esEstudio ? FILTROS_ESTUDIO : FILTROS_JUDICIAL).map((f) => (
                         <DropdownMenuItem
                           key={f}
                           onSelect={() => setDashFilter(f)}
@@ -586,8 +619,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   {dashFilter !== "all" && (
                     <button
                       onClick={() => setDashFilter("all")}
-                      className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                      className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
                     >
+                      {dashFilterLabels[dashFilter]}
                       <X className="w-3 h-3" /> Quitar filtro
                     </button>
                   )}
