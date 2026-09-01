@@ -1,7 +1,7 @@
 import { parseLocalTime } from "@/lib/parseDate";
 
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
-export type EstadoCausa = "En trámite" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ";
+export type EstadoCausa = "En trámite" | "Delegada" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ";
 
 export interface Audiencia {
   tipo: string;
