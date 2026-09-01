@@ -596,8 +596,14 @@ export default function CausasTable({
     const cols = orderedFullColumns.filter((c) => !hiddenCols.has(c.key));
     if (!priorityColumnKey) return cols;
     const idx = cols.findIndex((c) => c.key === priorityColumnKey);
-    if (idx === -1) return cols;
-    const [col] = cols.splice(idx, 1);
+    let col: ColDef | undefined;
+    if (idx === -1) {
+      // La columna está oculta: la mostramos temporalmente mientras dure el filtro.
+      col = orderedFullColumns.find((c) => c.key === priorityColumnKey);
+      if (!col) return cols;
+    } else {
+      [col] = cols.splice(idx, 1);
+    }
     // Insertar en 3er lugar (después de N° de expediente y carátula) si esas columnas existen.
     const target = Math.min(2, cols.length);
     cols.splice(target, 0, col);
