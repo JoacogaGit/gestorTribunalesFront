@@ -1061,6 +1061,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           dashboardKpis.refetch();
         }}
       />
+      <NuevaEstadisticaDialog
+        open={showNuevaEstadistica}
+        onOpenChange={setShowNuevaEstadistica}
+        esEstudio={esEstudio}
+        causas={dashCausasRemote.causas}
+        onCrear={estadisticasCustom.crear}
+      />
       <CrearListaDialog
         open={showCreateLista}
         onOpenChange={setShowCreateLista}
