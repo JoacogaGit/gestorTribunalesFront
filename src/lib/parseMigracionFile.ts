@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import mammoth from "mammoth";
+import { extraerColoresFilasDocx, extraerColoresFilasExcel, FilaColoreada } from "@/lib/coloresFilaOrigen";
 
 export type TipoArchivo = "excel" | "csv" | "docx" | "txt" | "lex100" | "pdf" | "lex100pdf";
 
@@ -14,6 +15,8 @@ export interface ArchivoParseado {
   tipo: TipoArchivo;
   nombreArchivo: string;
   pestanas: PestanaParseada[];
+  /** Filas del archivo original que tenían color de fondo, mapeadas a la paleta. */
+  filasColoreadas?: FilaColoreada[];
 }
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -26,10 +29,12 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
 
   if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
     const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array" });
+    const wb = XLSX.read(buf, { type: "array", cellStyles: true });
+    const filasColoreadas: FilaColoreada[] = [];
     let esLex100 = false;
     const pestanas: PestanaParseada[] = wb.SheetNames.map((sheetName) => {
       const ws = wb.Sheets[sheetName];
+      filasColoreadas.push(...extraerColoresFilasExcel(ws));
       const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, blankrows: false, defval: "" });
       const norm = rows.map((row) => (row ?? []).map((c) => String(c ?? "").trim()));
       const idxLex = detectarFilaEncabezadoLex100(norm);
@@ -39,7 +44,7 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
       }
       return { nombre: sheetName, contenido: norm };
     });
-    return { tipo: esLex100 ? "lex100" : "excel", nombreArchivo: file.name, pestanas };
+    return { tipo: esLex100 ? "lex100" : "excel", nombreArchivo: file.name, pestanas, filasColoreadas };
   }
 
 
@@ -56,12 +61,13 @@ export async function parseMigracionFile(file: File): Promise<ArchivoParseado> {
   if (lower.endsWith(".docx")) {
     const buf = await file.arrayBuffer();
     const { value: html } = await mammoth.convertToHtml({ arrayBuffer: buf });
+    const filasColoreadas = await extraerColoresFilasDocx(buf);
     const filas = extraerFilasDocx(html);
     if (filas.length > 0) {
-      return { tipo: "docx", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: filas }] };
+      return { tipo: "docx", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: filas }], filasColoreadas };
     }
     const { value } = await mammoth.extractRawText({ arrayBuffer: buf });
-    return { tipo: "docx", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: value }] };
+    return { tipo: "docx", nombreArchivo: file.name, pestanas: [{ nombre: file.name, contenido: value }], filasColoreadas };
   }
 
 
