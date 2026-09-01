@@ -66,6 +66,7 @@ export function getSemaforoDot(fecha: string): string {
 }
 
 export function getSemaforoText(fecha: string): string {
+  if (isFechaPasadaAR(fecha)) return "text-muted-foreground";
   switch (getSemaforoBucket(fecha)) {
     case "vencido": return "text-red-600 font-bold";
     case "muy_urgente": return "text-red-500 font-semibold";
