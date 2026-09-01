@@ -2,26 +2,27 @@ import { motion } from "framer-motion";
 import { BarChart3, Trash2 } from "lucide-react";
 import { Causa } from "@/data/mockCausas";
 import { EstadisticaCustom } from "@/hooks/useEstadisticasCustom";
-import { buscarCampo, cumpleEstadistica } from "@/lib/estadisticasCustom";
+import { buscarCriterio, cumpleEstadistica, etiquetaValor, EstadisticaCtx } from "@/lib/estadisticasCustom";
 import { resolverColor } from "@/lib/tableroColores";
 
 interface Props {
   estadisticas: EstadisticaCustom[];
   causas: Causa[];
   esEstudio: boolean;
+  ctx?: EstadisticaCtx;
   activeFilter?: string;
   onSelectFilter?: (filter: string) => void;
   onEliminar?: (id: string) => void;
 }
 
-export default function KpiCardsCustom({ estadisticas, causas, esEstudio, activeFilter, onSelectFilter, onEliminar }: Props) {
+export default function KpiCardsCustom({ estadisticas, causas, esEstudio, ctx, activeFilter, onSelectFilter, onEliminar }: Props) {
   if (estadisticas.length === 0) return null;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {estadisticas.map((e, i) => {
-        const campo = buscarCampo(esEstudio, e.campo);
-        const value = causas.filter((c) => cumpleEstadistica(c, campo, e.valor)).length;
+        const criterio = buscarCriterio(esEstudio, e.campo);
+        const value = causas.filter((c) => cumpleEstadistica(c, criterio, e.valor, ctx ?? {})).length;
         const filtro = `custom:${e.id}`;
         const active = activeFilter === filtro;
         const hex = resolverColor(e.color) ?? "#64748b";
@@ -59,7 +60,7 @@ export default function KpiCardsCustom({ estadisticas, causas, esEstudio, active
             )}
             <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               {e.nombre}
-              <span className="ml-1 normal-case text-muted-foreground/70">· {e.valor}</span>
+              <span className="ml-1 normal-case text-muted-foreground/70">· {etiquetaValor(criterio, e.valor)}</span>
             </span>
           </motion.div>
         );

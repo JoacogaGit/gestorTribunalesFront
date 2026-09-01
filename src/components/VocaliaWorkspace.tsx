@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
@@ -60,7 +60,10 @@ import AgrupadasView from "@/components/estudio/AgrupadasView";
 import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
 import { useEventosProximos30d } from "@/hooks/useEventosProximos30d";
 import { useEstadisticasCustom } from "@/hooks/useEstadisticasCustom";
-import { buscarCampo, cumpleEstadistica } from "@/lib/estadisticasCustom";
+import { buscarCriterio, cumpleEstadistica } from "@/lib/estadisticasCustom";
+import { useEventosPorCausa } from "@/hooks/useEventosPorCausa";
+import { ESTADOS_PROCESALES_LISTA } from "@/lib/estadosProcesales";
+import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
 import KpiCardsCustom from "@/components/estadisticas/KpiCardsCustom";
 import NuevaEstadisticaDialog from "@/components/estadisticas/NuevaEstadisticaDialog";
 import { parseLocalTime } from "@/lib/parseDate";
@@ -299,11 +302,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const estadisticaActiva = dashFilter.startsWith("custom:")
     ? estadisticasCustom.estadisticas.find((e) => e.id === dashFilter.slice(7)) ?? null
     : null;
-  const campoActivo = estadisticaActiva ? buscarCampo(esEstudio, estadisticaActiva.campo) : null;
+  const criterioActivo = estadisticaActiva ? buscarCriterio(esEstudio, estadisticaActiva.campo) : null;
+  const { eventosPorCausa } = useEventosPorCausa(vocaliaId);
+  const estadisticaCtx = useMemo(() => ({ eventosPorCausa }), [eventosPorCausa]);
+  const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
   const dashCausas = (() => {
     const all = responsableFiltro.filtrar(dashCausasRemote.causas);
-    if (estadisticaActiva) return all.filter((c) => cumpleEstadistica(c, campoActivo, estadisticaActiva.valor));
+    if (estadisticaActiva) return all.filter((c) => cumpleEstadistica(c, criterioActivo, estadisticaActiva.valor, estadisticaCtx));
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
         (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
@@ -326,7 +332,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       : dashFilterLabels[f as DashboardBaseFilter];
 
   const columnaPrioritaria = estadisticaActiva
-    ? campoActivo?.columna ?? null
+    ? criterioActivo?.columna ?? null
     : COLUMNA_PRIORITARIA[dashFilter as DashboardBaseFilter] ?? null;
 
   const eliminarEstadistica = async (id: string) => {
@@ -672,6 +678,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                         estadisticas={estadisticasCustom.estadisticas}
                         causas={responsableFiltro.filtrar(dashCausasRemote.causas)}
                         esEstudio={esEstudio}
+                        ctx={estadisticaCtx}
                         activeFilter={dashFilter}
                         onSelectFilter={(f) => setDashFilter(f)}
                         onEliminar={eliminarEstadistica}
@@ -1066,6 +1073,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         onOpenChange={setShowNuevaEstadistica}
         esEstudio={esEstudio}
         causas={dashCausasRemote.causas}
+        subestados={subestadosEspacio.subestados.map((s) => s.nombre)}
+        estadosProcesales={ESTADOS_PROCESALES_LISTA}
         onCrear={estadisticasCustom.crear}
       />
       <CrearListaDialog
