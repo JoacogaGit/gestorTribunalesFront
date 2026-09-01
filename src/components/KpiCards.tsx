@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Gavel, AlertTriangle, ShieldAlert, Clock, Scale, RefreshCw } from "lucide-react";
+import { Users, AlertTriangle, ShieldAlert, Clock, Scale, RefreshCw } from "lucide-react";
 import { DashboardKpis } from "@/hooks/useDashboardKpis";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,18 +10,20 @@ interface KpiDef {
   label: string;
   icon: typeof ShieldAlert;
   color: string;
+  /** Resplandor sutil del mismo color que el ícono, al activarse la tarjeta. */
+  glow: string;
   empty: string;
   filter?: string;
 }
 
 const KPI_DEFS: KpiDef[] = [
-  { key: "detenidos", label: "Detenidos", icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", empty: "No hay detenidos", filter: "detenidos" },
-  { key: "juiciosEsteMes", label: "Juicios este mes", icon: Gavel, color: "bg-alert-info/10 text-alert-info", empty: "Sin juicios este mes" },
-  { key: "ppProximas", label: "PP próximas", icon: Clock, color: "bg-alert-warning/10 text-alert-warning", empty: "Sin PP próximas" },
-  { key: "rebeldes", label: "Rebeldes", icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", empty: "No hay rebeldes", filter: "rebeldes" },
-  { key: "eventos30d", label: "Eventos 30 días", icon: Scale, color: "bg-accent/10 text-accent", empty: "Sin eventos próximos" },
-  { key: "totalCausas", label: "Total causas", icon: Users, color: "bg-alert-ok/10 text-alert-ok", empty: "No hay causas activas", filter: "all" },
+  { key: "detenidos", label: "Detenidos", icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", glow: "shadow-[0_0_0_1px_hsl(var(--alert-urgent)/0.45),0_0_14px_hsl(var(--alert-urgent)/0.35)]", empty: "No hay detenidos", filter: "detenidos" },
+  { key: "ppProximas", label: "PP próximas", icon: Clock, color: "bg-alert-warning/10 text-alert-warning", glow: "shadow-[0_0_0_1px_hsl(var(--alert-warning)/0.45),0_0_14px_hsl(var(--alert-warning)/0.35)]", empty: "Sin PP próximas" },
+  { key: "rebeldes", label: "Rebeldes", icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", glow: "shadow-[0_0_0_1px_hsl(var(--alert-warning)/0.45),0_0_14px_hsl(var(--alert-warning)/0.35)]", empty: "No hay rebeldes", filter: "rebeldes" },
+  { key: "eventos30d", label: "Eventos 30 días", icon: Scale, color: "bg-accent/10 text-accent", glow: "shadow-[0_0_0_1px_hsl(var(--accent)/0.5),0_0_14px_hsl(var(--accent)/0.4)]", empty: "Sin eventos próximos", filter: "eventos30d" },
+  { key: "totalCausas", label: "Total causas", icon: Users, color: "bg-alert-ok/10 text-alert-ok", glow: "shadow-[0_0_0_1px_hsl(var(--alert-ok)/0.45),0_0_14px_hsl(var(--alert-ok)/0.35)]", empty: "No hay causas activas", filter: "all" },
 ];
+
 
 interface Props {
   kpis: DashboardKpis;
@@ -35,8 +37,8 @@ interface Props {
 export default function KpiCards({ kpis, loading, error, onRetry, activeFilter, onSelectFilter }: Props) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-32 rounded-xl" />
         ))}
       </div>
@@ -57,7 +59,7 @@ export default function KpiCards({ kpis, loading, error, onRetry, activeFilter, 
   }
 
   return (
-    <div data-tour="kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div data-tour="kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {KPI_DEFS.map((kpi, i) => {
         const value = kpis[kpi.key];
         const clickable = !!kpi.filter && !!onSelectFilter;
@@ -71,7 +73,7 @@ export default function KpiCards({ kpis, loading, error, onRetry, activeFilter, 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.04, ease: "easeOut" }}
-            className={`elevated-card rounded-xl p-4 flex flex-col gap-2 text-left ${clickable ? "cursor-pointer hover:shadow-elevated transition-shadow" : ""} ${active ? "ring-2 ring-primary" : ""}`}
+            className={`elevated-card rounded-xl p-4 flex flex-col gap-2 text-left ${clickable ? "cursor-pointer hover:shadow-elevated" : ""} transition-shadow duration-300 ${active ? kpi.glow : ""}`}
           >
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
               <kpi.icon className="w-5 h-5" />

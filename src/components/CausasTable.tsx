@@ -129,6 +129,8 @@ interface Props {
   onOpenedCausa?: () => void;
   /** Acción extra opcional que se agrega al menú contextual de cada fila. */
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
+  /** Clave de columna que se mueve temporalmente al 3er lugar (después de N° y Carátula). */
+  priorityColumnKey?: string | null;
 }
 
 const PAGE_SIZE = 100;
@@ -162,7 +164,7 @@ CausaRow.displayName = "CausaRow";
 export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
-  onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction,
+  onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction, priorityColumnKey,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -590,10 +592,23 @@ export default function CausasTable({
     return ordered;
   }, [fullColumns, columnOrder]);
 
-  const visibleColumns = useMemo(
-    () => orderedFullColumns.filter((c) => !hiddenCols.has(c.key)),
-    [orderedFullColumns, hiddenCols],
-  );
+  const visibleColumns = useMemo(() => {
+    const cols = orderedFullColumns.filter((c) => !hiddenCols.has(c.key));
+    if (!priorityColumnKey) return cols;
+    const idx = cols.findIndex((c) => c.key === priorityColumnKey);
+    let col: ColDef | undefined;
+    if (idx === -1) {
+      // La columna está oculta: la mostramos temporalmente mientras dure el filtro.
+      col = orderedFullColumns.find((c) => c.key === priorityColumnKey);
+      if (!col) return cols;
+    } else {
+      [col] = cols.splice(idx, 1);
+    }
+    // Insertar en 3er lugar (después de N° de expediente y carátula) si esas columnas existen.
+    const target = Math.min(2, cols.length);
+    cols.splice(target, 0, col);
+    return cols;
+  }, [orderedFullColumns, hiddenCols, priorityColumnKey]);
   const displayTitle = customTitle || title;
 
   const handleDragEndColumn = (event: DragEndEvent) => {
