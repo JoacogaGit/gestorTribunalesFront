@@ -14,6 +14,7 @@ import { parseMigracionFile, ArchivoParseado, PestanaParseada } from "@/lib/pars
 import { CausaIA, ResultadoIA, ResultadoIADirecto, ResultadoIAMapeo, useMigracion } from "@/hooks/useMigracion";
 import { deduplicarCausas } from "@/lib/deduplicarCausas";
 import { normalizarCausa } from "@/lib/normalizarCausa";
+import { colorParaCausa } from "@/lib/coloresFilaOrigen";
 import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
 import ProgresoLotes from "@/components/migracion/ProgresoLotes";
 import { supabase } from "@/integrations/supabase/client";
@@ -468,6 +469,13 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   const finalizarConResultados = (lista: { pestana: string; resultado: ResultadoIADirecto }[]) => {
     const unificado = deduplicarCausas(lista);
+    const filasColoreadas = archivoCache?.filasColoreadas;
+    if (filasColoreadas && filasColoreadas.length > 0) {
+      unificado.causas = unificado.causas.map((c) => ({
+        ...c,
+        color_destacado: c.color_destacado ?? colorParaCausa(c, filasColoreadas),
+      }));
+    }
     setResultado(unificado);
     setEditable(unificado.causas);
     const inc: Record<string, boolean> = {};
