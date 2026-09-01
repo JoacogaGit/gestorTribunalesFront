@@ -131,9 +131,11 @@ interface Props {
   onUpdateUser: (u: { name: string; email: string }) => void;
 }
 
-type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "instruccion" | "elevadas" | "recurridas" | "eventos30d";
+type DashboardBaseFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "instruccion" | "elevadas" | "recurridas" | "eventos30d";
+/** Además de los filtros base, admite `custom:<id>` de estadísticas personalizadas. */
+type DashboardFilter = DashboardBaseFilter | string;
 
-const dashFilterLabels: Record<DashboardFilter, string> = {
+const dashFilterLabels: Record<DashboardBaseFilter, string> = {
   all: "Todas (trámite + recurso)",
   tramite: "En trámite",
   detenidos: "Con detenidos",
@@ -147,7 +149,7 @@ const dashFilterLabels: Record<DashboardFilter, string> = {
 };
 
 /** Columna que se prioriza (3er lugar) en la tabla según el filtro activo del dashboard. */
-const COLUMNA_PRIORITARIA: Partial<Record<DashboardFilter, string>> = {
+const COLUMNA_PRIORITARIA: Partial<Record<DashboardBaseFilter, string>> = {
   detenidos: "libertad",
   rebeldes: "libertad",
   sjp: "libertad",
@@ -159,7 +161,7 @@ const COLUMNA_PRIORITARIA: Partial<Record<DashboardFilter, string>> = {
   eventos30d: "eventosConFecha",
 };
 
-const FILTROS_JUDICIAL: DashboardFilter[] = ["all", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "eventos30d"];
+const FILTROS_JUDICIAL: DashboardBaseFilter[] = ["all", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "eventos30d"];
 
 /** true si la causa tiene algún vencimiento propio dentro de los próximos 30 días. */
 function tieneVencimientoProximo(c: Causa): boolean {
