@@ -813,7 +813,7 @@ export default function CausasTable({
             </button>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
+            <DropdownMenuTrigger data-tour="columnas" className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
               Categorías <ChevronDown className="w-3 h-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">

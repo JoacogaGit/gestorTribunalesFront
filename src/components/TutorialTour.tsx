@@ -53,14 +53,6 @@ async function demoBuscador() {
   }
 }
 
-async function demoTema() {
-  const btn = document.querySelector<HTMLButtonElement>('[data-tour="tema"]');
-  if (!btn) return;
-  await esperar(600);
-  btn.click();
-  await esperar(1400);
-  btn.click();
-}
 
 interface Props {
   onNavigate: (view: string) => void;
@@ -96,6 +88,37 @@ async function demoAbrirFormulario() {
   await esperar(700);
 }
 
+/** Escribe de a poco un texto en un input, como si lo tipeara una persona. */
+async function tipear(el: HTMLInputElement | null, texto: string, ms = 60) {
+  if (!el) return;
+  el.focus();
+  for (let i = 1; i <= texto.length; i++) {
+    setInputValue(el, texto.slice(0, i));
+    await esperar(ms);
+  }
+}
+
+/** Busca el input que está debajo de una etiqueta con ese texto. */
+function inputPorEtiqueta(scope: Element, etiqueta: string): HTMLInputElement | null {
+  const labels = Array.from(scope.querySelectorAll("label"));
+  const lab = labels.find((l) => (l.textContent ?? "").toLowerCase().includes(etiqueta.toLowerCase()));
+  return (lab?.parentElement?.querySelector("input") as HTMLInputElement) ?? null;
+}
+
+/** Completa en vivo los primeros campos de la causa, como ejemplo. */
+async function demoCompletarCausa() {
+  await demoAbrirFormulario();
+  const scope = document.querySelector('[data-tour="form-datos"]');
+  if (!scope) return;
+  await esperar(400);
+  await tipear(inputPorEtiqueta(scope, "Expediente"), "12345/2026", 70);
+  await esperar(400);
+  await tipear(inputPorEtiqueta(scope, "Carátula"), "Pérez, Juan s/ estafa", 45);
+  await esperar(300);
+  const desp = inputPorEtiqueta(scope, "Despachante") ?? inputPorEtiqueta(scope, "Empleado");
+  if (desp) await tipear(desp, "MCB", 180);
+}
+
 /** Cierra el formulario si quedó abierto. */
 function cerrarFormulario() {
   const dlg = document.querySelector('[data-tour="form-causa"]');
@@ -115,24 +138,17 @@ function construirPasos(props: Props): Paso[] {
 
   const pasos: Paso[] = [];
 
-  // 1 — Modalidad de la oficina
+  // 2 — Panel lateral: el centro de mando
   pasos.push({
     view: "dashboard",
     target: '[data-tour="sidebar"]',
-    titulo: esEstudio ? "Tu oficina: Estudio Jurídico" : "Tu oficina: Dependencia Judicial",
-    texto: esEstudio
-      ? `<p class="iustrack-tour-lead">IusTrack ordena todas las causas del estudio y sus fechas importantes en un solo lugar.</p>
-         ${bullets([
-           ["Modalidad Estudio", "pensada para abogados: fuero, rol del estudio, juez, fiscal y estado procesal."],
-           ["La otra modalidad", "Dependencia Judicial, pensada para tribunales y fiscalías (trámite, recursos, despachantes)."],
-         ])}
-         <p class="iustrack-tour-hint">Este menú de la izquierda es tu punto de partida.</p>`
-      : `<p class="iustrack-tour-lead">IusTrack ordena todas las causas de la dependencia y sus vencimientos en un solo lugar.</p>
-         ${bullets([
-           ["Modalidad Dependencia Judicial", "pensada para tribunales y fiscalías: trámite, recursos, subestados y despachantes."],
-           ["La otra modalidad", "Estudio Jurídico, para abogados particulares (fueros, rol del estudio, estado procesal)."],
-         ])}
-         <p class="iustrack-tour-hint">Este menú de la izquierda es tu punto de partida.</p>`,
+    titulo: "Todo se maneja desde acá",
+    texto:
+      `<p class="iustrack-tour-lead">Este panel de la izquierda es tu centro de mando: desde acá entrás a todas las secciones de IusTrack.</p>
+       ${bullets([
+         ["Cada pestaña es una vista", "listas de causas, calendario, anotaciones y configuración."],
+         ["Tranquilo", "a lo largo de este recorrido vamos a ir descubriendo, una por una, qué hace cada pestaña."],
+       ])}`,
     abrirSidebar: true,
   });
 
@@ -145,31 +161,68 @@ function construirPasos(props: Props): Paso[] {
     });
   }
 
-  // 2 — Migrar
+  // 3 — Migrar (con la pantalla real visible)
   pasos.push({
     view: "migrar",
     target: '[data-tour="main"]',
     titulo: "Traé tus causas ya cargadas",
     texto:
-      `<p class="iustrack-tour-lead">No hace falta cargar todo a mano.</p>
+      `<p class="iustrack-tour-lead">Esta es la pantalla de migración: no hace falta cargar todo a mano.</p>
        ${bullets([
-         ["Subís tu archivo", "Excel, Word o PDF (también el formato Lex100 del Poder Judicial)."],
-         ["La inteligencia artificial lo lee", "y arma las causas con expediente, carátula, personas y fechas."],
-         ["Revisás antes de guardar", "aparece una pantalla con todo lo detectado para corregir lo que quieras."],
+         ["Subís tu archivo", "Excel, Word o PDF, incluido el formato Lex100 del Poder Judicial."],
+         ["Se lee solo", "IusTrack arma las causas con expediente, carátula, personas y fechas."],
+         ["Revisás antes de guardar", "ves todo lo detectado y corregís lo que quieras. Nada se guarda sin tu visto bueno."],
        ])}`,
   });
 
-  // 3 — Dashboard + estadísticas
+  // 4 — Las listas del menú
+  pasos.push({
+    view: "dashboard",
+    target: '[data-tour="sidebar"]',
+    titulo: "Las listas de causas",
+    texto: esEstudio
+      ? `<p class="iustrack-tour-lead">Cada lista se arma sola según los datos que cargues:</p>
+         ${bullets([
+           ["Fueros", "las causas agrupadas por fuero."],
+           ["Delitos", "agrupadas por el delito cargado."],
+           ["Instrucción", "las que están en investigación."],
+           ["Elevadas a juicio", "las que ya pasaron a juicio."],
+           ["Recurridas", "casación, tribunal superior o corte."],
+           ["Detenidos", "las que tienen una persona detenida."],
+           ["SJP", "suspensión de juicio a prueba en trámite."],
+         ])}`
+      : `<p class="iustrack-tour-lead">Cada lista se arma sola según los datos que cargues:</p>
+         ${bullets([
+           ["Trámite", "las causas activas del día a día."],
+           ["Detenidos", "las que tienen una persona detenida."],
+           ["Rebeldes", "las que tienen una persona declarada rebelde."],
+           ["SJP en trámite", "suspensión de juicio a prueba."],
+           ["Recursos", "casación, queja u otro recurso."],
+           ["Delegadas", "las delegadas a otra dependencia."],
+           ["Terminadas", "las finalizadas, guardadas al final."],
+         ])}`,
+    abrirSidebar: true,
+  });
+
+  // 5 — Dashboard: primero en general, después las estadísticas
   pasos.push(
     {
       view: "dashboard",
-      target: '[data-tour="kpis"]',
-      titulo: "Tu tablero de resumen",
+      target: '[data-tour="main"]',
+      titulo: "El Dashboard: tu resumen del día",
       texto:
-        `<p class="iustrack-tour-lead">Estas tarjetas cuentan tus causas por criterio.</p>
+        `<p class="iustrack-tour-lead">Es la pantalla principal: arriba el resumen en tarjetas y abajo la lista de causas.</p>
+         <p class="iustrack-tour-hint">De un vistazo sabés cómo viene tu trabajo.</p>`,
+    },
+    {
+      view: "dashboard",
+      target: '[data-tour="kpis"]',
+      titulo: "Las estadísticas, en detalle",
+      texto:
+        `<p class="iustrack-tour-lead">Cada tarjeta cuenta tus causas según un criterio.</p>
          ${bullets([
-           ["Son botones", "tocá una tarjeta y la lista de abajo queda filtrada solo con esas causas."],
-           ["Se destacan", "la tarjeta elegida se ilumina y la columna relacionada se mueve al frente."],
+           ["Son botones", "tocá una tarjeta y la lista de abajo queda filtrada con esas causas."],
+           ["Se destacan", "la tarjeta elegida se ilumina y su columna pasa al frente."],
          ])}`,
     },
     {
@@ -177,133 +230,138 @@ function construirPasos(props: Props): Paso[] {
       target: '[data-tour="nueva-estadistica"]',
       titulo: "Creá tus propias estadísticas",
       texto: esEstudio
-        ? "Con este botón armás una tarjeta a tu medida: por fuero, estado procesal, rol del estudio, situación de libertad o vencimientos y eventos próximos (elegís los días). Le ponés nombre y color."
-        : "Con este botón armás una tarjeta a tu medida: por estado de la causa, subestado, situación de libertad o vencimientos y eventos próximos (elegís los días). Le ponés nombre y color.",
+        ? "Armá una tarjeta a tu medida: por fuero, estado procesal, rol del estudio, situación de libertad o vencimientos y eventos próximos (elegís los días). Le ponés nombre y color."
+        : "Armá una tarjeta a tu medida: por estado de la causa, subestado, situación de libertad o vencimientos y eventos próximos (elegís los días). Le ponés nombre y color.",
     },
     {
       view: "dashboard",
       target: '[data-tour="toggle-kpis"]',
       titulo: "Ocultar o mostrar las estadísticas",
-      texto: "Si querés más espacio para la lista de causas, escondés las tarjetas con un toque. Mirá:",
+      texto: "Si querés más lugar para la lista de causas, escondés las tarjetas con un toque. Mirá:",
       demo: demoToggleKpis,
     },
   );
 
-  // 4 — Buscador
-  pasos.push({
-    view: vistaLista,
-    target: '[data-tour="buscador"]',
-    titulo: "Buscar una causa",
-    texto: "Escribís cualquier dato y la lista se filtra al instante: número de expediente, carátula o nombre de una persona. Mirá cómo funciona:",
-    demo: demoBuscador,
-  });
-
-  // 5 — Listas del menú
-  pasos.push({
-    target: '[data-tour="sidebar"]',
-    titulo: "Las listas del menú",
-    texto: esEstudio
-      ? `<p class="iustrack-tour-lead">Cada lista arma sola su contenido según los datos de tus causas:</p>
+  // 6 — Causas en trámite / la lista de trabajo
+  pasos.push(
+    {
+      view: vistaLista,
+      target: '[data-tour="main"]',
+      titulo: esEstudio ? "Tu lista de causas" : "Causas en trámite",
+      texto:
+        `<p class="iustrack-tour-lead">Acá vive tu día a día: todas las causas en una tabla clara.</p>
          ${bullets([
-           ["Fueros", "las causas agrupadas por fuero."],
-           ["Delitos", "agrupadas por el delito cargado."],
-           ["Instrucción", "las que están en etapa de investigación."],
-           ["Elevadas a juicio", "las que ya pasaron a juicio."],
-           ["Recurridas", "las que están en casación, tribunal superior o corte."],
-           ["Detenidos", "las que tienen alguna persona detenida."],
-           ["SJP", "las que tienen suspensión de juicio a prueba en trámite."],
-         ])}`
-      : `<p class="iustrack-tour-lead">Cada lista arma sola su contenido según los datos de tus causas:</p>
-         ${bullets([
-           ["Trámite", "las causas activas del día a día."],
-           ["Detenidos", "las que tienen alguna persona detenida."],
-           ["Rebeldes", "las que tienen alguna persona declarada rebelde."],
-           ["SJP en trámite", "las que tienen suspensión de juicio a prueba."],
-           ["Recursos", "las que están con casación, queja u otro recurso."],
-           ["Delegadas", "las delegadas a otra dependencia."],
-           ["Terminadas", "las finalizadas, guardadas al final."],
+           ["Ordenás", "tocando el título de cada columna."],
+           ["Buscás", "escribiendo cualquier dato: expediente, carátula o nombre."],
          ])}`,
-    abrirSidebar: true,
-  });
+      demo: demoBuscador,
+    },
+    {
+      view: vistaLista,
+      target: '[data-tour="columnas"]',
+      titulo: "Elegí qué datos ver",
+      texto:
+        `${bullets([
+          ["Ocultar o mostrar", "desde este botón elegís qué columnas querés ver en la lista."],
+          ["Mover de lugar", "arrastrás el título de una columna y la acomodás donde te sirva."],
+        ])}
+        <p class="iustrack-tour-hint">Tu acomodo queda guardado para la próxima vez.</p>`,
+    },
+    {
+      target: '[data-tour="crear-lista"]',
+      titulo: "Creá listas nuevas",
+      texto: "Además de las listas que ya vienen, podés crear listas propias y meter en ellas las causas que quieras (por ejemplo “Urgentes de esta semana”).",
+      abrirSidebar: true,
+    },
+  );
 
-  // 6 — Formulario de causa (se abre en vivo)
+  // 7 — Crear una causa, con demostración en vivo
   pasos.push(
     {
       view: vistaLista,
       target: '[data-tour="nueva-causa"]',
       titulo: "Cargar una causa nueva",
-      texto: "Con este botón se abre el formulario de la causa. Vamos a abrirlo para verlo por dentro:",
-      demo: demoAbrirFormulario,
+      texto: "Con este botón se abre el formulario. Vamos a completarlo juntos, mirá:",
+      demo: demoCompletarCausa,
     },
     {
       target: '[data-tour="form-datos"]',
       titulo: "Los datos de la causa",
       texto: esEstudio
         ? bullets([
-            ["Expediente y carátula", "los datos que identifican la causa."],
+            ["Expediente y carátula", "identifican la causa."],
             ["Fuero", "penal, civil, laboral, etc."],
-            ["Rol del estudio", "si actuás como defensa, querella o denunciante."],
-            ["Damnificado", "la persona afectada."],
+            ["Rol del estudio", "defensa, querella o denunciante."],
             ["Juez, fiscal y fiscalía", "quiénes intervienen."],
-            ["Estado procesal", "en qué etapa está (investigación, juicio, casación…)."],
+            ["Estado procesal", "en qué etapa está."],
           ])
         : bullets([
-            ["Expediente y carátula", "los datos que identifican la causa."],
-            ["Estado", "trámite, recurso, delegada o terminada: define en qué lista aparece."],
-            ["Subestado", "el detalle del trámite (para indagar, indagado, para fijar juicio…)."],
+            ["Expediente y carátula", "identifican la causa."],
+            ["Estado", "trámite, recurso, delegada o terminada."],
+            ["Subestado", "el detalle del trámite (para indagar, para fijar juicio…)."],
             ["Tipo de recurso", "casación, queja, apelación y demás."],
             ["Despachante", "quién tiene la causa a cargo."],
           ]),
       side: "left",
     },
     {
+      target: '[data-tour="form-causa"]',
+      titulo: "Eventos, notas y edición",
+      texto:
+        `${bullets([
+          ["Al crear la causa", "podés agregarle un evento con fecha (audiencia, plazo, lo que sea) y viaja solo al calendario."],
+          ["Notas sin fecha", "anotaciones sueltas que quedan guardadas en la causa."],
+          ["Editar cuando quieras", "abrís la causa desde la lista y cambiás cualquier dato."],
+        ])}
+        <p class="iustrack-tour-hint">Importante: al cambiar los datos, la causa se mueve sola a las listas que le corresponden. Si marcás una persona detenida, aparece en Detenidos; si la pasás a terminada, sale de trámite.</p>`,
+      side: "left",
+    },
+    {
       target: '[data-tour="form-imputados"]',
       titulo: "Las personas de la causa",
       texto:
-        `<p class="iustrack-tour-lead">Una causa puede tener varias personas imputadas. Cada una lleva sus propios datos:</p>
+        `<p class="iustrack-tour-lead">Una causa puede tener varias personas imputadas, cada una con sus datos:</p>
          ${bullets([
-           ["Situación", "libre, detenida, rebelde, con probation o condenada. Según esto la causa entra en las listas correspondientes."],
-           ["Vencimientos", "prisión preventiva (se calcula solo desde la fecha de detención), pena y suspensión de juicio a prueba."],
+           ["Situación", "libre, detenida, rebelde, con probation o condenada."],
+           ["Vencimientos", "prisión preventiva (se calcula sola desde la fecha de detención), pena y suspensión de juicio a prueba."],
            ["Prescripciones", "las fechas de prescripción con su descripción."],
          ])}`,
       side: "left",
     },
-    {
-      target: '[data-tour="form-causa"]',
-      titulo: "Fechas y notas de la causa",
-      texto:
-        `${bullets([
-          ["Eventos con fecha", "audiencias, plazos, lo que sea: aparecen automáticamente en el calendario."],
-          ["Notas sin fecha", "anotaciones sueltas que quedan guardadas en la causa."],
-        ])}
-        <p class="iustrack-tour-hint">Desde la lista también podés duplicar una causa, pintarle un color de fila y ordenar u ocultar columnas.</p>`,
-      side: "left",
-    },
   );
 
-  // 9 — Calendario
+  // 9 — Calendario (con el menú a la vista) + Google Calendar
   pasos.push(
     {
       view: "calendario",
+      target: '[data-tour="nav-calendario"]',
+      titulo: "El Calendario, desde el menú",
+      texto: "Esta es la pestaña Calendario / Alertas: acá se junta todo lo que tiene fecha.",
+      abrirSidebar: true,
+    },
+    {
+      view: "calendario",
       target: '[data-tour="main"]',
-      titulo: "El calendario: el corazón de IusTrack",
+      titulo: "Un semáforo con tus fechas",
       texto:
         `<p class="iustrack-tour-lead">Todo lo que cargás con fecha llega solo hasta acá.</p>
          ${bullets([
-           ["Colores por cercanía", "rojo lo urgente, amarillo lo que se viene, verde lo lejano."],
+           ["Rojo", "urgente, es ya."],
+           ["Amarillo", "se viene en los próximos días."],
+           ["Verde", "todavía hay tiempo."],
            ["Todo junto", "vencimientos, audiencias, eventos y tarjetas de anotaciones en una sola vista."],
          ])}`,
     },
     {
       view: "calendario",
       target: '[data-tour="google-calendar"]',
-      titulo: "Y también en tu Google Calendar",
+      titulo: "Conectalo con tu Google Calendar",
       texto:
-        `<p class="iustrack-tour-lead">Vinculás tu cuenta de Google una vez y listo.</p>
+        `<p class="iustrack-tour-lead">Vinculás tu cuenta de Google una sola vez y listo.</p>
          ${bullets([
            ["Se sincroniza solo", "cada vencimiento y evento se copia a tu agenda de Google."],
-           ["Te avisa", "recordatorios automáticos 3 días antes, 1 día antes y 1 hora antes."],
-           ["El resultado", "no se te pasa ningún vencimiento. Este es el diferencial de IusTrack."],
+           ["Te avisa a tiempo", "recordatorios automáticos 3 días antes, 1 día antes y 1 hora antes."],
+           ["El resultado", "nunca más se te pasa un vencimiento. Este es el diferencial de IusTrack."],
          ])}`,
     },
   );
@@ -314,8 +372,9 @@ function construirPasos(props: Props): Paso[] {
     target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
     titulo: "Anotaciones: tus pendientes en columnas",
     texto:
-      `<p class="iustrack-tour-lead">Un tablero de notas organizado en columnas, con tarjetas que arrastrás de una columna a otra.</p>
+      `<p class="iustrack-tour-lead">Un tablero de notas en columnas, con tarjetas que arrastrás con el dedo o el mouse de una columna a otra (por ejemplo: “Para hacer” → “Hecho”).</p>
        ${bullets([
+         ["Crear tarjeta", "le ponés título, detalle y, si querés, una fecha."],
          ["Columna compartida", "las tarjetas con fecha van al calendario de todo el equipo."],
          ["Columna personal", "las tarjetas con fecha van solo a tu calendario."],
        ])}`,
@@ -324,9 +383,10 @@ function construirPasos(props: Props): Paso[] {
 
   // 11 — Categorías
   pasos.push({
+    view: "categorias",
     target: '[data-tour="nav-categorias"]',
     titulo: "Categorías propias",
-    texto: "Creás categorías tuyas (por ejemplo “Pericia pendiente” o “Para revisar”) que quedan disponibles en todas las causas. Si les ponés fecha, también aparecen en el calendario.",
+    texto: "Creás categorías tuyas (por ejemplo “Pericia pendiente” o “Para revisar”) y quedan disponibles en todas las causas. Si les ponés fecha, también aparecen en el calendario.",
     abrirSidebar: true,
   });
 
@@ -351,7 +411,7 @@ function construirPasos(props: Props): Paso[] {
     target: esAdmin ? '[data-tour="nav-miembros"]' : '[data-tour="sidebar"]',
     titulo: "Tu equipo y los permisos",
     texto:
-      `<p class="iustrack-tour-lead">Invitás a tus compañeros por email o con un código de acceso.</p>
+      `<p class="iustrack-tour-lead">Invitás a tus compañeros por email o pasándoles un código de acceso.</p>
        ${bullets([
          ["Administrador", "maneja todo: personas, causas y configuración."],
          ["Miembro", "crea y edita causas."],
@@ -373,7 +433,12 @@ function construirPasos(props: Props): Paso[] {
   pasos.push({
     target: '[data-tour="ayuda"]',
     titulo: "Siempre tenés ayuda a mano",
-    texto: "Tocá el signo de pregunta para volver a ver este recorrido cuando quieras. También podés reiniciarlo desde el menú de tu foto de perfil, arriba a la derecha.",
+    texto:
+      `${bullets([
+        ["El signo de pregunta (?)", "en cada sección te explica esa pantalla en detalle."],
+        ["Volver a ver el recorrido", "desde el menú de tu foto de perfil, arriba a la derecha."],
+      ])}
+      <p class="iustrack-tour-lead" style="margin-top:0.6rem">Empezá ahora: migrá tus causas o creá la primera.</p>`,
   });
 
   return pasos;
@@ -532,35 +597,43 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
       {/* Paso 1 — Bienvenida */}
       <Dialog open={fase === "bienvenida"} onOpenChange={(o) => { if (!o && fase === "bienvenida") terminar(false); }}>
-        <DialogContent className="sm:max-w-md text-center animate-scale-in">
-          <div className="flex flex-col items-center gap-4 py-2">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-gold shadow-soft">
-              <Scale className="h-8 w-8 text-sidebar-primary-foreground" />
+        <DialogContent className="sm:max-w-2xl text-center animate-scale-in">
+          <div className="flex flex-col items-center gap-5 py-3">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-gold shadow-soft">
+              <Scale className="h-10 w-10 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold text-foreground">Bienvenido a IusTrack</h2>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
+                Bienvenido a IusTrack
+              </h2>
+              <p className="mt-4 text-xl sm:text-2xl font-medium text-foreground leading-snug">
+                Nunca más se te va a pasar un vencimiento.
+              </p>
+              <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
                 {esEstudio
-                  ? "Te muestro en un minuto cómo se maneja tu estudio jurídico: causas, vencimientos, agenda y anotaciones, todo conectado."
-                  : "Te muestro en un minuto cómo se maneja tu espacio: causas, vencimientos, agenda y anotaciones."}
+                  ? "Desde hoy, todas las causas del estudio, sus fechas y sus pendientes van a estar ordenados en un solo lugar, y IusTrack te va a avisar a tiempo. Menos papeles sueltos, menos preocupaciones, más tranquilidad."
+                  : "Desde hoy, todas las causas, sus vencimientos y sus pendientes van a estar ordenados en un solo lugar, y IusTrack te va a avisar a tiempo. Menos papeles sueltos, menos preocupaciones, más tranquilidad."}
+              </p>
+              <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
+                Te acompaño paso a paso, con calma. En unos minutos vas a manejarlo todo.
               </p>
             </div>
             <div className="w-full">
               <div className="iustrack-tour-progress"><span style={{ width: `${(1 / total) * 100}%` }} /></div>
-              <p className="mt-1 text-[11px] text-muted-foreground">Paso 1 de {total}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">Paso 1 de {total}</p>
             </div>
-            <div className="flex w-full gap-2">
-              <Button variant="ghost" className="flex-1" onClick={() => terminar(false)}>Saltar tutorial</Button>
-              <Button className="flex-1" onClick={arrancarRecorrido}>Empezar recorrido</Button>
+            <div className="flex w-full flex-col sm:flex-row gap-3">
+              <Button variant="ghost" size="lg" className="flex-1 text-base h-12" onClick={() => terminar(false)}>Saltar tutorial</Button>
+              <Button size="lg" className="flex-1 text-base h-12" onClick={arrancarRecorrido}>Empezar recorrido</Button>
             </div>
             <button
               type="button"
-              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
               onClick={() => terminar(false)}
             >
               No volver a mostrar automáticamente
             </button>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Siempre podés volver a verlo desde tu menú de usuario.
             </p>
           </div>
@@ -569,7 +642,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
       {/* Paso final — Cierre con confeti */}
       <Dialog open={fase === "final"} onOpenChange={(o) => { if (!o) { setFase("idle"); void marcarCompletado(); } }}>
-        <DialogContent className="sm:max-w-md overflow-hidden text-center animate-scale-in">
+        <DialogContent className="sm:max-w-2xl overflow-hidden text-center animate-scale-in">
           <div className="pointer-events-none absolute inset-0">
             {Array.from({ length: 24 }).map((_, i) => (
               <span
@@ -583,21 +656,21 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
               />
             ))}
           </div>
-          <div className="relative flex flex-col items-center gap-4 py-2">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <PartyPopper className="h-8 w-8" />
+          <div className="relative flex flex-col items-center gap-5 py-3">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <PartyPopper className="h-10 w-10" />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold text-foreground">¡Listo!</h2>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Ya podés empezar a usar IusTrack. Si querés volver a ver el recorrido, entrá a tu perfil → “Ver tutorial de nuevo”.
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">¡Listo!</h2>
+              <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
+                Empezá ahora: migrá tus causas o creá la primera. Si querés volver a ver el recorrido, entrá al menú de tu foto de perfil → “Ver tutorial de nuevo”.
               </p>
             </div>
             <div className="w-full">
               <div className="iustrack-tour-progress"><span style={{ width: "100%" }} /></div>
-              <p className="mt-1 text-[11px] text-muted-foreground">Paso {total} de {total}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">Paso {total} de {total}</p>
             </div>
-            <Button className="w-full" onClick={() => { setFase("idle"); void marcarCompletado(); }}>
+            <Button size="lg" className="w-full text-base h-12" onClick={() => { setFase("idle"); void marcarCompletado(); }}>
               Empezar a usar IusTrack
             </Button>
           </div>
