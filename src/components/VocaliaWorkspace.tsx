@@ -181,7 +181,7 @@ function tieneVencimientoProximo(c: Causa): boolean {
     return t >= desde && t <= hasta;
   });
 }
-const FILTROS_ESTUDIO: DashboardFilter[] = ["all", "instruccion", "elevadas", "recurridas", "detenidos"];
+const FILTROS_ESTUDIO: DashboardBaseFilter[] = ["all", "instruccion", "elevadas", "recurridas", "detenidos"];
 
 export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser }: Props) {
   const { vocalia, setVocalia } = useVocaliaActual();
