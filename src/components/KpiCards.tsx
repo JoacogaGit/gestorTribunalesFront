@@ -37,8 +37,8 @@ interface Props {
 export default function KpiCards({ kpis, loading, error, onRetry, activeFilter, onSelectFilter }: Props) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-32 rounded-xl" />
         ))}
       </div>
@@ -59,7 +59,7 @@ export default function KpiCards({ kpis, loading, error, onRetry, activeFilter, 
   }
 
   return (
-    <div data-tour="kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div data-tour="kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {KPI_DEFS.map((kpi, i) => {
         const value = kpis[kpi.key];
         const clickable = !!kpi.filter && !!onSelectFilter;
@@ -73,7 +73,7 @@ export default function KpiCards({ kpis, loading, error, onRetry, activeFilter, 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.04, ease: "easeOut" }}
-            className={`elevated-card rounded-xl p-4 flex flex-col gap-2 text-left ${clickable ? "cursor-pointer hover:shadow-elevated transition-shadow" : ""} ${active ? "ring-2 ring-primary" : ""}`}
+            className={`elevated-card rounded-xl p-4 flex flex-col gap-2 text-left ${clickable ? "cursor-pointer hover:shadow-elevated" : ""} transition-shadow duration-300 ${active ? kpi.glow : ""}`}
           >
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
               <kpi.icon className="w-5 h-5" />
