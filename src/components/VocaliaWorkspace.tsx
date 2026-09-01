@@ -17,7 +17,7 @@ import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff, Plus } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
@@ -217,6 +217,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const [pendingOpenCausaId, setPendingOpenCausaId] = useState<string | null>(null);
   const [migracionStatus, setMigracionStatus] = useState<MigracionStatus | null>(null);
   const [showCreateCausa, setShowCreateCausa] = useState(false);
+  const [showNuevaEstadistica, setShowNuevaEstadistica] = useState(false);
   const [showCreateLista, setShowCreateLista] = useState(false);
   const [showCreateTablero, setShowCreateTablero] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -735,14 +736,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 >
                   <CausasTable
                     causas={dashCausas}
-                    title={esEstudio && dashFilter === "all" ? "Todas las causas del estudio" : `Causas — ${dashFilterLabels[dashFilter]}`}
+                    title={esEstudio && dashFilter === "all" ? "Todas las causas del estudio" : `Causas — ${labelFiltro(dashFilter)}`}
                     listKey="todas"
                     allCausas={dashCausas}
                     onMutated={dashCausasRemote.refetch}
                     onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}
-                  priorityColumnKey={COLUMNA_PRIORITARIA[dashFilter] ?? null}
+                  priorityColumnKey={columnaPrioritaria}
                   {...remoteTableCommon}
                   />
                 </RemoteListSection>
