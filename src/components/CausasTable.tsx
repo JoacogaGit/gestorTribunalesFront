@@ -40,6 +40,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatLocalDate, parseLocalTime } from "@/lib/parseDate";
+import { expedienteSortKey } from "@/lib/expedienteSort";
 
 const PALETA_COLORES: { hex: string; label: string }[] = [
   { hex: "#FCA5A5", label: "Rojo" },
