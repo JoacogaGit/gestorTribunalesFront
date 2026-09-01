@@ -924,8 +924,9 @@ export default function CausasTable({
         </div>
       )}
 
-      <div className={`elevated-card rounded-xl overflow-hidden flex-col flex-1 min-h-0 ${isMobile ? "hidden" : "flex"}`}>
-        <div className="flex-1 min-h-0 overflow-auto">
+      <div className={`elevated-card rounded-xl overflow-hidden flex-col flex-1 min-h-[420px] ${isMobile ? "hidden" : "flex"}`}>
+        <div className="flex-1 min-h-[360px] overflow-auto">
+
 
           <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)}`}>
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
