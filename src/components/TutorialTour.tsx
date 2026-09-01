@@ -630,18 +630,18 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
               <div className="iustrack-tour-progress"><span style={{ width: `${(1 / total) * 100}%` }} /></div>
               <p className="mt-1.5 text-sm text-muted-foreground">Paso 1 de {total}</p>
             </div>
-            <div className="flex w-full gap-2">
-              <Button variant="ghost" className="flex-1" onClick={() => terminar(false)}>Saltar tutorial</Button>
-              <Button className="flex-1" onClick={arrancarRecorrido}>Empezar recorrido</Button>
+            <div className="flex w-full flex-col sm:flex-row gap-3">
+              <Button variant="ghost" size="lg" className="flex-1 text-base h-12" onClick={() => terminar(false)}>Saltar tutorial</Button>
+              <Button size="lg" className="flex-1 text-base h-12" onClick={arrancarRecorrido}>Empezar recorrido</Button>
             </div>
             <button
               type="button"
-              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
               onClick={() => terminar(false)}
             >
               No volver a mostrar automáticamente
             </button>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Siempre podés volver a verlo desde tu menú de usuario.
             </p>
           </div>
@@ -650,7 +650,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
       {/* Paso final — Cierre con confeti */}
       <Dialog open={fase === "final"} onOpenChange={(o) => { if (!o) { setFase("idle"); void marcarCompletado(); } }}>
-        <DialogContent className="sm:max-w-md overflow-hidden text-center animate-scale-in">
+        <DialogContent className="sm:max-w-2xl overflow-hidden text-center animate-scale-in">
           <div className="pointer-events-none absolute inset-0">
             {Array.from({ length: 24 }).map((_, i) => (
               <span
@@ -664,21 +664,21 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
               />
             ))}
           </div>
-          <div className="relative flex flex-col items-center gap-4 py-2">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <PartyPopper className="h-8 w-8" />
+          <div className="relative flex flex-col items-center gap-5 py-3">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <PartyPopper className="h-10 w-10" />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold text-foreground">¡Listo!</h2>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Ya podés empezar a usar IusTrack. Si querés volver a ver el recorrido, entrá a tu perfil → “Ver tutorial de nuevo”.
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">¡Listo!</h2>
+              <p className="mt-3 text-lg text-muted-foreground leading-relaxed">
+                Empezá ahora: migrá tus causas o creá la primera. Si querés volver a ver el recorrido, entrá al menú de tu foto de perfil → “Ver tutorial de nuevo”.
               </p>
             </div>
             <div className="w-full">
               <div className="iustrack-tour-progress"><span style={{ width: "100%" }} /></div>
-              <p className="mt-1 text-[11px] text-muted-foreground">Paso {total} de {total}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">Paso {total} de {total}</p>
             </div>
-            <Button className="w-full" onClick={() => { setFase("idle"); void marcarCompletado(); }}>
+            <Button size="lg" className="w-full text-base h-12" onClick={() => { setFase("idle"); void marcarCompletado(); }}>
               Empezar a usar IusTrack
             </Button>
           </div>
