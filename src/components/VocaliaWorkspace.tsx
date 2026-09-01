@@ -472,7 +472,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </SheetContent>
         </Sheet>
       )}
-      <main className={`flex-1 px-4 py-4 md:p-6 lg:p-8 flex flex-col ${isMobile ? "min-h-screen w-full" : "h-screen overflow-hidden"}`}>
+      <main className={`flex-1 px-4 py-4 md:p-6 lg:p-8 flex flex-col ${isMobile ? "min-h-screen w-full" : "h-screen overflow-y-auto overflow-x-hidden"}`}>
         {isMobile ? (
           <>
             <div className="flex items-center justify-between gap-2 mb-3">
@@ -633,7 +633,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             className={view === "migrar" ? "hidden" : `flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
           >
             {view === "dashboard" && (
-              <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 overflow-hidden pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
+              <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
                 <div className="flex justify-end gap-1">
                   <Button size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
                     <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
@@ -774,7 +774,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "detenidos" && (
-              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+              <div className="flex-1 min-h-0 pr-1">
                 <RemoteListSection
                   loading={detenidosRemote.loading}
                   error={detenidosRemote.error}
