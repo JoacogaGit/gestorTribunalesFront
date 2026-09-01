@@ -213,6 +213,47 @@ export type Database = {
           },
         ]
       }
+      estadisticas_custom: {
+        Row: {
+          campo: string
+          color: string | null
+          creado_por: string | null
+          created_at: string | null
+          id: string
+          nombre: string
+          valor: string
+          vocalia_id: string
+        }
+        Insert: {
+          campo: string
+          color?: string | null
+          creado_por?: string | null
+          created_at?: string | null
+          id?: string
+          nombre: string
+          valor: string
+          vocalia_id: string
+        }
+        Update: {
+          campo?: string
+          color?: string | null
+          creado_por?: string | null
+          created_at?: string | null
+          id?: string
+          nombre?: string
+          valor?: string
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estadisticas_custom_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventos: {
         Row: {
           borrado_en: string | null
