@@ -8,6 +8,8 @@ export interface CausaIA {
   expediente_nro: string;
   numero_interno?: string | null;
   caratula: string | null;
+  /** Color de fila detectado en el archivo original (mapeado a la paleta). */
+  color_destacado?: string | null;
   despachante?: string | null;
 
 
@@ -235,6 +237,7 @@ export function useMigracion() {
           expediente_nro: c.expediente_nro,
           numero_interno: c.numero_interno ?? null,
           caratula: c.caratula,
+          color_destacado: c.color_destacado ?? null,
           despachante: (c.despachante ?? null)?.toString().slice(0, 3) || null,
 
 
