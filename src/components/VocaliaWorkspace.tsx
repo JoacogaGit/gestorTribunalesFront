@@ -58,6 +58,9 @@ import ExportarListasButton from "@/components/ExportarListasButton";
 import { useResponsableFilter } from "@/hooks/useResponsableFilter";
 import AgrupadasView from "@/components/estudio/AgrupadasView";
 import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
+import { useEventosProximos30d } from "@/hooks/useEventosProximos30d";
+import { parseLocalTime } from "@/lib/parseDate";
+import type { Causa } from "@/data/mockCausas";
 
 
 const WizardMigracion = lazy(() => import("@/components/WizardMigracion"));
@@ -128,7 +131,7 @@ interface Props {
   onUpdateUser: (u: { name: string; email: string }) => void;
 }
 
-type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "instruccion" | "elevadas" | "recurridas";
+type DashboardFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" | "recursos" | "instruccion" | "elevadas" | "recurridas" | "eventos30d";
 
 const dashFilterLabels: Record<DashboardFilter, string> = {
   all: "Todas (trámite + recurso)",
@@ -140,9 +143,42 @@ const dashFilterLabels: Record<DashboardFilter, string> = {
   instruccion: "En instrucción",
   elevadas: "Elevadas a juicio",
   recurridas: "Recurridas",
+  eventos30d: "Eventos en los próximos 30 días",
 };
 
-const FILTROS_JUDICIAL: DashboardFilter[] = ["all", "tramite", "detenidos", "rebeldes", "sjp", "recursos"];
+/** Columna que se prioriza (3er lugar) en la tabla según el filtro activo del dashboard. */
+const COLUMNA_PRIORITARIA: Partial<Record<DashboardFilter, string>> = {
+  detenidos: "libertad",
+  rebeldes: "libertad",
+  sjp: "libertad",
+  tramite: "subestado",
+  recursos: "estado",
+  instruccion: "estado",
+  elevadas: "estado",
+  recurridas: "estado",
+  eventos30d: "eventosConFecha",
+};
+
+const FILTROS_JUDICIAL: DashboardFilter[] = ["all", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "eventos30d"];
+
+/** true si la causa tiene algún vencimiento propio dentro de los próximos 30 días. */
+function tieneVencimientoProximo(c: Causa): boolean {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const desde = hoy.getTime();
+  const hasta = desde + 30 * 24 * 60 * 60 * 1000;
+  const fechas: (string | undefined)[] = [
+    c.fechaPrescripcion,
+    c.fechaVencimientoPP,
+    c.probation?.vencimiento,
+    ...(c.fechasPrescripcionExtra || []).map((f) => f.fecha),
+    ...c.imputados.map((i) => i.fechaVencimientoPena),
+  ];
+  return fechas.some((f) => {
+    if (!f) return false;
+    const t = parseLocalTime(f);
+    return t >= desde && t <= hasta;
+  });
+}
 const FILTROS_ESTUDIO: DashboardFilter[] = ["all", "instruccion", "elevadas", "recurridas", "detenidos"];
 
 export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser }: Props) {
@@ -238,6 +274,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const responsableFiltro = useResponsableFilter(vocaliaId, esEstudio);
   const dashboardKpis = useDashboardKpis(vocaliaId);
   const dashCausasRemote = useCausasDashboard(vocaliaId, esEstudio);
+  const eventos30d = useEventosProximos30d(vocaliaId);
   const [mostrarKpis, setMostrarKpis] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("iustrack_dash_kpis") !== "0";
@@ -264,9 +301,14 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       case "instruccion": return all.filter((c) => EP_INSTRUCCION.includes((c.estadoProcesal || "").trim()));
       case "elevadas": return all.filter((c) => EP_ELEVADAS.includes((c.estadoProcesal || "").trim()));
       case "recurridas": return all.filter((c) => EP_RECURRIDAS.includes((c.estadoProcesal || "").trim()));
+      case "eventos30d": return all.filter((c) => eventos30d.ids.has(c.id) || tieneVencimientoProximo(c));
       default: return all;
     }
   })();
+
+  const causasEventos30dCount = responsableFiltro
+    .filtrar(dashCausasRemote.causas)
+    .filter((c) => eventos30d.ids.has(c.id) || tieneVencimientoProximo(c)).length;
 
   const porEstadoProcesal = (estados: string[]) =>
     responsableFiltro.filtrar(dashCausasRemote.causas).filter((c) => estados.includes((c.estadoProcesal || "").trim()));
@@ -586,7 +628,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                             onSelectFilter={(f) => setDashFilter(f as DashboardFilter)}
                           />
                         : <KpiCards
-                            kpis={dashboardKpis.kpis}
+                            kpis={{ ...dashboardKpis.kpis, eventos30d: causasEventos30dCount }}
                             loading={dashboardKpis.loading}
                             error={dashboardKpis.error}
                             onRetry={dashboardKpis.refetch}
@@ -645,6 +687,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}
+                  priorityColumnKey={COLUMNA_PRIORITARIA[dashFilter] ?? null}
                   {...remoteTableCommon}
                   />
                 </RemoteListSection>
