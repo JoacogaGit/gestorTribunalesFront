@@ -1,3 +1,5 @@
+import * as XLSX from "xlsx";
+
 /**
  * Detección de color de fondo de filas en archivos de origen (Excel / Word)
  * y mapeo al color más cercano de la paleta de filas de IusTrack.
@@ -98,17 +100,13 @@ export function extraerColoresFilasExcel(ws: any): FilaColoreada[] {
   try {
     const ref = ws?.["!ref"];
     if (!ref) return [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const XLSXUtils = (globalThis as any).__xlsx_utils__;
-    const decode = XLSXUtils?.decode_range;
-    if (!decode) return [];
-    const range = decode(ref);
+    const range = XLSX.utils.decode_range(ref);
     const salida: FilaColoreada[] = [];
     for (let R = range.s.r; R <= range.e.r; R++) {
       let color: string | null = null;
       const textos: string[] = [];
       for (let C = range.s.c; C <= range.e.c; C++) {
-        const addr = XLSXUtils.encode_cell({ r: R, c: C });
+        const addr = XLSX.utils.encode_cell({ r: R, c: C });
         const cell = ws[addr];
         if (!cell) continue;
         const v = cell.w ?? cell.v;
