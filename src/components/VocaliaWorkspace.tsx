@@ -557,8 +557,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
             {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
               <>
-                <ResponsableFilterButton filtro={responsableFiltro} />
-                <ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} />
+                <span data-tour="filtro-responsable"><ResponsableFilterButton filtro={responsableFiltro} /></span>
+                <span data-tour="exportar-excel"><ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} /></span>
               </>
             )}
 
@@ -641,10 +641,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             {view === "dashboard" && (
               <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
                 <div className="flex justify-end gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
+                  <Button data-tour="nueva-estadistica" size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
                     <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
+                  <Button data-tour="toggle-kpis" size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
                     {mostrarKpis ? "Ocultar estadísticas" : "Mostrar estadísticas"}
                   </Button>

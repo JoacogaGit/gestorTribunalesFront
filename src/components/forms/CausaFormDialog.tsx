@@ -508,7 +508,7 @@ export default function CausaFormDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-card border-border p-0">
+        <DialogContent data-tour="form-causa" className="max-w-3xl max-h-[92vh] overflow-y-auto bg-card border-border p-0">
           <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3">
             <DialogHeader className="flex-1 min-w-0">
               <DialogTitle className="font-display text-lg truncate">
@@ -542,7 +542,7 @@ export default function CausaFormDialog({
           ) : (
             <div className="space-y-5 text-sm">
               {/* Datos generales */}
-              <section className="space-y-3">
+              <section data-tour="form-datos" className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Datos generales</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -792,7 +792,7 @@ export default function CausaFormDialog({
               <Separator />
 
               {/* Imputados */}
-              <section className="space-y-3">
+              <section data-tour="form-imputados" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Imputados ({visibleSujetos.length})
