@@ -685,7 +685,7 @@ export default function CausasTable({
 
   return (
     <>
-      <div className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-0 h-full"}`}>
+      <div className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-[480px]"}`}>
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap shrink-0">
         {displayTitle && (
           <div className="flex items-center gap-2 group">
