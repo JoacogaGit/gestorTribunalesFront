@@ -90,7 +90,7 @@ const criterioVencimientos: CriterioEstadistica = {
   label: "Vencimientos próximos (días)",
   descripcion: "Causas con vencimiento de PP, pena, prescripción o SJP dentro del plazo.",
   tipoValor: "dias",
-  columna: "vencimientoPena",
+  columna: "vtoPena",
   etiquetaValor: (v) => `próx. ${v} días`,
   cumple: (c, valor) => {
     const dias = parseInt(valor, 10);
@@ -104,6 +104,7 @@ const criterioEventos: CriterioEstadistica = {
   label: "Eventos próximos (días)",
   descripcion: "Causas con eventos agendados dentro del plazo.",
   tipoValor: "dias",
+  columna: "eventosConFecha",
   etiquetaValor: (v) => `próx. ${v} días`,
   cumple: (c, valor, ctx) => {
     const dias = parseInt(valor, 10);
