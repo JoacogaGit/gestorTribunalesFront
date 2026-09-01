@@ -69,6 +69,29 @@ export function toARTimeString(value: string | Date | null | undefined): string 
   return p ? `${p.h}:${p.min}` : "";
 }
 
+/** Compara solo la parte de fecha en zona AR. */
+function arDateValue(value: string | Date | null | undefined): number | null {
+  const p = getARParts(value);
+  if (!p) return null;
+  return Number(p.y) * 10000 + Number(p.m) * 100 + Number(p.d);
+}
+
+/** true si la fecha es estrictamente anterior a hoy en horario Argentina. */
+export function isFechaPasadaAR(value: string | Date | null | undefined): boolean {
+  const v = arDateValue(value);
+  const hoy = arDateValue(new Date());
+  if (v == null || hoy == null) return false;
+  return v < hoy;
+}
+
+/** true si la fecha es hoy en horario Argentina. */
+export function isHoyAR(value: string | Date | null | undefined): boolean {
+  const v = arDateValue(value);
+  const hoy = arDateValue(new Date());
+  if (v == null || hoy == null) return false;
+  return v === hoy;
+}
+
 /** Convierte fecha (YYYY-MM-DD) + hora (HH:MM) de zona AR a ISO UTC. */
 export function combineARToISO(fecha: string, hora: string | null | undefined): string | null {
   if (!fecha) return null;

@@ -1,4 +1,5 @@
-import { parseLocalTime } from "@/lib/parseDate";
+import { isFechaPasadaAR, parseLocalTime } from "@/lib/parseDate";
+
 
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
 export type EstadoCausa = "En trámite" | "Delegada" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ";
@@ -129,6 +130,7 @@ export function getProximityLevel(fecha: string): ProximityLevel {
 }
 
 export function getProximityColor(fecha: string): string {
+  if (isFechaPasadaAR(fecha)) return "text-muted-foreground font-normal";
   switch (getProximityLevel(fecha)) {
     case "vencido": return "text-muted-foreground font-normal";
     case "critico": return "text-red-500 font-semibold";

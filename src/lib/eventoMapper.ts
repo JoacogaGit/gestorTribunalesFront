@@ -1,5 +1,6 @@
 // Helpers de calendario: mapping DB → eventos UI + semáforo cromático.
-import { parseLocalDate, toARTimeString } from "@/lib/parseDate";
+import { isFechaPasadaAR, parseLocalDate, toARTimeString } from "@/lib/parseDate";
+
 
 export type CalendarTipo = "evento" | "vencimiento_pp" | "vencimiento_pena" | "prescripcion" | "tarjeta";
 
@@ -65,6 +66,7 @@ export function getSemaforoDot(fecha: string): string {
 }
 
 export function getSemaforoText(fecha: string): string {
+  if (isFechaPasadaAR(fecha)) return "text-muted-foreground";
   switch (getSemaforoBucket(fecha)) {
     case "vencido": return "text-red-600 font-bold";
     case "muy_urgente": return "text-red-500 font-semibold";
