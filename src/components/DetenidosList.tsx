@@ -20,6 +20,8 @@ import {
 import { useCausaMutations } from "@/hooks/useCausaMutations";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
 import { formatLocalDate } from "@/lib/parseDate";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useViewportListHeight } from "@/hooks/useViewportListHeight";
 
 interface DetenidoRow {
   imputado: Imputado;
@@ -54,6 +56,8 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
+  const isMobile = useIsMobile();
+  const viewportList = useViewportListHeight<HTMLDivElement>(!isMobile);
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
@@ -132,7 +136,12 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div
+        ref={viewportList.ref}
+        style={!isMobile && viewportList.height ? { height: viewportList.height, maxHeight: viewportList.height } : undefined}
+        className="flex min-h-0 flex-col"
+      >
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <h2 className="text-lg font-display font-semibold text-foreground">
           Detenidos <span className="text-muted-foreground font-normal text-sm">({filtered.length})</span>
         </h2>
@@ -163,8 +172,8 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
           </div>
         </div>
       </div>
-      <div className="glass-card rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="glass-card rounded-lg overflow-hidden flex flex-1 min-h-0 flex-col">
+        <div className="flex-1 min-h-0 overflow-auto">
           <Table className={zoomTableClass(zoom)}>
             <TableHeader>
               <TableRow className="bg-muted/30">
@@ -218,6 +227,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
             </TableBody>
           </Table>
         </div>
+      </div>
       </div>
       {selected && (
         <CausaDetail
