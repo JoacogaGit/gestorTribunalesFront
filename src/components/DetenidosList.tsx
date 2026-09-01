@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Causa, getProximityColor, Imputado } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
-import { Search, Copy, Plus, ChevronDown, Trash2, Pencil, Loader2, ExternalLink } from "lucide-react";
+import { Search, Plus, ChevronDown, Trash2, Pencil, Loader2, ExternalLink } from "lucide-react";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
@@ -126,25 +126,6 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
     );
   });
 
-  const copyToClipboard = () => {
-    const header = visibleColumns.map((c) => c.label).join("\t");
-    const lines = filtered.map((r) => visibleColumns.map((col) => {
-      switch (col.key) {
-        case "imputado": return r.imputado.nombre;
-        case "lugar": return r.imputado.lugarDetencion || "";
-        case "numero": return r.causa.numero;
-        case "delito": return r.causa.delito;
-        case "estadoCausa": return r.causa.estadoCausa;
-        case "defensor": return r.imputado.defensor.nombre;
-        case "pp": return fmtDate(r.causa.fechaVencimientoPP);
-        case "vtoPena": return fmtDate(r.imputado.fechaVencimientoPena);
-        default: return "";
-      }
-    }).join("\t"));
-    navigator.clipboard.writeText([header, ...lines].join("\n"));
-    toast.success("Lista copiada al portapapeles");
-  };
-
   const handleCreate = () => {
     setShowCreate(true);
   };
@@ -171,9 +152,6 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
-            <Copy className="w-4 h-4" />
-          </button>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input

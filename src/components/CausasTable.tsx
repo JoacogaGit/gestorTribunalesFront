@@ -662,23 +662,6 @@ export default function CausasTable({
   const pageStart = shouldPaginate ? (page - 1) * PAGE_SIZE : 0;
   const visibleRows = shouldPaginate ? sorted.slice(pageStart, pageStart + PAGE_SIZE) : sorted;
 
-  const copyToClipboard = () => {
-    const header = visibleColumns.map((c) => c.label).join("\t");
-    const rows = sorted.map((c) =>
-      visibleColumns.map((col) => {
-        const node = col.render(c);
-        if (typeof node === "string") return node;
-        if (col.key === "numero") return c.numero;
-        if (col.key === "caratula") return getCaratula(c);
-        if (col.key === "estado") return c.estadoCausa;
-        if (col.key === "delito") return c.delito;
-        return "";
-      }).join("\t")
-    );
-    navigator.clipboard.writeText([header, ...rows].join("\n"));
-    toast.success("Lista copiada al portapapeles");
-  };
-
   const handleCreate = () => {
     setShowCreate(true);
   };
@@ -846,9 +829,6 @@ export default function CausasTable({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button onClick={copyToClipboard} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Copiar lista">
-            <Copy className="w-4 h-4" />
-          </button>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
