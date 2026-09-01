@@ -290,8 +290,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   };
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
+  const estadisticasCustom = useEstadisticasCustom(vocaliaId);
+  const estadisticaActiva = dashFilter.startsWith("custom:")
+    ? estadisticasCustom.estadisticas.find((e) => e.id === dashFilter.slice(7)) ?? null
+    : null;
+  const campoActivo = estadisticaActiva ? buscarCampo(esEstudio, estadisticaActiva.campo) : null;
+
   const dashCausas = (() => {
     const all = responsableFiltro.filtrar(dashCausasRemote.causas);
+    if (estadisticaActiva) return all.filter((c) => cumpleEstadistica(c, campoActivo, estadisticaActiva.valor));
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
         (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
@@ -307,6 +314,22 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       default: return all;
     }
   })();
+
+  const labelFiltro = (f: DashboardFilter) =>
+    f.startsWith("custom:")
+      ? (estadisticasCustom.estadisticas.find((e) => e.id === f.slice(7))?.nombre ?? "Estadística")
+      : dashFilterLabels[f as DashboardBaseFilter];
+
+  const columnaPrioritaria = estadisticaActiva
+    ? campoActivo?.columna ?? null
+    : COLUMNA_PRIORITARIA[dashFilter as DashboardBaseFilter] ?? null;
+
+  const eliminarEstadistica = async (id: string) => {
+    const { error } = await estadisticasCustom.eliminar(id);
+    if (error) { toast.error(error); return; }
+    if (dashFilter === `custom:${id}`) setDashFilter("all");
+    toast.success("Estadística eliminada");
+  };
 
   const causasEventos30dCount = responsableFiltro
     .filtrar(dashCausasRemote.causas)
