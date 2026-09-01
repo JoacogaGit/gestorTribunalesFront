@@ -434,6 +434,11 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     async (i: number) => {
       const paso = pasosRef.current[i];
       if (!paso) return;
+      // Cierra el formulario de causa si el paso ya no lo necesita.
+      if (!paso.target?.startsWith('[data-tour="form')) {
+        cerrarFormulario();
+        await esperar(150);
+      }
       if (paso.view) onNavigate(paso.view);
       if (isMobile) onOpenSidebar?.(!!paso.abrirSidebar);
       await esperar(paso.view || paso.abrirSidebar ? 500 : 180);
@@ -445,12 +450,14 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     (celebrar: boolean) => {
       driverRef.current?.destroy();
       driverRef.current = null;
+      cerrarFormulario();
       if (isMobile) onOpenSidebar?.(false);
       if (celebrar) setFase("final");
       else { setFase("idle"); void marcarCompletado(); }
     },
     [isMobile, marcarCompletado, onOpenSidebar]
   );
+
 
   const arrancarRecorrido = useCallback(async () => {
     const pasos = construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView, esEstudio });
