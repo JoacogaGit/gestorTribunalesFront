@@ -1,5 +1,6 @@
 // Helpers de calendario: mapping DB → eventos UI + semáforo cromático.
-import { parseLocalDate, toARTimeString } from "@/lib/parseDate";
+import { isFechaPasadaAR, parseLocalDate, toARTimeString } from "@/lib/parseDate";
+
 
 export type CalendarTipo = "evento" | "vencimiento_pp" | "vencimiento_pena" | "prescripcion" | "tarjeta";
 
