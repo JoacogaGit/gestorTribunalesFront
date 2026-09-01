@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
+import KpiCardsEstudio from "@/components/KpiCardsEstudio";
 import CausasTable from "@/components/CausasTable";
 import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
@@ -55,6 +56,7 @@ import ZoomControl from "@/components/ZoomControl";
 import ResponsableFilterButton from "@/components/ResponsableFilterButton";
 import { useResponsableFilter } from "@/hooks/useResponsableFilter";
 import AgrupadasView from "@/components/estudio/AgrupadasView";
+import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
 
 
 const WizardMigracion = lazy(() => import("@/components/WizardMigracion"));
@@ -114,7 +116,7 @@ type View = string;
 
 /** Vistas donde aplica el filtro por responsable. */
 const VISTAS_CON_FILTRO: string[] = [
-  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "terminadas",
+  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "terminadas",
   "calendario", "fueros", "delitos", "instruccion", "elevadas", "recurridas",
 ];
 
@@ -200,6 +202,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       d.estado_causa === "tramite" ? "tramite"
       : d.estado_causa === "recurso" ? "recursos"
       : d.estado_causa === "terminada" ? "terminadas"
+      : d.estado_causa === "delegada" ? "delegadas"
       : "tramite";
     setView(targetView);
     setPendingOpenCausaId(causaId);
@@ -220,6 +223,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
+  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId);
   const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
   const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
   const detenidosRemote = useDetenidos(vocaliaId);
@@ -254,9 +258,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     }
   })();
 
-  const EP_INSTRUCCION = ["Denuncia/Inicio", "En investigación", "Para indagar", "Indagado", "Procesado", "Procesamiento recurrido", "Falta de mérito"];
-  const EP_ELEVADAS = ["Elevado a juicio", "Juicio"];
-  const EP_RECURRIDAS = ["Procesamiento recurrido", "Casación", "Tribunal Superior", "Corte"];
   const porEstadoProcesal = (estados: string[]) =>
     responsableFiltro.filtrar(dashCausasRemote.causas).filter((c) => estados.includes((c.estadoProcesal || "").trim()));
 
@@ -306,6 +307,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     rebeldes: "Rebeldes / Paraderos",
     sjp: "SJP en Trámite",
     recursos: "Recursos (Casación / Queja / REX / Apelación / TSJ)",
+    delegadas: "Causas Delegadas",
     terminadas: "Causas Terminadas",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
@@ -552,8 +554,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     {mostrarKpis ? "Ocultar estadísticas" : "Mostrar estadísticas"}
                   </Button>
                 </div>
-                {mostrarKpis && (
-                  <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
+                {mostrarKpis && (esEstudio
+                  ? <KpiCardsEstudio causas={dashCausas} loading={dashCausasRemote.loading} />
+                  : <KpiCards kpis={dashboardKpis.kpis} loading={dashboardKpis.loading} error={dashboardKpis.error} onRetry={dashboardKpis.refetch} />
                 )}
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
@@ -715,6 +718,28 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="recursos"
                   allCausas={responsableFiltro.filtrar(recursosRemote.causas)}
                   onMutated={recursosRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
+                  {...remoteTableCommon}
+                />
+              </RemoteListSection>
+            )}
+            {view === "delegadas" && !esEstudio && (
+              <RemoteListSection
+                loading={delegadasRemote.loading}
+                error={delegadasRemote.error}
+                isEmpty={responsableFiltro.filtrar(delegadasRemote.causas).length === 0}
+                emptyTitle="Todavía no hay causas delegadas"
+                emptyMessage="Cambiá el estado de una causa a “Delegada” para verla acá."
+                onRetry={delegadasRemote.refetch}
+              >
+                <CausasTable
+                  causas={responsableFiltro.filtrar(delegadasRemote.causas)}
+                  title="Causas Delegadas"
+                  listKey="delegadas"
+                  allCausas={responsableFiltro.filtrar(delegadasRemote.causas)}
+                  onMutated={delegadasRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}
@@ -894,6 +919,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           sjpRemote.refetch();
           recursosRemote.refetch();
           terminadasRemote.refetch();
+          delegadasRemote.refetch();
           dashboardKpis.refetch();
         }}
       />
