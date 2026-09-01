@@ -59,6 +59,10 @@ import { useResponsableFilter } from "@/hooks/useResponsableFilter";
 import AgrupadasView from "@/components/estudio/AgrupadasView";
 import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
 import { useEventosProximos30d } from "@/hooks/useEventosProximos30d";
+import { useEstadisticasCustom } from "@/hooks/useEstadisticasCustom";
+import { buscarCampo, cumpleEstadistica } from "@/lib/estadisticasCustom";
+import KpiCardsCustom from "@/components/estadisticas/KpiCardsCustom";
+import NuevaEstadisticaDialog from "@/components/estadisticas/NuevaEstadisticaDialog";
 import { parseLocalTime } from "@/lib/parseDate";
 import type { Causa } from "@/data/mockCausas";
 
