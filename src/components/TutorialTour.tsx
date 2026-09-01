@@ -53,14 +53,6 @@ async function demoBuscador() {
   }
 }
 
-async function demoTema() {
-  const btn = document.querySelector<HTMLButtonElement>('[data-tour="tema"]');
-  if (!btn) return;
-  await esperar(600);
-  btn.click();
-  await esperar(1400);
-  btn.click();
-}
 
 interface Props {
   onNavigate: (view: string) => void;
