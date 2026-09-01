@@ -62,29 +62,13 @@ async function demoTema() {
   btn.click();
 }
 
-const CALLOUTS = [
-  ["Situación de libertad", "Si cambiás un imputado a Detenido, la causa aparece también en la pestaña Detenidos."],
-  ["Fecha de detención", "Al cargarla se calcula automáticamente el vencimiento de Prisión Preventiva (2 años)."],
-  ["Eventos con fecha", "Cualquier evento con fecha aparece en el calendario y en tu Google Calendar (si lo vinculaste)."],
-  ["Estado de la causa", "Si la pasás a Recurso, desaparece de Trámite. Si la marcás Terminada, va al final."],
-  ["Subestado", "Categorizá el estado de trámite (Para indagar, Indagado…). Es solo visual, no cambia dónde aparece."],
-];
-
-const calloutsHtml = `
-  <p class="iustrack-tour-lead">Este es el corazón de IusTrack. Cada modificación que hacés acá impacta en toda la app. Algunos ejemplos:</p>
-  <ul class="iustrack-tour-callouts">
-    ${CALLOUTS.map(([t, d]) => `<li><span class="iustrack-tour-arrow">→</span><span><strong>${t}:</strong> ${d}</span></li>`).join("")}
-  </ul>
-  <p class="iustrack-tour-hint">Tomate unos segundos para leerlo, es el paso más importante.</p>
-`;
-
 interface Props {
   onNavigate: (view: string) => void;
   onOpenSidebar?: (open: boolean) => void;
   isMobile?: boolean;
-  /** Si el usuario pertenece a más de una vocalía, se muestra el paso del selector. */
+  /** Si el usuario pertenece a más de un espacio, se muestra el paso del selector. */
   multiVocalia?: boolean;
-  /** Solo los admin ven Papelera en el sidebar. */
+  /** Solo los admin ven Papelera y Miembros en el menú. */
   esAdmin?: boolean;
   /** Vista del primer tablero de anotaciones (si existe), para mostrarlo en vivo. */
   tableroView?: string | null;
@@ -92,213 +76,305 @@ interface Props {
   esEstudio?: boolean;
 }
 
-function construirPasosEstudio({ esAdmin, tableroView }: Props): Paso[] {
-  const pasos: Paso[] = [
-    {
-      view: "dashboard",
-      target: '[data-tour="kpis"]',
-      titulo: "Dashboard del estudio",
-      texto: "Acá ves <strong>todas las causas del estudio</strong> en una sola lista, con estadísticas arriba que podés ocultar cuando quieras más espacio.",
-    },
-    {
-      target: '[data-tour="sidebar"]',
-      titulo: "Tus listas de causas",
-      texto: "Fueros, Delitos, Instrucción, Elevadas a juicio, Recurridas, Detenidos y SJP. Cada una filtra tus causas por fuero, delito, estado procesal o situación de libertad.",
-      abrirSidebar: true,
-    },
-    {
-      view: "dashboard",
-      target: '[data-tour="nueva-causa"]',
-      titulo: "Cargar una causa",
-      texto: "Al crear una causa completás los campos propios del estudio: <strong>fuero</strong>, <strong>rol del estudio</strong>, <strong>estado procesal</strong>, <strong>juez</strong>, <strong>fiscal</strong> y <strong>damnificado</strong>.",
-    },
-    {
-      view: "calendario",
-      target: '[data-tour="main"]',
-      titulo: "El calendario: el corazón del sistema",
-      texto:
-        `<p class="iustrack-tour-lead">Este es el diferencial de IusTrack.</p>
-         <ul class="iustrack-tour-callouts">
-           <li><span class="iustrack-tour-arrow">→</span><span><strong>Automático:</strong> todo vencimiento o evento que cargues en una causa aparece acá solo.</span></li>
-           <li><span class="iustrack-tour-arrow">→</span><span><strong>Todo conectado:</strong> listas y anotaciones también se vinculan al calendario.</span></li>
-           <li><span class="iustrack-tour-arrow">→</span><span><strong>Resultado:</strong> no se te pasa ningún vencimiento ni fecha clave.</span></li>
-         </ul>`,
-    },
-    {
-      view: "calendario",
-      target: '[data-tour="google-calendar"]',
-      titulo: "Y además, en tu Google Calendar",
-      texto: "Vinculá tu cuenta de Google y los eventos se sincronizan solos, con recordatorios automáticos.",
-    },
-    {
-      view: tableroView ?? "dashboard",
-      target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
-      titulo: "Anotaciones (kanban)",
-      texto:
-        "Tu pizarra de pendientes: tableros → listas → columnas con tarjetas arrastrables. Las columnas <strong>compartidas</strong> van al calendario de todo el equipo; las <strong>personales</strong>, solo al tuyo.",
-      abrirSidebar: !tableroView,
-    },
-    {
-      target: '[data-tour="listas"]',
-      titulo: "Categorías y listas personalizadas",
-      texto: "Armá tus propias listas (Prioritarias, Para revisar…) y categorías de eventos para ordenar el trabajo del estudio a tu manera.",
-      abrirSidebar: true,
-    },
-  ];
-
-  if (esAdmin) {
-    pasos.push({
-      target: '[data-tour="nav-miembros"]',
-      titulo: "Miembros del estudio",
-      texto: "Invitá a las personas de tu estudio por email y asignales un rol: administrador, miembro o lector.",
-      abrirSidebar: true,
-    });
-  }
-
-  pasos.push(
-    {
-      view: "migrar",
-      target: '[data-tour="main"]',
-      titulo: "Migrar causas existentes",
-      texto: "¿Ya tenés tus causas en Excel, Word o PDF? La IA te las importa en minutos.",
-    },
-    {
-      target: '[data-tour="ayuda"]',
-      titulo: "Ayuda cuando quieras",
-      texto: "Tocá el signo de pregunta en cualquier momento para volver a ver este recorrido.",
-    }
-  );
-
-  return pasos;
+/** Muestra/oculta las estadísticas del dashboard en vivo. */
+async function demoToggleKpis() {
+  const btn = document.querySelector<HTMLButtonElement>('[data-tour="toggle-kpis"]');
+  if (!btn) return;
+  await esperar(900);
+  btn.click();
+  await esperar(1500);
+  btn.click();
 }
 
-function construirPasos(props: Props): Paso[] {
-  if (props.esEstudio) return construirPasosEstudio(props);
-  const { multiVocalia, esAdmin, tableroView } = props;
+/** Abre el formulario de causa para recorrerlo en vivo. */
+async function demoAbrirFormulario() {
+  if (document.querySelector('[data-tour="form-causa"]')) return;
+  const btn = document.querySelector<HTMLButtonElement>('[data-tour="nueva-causa"]');
+  if (!btn) return;
+  await esperar(400);
+  btn.click();
+  await esperar(700);
+}
 
-  const pasos: Paso[] = [
-    {
-      target: '[data-tour="sidebar"]',
-      titulo: "Tu menú principal",
-      texto: "Desde acá entrás a todas las secciones de el espacio. Es tu punto de partida.",
-      abrirSidebar: true,
-    },
-  ];
+/** Cierra el formulario si quedó abierto. */
+function cerrarFormulario() {
+  const dlg = document.querySelector('[data-tour="form-causa"]');
+  if (!dlg) return;
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+}
+
+const bullets = (items: [string, string][]) =>
+  `<ul class="iustrack-tour-callouts">${items
+    .map(([t, d]) => `<li><span class="iustrack-tour-arrow">→</span><span><strong>${t}:</strong> ${d}</span></li>`)
+    .join("")}</ul>`;
+
+function construirPasos(props: Props): Paso[] {
+  const { esEstudio, esAdmin, multiVocalia, tableroView } = props;
+  const vistaLista = esEstudio ? "dashboard" : "tramite";
+  const responsable = esEstudio ? "empleado a cargo" : "despachante";
+
+  const pasos: Paso[] = [];
+
+  // 1 — Modalidad de la oficina
+  pasos.push({
+    view: "dashboard",
+    target: '[data-tour="sidebar"]',
+    titulo: esEstudio ? "Tu oficina: Estudio Jurídico" : "Tu oficina: Dependencia Judicial",
+    texto: esEstudio
+      ? `<p class="iustrack-tour-lead">IusTrack ordena todas las causas del estudio y sus fechas importantes en un solo lugar.</p>
+         ${bullets([
+           ["Modalidad Estudio", "pensada para abogados: fuero, rol del estudio, juez, fiscal y estado procesal."],
+           ["La otra modalidad", "Dependencia Judicial, pensada para tribunales y fiscalías (trámite, recursos, despachantes)."],
+         ])}
+         <p class="iustrack-tour-hint">Este menú de la izquierda es tu punto de partida.</p>`
+      : `<p class="iustrack-tour-lead">IusTrack ordena todas las causas de la dependencia y sus vencimientos en un solo lugar.</p>
+         ${bullets([
+           ["Modalidad Dependencia Judicial", "pensada para tribunales y fiscalías: trámite, recursos, subestados y despachantes."],
+           ["La otra modalidad", "Estudio Jurídico, para abogados particulares (fueros, rol del estudio, estado procesal)."],
+         ])}
+         <p class="iustrack-tour-hint">Este menú de la izquierda es tu punto de partida.</p>`,
+    abrirSidebar: true,
+  });
 
   if (multiVocalia) {
     pasos.push({
-      target: '[data-tour="espacio-selector"]',
-      titulo: "Cambiar entre espacios",
-      texto: "Si sos miembro de varias espacios, cambiá entre ellas desde acá. Cada espacio tiene sus propias causas, calendarios y anotaciones.",
+      target: '[data-tour="vocalia-selector"]',
+      titulo: "Cambiar de espacio",
+      texto: "Si trabajás en más de un espacio, cambiás desde acá. Cada espacio tiene sus propias causas, calendario y anotaciones.",
       abrirSidebar: true,
     });
   }
 
+  // 2 — Migrar
+  pasos.push({
+    view: "migrar",
+    target: '[data-tour="main"]',
+    titulo: "Traé tus causas ya cargadas",
+    texto:
+      `<p class="iustrack-tour-lead">No hace falta cargar todo a mano.</p>
+       ${bullets([
+         ["Subís tu archivo", "Excel, Word o PDF (también el formato Lex100 del Poder Judicial)."],
+         ["La inteligencia artificial lo lee", "y arma las causas con expediente, carátula, personas y fechas."],
+         ["Revisás antes de guardar", "aparece una pantalla con todo lo detectado para corregir lo que quieras."],
+       ])}`,
+  });
+
+  // 3 — Dashboard + estadísticas
   pasos.push(
-    {
-      target: '[data-tour="tema"]',
-      titulo: "Modo claro / oscuro",
-      texto: "Podés usar la app en modo claro o oscuro, según prefieras. Tu preferencia se guarda automáticamente.",
-      demo: demoTema,
-    },
     {
       view: "dashboard",
       target: '[data-tour="kpis"]',
-      titulo: "Dashboard",
-      texto: "Un resumen rápido de tu espacio: detenidos, juicios, prescripciones y más, siempre a la vista.",
+      titulo: "Tu tablero de resumen",
+      texto:
+        `<p class="iustrack-tour-lead">Estas tarjetas cuentan tus causas por criterio.</p>
+         ${bullets([
+           ["Son botones", "tocá una tarjeta y la lista de abajo queda filtrada solo con esas causas."],
+           ["Se destacan", "la tarjeta elegida se ilumina y la columna relacionada se mueve al frente."],
+         ])}`,
     },
     {
-      view: "tramite",
+      view: "dashboard",
+      target: '[data-tour="nueva-estadistica"]',
+      titulo: "Creá tus propias estadísticas",
+      texto: esEstudio
+        ? "Con este botón armás una tarjeta a tu medida: por fuero, estado procesal, rol del estudio, situación de libertad o vencimientos y eventos próximos (elegís los días). Le ponés nombre y color."
+        : "Con este botón armás una tarjeta a tu medida: por estado de la causa, subestado, situación de libertad o vencimientos y eventos próximos (elegís los días). Le ponés nombre y color.",
+    },
+    {
+      view: "dashboard",
+      target: '[data-tour="toggle-kpis"]',
+      titulo: "Ocultar o mostrar las estadísticas",
+      texto: "Si querés más espacio para la lista de causas, escondés las tarjetas con un toque. Mirá:",
+      demo: demoToggleKpis,
+    },
+  );
+
+  // 4 — Buscador
+  pasos.push({
+    view: vistaLista,
+    target: '[data-tour="buscador"]',
+    titulo: "Buscar una causa",
+    texto: "Escribís cualquier dato y la lista se filtra al instante: número de expediente, carátula o nombre de una persona. Mirá cómo funciona:",
+    demo: demoBuscador,
+  });
+
+  // 5 — Listas del menú
+  pasos.push({
+    target: '[data-tour="sidebar"]',
+    titulo: "Las listas del menú",
+    texto: esEstudio
+      ? `<p class="iustrack-tour-lead">Cada lista arma sola su contenido según los datos de tus causas:</p>
+         ${bullets([
+           ["Fueros", "las causas agrupadas por fuero."],
+           ["Delitos", "agrupadas por el delito cargado."],
+           ["Instrucción", "las que están en etapa de investigación."],
+           ["Elevadas a juicio", "las que ya pasaron a juicio."],
+           ["Recurridas", "las que están en casación, tribunal superior o corte."],
+           ["Detenidos", "las que tienen alguna persona detenida."],
+           ["SJP", "las que tienen suspensión de juicio a prueba en trámite."],
+         ])}`
+      : `<p class="iustrack-tour-lead">Cada lista arma sola su contenido según los datos de tus causas:</p>
+         ${bullets([
+           ["Trámite", "las causas activas del día a día."],
+           ["Detenidos", "las que tienen alguna persona detenida."],
+           ["Rebeldes", "las que tienen alguna persona declarada rebelde."],
+           ["SJP en trámite", "las que tienen suspensión de juicio a prueba."],
+           ["Recursos", "las que están con casación, queja u otro recurso."],
+           ["Delegadas", "las delegadas a otra dependencia."],
+           ["Terminadas", "las finalizadas, guardadas al final."],
+         ])}`,
+    abrirSidebar: true,
+  });
+
+  // 6 — Formulario de causa (se abre en vivo)
+  pasos.push(
+    {
+      view: vistaLista,
       target: '[data-tour="nueva-causa"]',
-      titulo: "Causas en Trámite",
-      texto: "Todas tus causas activas. Con este botón creás una nueva: expediente, carátula, imputados, fechas y vencimientos, todo en un solo formulario.",
+      titulo: "Cargar una causa nueva",
+      texto: "Con este botón se abre el formulario de la causa. Vamos a abrirlo para verlo por dentro:",
+      demo: demoAbrirFormulario,
     },
     {
-      view: "tramite",
-      target: '[data-tour="main"]',
-      titulo: "El panel de edición de una causa",
-      texto: calloutsHtml,
+      target: '[data-tour="form-datos"]',
+      titulo: "Los datos de la causa",
+      texto: esEstudio
+        ? bullets([
+            ["Expediente y carátula", "los datos que identifican la causa."],
+            ["Fuero", "penal, civil, laboral, etc."],
+            ["Rol del estudio", "si actuás como defensa, querella o denunciante."],
+            ["Damnificado", "la persona afectada."],
+            ["Juez, fiscal y fiscalía", "quiénes intervienen."],
+            ["Estado procesal", "en qué etapa está (investigación, juicio, casación…)."],
+          ])
+        : bullets([
+            ["Expediente y carátula", "los datos que identifican la causa."],
+            ["Estado", "trámite, recurso, delegada o terminada: define en qué lista aparece."],
+            ["Subestado", "el detalle del trámite (para indagar, indagado, para fijar juicio…)."],
+            ["Tipo de recurso", "casación, queja, apelación y demás."],
+            ["Despachante", "quién tiene la causa a cargo."],
+          ]),
+      side: "left",
     },
     {
-      view: "tramite",
-      target: '[data-tour="buscador"]',
-      titulo: "Buscador y filtros",
-      texto: "Podés buscar por carátula, expediente o imputado. Y filtrar por subestado, categoría o cualquier campo. Los resultados se actualizan al instante.",
-      demo: demoBuscador,
+      target: '[data-tour="form-imputados"]',
+      titulo: "Las personas de la causa",
+      texto:
+        `<p class="iustrack-tour-lead">Una causa puede tener varias personas imputadas. Cada una lleva sus propios datos:</p>
+         ${bullets([
+           ["Situación", "libre, detenida, rebelde, con probation o condenada. Según esto la causa entra en las listas correspondientes."],
+           ["Vencimientos", "prisión preventiva (se calcula solo desde la fecha de detención), pena y suspensión de juicio a prueba."],
+           ["Prescripciones", "las fechas de prescripción con su descripción."],
+         ])}`,
+      side: "left",
     },
     {
-      target: '[data-tour="listas"]',
-      titulo: "Listas personalizadas",
-      texto: "Creá tus propias listas de causas: Prioritarias, Para revisar, Casos difíciles… Las causas se agregan sin cambiar de estado: es una vista tuya (personal o compartida con el espacio). Con “Crear nueva lista” arrancás.",
-      abrirSidebar: true,
+      target: '[data-tour="form-causa"]',
+      titulo: "Fechas y notas de la causa",
+      texto:
+        `${bullets([
+          ["Eventos con fecha", "audiencias, plazos, lo que sea: aparecen automáticamente en el calendario."],
+          ["Notas sin fecha", "anotaciones sueltas que quedan guardadas en la causa."],
+        ])}
+        <p class="iustrack-tour-hint">Desde la lista también podés duplicar una causa, pintarle un color de fila y ordenar u ocultar columnas.</p>`,
+      side: "left",
     },
-    {
-      view: "detenidos",
-      target: '[data-tour="main"]',
-      titulo: "Detenidos, SJP y Rebeldes",
-      texto: "Estas listas se arman solas: las causas aparecen según la situación de sus imputados.",
-    },
+  );
+
+  // 9 — Calendario
+  pasos.push(
     {
       view: "calendario",
       target: '[data-tour="main"]',
-      titulo: "Calendario / Alertas",
-      texto: "Vencimientos, audiencias y eventos en un solo lugar, con colores según urgencia.",
+      titulo: "El calendario: el corazón de IusTrack",
+      texto:
+        `<p class="iustrack-tour-lead">Todo lo que cargás con fecha llega solo hasta acá.</p>
+         ${bullets([
+           ["Colores por cercanía", "rojo lo urgente, amarillo lo que se viene, verde lo lejano."],
+           ["Todo junto", "vencimientos, audiencias, eventos y tarjetas de anotaciones en una sola vista."],
+         ])}`,
     },
     {
       view: "calendario",
       target: '[data-tour="google-calendar"]',
-      titulo: "Y además, en tu Google Calendar",
-      texto: "Desde el mismo calendario vinculás tu cuenta de Google y los eventos se sincronizan solos, con recordatorios automáticos.",
-    },
-    {
-      view: "migrar",
-      target: '[data-tour="main"]',
-      titulo: "Migrar causas",
-      texto: "¿Ya tenés una planilla de Excel? La IA te la importa en minutos.",
-    },
-    {
-      view: tableroView ?? "dashboard",
-      target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
-      titulo: "Anotaciones",
+      titulo: "Y también en tu Google Calendar",
       texto:
-        "Tu pizarra para organizar pendientes. Podés crear <strong>anotaciones</strong> → dentro de cada anotación, <strong>listas</strong> → dentro de cada lista, <strong>columnas con tarjetas arrastrables</strong>. Podés compartir anotaciones o listas con tu oficina, o mantenerlas personales.",
-      abrirSidebar: !tableroView,
-    },
-    {
-      target: '[data-tour="nueva-anotacion"]',
-      titulo: "Crear una anotación",
-      texto: "Con “Nueva anotación” creás un tablero. Adentro sumás listas y, dentro de cada lista, columnas kanban con tarjetas que arrastrás de una a otra.",
-      abrirSidebar: true,
-    },
-    {
-      view: "dashboard",
-      target: '[data-tour="notificaciones"]',
-      titulo: "Notificaciones push",
-      texto: "Activá las alertas al celular y no se te escapa ningún vencimiento.",
+        `<p class="iustrack-tour-lead">Vinculás tu cuenta de Google una vez y listo.</p>
+         ${bullets([
+           ["Se sincroniza solo", "cada vencimiento y evento se copia a tu agenda de Google."],
+           ["Te avisa", "recordatorios automáticos 3 días antes, 1 día antes y 1 hora antes."],
+           ["El resultado", "no se te pasa ningún vencimiento. Este es el diferencial de IusTrack."],
+         ])}`,
     },
   );
+
+  // 10 — Anotaciones
+  pasos.push({
+    view: tableroView ?? "dashboard",
+    target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
+    titulo: "Anotaciones: tus pendientes en columnas",
+    texto:
+      `<p class="iustrack-tour-lead">Un tablero de notas organizado en columnas, con tarjetas que arrastrás de una columna a otra.</p>
+       ${bullets([
+         ["Columna compartida", "las tarjetas con fecha van al calendario de todo el equipo."],
+         ["Columna personal", "las tarjetas con fecha van solo a tu calendario."],
+       ])}`,
+    abrirSidebar: !tableroView,
+  });
+
+  // 11 — Categorías
+  pasos.push({
+    target: '[data-tour="nav-categorias"]',
+    titulo: "Categorías propias",
+    texto: "Creás categorías tuyas (por ejemplo “Pericia pendiente” o “Para revisar”) que quedan disponibles en todas las causas. Si les ponés fecha, también aparecen en el calendario.",
+    abrirSidebar: true,
+  });
+
+  // 12 — Filtro por responsable
+  pasos.push({
+    view: vistaLista,
+    target: '[data-tour="filtro-responsable"]',
+    titulo: `Ver las causas de cada ${responsable}`,
+    texto: `Con este botón elegís uno o varios responsables y la lista muestra solo sus causas. En esta modalidad el responsable es el <strong>${responsable}</strong>.`,
+  });
+
+  // 13 — Exportar
+  pasos.push({
+    view: vistaLista,
+    target: '[data-tour="exportar-excel"]',
+    titulo: "Descargar todo en Excel",
+    texto: "Este botón baja un archivo de Excel con todas tus listas: una hoja por cada lista, lista para imprimir o compartir.",
+  });
+
+  // 14 — Miembros y roles
+  pasos.push({
+    target: esAdmin ? '[data-tour="nav-miembros"]' : '[data-tour="sidebar"]',
+    titulo: "Tu equipo y los permisos",
+    texto:
+      `<p class="iustrack-tour-lead">Invitás a tus compañeros por email o con un código de acceso.</p>
+       ${bullets([
+         ["Administrador", "maneja todo: personas, causas y configuración."],
+         ["Miembro", "crea y edita causas."],
+         ["Lector", "solo puede mirar, no modifica nada."],
+       ])}`,
+    abrirSidebar: true,
+  });
 
   if (esAdmin) {
     pasos.push({
       target: '[data-tour="nav-papelera"]',
-      titulo: "Papelera",
-      texto: "Si borrás una causa por error, no te preocupes: va a la Papelera y podés restaurarla durante <strong>30 días</strong>. Después de ese plazo se elimina definitivamente.",
+      titulo: "Si borrás algo por error",
+      texto: "Las causas eliminadas van a la Papelera y podés recuperarlas durante <strong>30 días</strong>.",
       abrirSidebar: true,
     });
   }
 
-  pasos.push(
-    {
-      target: '[data-tour="usermenu"]',
-      titulo: "Abandonar oficina",
-      texto: "Si en algún momento querés salir de esta oficina, podés hacerlo desde tu menú de usuario. Si sos único admin, tenés que designar a alguien más antes.",
-    },
-    {
-      target: '[data-tour="ayuda"]',
-      titulo: "Ayuda cuando quieras",
-      texto: "Tocá el signo de pregunta en cualquier momento para volver a ver este recorrido.",
-    }
-  );
+  // 15 — Cierre
+  pasos.push({
+    target: '[data-tour="ayuda"]',
+    titulo: "Siempre tenés ayuda a mano",
+    texto: "Tocá el signo de pregunta para volver a ver este recorrido cuando quieras. También podés reiniciarlo desde el menú de tu foto de perfil, arriba a la derecha.",
+  });
 
   return pasos;
 }
@@ -358,6 +434,11 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     async (i: number) => {
       const paso = pasosRef.current[i];
       if (!paso) return;
+      // Cierra el formulario de causa si el paso ya no lo necesita.
+      if (!paso.target?.startsWith('[data-tour="form')) {
+        cerrarFormulario();
+        await esperar(150);
+      }
       if (paso.view) onNavigate(paso.view);
       if (isMobile) onOpenSidebar?.(!!paso.abrirSidebar);
       await esperar(paso.view || paso.abrirSidebar ? 500 : 180);
@@ -369,12 +450,14 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     (celebrar: boolean) => {
       driverRef.current?.destroy();
       driverRef.current = null;
+      cerrarFormulario();
       if (isMobile) onOpenSidebar?.(false);
       if (celebrar) setFase("final");
       else { setFase("idle"); void marcarCompletado(); }
     },
     [isMobile, marcarCompletado, onOpenSidebar]
   );
+
 
   const arrancarRecorrido = useCallback(async () => {
     const pasos = construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView, esEstudio });
