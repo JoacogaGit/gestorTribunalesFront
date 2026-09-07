@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -650,6 +651,18 @@ export default function CausaFormDialog({
                     </Select>
                   </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Flagrancia</Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Switch
+                        checked={!!causa.flagrancia}
+                        onCheckedChange={(v) => updateCausa({ flagrancia: v })}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {causa.flagrancia ? "Sí, es una causa en flagrancia" : "No"}
+                      </span>
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Fecha de ingreso</Label>
                     <Input
