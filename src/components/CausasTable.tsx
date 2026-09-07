@@ -5,7 +5,7 @@ import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
 import { useSoloLectura } from "@/hooks/useSoloLectura";
 import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter, Zap } from "lucide-react";
 import { useCategoriasVocalia, useCausasConCategoria } from "@/hooks/useCategoriasVocalia";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import {
@@ -258,6 +258,14 @@ export default function CausasTable({
         return (
           <div className="flex items-center gap-1.5">
             {numEl}
+            {c.flagrancia && (
+              <span
+                title="Causa en flagrancia"
+                className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+              >
+                <Zap className="w-2.5 h-2.5" /> FLAG
+              </span>
+            )}
             {hasConexa && (
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
@@ -881,7 +889,14 @@ export default function CausasTable({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-mono text-sm text-primary">{pageStart + idx + 1}. {c.numero}</p>
+                      <p className="font-mono text-sm text-primary flex items-center gap-1.5">
+                        {pageStart + idx + 1}. {c.numero}
+                        {c.flagrancia && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600 dark:text-amber-400">
+                            <Zap className="w-2.5 h-2.5" /> FLAG
+                          </span>
+                        )}
+                      </p>
                       <p className="text-sm font-medium text-foreground break-words">{getCaratula(c)}</p>
                     </div>
                     <ChevronDown className={`w-4 h-4 shrink-0 mt-1 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />

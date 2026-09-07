@@ -66,7 +66,17 @@ export function useTableros(vocaliaId: string | null) {
   }, [fetchData]);
 
   const borrarTablero = useCallback(async (id: string) => {
-    await supabase.from("tableros").delete().eq("id", id);
+    // Borrado en cascada manual: tarjetas → columnas → listas → tablero.
+    const { data: cols } = await supabase.from("tablero_columnas").select("id").eq("tablero_id", id);
+    const colIds = (cols ?? []).map((c) => c.id);
+    if (colIds.length > 0) {
+      await supabase.from("tablero_tarjetas").delete().in("columna_id", colIds);
+      await supabase.from("tablero_columnas").delete().in("id", colIds);
+    }
+    await supabase.from("tablero_listas").delete().eq("tablero_id", id);
+    const { error } = await supabase.from("tableros").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Anotación eliminada");
     await fetchData();
   }, [fetchData]);
 

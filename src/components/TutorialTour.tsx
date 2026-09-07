@@ -452,11 +452,15 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
   const pasosRef = useRef<Paso[]>([]);
   const [total, setTotal] = useState(construirPasos({ onNavigate, multiVocalia, esAdmin, tableroView, esEstudio }).length + 2);
 
+  // Clave local por usuario: evita que la marca de otro usuario del mismo navegador
+  // impida el arranque automático del tutorial.
+  const claveLocal = user ? `iustrack:tutorial_completado:${user.id}` : null;
+
   const marcarCompletado = useCallback(async () => {
-    try {
-      localStorage.setItem("iustrack:tutorial_completado", "1");
-    } catch { /* noop */ }
     if (!user) return;
+    try {
+      localStorage.setItem(`iustrack:tutorial_completado:${user.id}`, "1");
+    } catch { /* noop */ }
     const { error } = await supabase
       .from("perfiles")
       .update({ tutorial_completado: true })
@@ -464,28 +468,29 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     if (error) console.error("[tutorial] no se pudo guardar tutorial_completado", error);
   }, [user]);
 
-  // Auto-arranque la primera vez
+  // Auto-arranque la primera vez (incluye la primera entrada a una oficina recién creada).
   useEffect(() => {
-    if (!user) return;
+    if (!user || !claveLocal) return;
     let cancelled = false;
     (async () => {
       let visto = false;
-      try { visto = localStorage.getItem("iustrack:tutorial_completado") === "1"; } catch { /* noop */ }
+      try { visto = localStorage.getItem(claveLocal) === "1"; } catch { /* noop */ }
       if (visto) return;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("perfiles")
         .select("tutorial_completado")
         .eq("id", user.id)
         .maybeSingle();
-      if (cancelled) return;
+      if (cancelled || error) return;
       if (data?.tutorial_completado) {
-        try { localStorage.setItem("iustrack:tutorial_completado", "1"); } catch { /* noop */ }
+        try { localStorage.setItem(claveLocal, "1"); } catch { /* noop */ }
         return;
       }
-      if (data && data.tutorial_completado === false) setFase("bienvenida");
+      // Perfil sin marcar (o todavía sin fila creada): arranca el tutorial.
+      setFase((f) => (f === "idle" ? "bienvenida" : f));
     })();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, claveLocal]);
 
   // Disparo manual
   useEffect(() => {

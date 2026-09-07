@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -28,7 +29,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -70,6 +71,7 @@ function emptyCausa(): CausaInput {
     subestado_tramite_id: null,
     tipo_recurso: null,
     tipo_proceso: null,
+    flagrancia: false,
     fecha_ingreso: null,
     querella: "",
     actor_civil: "",
@@ -248,6 +250,8 @@ export default function CausaFormDialog({
             tipo_proceso: ((data as any).tipo_proceso ?? null) as "unipersonal" | "colegiado" | null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fecha_ingreso: (data as any).fecha_ingreso ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            flagrancia: !!(data as any).flagrancia,
             querella: data.querella ?? "",
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",
@@ -647,6 +651,18 @@ export default function CausaFormDialog({
                     </Select>
                   </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Flagrancia</Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Switch
+                        checked={!!causa.flagrancia}
+                        onCheckedChange={(v) => updateCausa({ flagrancia: v })}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {causa.flagrancia ? "Sí, es una causa en flagrancia" : "No"}
+                      </span>
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Fecha de ingreso</Label>
                     <Input

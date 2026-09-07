@@ -45,6 +45,8 @@ export interface Causa {
   numeroInterno?: string | null;
   /** Despachante (máx 3 caracteres). */
   despachante?: string | null;
+  /** Causa tramitada bajo el régimen de flagrancia. */
+  flagrancia?: boolean;
 
 
 

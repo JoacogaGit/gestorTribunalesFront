@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen, Lock, Landmark, Gavel, Search } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen, Lock, Landmark, Gavel, Search, Zap } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
 import type { ModoTribunal } from "@/hooks/useTribunal";
 import type { ListaPersonalizada } from "@/hooks/useListasPersonalizadas";
 import type { Tablero } from "@/hooks/useTableros";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const navBeforeTerminadas = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -15,6 +16,7 @@ const navBeforeTerminadas = [
   { id: "sjp", label: "SJP en Trámite", icon: Pause },
   { id: "recursos", label: "Recursos", icon: Users },
   { id: "delegadas", label: "Delegadas", icon: FolderOpen },
+  { id: "flagrancia", label: "Flagrancia", icon: Zap },
 ];
 const navAfterTerminadas = [
   { id: "terminadas", label: "Causas Terminadas", icon: Archive },
@@ -30,6 +32,7 @@ const navEstudio = [
   { id: "recurridas", label: "Recurridas", icon: Users },
   { id: "detenidos", label: "Detenidos", icon: Shield },
   { id: "sjp", label: "SJP", icon: Pause },
+  { id: "flagrancia", label: "Flagrancia", icon: Zap },
 ];
 const navFinal = [
   { id: "migrar", label: "Migrar causas", icon: Sparkles },
@@ -59,6 +62,7 @@ interface Props {
   onCreateLista?: () => void;
   tableros?: Tablero[];
   onCreateTablero?: () => void;
+  onDeleteTablero?: (id: string) => void;
   esEstudio?: boolean;
 }
 
@@ -68,7 +72,7 @@ export default function AppSidebar({
   vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
   modoTribunal = "vocalias_separadas",
   listasPersonalizadas = [], onCreateLista,
-  tableros = [], onCreateTablero, esEstudio = false,
+  tableros = [], onCreateTablero, onDeleteTablero, esEstudio = false,
 
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -219,7 +223,38 @@ export default function AppSidebar({
                 )}
               </button>
             );
-            if (!collapsed) return btn;
+            if (!collapsed) {
+              if (!onDeleteTablero) return btn;
+              return (
+                <div key={id} className="flex items-center group">
+                  <div className="flex-1 min-w-0">{btn}</div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`Eliminar ${tb.nombre}`}
+                        title="Eliminar anotación"
+                        className="p-1 opacity-0 group-hover:opacity-100 text-alert-urgent/60 hover:text-alert-urgent transition-opacity"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="right" align="start" className="w-64 space-y-3">
+                      <p className="text-xs text-foreground">
+                        ¿Eliminar la anotación <span className="font-semibold">{tb.nombre}</span>? Se borran sus listas, columnas y tarjetas.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteTablero(tb.id)}
+                        className="w-full rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Confirmar
+                      </button>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              );
+            }
             return (
               <Tooltip key={id} delayDuration={150}>
                 <TooltipTrigger asChild>{btn}</TooltipTrigger>
