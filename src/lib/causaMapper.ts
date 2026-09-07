@@ -78,6 +78,7 @@ export type DbCausa = {
   fuero?: string | null;
   estado_procesal?: string | null;
   rol_estudio?: string | null;
+  flagrancia?: boolean | null;
   sujetos?: DbSujeto[];
 };
 
@@ -161,6 +162,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
     numero: row.expediente_nro,
     numeroInterno: row.numero_interno ?? null,
     despachante: row.despachante ?? null,
+    flagrancia: !!row.flagrancia,
     caratulaOverride: row.caratula ?? undefined,
 
     delito: firstNonNull(sujetos.map((s) => s.delito)) ?? "—",
