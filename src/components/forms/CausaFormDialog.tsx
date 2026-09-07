@@ -28,7 +28,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -70,6 +70,7 @@ function emptyCausa(): CausaInput {
     subestado_tramite_id: null,
     tipo_recurso: null,
     tipo_proceso: null,
+    flagrancia: false,
     fecha_ingreso: null,
     querella: "",
     actor_civil: "",
@@ -248,6 +249,8 @@ export default function CausaFormDialog({
             tipo_proceso: ((data as any).tipo_proceso ?? null) as "unipersonal" | "colegiado" | null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fecha_ingreso: (data as any).fecha_ingreso ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            flagrancia: !!(data as any).flagrancia,
             querella: data.querella ?? "",
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",

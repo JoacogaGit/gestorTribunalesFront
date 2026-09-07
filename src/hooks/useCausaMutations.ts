@@ -15,6 +15,7 @@ export interface CausaInput {
   subestado_tramite_id?: string | null;
   tipo_recurso: DbTipoRecurso;
   tipo_proceso?: DbTipoProceso;
+  flagrancia?: boolean;
   fecha_ingreso?: string | null;
   querella: string | null;
   actor_civil: string | null;
