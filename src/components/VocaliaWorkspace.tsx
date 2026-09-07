@@ -17,8 +17,9 @@ import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff, Plus } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff, Plus, Zap } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
+import { useCausasFlagrancia } from "@/hooks/useCausasFlagrancia";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
@@ -127,7 +128,7 @@ type View = string;
 
 /** Vistas donde aplica el filtro por responsable. */
 const VISTAS_CON_FILTRO: string[] = [
-  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "terminadas",
+  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "terminadas", "flagrancia",
   "calendario", "fueros", "delitos", "instruccion", "elevadas", "recurridas",
 ];
 
@@ -280,6 +281,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
   const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
   const detenidosRemote = useDetenidos(vocaliaId);
+  const flagranciaRemote = useCausasFlagrancia(vocaliaId);
   const { esEstudio } = useTipoOficina(tribunalId);
   const responsableFiltro = useResponsableFilter(vocaliaId, esEstudio);
   const dashboardKpis = useDashboardKpis(vocaliaId);
@@ -296,6 +298,25 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       return next;
     });
   };
+  const [ocultarFlagDash, setOcultarFlagDash] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("iustrack_ocultar_flagrancia_dashboard") === "1";
+  });
+  const [ocultarFlagTramite, setOcultarFlagTramite] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("iustrack_ocultar_flagrancia_tramite") === "1";
+  });
+  const toggleFlag = (donde: "dashboard" | "tramite") => {
+    const key = donde === "dashboard" ? "iustrack_ocultar_flagrancia_dashboard" : "iustrack_ocultar_flagrancia_tramite";
+    const setter = donde === "dashboard" ? setOcultarFlagDash : setOcultarFlagTramite;
+    setter((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(key, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
+  const sinFlagrancia = (list: Causa[], ocultar: boolean) => (ocultar ? list.filter((c) => !c.flagrancia) : list);
+
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
   const estadisticasCustom = useEstadisticasCustom(vocaliaId);
@@ -308,7 +329,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
   const dashCausas = (() => {
-    const all = responsableFiltro.filtrar(dashCausasRemote.causas);
+    const all = sinFlagrancia(responsableFiltro.filtrar(dashCausasRemote.causas), ocultarFlagDash);
     if (estadisticaActiva) return all.filter((c) => cumpleEstadistica(c, criterioActivo, estadisticaActiva.valor, estadisticaCtx));
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
@@ -397,6 +418,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     recursos: "Recursos (Casación / Queja / REX / Apelación / TSJ)",
     delegadas: "Causas Delegadas",
     terminadas: "Causas Terminadas",
+    flagrancia: "Causas en Flagrancia",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
     miembros: "Miembros de la oficina",
@@ -455,6 +477,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       }}
       tableros={tablerosHook.tableros}
       onCreateTablero={() => setShowCreateTablero(true)}
+      onDeleteTablero={async (id) => {
+        await tablerosHook.borrarTablero(id);
+        if (view === `tablero-${id}`) setView("dashboard");
+      }}
       esEstudio={esEstudio}
     />
   );
@@ -571,10 +597,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 sjp: { refetch: sjpRemote.refetch, loading: sjpRemote.loading },
                 recursos: { refetch: recursosRemote.refetch, loading: recursosRemote.loading },
                 terminadas: { refetch: terminadasRemote.refetch, loading: terminadasRemote.loading },
+                flagrancia: { refetch: flagranciaRemote.refetch, loading: flagranciaRemote.loading },
               };
               const cur = map[view];
               if (!cur) return null;
-              const listViews = ["tramite", "detenidos", "rebeldes", "sjp", "recursos", "terminadas"];
+              const listViews = ["tramite", "detenidos", "rebeldes", "sjp", "recursos", "terminadas", "flagrancia"];
               return (
                 <>
                   {listViews.includes(view) && <ZoomControl />}
@@ -643,6 +670,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <div className="flex justify-end gap-1">
                   <Button data-tour="nueva-estadistica" size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
                     <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => toggleFlag("dashboard")} className="text-xs text-muted-foreground">
+                    <Zap className="w-3.5 h-3.5 mr-1.5" />
+                    {ocultarFlagDash ? "Mostrar flagrancias" : "Ocultar flagrancias"}
                   </Button>
                   <Button data-tour="toggle-kpis" size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
@@ -757,22 +788,56 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </div>
             )}
 
-            {view === "tramite" && (
+            {view === "tramite" && (() => {
+              const listaTramite = sinFlagrancia(responsableFiltro.filtrar(tramiteRemote.causas), ocultarFlagTramite);
+              return (
+              <div className="flex flex-col flex-1 min-h-0">
+                <div className="flex justify-end mb-2">
+                  <Button size="sm" variant="ghost" onClick={() => toggleFlag("tramite")} className="text-xs text-muted-foreground">
+                    <Zap className="w-3.5 h-3.5 mr-1.5" />
+                    {ocultarFlagTramite ? "Mostrar flagrancias" : "Ocultar flagrancias"}
+                  </Button>
+                </div>
+                <RemoteListSection
+                  loading={tramiteRemote.loading}
+                  error={tramiteRemote.error}
+                  isEmpty={listaTramite.length === 0}
+                  emptyTitle="Todavía no hay causas en trámite"
+                  emptyMessage="Empezá creando la primera causa para gestionarla acá."
+                  onRetry={tramiteRemote.refetch}
+                  onCreateCausa={() => setShowCreateCausa(true)}
+                >
+                  <CausasTable
+                    causas={listaTramite}
+                    title="Causas en Trámite"
+                    listKey="tramite"
+                    allCausas={listaTramite}
+                    onMutated={tramiteRemote.refetch}
+                    onNavigateToConexa={navigateToCausa}
+                    openCausaId={pendingOpenCausaId}
+                    onOpenedCausa={consumePending}
+                    {...remoteTableCommon}
+                  />
+                </RemoteListSection>
+              </div>
+              );
+            })()}
+            {view === "flagrancia" && (
               <RemoteListSection
-                loading={tramiteRemote.loading}
-                error={tramiteRemote.error}
-                isEmpty={responsableFiltro.filtrar(tramiteRemote.causas).length === 0}
-                emptyTitle="Todavía no hay causas en trámite"
-                emptyMessage="Empezá creando la primera causa para gestionarla acá."
-                onRetry={tramiteRemote.refetch}
+                loading={flagranciaRemote.loading}
+                error={flagranciaRemote.error}
+                isEmpty={responsableFiltro.filtrar(flagranciaRemote.causas).length === 0}
+                emptyTitle="Todavía no hay causas en flagrancia"
+                emptyMessage="Marcá “Flagrancia” en una causa para verla acá."
+                onRetry={flagranciaRemote.refetch}
                 onCreateCausa={() => setShowCreateCausa(true)}
               >
                 <CausasTable
-                  causas={responsableFiltro.filtrar(tramiteRemote.causas)}
-                  title="Causas en Trámite"
-                  listKey="tramite"
-                  allCausas={responsableFiltro.filtrar(tramiteRemote.causas)}
-                  onMutated={tramiteRemote.refetch}
+                  causas={responsableFiltro.filtrar(flagranciaRemote.causas)}
+                  title="Causas en Flagrancia"
+                  listKey="flagrancia"
+                  allCausas={responsableFiltro.filtrar(flagranciaRemote.causas)}
+                  onMutated={flagranciaRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}
@@ -1065,6 +1130,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           recursosRemote.refetch();
           terminadasRemote.refetch();
           delegadasRemote.refetch();
+          flagranciaRemote.refetch();
           dashboardKpis.refetch();
         }}
       />
