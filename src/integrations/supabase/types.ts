@@ -59,6 +59,7 @@ export type Database = {
       causas: {
         Row: {
           actor_civil: string | null
+          art196bis: boolean
           borrado_en: string | null
           borrado_por: string | null
           campos_personalizados: Json | null
@@ -69,6 +70,7 @@ export type Database = {
           creado_por: string | null
           created_at: string | null
           damnificado: string | null
+          delegada: boolean
           despachante: string | null
           empleado_a_cargo: string | null
           estado_causa: Database["public"]["Enums"]["estado_causa_enum"]
@@ -88,6 +90,7 @@ export type Database = {
           querella: string | null
           rol_estudio: string | null
           subestado_tramite_id: string | null
+          subestados: string[]
           tipo_proceso: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           tribunal_direccion: string | null
@@ -97,6 +100,7 @@ export type Database = {
         }
         Insert: {
           actor_civil?: string | null
+          art196bis?: boolean
           borrado_en?: string | null
           borrado_por?: string | null
           campos_personalizados?: Json | null
@@ -107,6 +111,7 @@ export type Database = {
           creado_por?: string | null
           created_at?: string | null
           damnificado?: string | null
+          delegada?: boolean
           despachante?: string | null
           empleado_a_cargo?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
@@ -126,6 +131,7 @@ export type Database = {
           querella?: string | null
           rol_estudio?: string | null
           subestado_tramite_id?: string | null
+          subestados?: string[]
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           tribunal_direccion?: string | null
@@ -135,6 +141,7 @@ export type Database = {
         }
         Update: {
           actor_civil?: string | null
+          art196bis?: boolean
           borrado_en?: string | null
           borrado_por?: string | null
           campos_personalizados?: Json | null
@@ -145,6 +152,7 @@ export type Database = {
           creado_por?: string | null
           created_at?: string | null
           damnificado?: string | null
+          delegada?: boolean
           despachante?: string | null
           empleado_a_cargo?: string | null
           estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
@@ -164,6 +172,7 @@ export type Database = {
           querella?: string | null
           rol_estudio?: string | null
           subestado_tramite_id?: string | null
+          subestados?: string[]
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           tribunal_direccion?: string | null
