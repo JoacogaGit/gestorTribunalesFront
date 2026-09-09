@@ -188,8 +188,9 @@ export default function CausasTable({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const soloLectura = useSoloLectura();
   const { subestados } = useSubestadosTramite(vocaliaActual?.id ?? null);
-  const [subestadoFiltroId, setSubestadoFiltroId] = useState<string | null>(null);
-  const subestadoFiltroNombre = subestados.find((s) => s.id === subestadoFiltroId)?.nombre;
+  const [subestadosFiltro, setSubestadosFiltro] = useState<string[]>([]);
+  const toggleSubestadoFiltro = (nombre: string) =>
+    setSubestadosFiltro((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
   const [duplicarDe, setDuplicarDe] = useState<Causa | null>(null);
 
 
@@ -264,6 +265,16 @@ export default function CausasTable({
                 className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400"
               >
                 <Zap className="w-2.5 h-2.5" /> FLAG
+              </span>
+            )}
+            {c.delegada && (
+              <span title="Causa delegada" className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                DELEG
+              </span>
+            )}
+            {c.art196bis && (
+              <span title="196bis / NN" className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-400">
+                196BIS
               </span>
             )}
             {hasConexa && (
@@ -352,9 +363,15 @@ export default function CausasTable({
       key: "subestado", label: "Subestado",
       headClass: "whitespace-nowrap",
       cellClass: "text-xs text-muted-foreground max-w-[140px] break-words whitespace-normal align-top",
-      sortValue: (c) => c.subestadoTramite || "",
-      render: (c) => c.subestadoTramite
-        ? <span className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80 text-[10px]">{c.subestadoTramite}</span>
+      sortValue: (c) => (c.subestados ?? []).join(", "),
+      render: (c) => (c.subestados ?? []).length > 0
+        ? (
+          <div className="flex flex-wrap gap-1">
+            {(c.subestados ?? []).map((s) => (
+              <span key={s} className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80 text-[10px]">{s}</span>
+            ))}
+          </div>
+        )
         : <span className="text-muted-foreground/60">—</span>,
     },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
@@ -647,7 +664,7 @@ export default function CausasTable({
 
   const filtered = causas.filter((c) => {
     if (categoriaFiltroId && !causasIdsConCategoria.has(c.id)) return false;
-    if (subestadoFiltroId && c.subestadoTramiteId !== subestadoFiltroId) return false;
+    if (subestadosFiltro.length > 0 && !(c.subestados ?? []).some((s) => subestadosFiltro.includes(s))) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -749,24 +766,26 @@ export default function CausasTable({
               <DropdownMenuTrigger
                 data-tour="filtro-subestado"
                 className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
-                  subestadoFiltroId ? "bg-primary/15 text-primary hover:bg-primary/20" : "text-muted-foreground hover:text-foreground bg-muted/40"
+                  subestadosFiltro.length > 0 ? "bg-primary/15 text-primary hover:bg-primary/20" : "text-muted-foreground hover:text-foreground bg-muted/40"
                 }`}
-                title="Filtrar por subestado de trámite"
+                title="Filtrar por subestados de trámite"
               >
                 <Filter className="w-3 h-3" />
-                {subestadoFiltroId ? `Subestado: ${subestadoFiltroNombre}` : "Subestado"}
+                {subestadosFiltro.length > 0
+                  ? `Subestados: ${subestadosFiltro.length === 1 ? subestadosFiltro[0] : subestadosFiltro.length}`
+                  : "Subestado"}
                 <ChevronDown className="w-3 h-3" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs">Subestado de trámite</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs">Subestados de trámite</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSubestadoFiltroId(null); }} className="text-xs flex items-center gap-2">
-                  <input type="radio" readOnly checked={subestadoFiltroId === null} className="accent-primary" />
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSubestadosFiltro([]); }} className="text-xs flex items-center gap-2">
+                  <input type="checkbox" readOnly checked={subestadosFiltro.length === 0} className="accent-primary" />
                   Todos
                 </DropdownMenuItem>
                 {subestados.map((se) => (
-                  <DropdownMenuItem key={se.id} onSelect={(e) => { e.preventDefault(); setSubestadoFiltroId(se.id); }} className="text-xs flex items-center gap-2">
-                    <input type="radio" readOnly checked={subestadoFiltroId === se.id} className="accent-primary" />
+                  <DropdownMenuItem key={se.id} onSelect={(e) => { e.preventDefault(); toggleSubestadoFiltro(se.nombre); }} className="text-xs flex items-center gap-2">
+                    <input type="checkbox" readOnly checked={subestadosFiltro.includes(se.nombre)} className="accent-primary" />
                     <span className="truncate">{se.nombre}</span>
                   </DropdownMenuItem>
                 ))}
@@ -895,6 +914,12 @@ export default function CausasTable({
                           <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600 dark:text-amber-400">
                             <Zap className="w-2.5 h-2.5" /> FLAG
                           </span>
+                        )}
+                        {c.delegada && (
+                          <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">DELEG</span>
+                        )}
+                        {c.art196bis && (
+                          <span className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-violet-600 dark:text-violet-400">196BIS</span>
                         )}
                       </p>
                       <p className="text-sm font-medium text-foreground break-words">{getCaratula(c)}</p>

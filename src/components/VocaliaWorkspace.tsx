@@ -20,6 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff, Plus, Zap } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasFlagrancia } from "@/hooks/useCausasFlagrancia";
+import { useCausasPorMarca } from "@/hooks/useCausasPorMarca";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
@@ -277,7 +278,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
-  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId);
+  const delegadasRemote = useCausasPorMarca("delegada", vocaliaId);
+  const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId);
   const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
   const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
   const detenidosRemote = useDetenidos(vocaliaId);
@@ -316,6 +318,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     });
   };
   const sinFlagrancia = (list: Causa[], ocultar: boolean) => (ocultar ? list.filter((c) => !c.flagrancia) : list);
+  /** Las causas marcadas como Delegada o 196bis/NN salen del dashboard y del listado de trámite. */
+  const sinMarcas = (list: Causa[]) => list.filter((c) => !c.delegada && !c.art196bis);
+  const [subestadosDash, setSubestadosDash] = useState<string[]>([]);
+  const toggleSubestadoDash = (nombre: string) =>
+    setSubestadosDash((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
 
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
@@ -329,7 +336,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
   const dashCausas = (() => {
-    const all = sinFlagrancia(responsableFiltro.filtrar(dashCausasRemote.causas), ocultarFlagDash);
+    let all = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(dashCausasRemote.causas), ocultarFlagDash));
+    if (subestadosDash.length > 0) {
+      all = all.filter((c) => (c.subestados ?? []).some((s) => subestadosDash.includes(s)));
+    }
     if (estadisticaActiva) return all.filter((c) => cumpleEstadistica(c, criterioActivo, estadisticaActiva.valor, estadisticaCtx));
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
@@ -752,6 +762,36 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {subestadosEspacio.subestados.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border shadow-soft transition-colors ${
+                          subestadosDash.length > 0
+                            ? "bg-primary/10 border-primary/40 text-primary"
+                            : "bg-card/80 border-border/60 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Filter className="w-3.5 h-3.5" />
+                        {subestadosDash.length > 0
+                          ? `Subestados: ${subestadosDash.length === 1 ? subestadosDash[0] : subestadosDash.length}`
+                          : "Subestados"}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel className="text-xs">Subestados de trámite</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSubestadosDash([]); }} className="text-xs flex items-center gap-2">
+                          <input type="checkbox" readOnly checked={subestadosDash.length === 0} className="accent-primary" />
+                          Todos
+                        </DropdownMenuItem>
+                        {subestadosEspacio.subestados.map((se) => (
+                          <DropdownMenuItem key={se.id} onSelect={(e) => { e.preventDefault(); toggleSubestadoDash(se.nombre); }} className="text-xs flex items-center gap-2">
+                            <input type="checkbox" readOnly checked={subestadosDash.includes(se.nombre)} className="accent-primary" />
+                            <span className="truncate">{se.nombre}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   {dashFilter !== "all" && (
                     <button
                       onClick={() => setDashFilter("all")}
@@ -789,7 +829,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
             {view === "tramite" && (() => {
-              const listaTramite = sinFlagrancia(responsableFiltro.filtrar(tramiteRemote.causas), ocultarFlagTramite);
+              const listaTramite = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(tramiteRemote.causas), ocultarFlagTramite));
               return (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="flex justify-end mb-2">
@@ -935,13 +975,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 />
               </RemoteListSection>
             )}
-            {view === "delegadas" && !esEstudio && (
+            {view === "delegadas" && (
               <RemoteListSection
                 loading={delegadasRemote.loading}
                 error={delegadasRemote.error}
                 isEmpty={responsableFiltro.filtrar(delegadasRemote.causas).length === 0}
                 emptyTitle="Todavía no hay causas delegadas"
-                emptyMessage="Cambiá el estado de una causa a “Delegada” para verla acá."
+                emptyMessage="Marcá “Delegada” en una causa para verla acá."
                 onRetry={delegadasRemote.refetch}
               >
                 <CausasTable
@@ -950,6 +990,28 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="delegadas"
                   allCausas={responsableFiltro.filtrar(delegadasRemote.causas)}
                   onMutated={delegadasRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
+                  {...remoteTableCommon}
+                />
+              </RemoteListSection>
+            )}
+            {view === "art196bis" && (
+              <RemoteListSection
+                loading={art196bisRemote.loading}
+                error={art196bisRemote.error}
+                isEmpty={responsableFiltro.filtrar(art196bisRemote.causas).length === 0}
+                emptyTitle="Todavía no hay causas 196bis / NN"
+                emptyMessage="Marcá “196bis / NN” en una causa para verla acá."
+                onRetry={art196bisRemote.refetch}
+              >
+                <CausasTable
+                  causas={responsableFiltro.filtrar(art196bisRemote.causas)}
+                  title="Causas 196bis / NN"
+                  listKey="art196bis"
+                  allCausas={responsableFiltro.filtrar(art196bisRemote.causas)}
+                  onMutated={art196bisRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}
@@ -1131,6 +1193,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           terminadasRemote.refetch();
           delegadasRemote.refetch();
           flagranciaRemote.refetch();
+          art196bisRemote.refetch();
           dashboardKpis.refetch();
         }}
       />

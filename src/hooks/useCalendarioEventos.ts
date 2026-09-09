@@ -22,7 +22,25 @@ interface TarjetaCalRow {
   descripcion: string | null;
   fecha_hora: string | null;
   causa_id: string | null;
-  columna?: { id: string; nombre: string; tablero?: { id: string; nombre: string; vocalia_id: string } | null } | null;
+  causa?: { id: string; caratula: string | null; expediente_nro: string } | null;
+  columna?: {
+    id: string;
+    nombre: string;
+    lista?: { id: string; nombre: string } | null;
+    tablero?: { id: string; nombre: string; vocalia_id: string } | null;
+  } | null;
+}
+
+/** "Tablero › Lista › título — CARÁTULA" */
+export function tituloTarjetaCalendario(t: {
+  titulo: string;
+  columna?: { nombre?: string; lista?: { nombre: string } | null; tablero?: { nombre: string } | null } | null;
+  causa?: { caratula: string | null } | null;
+}): string {
+  const partes = [t.columna?.tablero?.nombre, t.columna?.lista?.nombre, t.titulo].filter(Boolean);
+  const base = partes.join(" › ");
+  const caratula = t.causa?.caratula?.trim();
+  return caratula ? `${base} — ${caratula}` : base;
 }
 
 
@@ -79,7 +97,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .is("sujetos.causas.borrado_en", null),
         supabase
           .from("tablero_tarjetas")
-          .select("id,titulo,descripcion,fecha_hora,causa_id, columna:tablero_columnas!inner(id,nombre, tablero:tableros!inner(id,nombre,vocalia_id))")
+          .select("id,titulo,descripcion,fecha_hora,causa_id, causa:causas(id,caratula,expediente_nro), columna:tablero_columnas!inner(id,nombre, lista:tablero_listas(id,nombre), tablero:tableros!inner(id,nombre,vocalia_id))")
           .not("fecha_hora", "is", null)
           .eq("columna.tablero.vocalia_id", vocaliaId),
       ]);
@@ -124,12 +142,12 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           id: `tarjeta-${t.id}`,
           fecha: t.fecha_hora as string,
           hora: toARTimeString(t.fecha_hora as string) || undefined,
-          titulo: t.columna?.nombre ? `${t.columna.nombre} — ${t.titulo}` : t.titulo,
+          titulo: tituloTarjetaCalendario(t),
           descripcion: t.descripcion ?? undefined,
           tipo: "tarjeta",
           causaId: t.causa_id ?? "",
-          causaNumero: t.columna?.tablero?.nombre ?? "Anotación",
-          causaCaratula: t.columna?.tablero?.nombre ?? "",
+          causaNumero: t.causa?.expediente_nro ?? t.columna?.tablero?.nombre ?? "Anotación",
+          causaCaratula: t.causa?.caratula ?? t.columna?.tablero?.nombre ?? "",
         })),
 
       ].filter((e): e is CalendarEvento => e !== null)

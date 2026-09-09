@@ -47,6 +47,12 @@ export interface Causa {
   despachante?: string | null;
   /** Causa tramitada bajo el régimen de flagrancia. */
   flagrancia?: boolean;
+  /** Marca: causa delegada (independiente del estado). */
+  delegada?: boolean;
+  /** Marca: causa 196bis / NN. */
+  art196bis?: boolean;
+  /** Subestados de trámite múltiples (nombres). */
+  subestados?: string[];
 
 
 

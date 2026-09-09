@@ -79,6 +79,9 @@ export type DbCausa = {
   estado_procesal?: string | null;
   rol_estudio?: string | null;
   flagrancia?: boolean | null;
+  delegada?: boolean | null;
+  art196bis?: boolean | null;
+  subestados?: string[] | null;
   sujetos?: DbSujeto[];
 };
 
@@ -163,6 +166,8 @@ export function dbCausaToUI(row: DbCausa): Causa {
     numeroInterno: row.numero_interno ?? null,
     despachante: row.despachante ?? null,
     flagrancia: !!row.flagrancia,
+    delegada: !!row.delegada || row.estado_causa === "delegada",
+    art196bis: !!row.art196bis,
     caratulaOverride: row.caratula ?? undefined,
 
     delito: firstNonNull(sujetos.map((s) => s.delito)) ?? "—",
@@ -196,7 +201,10 @@ export function dbCausaToUI(row: DbCausa): Causa {
     link: row.link_externo ?? undefined,
     colorDestacado: row.color_destacado ?? null,
     subestadoTramiteId: row.subestado_tramite_id ?? null,
-    subestadoTramite: row.subestados_tramite?.nombre ?? null,
+    subestadoTramite: (row.subestados ?? [])[0] ?? row.subestados_tramite?.nombre ?? null,
+    subestados: (row.subestados ?? []).length > 0
+      ? (row.subestados as string[])
+      : (row.subestados_tramite?.nombre ? [row.subestados_tramite.nombre] : []),
     fuero: row.fuero ?? null,
     estadoProcesal: row.estado_procesal ?? null,
     rolEstudio: row.rol_estudio ?? null,

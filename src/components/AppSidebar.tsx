@@ -16,6 +16,7 @@ const navBeforeTerminadas = [
   { id: "sjp", label: "SJP en Trámite", icon: Pause },
   { id: "recursos", label: "Recursos", icon: Users },
   { id: "delegadas", label: "Delegadas", icon: FolderOpen },
+  { id: "art196bis", label: "196bis / NN", icon: Lock },
   { id: "flagrancia", label: "Flagrancia", icon: Zap },
 ];
 const navAfterTerminadas = [
@@ -32,6 +33,8 @@ const navEstudio = [
   { id: "recurridas", label: "Recurridas", icon: Users },
   { id: "detenidos", label: "Detenidos", icon: Shield },
   { id: "sjp", label: "SJP", icon: Pause },
+  { id: "delegadas", label: "Delegadas", icon: FolderOpen },
+  { id: "art196bis", label: "196bis / NN", icon: Lock },
   { id: "flagrancia", label: "Flagrancia", icon: Zap },
 ];
 const navFinal = [

@@ -29,7 +29,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -69,9 +69,12 @@ function emptyCausa(): CausaInput {
 
     estado_causa: "tramite",
     subestado_tramite_id: null,
+    subestados: [],
     tipo_recurso: null,
     tipo_proceso: null,
     flagrancia: false,
+    delegada: false,
+    art196bis: false,
     fecha_ingreso: null,
     querella: "",
     actor_civil: "",
@@ -242,7 +245,8 @@ export default function CausaFormDialog({
             despachante: (data as any).despachante ?? null,
             caratula: data.caratula ?? "",
 
-            estado_causa: data.estado_causa as DbEstadoCausa,
+            // "Delegada" dejó de ser un estado: pasa a ser una marca.
+            estado_causa: (data.estado_causa === "delegada" ? "tramite" : data.estado_causa) as DbEstadoCausa,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             subestado_tramite_id: (data as any).subestado_tramite_id ?? null,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
@@ -252,6 +256,12 @@ export default function CausaFormDialog({
             fecha_ingreso: (data as any).fecha_ingreso ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             flagrancia: !!(data as any).flagrancia,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            delegada: !!(data as any).delegada || data.estado_causa === "delegada",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            art196bis: !!(data as any).art196bis,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            subestados: ((data as any).subestados as string[] | null) ?? [],
             querella: data.querella ?? "",
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",
@@ -381,6 +391,9 @@ export default function CausaFormDialog({
       expediente_nro: causa.expediente_nro.trim(),
       estado_causa: causa.estado_causa,
       subestado_tramite_id: causa.estado_causa === "tramite" ? (causa.subestado_tramite_id ?? null) : null,
+      subestados: causa.estado_causa === "tramite" ? (causa.subestados ?? []) : [],
+      delegada: !!causa.delegada,
+      art196bis: !!causa.art196bis,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
       causa_conexa_id: causa.causa_conexa_texto?.trim() ? (causa.causa_conexa_id ?? null) : null,
     };
@@ -596,27 +609,40 @@ export default function CausaFormDialog({
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {ESTADOS_CAUSA_DB.filter((e) => e !== "delegada" || !esEstudio).map((e) => (
+                        {ESTADOS_CAUSA_DB.filter((e) => e !== "delegada").map((e) => (
                           <SelectItem key={e} value={e}>{labelEstadoCausa[e]}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   {causa.estado_causa === "tramite" && subestados.length > 0 && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Subestado de trámite</Label>
-                      <Select
-                        value={causa.subestado_tramite_id ?? "__none__"}
-                        onValueChange={(v) => updateCausa({ subestado_tramite_id: v === "__none__" ? null : v })}
-                      >
-                        <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">—</SelectItem>
-                          {subestados.map((se) => (
-                            <SelectItem key={se.id} value={se.id}>{se.nombre}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label className="text-xs">Subestados de trámite (podés elegir varios)</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {subestados.map((se) => {
+                          const activo = (causa.subestados ?? []).includes(se.nombre);
+                          return (
+                            <button
+                              key={se.id}
+                              type="button"
+                              onClick={() => {
+                                const actuales = causa.subestados ?? [];
+                                const next = activo
+                                  ? actuales.filter((n) => n !== se.nombre)
+                                  : [...actuales, se.nombre];
+                                updateCausa({ subestados: next });
+                              }}
+                              className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
+                                activo
+                                  ? "bg-primary/15 border-primary/40 text-primary font-semibold"
+                                  : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {se.nombre}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                   {causa.estado_causa === "recurso" && (
@@ -660,6 +686,30 @@ export default function CausaFormDialog({
                       />
                       <span className="text-xs text-muted-foreground">
                         {causa.flagrancia ? "Sí, es una causa en flagrancia" : "No"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Delegada</Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Switch
+                        checked={!!causa.delegada}
+                        onCheckedChange={(v) => updateCausa({ delegada: v })}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {causa.delegada ? "Sí (sale del listado de trámite)" : "No"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">196bis / NN</Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Switch
+                        checked={!!causa.art196bis}
+                        onCheckedChange={(v) => updateCausa({ art196bis: v })}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {causa.art196bis ? "Sí (sale del listado de trámite)" : "No"}
                       </span>
                     </div>
                   </div>
