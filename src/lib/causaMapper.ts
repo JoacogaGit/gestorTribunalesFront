@@ -201,7 +201,10 @@ export function dbCausaToUI(row: DbCausa): Causa {
     link: row.link_externo ?? undefined,
     colorDestacado: row.color_destacado ?? null,
     subestadoTramiteId: row.subestado_tramite_id ?? null,
-    subestadoTramite: row.subestados_tramite?.nombre ?? null,
+    subestadoTramite: (row.subestados ?? [])[0] ?? row.subestados_tramite?.nombre ?? null,
+    subestados: (row.subestados ?? []).length > 0
+      ? (row.subestados as string[])
+      : (row.subestados_tramite?.nombre ? [row.subestados_tramite.nombre] : []),
     fuero: row.fuero ?? null,
     estadoProcesal: row.estado_procesal ?? null,
     rolEstudio: row.rol_estudio ?? null,
