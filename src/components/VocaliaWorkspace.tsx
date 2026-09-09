@@ -762,6 +762,36 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {subestadosEspacio.subestados.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border shadow-soft transition-colors ${
+                          subestadosDash.length > 0
+                            ? "bg-primary/10 border-primary/40 text-primary"
+                            : "bg-card/80 border-border/60 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Filter className="w-3.5 h-3.5" />
+                        {subestadosDash.length > 0
+                          ? `Subestados: ${subestadosDash.length === 1 ? subestadosDash[0] : subestadosDash.length}`
+                          : "Subestados"}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel className="text-xs">Subestados de trámite</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSubestadosDash([]); }} className="text-xs flex items-center gap-2">
+                          <input type="checkbox" readOnly checked={subestadosDash.length === 0} className="accent-primary" />
+                          Todos
+                        </DropdownMenuItem>
+                        {subestadosEspacio.subestados.map((se) => (
+                          <DropdownMenuItem key={se.id} onSelect={(e) => { e.preventDefault(); toggleSubestadoDash(se.nombre); }} className="text-xs flex items-center gap-2">
+                            <input type="checkbox" readOnly checked={subestadosDash.includes(se.nombre)} className="accent-primary" />
+                            <span className="truncate">{se.nombre}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   {dashFilter !== "all" && (
                     <button
                       onClick={() => setDashFilter("all")}
