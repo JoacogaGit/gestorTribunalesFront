@@ -245,7 +245,8 @@ export default function CausaFormDialog({
             despachante: (data as any).despachante ?? null,
             caratula: data.caratula ?? "",
 
-            estado_causa: data.estado_causa as DbEstadoCausa,
+            // "Delegada" dejó de ser un estado: pasa a ser una marca.
+            estado_causa: (data.estado_causa === "delegada" ? "tramite" : data.estado_causa) as DbEstadoCausa,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             subestado_tramite_id: (data as any).subestado_tramite_id ?? null,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
