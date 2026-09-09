@@ -142,12 +142,12 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           id: `tarjeta-${t.id}`,
           fecha: t.fecha_hora as string,
           hora: toARTimeString(t.fecha_hora as string) || undefined,
-          titulo: t.columna?.nombre ? `${t.columna.nombre} — ${t.titulo}` : t.titulo,
+          titulo: tituloTarjetaCalendario(t),
           descripcion: t.descripcion ?? undefined,
           tipo: "tarjeta",
           causaId: t.causa_id ?? "",
-          causaNumero: t.columna?.tablero?.nombre ?? "Anotación",
-          causaCaratula: t.columna?.tablero?.nombre ?? "",
+          causaNumero: t.causa?.expediente_nro ?? t.columna?.tablero?.nombre ?? "Anotación",
+          causaCaratula: t.causa?.caratula ?? t.columna?.tablero?.nombre ?? "",
         })),
 
       ].filter((e): e is CalendarEvento => e !== null)
