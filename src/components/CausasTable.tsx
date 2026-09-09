@@ -915,6 +915,12 @@ export default function CausasTable({
                             <Zap className="w-2.5 h-2.5" /> FLAG
                           </span>
                         )}
+                        {c.delegada && (
+                          <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">DELEG</span>
+                        )}
+                        {c.art196bis && (
+                          <span className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-violet-600 dark:text-violet-400">196BIS</span>
+                        )}
                       </p>
                       <p className="text-sm font-medium text-foreground break-words">{getCaratula(c)}</p>
                     </div>
