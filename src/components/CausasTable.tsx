@@ -267,6 +267,16 @@ export default function CausasTable({
                 <Zap className="w-2.5 h-2.5" /> FLAG
               </span>
             )}
+            {c.delegada && (
+              <span title="Causa delegada" className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                DELEG
+              </span>
+            )}
+            {c.art196bis && (
+              <span title="196bis / NN" className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-400">
+                196BIS
+              </span>
+            )}
             {hasConexa && (
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
