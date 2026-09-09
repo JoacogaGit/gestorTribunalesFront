@@ -277,7 +277,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
-  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId);
+  const delegadasRemote = useCausasPorMarca("delegada", vocaliaId);
+  const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId);
   const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
   const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
   const detenidosRemote = useDetenidos(vocaliaId);
@@ -316,6 +317,11 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     });
   };
   const sinFlagrancia = (list: Causa[], ocultar: boolean) => (ocultar ? list.filter((c) => !c.flagrancia) : list);
+  /** Las causas marcadas como Delegada o 196bis/NN salen del dashboard y del listado de trámite. */
+  const sinMarcas = (list: Causa[]) => list.filter((c) => !c.delegada && !c.art196bis);
+  const [subestadosDash, setSubestadosDash] = useState<string[]>([]);
+  const toggleSubestadoDash = (nombre: string) =>
+    setSubestadosDash((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
 
   const remoteNoop = () => toast.info("La edición se conectará a Supabase en el próximo paso");
 
