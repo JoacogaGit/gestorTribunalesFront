@@ -613,20 +613,33 @@ export default function CausaFormDialog({
                     </Select>
                   </div>
                   {causa.estado_causa === "tramite" && subestados.length > 0 && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Subestado de trámite</Label>
-                      <Select
-                        value={causa.subestado_tramite_id ?? "__none__"}
-                        onValueChange={(v) => updateCausa({ subestado_tramite_id: v === "__none__" ? null : v })}
-                      >
-                        <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">—</SelectItem>
-                          {subestados.map((se) => (
-                            <SelectItem key={se.id} value={se.id}>{se.nombre}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label className="text-xs">Subestados de trámite (podés elegir varios)</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {subestados.map((se) => {
+                          const activo = (causa.subestados ?? []).includes(se.nombre);
+                          return (
+                            <button
+                              key={se.id}
+                              type="button"
+                              onClick={() => {
+                                const actuales = causa.subestados ?? [];
+                                const next = activo
+                                  ? actuales.filter((n) => n !== se.nombre)
+                                  : [...actuales, se.nombre];
+                                updateCausa({ subestados: next });
+                              }}
+                              className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
+                                activo
+                                  ? "bg-primary/15 border-primary/40 text-primary font-semibold"
+                                  : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {se.nombre}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                   {causa.estado_causa === "recurso" && (
