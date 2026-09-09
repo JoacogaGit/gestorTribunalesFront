@@ -15,6 +15,10 @@ interface CausaRow {
   caratula: string | null;
   estado_causa: string;
   tipo_recurso: string | null;
+  subestados: string[] | null;
+  flagrancia: boolean | null;
+  delegada: boolean | null;
+  art196bis: boolean | null;
   despachante: string | null;
   empleado_a_cargo: string | null;
   fuero: string | null;
@@ -22,9 +26,9 @@ interface CausaRow {
   sujetos: SujetoRow[];
 }
 
-const SELECT = "id,expediente_nro,caratula,estado_causa,tipo_recurso,despachante,empleado_a_cargo,fuero,estado_procesal,borrado_en,sujetos(id,nombre_completo,delito,situacion_libertad,borrado_en)";
+const SELECT = "id,expediente_nro,caratula,estado_causa,tipo_recurso,subestados,flagrancia,delegada,art196bis,despachante,empleado_a_cargo,fuero,estado_procesal,borrado_en,sujetos(id,nombre_completo,delito,situacion_libertad,borrado_en)";
 
-const HEADERS = ["N° Expediente", "Carátula", "Estado", "Imputado", "Fuero", "Delito", "Responsable"];
+const HEADERS = ["N° Expediente", "Carátula", "Estado", "Subestados", "Flagrancia", "Delegada", "196bis/NN", "Imputado", "Fuero", "Delito", "Responsable"];
 
 const LABEL_RECURSO: Record<string, string> = {
   casacion: "Casación",
@@ -80,6 +84,10 @@ export async function exportarCausasXlsx({ vocaliaId, nombreOficina, esEstudio }
     c.expediente_nro,
     c.caratula ?? "",
     estadoLabel(c),
+    (c.subestados ?? []).join(", "),
+    c.flagrancia ? "Sí" : "No",
+    (c.delegada || c.estado_causa === "delegada") ? "Sí" : "No",
+    c.art196bis ? "Sí" : "No",
     c.sujetos.map((s) => s.nombre_completo).join("; "),
     c.fuero ?? "",
     Array.from(new Set(c.sujetos.map((s) => (s.delito ?? "").trim()).filter(Boolean))).join("; "),
@@ -88,6 +96,7 @@ export async function exportarCausasXlsx({ vocaliaId, nombreOficina, esEstudio }
 
   const tiene = (c: CausaRow, sit: string) => c.sujetos.some((s) => s.situacion_libertad === sit);
   const ep = (c: CausaRow) => (c.estado_procesal ?? "").trim();
+  const esDelegada = (c: CausaRow) => !!c.delegada || c.estado_causa === "delegada";
 
   const sheets: { name: string; rows: (string | null)[][] }[] = [];
 
@@ -108,12 +117,13 @@ export async function exportarCausasXlsx({ vocaliaId, nombreOficina, esEstudio }
     sheets.push({ name: "Detenidos", rows: causas.filter((c) => tiene(c, "detenido")).map(toRow) });
     sheets.push({ name: "SJP", rows: causas.filter((c) => tiene(c, "probation")).map(toRow) });
   } else {
-    sheets.push({ name: "Trámite", rows: causas.filter((c) => c.estado_causa === "tramite" && !tiene(c, "rebelde") && !tiene(c, "probation")).map(toRow) });
+    sheets.push({ name: "Trámite", rows: causas.filter((c) => c.estado_causa === "tramite" && !esDelegada(c) && !c.art196bis && !tiene(c, "rebelde") && !tiene(c, "probation")).map(toRow) });
     sheets.push({ name: "Detenidos", rows: causas.filter((c) => tiene(c, "detenido")).map(toRow) });
     sheets.push({ name: "SJP", rows: causas.filter((c) => tiene(c, "probation")).map(toRow) });
     sheets.push({ name: "Rebeldes", rows: causas.filter((c) => tiene(c, "rebelde")).map(toRow) });
     sheets.push({ name: "Recursos", rows: causas.filter((c) => c.estado_causa === "recurso").map(toRow) });
-    sheets.push({ name: "Delegadas", rows: causas.filter((c) => c.estado_causa === "delegada").map(toRow) });
+    sheets.push({ name: "Delegadas", rows: causas.filter(esDelegada).map(toRow) });
+    sheets.push({ name: "196bis/NN", rows: causas.filter((c) => c.art196bis).map(toRow) });
     sheets.push({ name: "Terminadas", rows: causas.filter((c) => c.estado_causa === "terminada").map(toRow) });
   }
 
@@ -121,7 +131,10 @@ export async function exportarCausasXlsx({ vocaliaId, nombreOficina, esEstudio }
   const usedNames = new Set<string>();
   for (const { name, rows } of sheets) {
     const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...rows]);
-    ws["!cols"] = [{ wch: 18 }, { wch: 45 }, { wch: 14 }, { wch: 35 }, { wch: 18 }, { wch: 30 }, { wch: 22 }];
+    ws["!cols"] = [
+      { wch: 18 }, { wch: 45 }, { wch: 14 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 35 }, { wch: 18 }, { wch: 30 }, { wch: 22 },
+    ];
     XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(name, usedNames));
   }
 
