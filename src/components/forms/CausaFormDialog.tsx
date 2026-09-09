@@ -255,6 +255,12 @@ export default function CausaFormDialog({
             fecha_ingreso: (data as any).fecha_ingreso ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             flagrancia: !!(data as any).flagrancia,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            delegada: !!(data as any).delegada || data.estado_causa === "delegada",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            art196bis: !!(data as any).art196bis,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            subestados: ((data as any).subestados as string[] | null) ?? [],
             querella: data.querella ?? "",
             actor_civil: data.actor_civil ?? "",
             otros_intervinientes: data.otros_intervinientes ?? "",
