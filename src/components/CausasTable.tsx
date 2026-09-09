@@ -188,8 +188,9 @@ export default function CausasTable({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const soloLectura = useSoloLectura();
   const { subestados } = useSubestadosTramite(vocaliaActual?.id ?? null);
-  const [subestadoFiltroId, setSubestadoFiltroId] = useState<string | null>(null);
-  const subestadoFiltroNombre = subestados.find((s) => s.id === subestadoFiltroId)?.nombre;
+  const [subestadosFiltro, setSubestadosFiltro] = useState<string[]>([]);
+  const toggleSubestadoFiltro = (nombre: string) =>
+    setSubestadosFiltro((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
   const [duplicarDe, setDuplicarDe] = useState<Causa | null>(null);
 
 
