@@ -79,6 +79,9 @@ export type DbCausa = {
   estado_procesal?: string | null;
   rol_estudio?: string | null;
   flagrancia?: boolean | null;
+  delegada?: boolean | null;
+  art196bis?: boolean | null;
+  subestados?: string[] | null;
   sujetos?: DbSujeto[];
 };
 
