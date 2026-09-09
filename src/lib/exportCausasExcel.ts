@@ -15,6 +15,10 @@ interface CausaRow {
   caratula: string | null;
   estado_causa: string;
   tipo_recurso: string | null;
+  subestados: string[] | null;
+  flagrancia: boolean | null;
+  delegada: boolean | null;
+  art196bis: boolean | null;
   despachante: string | null;
   empleado_a_cargo: string | null;
   fuero: string | null;
@@ -22,9 +26,9 @@ interface CausaRow {
   sujetos: SujetoRow[];
 }
 
-const SELECT = "id,expediente_nro,caratula,estado_causa,tipo_recurso,despachante,empleado_a_cargo,fuero,estado_procesal,borrado_en,sujetos(id,nombre_completo,delito,situacion_libertad,borrado_en)";
+const SELECT = "id,expediente_nro,caratula,estado_causa,tipo_recurso,subestados,flagrancia,delegada,art196bis,despachante,empleado_a_cargo,fuero,estado_procesal,borrado_en,sujetos(id,nombre_completo,delito,situacion_libertad,borrado_en)";
 
-const HEADERS = ["N° Expediente", "Carátula", "Estado", "Imputado", "Fuero", "Delito", "Responsable"];
+const HEADERS = ["N° Expediente", "Carátula", "Estado", "Subestados", "Flagrancia", "Delegada", "196bis/NN", "Imputado", "Fuero", "Delito", "Responsable"];
 
 const LABEL_RECURSO: Record<string, string> = {
   casacion: "Casación",
