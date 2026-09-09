@@ -687,6 +687,30 @@ export default function CausaFormDialog({
                     </div>
                   </div>
                   <div className="space-y-1.5">
+                    <Label className="text-xs">Delegada</Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Switch
+                        checked={!!causa.delegada}
+                        onCheckedChange={(v) => updateCausa({ delegada: v })}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {causa.delegada ? "Sí (sale del listado de trámite)" : "No"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">196bis / NN</Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Switch
+                        checked={!!causa.art196bis}
+                        onCheckedChange={(v) => updateCausa({ art196bis: v })}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {causa.art196bis ? "Sí (sale del listado de trámite)" : "No"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
                     <Label className="text-xs">Fecha de ingreso</Label>
                     <Input
                       type="date"
