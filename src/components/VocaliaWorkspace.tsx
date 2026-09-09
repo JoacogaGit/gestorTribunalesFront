@@ -336,7 +336,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
   const dashCausas = (() => {
-    const all = sinFlagrancia(responsableFiltro.filtrar(dashCausasRemote.causas), ocultarFlagDash);
+    let all = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(dashCausasRemote.causas), ocultarFlagDash));
+    if (subestadosDash.length > 0) {
+      all = all.filter((c) => (c.subestados ?? []).some((s) => subestadosDash.includes(s)));
+    }
     if (estadisticaActiva) return all.filter((c) => cumpleEstadistica(c, criterioActivo, estadisticaActiva.valor, estadisticaCtx));
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
