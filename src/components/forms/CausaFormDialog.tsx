@@ -69,9 +69,12 @@ function emptyCausa(): CausaInput {
 
     estado_causa: "tramite",
     subestado_tramite_id: null,
+    subestados: [],
     tipo_recurso: null,
     tipo_proceso: null,
     flagrancia: false,
+    delegada: false,
+    art196bis: false,
     fecha_ingreso: null,
     querella: "",
     actor_civil: "",
