@@ -353,9 +353,15 @@ export default function CausasTable({
       key: "subestado", label: "Subestado",
       headClass: "whitespace-nowrap",
       cellClass: "text-xs text-muted-foreground max-w-[140px] break-words whitespace-normal align-top",
-      sortValue: (c) => c.subestadoTramite || "",
-      render: (c) => c.subestadoTramite
-        ? <span className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80 text-[10px]">{c.subestadoTramite}</span>
+      sortValue: (c) => (c.subestados ?? []).join(", "),
+      render: (c) => (c.subestados ?? []).length > 0
+        ? (
+          <div className="flex flex-wrap gap-1">
+            {(c.subestados ?? []).map((s) => (
+              <span key={s} className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80 text-[10px]">{s}</span>
+            ))}
+          </div>
+        )
         : <span className="text-muted-foreground/60">—</span>,
     },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
