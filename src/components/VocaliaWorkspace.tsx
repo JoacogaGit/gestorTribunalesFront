@@ -997,6 +997,28 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 />
               </RemoteListSection>
             )}
+            {view === "art196bis" && (
+              <RemoteListSection
+                loading={art196bisRemote.loading}
+                error={art196bisRemote.error}
+                isEmpty={responsableFiltro.filtrar(art196bisRemote.causas).length === 0}
+                emptyTitle="Todavía no hay causas 196bis / NN"
+                emptyMessage="Marcá “196bis / NN” en una causa para verla acá."
+                onRetry={art196bisRemote.refetch}
+              >
+                <CausasTable
+                  causas={responsableFiltro.filtrar(art196bisRemote.causas)}
+                  title="Causas 196bis / NN"
+                  listKey="art196bis"
+                  allCausas={responsableFiltro.filtrar(art196bisRemote.causas)}
+                  onMutated={art196bisRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
+                  {...remoteTableCommon}
+                />
+              </RemoteListSection>
+            )}
             {view === "terminadas" && (
               <RemoteListSection
                 loading={terminadasRemote.loading}
