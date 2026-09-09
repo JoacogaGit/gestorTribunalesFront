@@ -391,6 +391,9 @@ export default function CausaFormDialog({
       expediente_nro: causa.expediente_nro.trim(),
       estado_causa: causa.estado_causa,
       subestado_tramite_id: causa.estado_causa === "tramite" ? (causa.subestado_tramite_id ?? null) : null,
+      subestados: causa.estado_causa === "tramite" ? (causa.subestados ?? []) : [],
+      delegada: !!causa.delegada,
+      art196bis: !!causa.art196bis,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
       causa_conexa_id: causa.causa_conexa_texto?.trim() ? (causa.causa_conexa_id ?? null) : null,
     };
