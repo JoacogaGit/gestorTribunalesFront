@@ -981,7 +981,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 error={delegadasRemote.error}
                 isEmpty={responsableFiltro.filtrar(delegadasRemote.causas).length === 0}
                 emptyTitle="Todavía no hay causas delegadas"
-                emptyMessage="Cambiá el estado de una causa a “Delegada” para verla acá."
+                emptyMessage="Marcá “Delegada” en una causa para verla acá."
                 onRetry={delegadasRemote.refetch}
               >
                 <CausasTable
