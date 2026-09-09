@@ -22,7 +22,25 @@ interface TarjetaCalRow {
   descripcion: string | null;
   fecha_hora: string | null;
   causa_id: string | null;
-  columna?: { id: string; nombre: string; tablero?: { id: string; nombre: string; vocalia_id: string } | null } | null;
+  causa?: { id: string; caratula: string | null; expediente_nro: string } | null;
+  columna?: {
+    id: string;
+    nombre: string;
+    lista?: { id: string; nombre: string } | null;
+    tablero?: { id: string; nombre: string; vocalia_id: string } | null;
+  } | null;
+}
+
+/** "Tablero › Lista › título — CARÁTULA" */
+export function tituloTarjetaCalendario(t: {
+  titulo: string;
+  columna?: { nombre?: string; lista?: { nombre: string } | null; tablero?: { nombre: string } | null } | null;
+  causa?: { caratula: string | null } | null;
+}): string {
+  const partes = [t.columna?.tablero?.nombre, t.columna?.lista?.nombre, t.titulo].filter(Boolean);
+  const base = partes.join(" › ");
+  const caratula = t.causa?.caratula?.trim();
+  return caratula ? `${base} — ${caratula}` : base;
 }
 
 
