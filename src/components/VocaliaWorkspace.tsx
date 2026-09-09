@@ -1193,6 +1193,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           terminadasRemote.refetch();
           delegadasRemote.refetch();
           flagranciaRemote.refetch();
+          art196bisRemote.refetch();
           dashboardKpis.refetch();
         }}
       />
