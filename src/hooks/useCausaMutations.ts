@@ -16,6 +16,10 @@ export interface CausaInput {
   tipo_recurso: DbTipoRecurso;
   tipo_proceso?: DbTipoProceso;
   flagrancia?: boolean;
+  delegada?: boolean;
+  art196bis?: boolean;
+  /** Subestados de trámite múltiples (nombres). */
+  subestados?: string[];
   fecha_ingreso?: string | null;
   querella: string | null;
   actor_civil: string | null;

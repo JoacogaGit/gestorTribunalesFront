@@ -29,7 +29,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
