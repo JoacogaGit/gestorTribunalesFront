@@ -829,7 +829,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
             {view === "tramite" && (() => {
-              const listaTramite = sinFlagrancia(responsableFiltro.filtrar(tramiteRemote.causas), ocultarFlagTramite);
+              const listaTramite = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(tramiteRemote.causas), ocultarFlagTramite));
               return (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="flex justify-end mb-2">
@@ -975,7 +975,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 />
               </RemoteListSection>
             )}
-            {view === "delegadas" && !esEstudio && (
+            {view === "delegadas" && (
               <RemoteListSection
                 loading={delegadasRemote.loading}
                 error={delegadasRemote.error}
