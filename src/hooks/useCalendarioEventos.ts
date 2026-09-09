@@ -97,7 +97,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .is("sujetos.causas.borrado_en", null),
         supabase
           .from("tablero_tarjetas")
-          .select("id,titulo,descripcion,fecha_hora,causa_id, columna:tablero_columnas!inner(id,nombre, tablero:tableros!inner(id,nombre,vocalia_id))")
+          .select("id,titulo,descripcion,fecha_hora,causa_id, causa:causas(id,caratula,expediente_nro), columna:tablero_columnas!inner(id,nombre, lista:tablero_listas(id,nombre), tablero:tableros!inner(id,nombre,vocalia_id))")
           .not("fecha_hora", "is", null)
           .eq("columna.tablero.vocalia_id", vocaliaId),
       ]);
