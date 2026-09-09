@@ -606,7 +606,7 @@ export default function CausaFormDialog({
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {ESTADOS_CAUSA_DB.filter((e) => e !== "delegada" || !esEstudio).map((e) => (
+                        {ESTADOS_CAUSA_DB.filter((e) => e !== "delegada").map((e) => (
                           <SelectItem key={e} value={e}>{labelEstadoCausa[e]}</SelectItem>
                         ))}
                       </SelectContent>
