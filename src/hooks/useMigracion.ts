@@ -12,6 +12,12 @@ export interface CausaIA {
   color_destacado?: string | null;
   despachante?: string | null;
 
+  flagrancia?: boolean;
+  delegada?: boolean;
+  art196bis?: boolean;
+  subestados?: string[];
+
+
 
   estado_causa: "tramite" | "recurso" | "terminada";
   tipo_recurso: "casacion" | "rex" | "queja_corte" | null;
@@ -257,6 +263,10 @@ export function useMigracion() {
           fiscalia: c.fiscalia ?? null,
           tribunal_interviniente: c.tribunal_interviniente ?? null,
           estado_procesal: c.estado_procesal ?? null,
+          flagrancia: !!c.flagrancia,
+          delegada: !!c.delegada,
+          art196bis: !!c.art196bis,
+          subestados: Array.isArray(c.subestados) ? c.subestados : [],
         };
         const { data: causaRow, error: causaErr } = await supabase
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

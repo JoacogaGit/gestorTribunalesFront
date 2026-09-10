@@ -1001,6 +1001,12 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
                         <span className="font-mono text-sm font-semibold">{c.expediente_nro || "(sin nº)"}</span>
                         <span className="text-sm truncate">{c.caratula || "—"}</span>
                         <Badge variant="outline" className="text-[10px]">{c.estado_causa}</Badge>
+                        {c.flagrancia && <Badge className="text-[10px] bg-alert-urgent/15 text-alert-urgent border-alert-urgent/30">FLAGRANCIA</Badge>}
+                        {c.delegada && <Badge className="text-[10px] bg-amber-500/15 text-amber-600 border-amber-500/30">DELEGADA</Badge>}
+                        {c.art196bis && <Badge className="text-[10px] bg-primary/10 text-primary border-primary/30">196BIS/NN</Badge>}
+                        {(c.subestados ?? []).map((s) => (
+                          <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                        ))}
                         {c.fuero && <Badge variant="secondary" className="text-[10px]">{c.fuero}</Badge>}
                         {c.rol_estudio && <Badge variant="secondary" className="text-[10px]">{c.rol_estudio}</Badge>}
                         {c.estado_procesal && <Badge variant="secondary" className="text-[10px]">{c.estado_procesal}</Badge>}
