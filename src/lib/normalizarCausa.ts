@@ -117,6 +117,12 @@ export function normalizarCausa(c: unknown): CausaIA {
     fiscalia: toStringOrNull(src.fiscalia),
     tribunal_interviniente: toStringOrNull(src.tribunal_interviniente),
     estado_procesal: toStringOrNull(src.estado_procesal),
+    flagrancia: src.flagrancia === true || src.flagrancia === "true" || src.flagrancia === "sí" || src.flagrancia === "si",
+    delegada: src.delegada === true || src.delegada === "true" || src.delegada === "sí" || src.delegada === "si",
+    art196bis: src.art196bis === true || src.art196bis === "true" || src.art196bis === "sí" || src.art196bis === "si",
+    subestados: Array.isArray(src.subestados)
+      ? (src.subestados as unknown[]).map((x) => toStringOrNull(x)).filter((x): x is string => !!x)
+      : [],
     confianza: conf,
     notas_ia: toStringOrNull(src.notas_ia) ?? undefined,
     origen_pestanas: origen,
