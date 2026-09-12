@@ -71,6 +71,25 @@
     --sidebar-accent-foreground: 222 40% 15%;
     --sidebar-border: 222 18% 83%;
     --sidebar-ring: 38 70% 45%;
+
+    /* Panel especial de estadísticas */
+    --metrics-background: 248 46% 13%;
+    --metrics-card: 249 44% 22%;
+    --metrics-accent: 245 39% 47%;
+    --metrics-border: 245 39% 47%;
+    --metrics-foreground: 252 100% 98%;
+    --metrics-muted: 247 60% 79%;
+    --metrics-gold: 35 76% 52%;
+    --metrics-gold-foreground: 248 46% 11%;
+    --metrics-positive: 151 56% 59%;
+    --metrics-negative: 1 76% 68%;
+    --metrics-chart-line: 250 74% 72%;
+    --metrics-chart-bar: 246 55% 59%;
+    --metrics-chart-1: 246 55% 59%;
+    --metrics-chart-2: 35 76% 52%;
+    --metrics-chart-3: 190 52% 54%;
+    --metrics-chart-4: 326 48% 62%;
+    --shadow-metrics-glow: 0 0 24px hsl(35 76% 52% / 0.1);
   }
 
   .dark {
@@ -136,6 +155,24 @@
     --sidebar-accent-foreground: 36 25% 92%;
     --sidebar-border: 222 25% 14%;
     --sidebar-ring: 38 70% 58%;
+
+    --metrics-background: 248 46% 13%;
+    --metrics-card: 249 44% 22%;
+    --metrics-accent: 245 39% 47%;
+    --metrics-border: 245 39% 47%;
+    --metrics-foreground: 252 100% 98%;
+    --metrics-muted: 247 60% 79%;
+    --metrics-gold: 35 76% 52%;
+    --metrics-gold-foreground: 248 46% 11%;
+    --metrics-positive: 151 56% 59%;
+    --metrics-negative: 1 76% 68%;
+    --metrics-chart-line: 250 74% 72%;
+    --metrics-chart-bar: 246 55% 59%;
+    --metrics-chart-1: 246 55% 59%;
+    --metrics-chart-2: 35 76% 52%;
+    --metrics-chart-3: 190 52% 54%;
+    --metrics-chart-4: 326 48% 62%;
+    --shadow-metrics-glow: 0 0 24px hsl(35 76% 52% / 0.1);
   }
 }
 
