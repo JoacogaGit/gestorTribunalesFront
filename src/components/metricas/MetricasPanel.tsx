@@ -145,7 +145,7 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
   };
 
   /* --- diálogo dato --- */
-  const hoy = new Date();
+  const hoy = useMemo(() => new Date(), []);
   const [datoOpen, setDatoOpen] = useState(false);
   const [editandoDato, setEditandoDato] = useState<MetricaDato | null>(null);
   const [dMetrica, setDMetrica] = useState("");
