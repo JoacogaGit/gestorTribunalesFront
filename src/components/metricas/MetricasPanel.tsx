@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check } from "lucide-react";
-import { COLORES_TABLERO, colorSoftBg, resolverColor } from "@/lib/tableroColores";
+import { COLORES_TABLERO, resolverColor } from "@/lib/tableroColores";
 import { useMetricas, Metrica, MetricaDato } from "@/hooks/useMetricas";
 import type { VocaliaRow } from "@/hooks/useVocalias";
 import MetricasOverview from "@/components/metricas/MetricasOverview";
