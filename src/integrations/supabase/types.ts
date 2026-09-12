@@ -535,6 +535,108 @@ export type Database = {
           },
         ]
       }
+      metricas: {
+        Row: {
+          auto_fuente: string | null
+          color: string | null
+          created_at: string | null
+          id: string
+          nombre: string
+          orden: number | null
+          origen: string
+          unidad: string | null
+          vocalia_id: string
+        }
+        Insert: {
+          auto_fuente?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          nombre: string
+          orden?: number | null
+          origen?: string
+          unidad?: string | null
+          vocalia_id: string
+        }
+        Update: {
+          auto_fuente?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          nombre?: string
+          orden?: number | null
+          origen?: string
+          unidad?: string | null
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metricas_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metricas_datos: {
+        Row: {
+          causa_id: string | null
+          created_at: string | null
+          id: string
+          metrica_id: string
+          nota: string | null
+          periodo_fin: string
+          periodo_inicio: string
+          valor: number
+          vocalia_id: string
+        }
+        Insert: {
+          causa_id?: string | null
+          created_at?: string | null
+          id?: string
+          metrica_id: string
+          nota?: string | null
+          periodo_fin: string
+          periodo_inicio: string
+          valor?: number
+          vocalia_id: string
+        }
+        Update: {
+          causa_id?: string | null
+          created_at?: string | null
+          id?: string
+          metrica_id?: string
+          nota?: string | null
+          periodo_fin?: string
+          periodo_inicio?: string
+          valor?: number
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metricas_datos_causa_id_fkey"
+            columns: ["causa_id"]
+            isOneToOne: false
+            referencedRelation: "causas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metricas_datos_metrica_id_fkey"
+            columns: ["metrica_id"]
+            isOneToOne: false
+            referencedRelation: "metricas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metricas_datos_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       miembros_tribunal: {
         Row: {
           created_at: string | null
