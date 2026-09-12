@@ -79,6 +79,18 @@ export default {
           DEFAULT: "hsl(var(--gold))",
           foreground: "hsl(var(--gold-foreground))",
         },
+        metrics: {
+          background: "hsl(var(--metrics-background))",
+          card: "hsl(var(--metrics-card))",
+          accent: "hsl(var(--metrics-accent))",
+          border: "hsl(var(--metrics-border))",
+          foreground: "hsl(var(--metrics-foreground))",
+          muted: "hsl(var(--metrics-muted))",
+          gold: "hsl(var(--metrics-gold))",
+          "gold-foreground": "hsl(var(--metrics-gold-foreground))",
+          positive: "hsl(var(--metrics-positive))",
+          negative: "hsl(var(--metrics-negative))",
+        },
       },
       backgroundImage: {
         "gradient-surface": "var(--gradient-surface)",
@@ -90,6 +102,7 @@ export default {
         soft: "var(--shadow-soft)",
         elevated: "var(--shadow-elevated)",
         glow: "var(--shadow-glow)",
+        "metrics-glow": "var(--shadow-metrics-glow)",
       },
       borderRadius: {
         lg: "var(--radius)",

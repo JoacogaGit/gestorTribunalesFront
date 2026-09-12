@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check } from "lucide-react";
-import { COLORES_TABLERO, colorSoftBg, resolverColor } from "@/lib/tableroColores";
+import { COLORES_TABLERO, resolverColor } from "@/lib/tableroColores";
 import { useMetricas, Metrica, MetricaDato } from "@/hooks/useMetricas";
 import type { VocaliaRow } from "@/hooks/useVocalias";
+import MetricasOverview from "@/components/metricas/MetricasOverview";
 
 interface Props {
   vocaliaId: string;
@@ -144,7 +145,7 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
   };
 
   /* --- diálogo dato --- */
-  const hoy = new Date();
+  const hoy = useMemo(() => new Date(), []);
   const [datoOpen, setDatoOpen] = useState(false);
   const [editandoDato, setEditandoDato] = useState<MetricaDato | null>(null);
   const [dMetrica, setDMetrica] = useState("");
@@ -225,29 +226,32 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
   const metricaPorId = useMemo(() => new Map(metricas.map((m) => [m.id, m])), [metricas]);
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-8">
+    <div className="metrics-panel flex-1 min-h-0 overflow-y-auto rounded-md bg-metrics-background p-4 text-metrics-foreground sm:p-6 lg:p-8">
+      <MetricasOverview metricas={metricas} datos={datos} />
+
+      <div className="mt-8 space-y-8">
       {/* Métricas */}
-      <section className="space-y-3">
+      <section className="space-y-3 rounded-md border border-metrics-border bg-metrics-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <BarChart3 className="h-4 w-4" /> Métricas del espacio
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-metrics-foreground">
+            <BarChart3 className="h-4 w-4 text-metrics-gold" /> Gestión de métricas
           </h3>
           <div className="flex gap-2">
             {otrasVocalias.length > 0 && (
-              <Button variant="outline" size="sm" onClick={() => setCopiarOpen(true)}>
+              <Button variant="outline" size="sm" className="border-metrics-border bg-metrics-background text-metrics-foreground hover:bg-metrics-accent" onClick={() => setCopiarOpen(true)}>
                 <Copy className="mr-1.5 h-3.5 w-3.5" /> Copiar métricas de otro espacio
               </Button>
             )}
-            <Button size="sm" onClick={abrirNuevaMetrica}>
+            <Button size="sm" className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={abrirNuevaMetrica}>
               <Plus className="mr-1.5 h-3.5 w-3.5" /> Nueva métrica
             </Button>
           </div>
         </div>
 
         {loading && metricas.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Cargando…</p>
+          <p className="text-xs text-metrics-muted">Cargando…</p>
         ) : metricas.length === 0 ? (
-          <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
+          <p className="rounded-md border border-dashed border-metrics-border px-4 py-6 text-center text-xs text-metrics-muted">
             Todavía no hay métricas. Creá la primera para empezar a relevar datos.
           </p>
         ) : (
@@ -255,17 +259,16 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
             {metricas.map((m) => (
               <div
                 key={m.id}
-                className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5"
-                style={{ backgroundColor: colorSoftBg(m.color) }}
+                 className="flex items-center gap-3 rounded-md border border-metrics-border bg-metrics-background/55 px-3 py-2.5"
               >
                 <span className="h-8 w-1 shrink-0 rounded-full" style={{ backgroundColor: resolverColor(m.color) ?? "hsl(var(--muted-foreground))" }} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">{m.nombre}</p>
-                  <p className="text-[11px] text-muted-foreground">
+                   <p className="truncate text-sm font-medium text-metrics-foreground">{m.nombre}</p>
+                   <p className="text-[11px] text-metrics-muted">
                     {m.unidad ? m.unidad : "sin unidad"} · {datos.filter((d) => d.metrica_id === m.id).length} dato(s)
                   </p>
                 </div>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => abrirNuevoDato(m.id)}>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] text-metrics-gold hover:bg-metrics-accent" onClick={() => abrirNuevoDato(m.id)}>
                   Cargar
                 </Button>
                 <button type="button" aria-label="Editar" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => abrirEditarMetrica(m)}>
@@ -290,22 +293,22 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
       </section>
 
       {/* Datos cargados */}
-      <section className="space-y-3">
+      <section className="space-y-3 rounded-md border border-metrics-border bg-metrics-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground">Datos cargados</h3>
-          <Button size="sm" variant="outline" onClick={() => abrirNuevoDato()} disabled={metricas.length === 0}>
+          <h3 className="text-sm font-semibold text-metrics-foreground">Datos cargados</h3>
+          <Button size="sm" variant="outline" className="border-metrics-border bg-metrics-background text-metrics-foreground hover:bg-metrics-accent" onClick={() => abrirNuevoDato()} disabled={metricas.length === 0}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Cargar dato
           </Button>
         </div>
 
         {datos.length === 0 ? (
-          <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
+          <p className="rounded-md border border-dashed border-metrics-border px-4 py-6 text-center text-xs text-metrics-muted">
             Sin datos cargados todavía.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-md border border-metrics-border">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-metrics-background text-[11px] uppercase text-metrics-muted">
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">Métrica</th>
                   <th className="px-3 py-2 text-left font-semibold">Período</th>
@@ -319,21 +322,21 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
                 {datos.map((d) => {
                   const m = metricaPorId.get(d.metrica_id);
                   return (
-                    <tr key={d.id} className="border-t border-border/60">
+                    <tr key={d.id} className="border-t border-metrics-border/70 hover:bg-metrics-background/40">
                       <td className="px-3 py-2">
                         <span className="inline-flex items-center gap-2">
                           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: resolverColor(m?.color) ?? "hsl(var(--muted-foreground))" }} />
                           {m?.nombre ?? "—"}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground">{formatearPeriodo(d.periodo_inicio, d.periodo_fin)}</td>
+                      <td className="px-3 py-2 text-xs text-metrics-muted">{formatearPeriodo(d.periodo_inicio, d.periodo_fin)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">
                         {d.valor}{m?.unidad ? ` ${m.unidad}` : ""}
                       </td>
                       <td className="max-w-[220px] truncate px-3 py-2 text-xs">
                         {d.causa ? `${d.causa.expediente_nro}${d.causa.caratula ? ` — ${d.causa.caratula}` : ""}` : "—"}
                       </td>
-                      <td className="max-w-[200px] truncate px-3 py-2 text-xs text-muted-foreground">{d.nota ?? "—"}</td>
+                      <td className="max-w-[200px] truncate px-3 py-2 text-xs text-metrics-muted">{d.nota ?? "—"}</td>
                       <td className="whitespace-nowrap px-3 py-2 text-right">
                         <button type="button" aria-label="Editar dato" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => abrirEditarDato(d)}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -359,6 +362,7 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
           </div>
         )}
       </section>
+      </div>
 
       {/* Dialogo métrica */}
       <Dialog open={metricaOpen} onOpenChange={setMetricaOpen}>
@@ -523,6 +527,6 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
   );
 }
