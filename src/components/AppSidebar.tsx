@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen, Lock, Landmark, Gavel, Search, Zap } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Scale, AlertTriangle, Shield, Pause, Plus, X, Pencil, Check, ArrowLeft, Archive, ChevronDown, UserCog, Trash2, PanelLeftClose, PanelLeftOpen, Sparkles, Tag, FolderOpen, Lock, Landmark, Gavel, Search, Zap, BarChart3 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VocaliaRow } from "@/hooks/useVocalias";
@@ -38,6 +38,7 @@ const navEstudio = [
   { id: "flagrancia", label: "Flagrancia", icon: Zap },
 ];
 const navFinal = [
+  { id: "metricas", label: "Estadísticas y relevamientos", icon: BarChart3 },
   { id: "migrar", label: "Migrar causas", icon: Sparkles },
 ];
 

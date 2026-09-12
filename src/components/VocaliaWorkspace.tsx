@@ -41,6 +41,7 @@ import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
+import MetricasPanel from "@/components/metricas/MetricasPanel";
 import TutorialTour, { lanzarTutorial } from "@/components/TutorialTour";
 import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -434,6 +435,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     miembros: "Miembros de la oficina",
     papelera: "Papelera",
     migrar: "Migrar causas",
+    metricas: "Estadísticas y relevamientos",
     fueros: "Fueros",
     delitos: "Delitos",
     instruccion: "Instrucción",
@@ -1096,6 +1098,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <CategoriasManager vocaliaId={vocaliaId} />
                 <SubestadosManager vocaliaId={vocaliaId} />
               </div>
+            )}
+            {view === "metricas" && vocaliaId && (
+              <MetricasPanel vocaliaId={vocaliaId} vocaliasTribunal={vocaliasTribunal} />
             )}
             {view === "miembros" && esAdmin && tribunalId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
