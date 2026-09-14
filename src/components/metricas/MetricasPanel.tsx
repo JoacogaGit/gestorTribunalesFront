@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Copy, BarChart3, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, BarChart3, Search, ChevronDown, ChevronUp, Hash, Sigma } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -122,19 +122,21 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
   const [mNombre, setMNombre] = useState("");
   const [mUnidad, setMUnidad] = useState("");
   const [mColor, setMColor] = useState<string>(COLORES_TABLERO[0].id);
+  const [mTipo, setMTipo] = useState<"conteo" | "suma">("conteo");
+  const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
   const [guardando, setGuardando] = useState(false);
 
   const abrirNuevaMetrica = () => {
-    setEditandoMetrica(null); setMNombre(""); setMUnidad(""); setMColor(COLORES_TABLERO[0].id); setMetricaOpen(true);
+    setEditandoMetrica(null); setMNombre(""); setMUnidad(""); setMColor(COLORES_TABLERO[0].id); setMTipo("conteo"); setMetricaOpen(true);
   };
   const abrirEditarMetrica = (m: Metrica) => {
-    setEditandoMetrica(m); setMNombre(m.nombre); setMUnidad(m.unidad ?? ""); setMColor(m.color ?? COLORES_TABLERO[0].id); setMetricaOpen(true);
+    setEditandoMetrica(m); setMNombre(m.nombre); setMUnidad(m.unidad ?? ""); setMColor(m.color ?? COLORES_TABLERO[0].id); setMTipo(m.tipo_conteo); setMetricaOpen(true);
   };
 
   const guardarMetrica = async () => {
     if (!mNombre.trim()) { toast.error("Poné un nombre."); return; }
     setGuardando(true);
-    const input = { nombre: mNombre.trim(), unidad: mUnidad.trim() || null, color: mColor };
+    const input = { nombre: mNombre.trim(), unidad: mTipo === "suma" ? mUnidad.trim() || null : null, color: mColor, tipo_conteo: mTipo };
     const { error } = editandoMetrica
       ? await actualizarMetrica(editandoMetrica.id, input)
       : await crearMetrica(input);
@@ -186,7 +188,8 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
 
   const guardarDato = async () => {
     if (!dMetrica) { toast.error("Elegí una métrica."); return; }
-    const num = Number(valor.replace(",", "."));
+    const metricaSeleccionada = metricas.find((m) => m.id === dMetrica);
+    const num = metricaSeleccionada?.tipo_conteo === "conteo" ? 1 : Number(valor.replace(",", "."));
     if (!Number.isFinite(num)) { toast.error("Ingresá un valor numérico."); return; }
     let inicio = "", fin = "";
     if (tipoPeriodo === "mensual") ({ inicio, fin } = rangoMensual(anio, mes));
@@ -223,19 +226,18 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
     setCopiarOpen(false); setOrigen("");
   };
 
-  const metricaPorId = useMemo(() => new Map(metricas.map((m) => [m.id, m])), [metricas]);
+  const metricaDatoActual = metricas.find((m) => m.id === dMetrica);
+  const alternarExpansion = (id: string) => setExpandidas((actual) => {
+    const siguiente = new Set(actual);
+    if (siguiente.has(id)) siguiente.delete(id); else siguiente.add(id);
+    return siguiente;
+  });
 
   return (
-    <div className="metrics-panel flex-1 min-h-0 overflow-y-auto rounded-md bg-metrics-background p-4 text-metrics-foreground sm:p-6 lg:p-8">
-      <MetricasOverview metricas={metricas} datos={datos} />
-
-      <div className="mt-8 space-y-8">
-      {/* Métricas */}
-      <section className="space-y-3 rounded-md border border-metrics-border bg-metrics-card p-4">
+    <div className="metrics-panel flex-1 min-h-0 overflow-y-auto bg-metrics-background p-4 text-metrics-foreground sm:p-6 lg:p-8">
+      <section className="mb-8 space-y-3 rounded-md border border-metrics-gold/45 bg-metrics-card p-4 shadow-metrics-glow">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-metrics-foreground">
-            <BarChart3 className="h-4 w-4 text-metrics-gold" /> Gestión de métricas
-          </h3>
+          <div><h2 className="flex items-center gap-2 text-lg font-semibold"><BarChart3 className="h-5 w-5 text-metrics-gold" /> Configurá tus relevamientos</h2><p className="mt-1 text-xs text-metrics-muted">Creá una métrica y luego agregá sus registros en contexto.</p></div>
           <div className="flex gap-2">
             {otrasVocalias.length > 0 && (
               <Button variant="outline" size="sm" className="border-metrics-border bg-metrics-background text-metrics-foreground hover:bg-metrics-accent" onClick={() => setCopiarOpen(true)}>
@@ -248,119 +250,16 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
           </div>
         </div>
 
-        {loading && metricas.length === 0 ? (
-          <p className="text-xs text-metrics-muted">Cargando…</p>
-        ) : metricas.length === 0 ? (
-          <p className="rounded-md border border-dashed border-metrics-border px-4 py-6 text-center text-xs text-metrics-muted">
-            Todavía no hay métricas. Creá la primera para empezar a relevar datos.
-          </p>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {metricas.map((m) => (
-              <div
-                key={m.id}
-                 className="flex items-center gap-3 rounded-md border border-metrics-border bg-metrics-background/55 px-3 py-2.5"
-              >
-                <span className="h-8 w-1 shrink-0 rounded-full" style={{ backgroundColor: resolverColor(m.color) ?? "hsl(var(--muted-foreground))" }} />
-                <div className="min-w-0 flex-1">
-                   <p className="truncate text-sm font-medium text-metrics-foreground">{m.nombre}</p>
-                   <p className="text-[11px] text-metrics-muted">
-                    {m.unidad ? m.unidad : "sin unidad"} · {datos.filter((d) => d.metrica_id === m.id).length} dato(s)
-                  </p>
-                </div>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] text-metrics-gold hover:bg-metrics-accent" onClick={() => abrirNuevoDato(m.id)}>
-                  Cargar
-                </Button>
-                <button type="button" aria-label="Editar" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => abrirEditarMetrica(m)}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Eliminar"
-                  className="p-1 text-muted-foreground hover:text-destructive"
-                  onClick={async () => {
-                    if (!confirm(`¿Eliminar la métrica "${m.nombre}" y sus datos cargados?`)) return;
-                    const { error } = await eliminarMetrica(m.id);
-                    if (error) toast.error(error); else toast.success("Métrica eliminada");
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
-      {/* Datos cargados */}
-      <section className="space-y-3 rounded-md border border-metrics-border bg-metrics-card p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-metrics-foreground">Datos cargados</h3>
-          <Button size="sm" variant="outline" className="border-metrics-border bg-metrics-background text-metrics-foreground hover:bg-metrics-accent" onClick={() => abrirNuevoDato()} disabled={metricas.length === 0}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> Cargar dato
-          </Button>
-        </div>
+      <MetricasOverview metricas={metricas} datos={datos} />
 
-        {datos.length === 0 ? (
-          <p className="rounded-md border border-dashed border-metrics-border px-4 py-6 text-center text-xs text-metrics-muted">
-            Sin datos cargados todavía.
-          </p>
-        ) : (
-          <div className="overflow-x-auto rounded-md border border-metrics-border">
-            <table className="w-full text-sm">
-              <thead className="bg-metrics-background text-[11px] uppercase text-metrics-muted">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Métrica</th>
-                  <th className="px-3 py-2 text-left font-semibold">Período</th>
-                  <th className="px-3 py-2 text-right font-semibold">Valor</th>
-                  <th className="px-3 py-2 text-left font-semibold">Causa</th>
-                  <th className="px-3 py-2 text-left font-semibold">Nota</th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {datos.map((d) => {
-                  const m = metricaPorId.get(d.metrica_id);
-                  return (
-                    <tr key={d.id} className="border-t border-metrics-border/70 hover:bg-metrics-background/40">
-                      <td className="px-3 py-2">
-                        <span className="inline-flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: resolverColor(m?.color) ?? "hsl(var(--muted-foreground))" }} />
-                          {m?.nombre ?? "—"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-xs text-metrics-muted">{formatearPeriodo(d.periodo_inicio, d.periodo_fin)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {d.valor}{m?.unidad ? ` ${m.unidad}` : ""}
-                      </td>
-                      <td className="max-w-[220px] truncate px-3 py-2 text-xs">
-                        {d.causa ? `${d.causa.expediente_nro}${d.causa.caratula ? ` — ${d.causa.caratula}` : ""}` : "—"}
-                      </td>
-                      <td className="max-w-[200px] truncate px-3 py-2 text-xs text-metrics-muted">{d.nota ?? "—"}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right">
-                        <button type="button" aria-label="Editar dato" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => abrirEditarDato(d)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Borrar dato"
-                          className="p-1 text-muted-foreground hover:text-destructive"
-                          onClick={async () => {
-                            if (!confirm("¿Borrar este dato?")) return;
-                            const { error } = await eliminarDato(d.id);
-                            if (error) toast.error(error); else toast.success("Dato borrado");
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <section className="mt-8 space-y-3"><div><h2 className="text-xl font-semibold">Métricas y registros</h2><p className="text-sm text-metrics-muted">Abrí una métrica para consultar y administrar sus registros.</p></div>
+        {loading && !metricas.length ? <p className="text-sm text-metrics-muted">Cargando…</p> : metricas.map((m) => { const registros = datos.filter((d) => d.metrica_id === m.id); const abierta = expandidas.has(m.id); return <article key={m.id} className="overflow-hidden rounded-md border border-metrics-border bg-metrics-card">
+          <div className="flex flex-wrap items-center gap-3 p-4"><span className="h-10 w-1 rounded-full" style={{ backgroundColor: resolverColor(m.color) ?? "hsl(var(--metrics-gold))" }} /><Button variant="ghost" className="min-w-0 flex-1 justify-start gap-3 p-0 text-left hover:bg-transparent" onClick={() => alternarExpansion(m.id)}>{m.tipo_conteo === "conteo" ? <Hash className="h-4 w-4 text-metrics-gold" /> : <Sigma className="h-4 w-4 text-metrics-gold" />}<span className="min-w-0"><span className="block truncate font-semibold text-metrics-foreground">{m.nombre}</span><span className="block text-xs text-metrics-muted">{m.tipo_conteo === "conteo" ? "Cuenta registros" : `Suma valores${m.unidad ? ` · ${m.unidad}` : ""}`} · {registros.length} registro{registros.length === 1 ? "" : "s"}</span></span>{abierta ? <ChevronUp className="ml-auto h-4 w-4" /> : <ChevronDown className="ml-auto h-4 w-4" />}</Button>
+            <Button size="sm" className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={() => abrirNuevoDato(m.id)}><Plus className="mr-1 h-3.5 w-3.5" /> Agregar registro</Button><Button size="icon" variant="ghost" aria-label="Editar métrica" className="text-metrics-muted hover:bg-metrics-accent hover:text-metrics-foreground" onClick={() => abrirEditarMetrica(m)}><Pencil className="h-4 w-4" /></Button><Button size="icon" variant="ghost" aria-label="Eliminar métrica" className="text-metrics-muted hover:bg-metrics-accent hover:text-metrics-negative" onClick={async () => { if (!confirm(`¿Eliminar la métrica "${m.nombre}" y sus registros?`)) return; const r = await eliminarMetrica(m.id); if (r.error) toast.error(r.error); else toast.success("Métrica eliminada"); }}><Trash2 className="h-4 w-4" /></Button></div>
+          {abierta && <div className="border-t border-metrics-border bg-metrics-background/35 p-4">{registros.length === 0 ? <p className="py-5 text-center text-sm text-metrics-muted">Todavía no hay registros en esta métrica.</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-xs uppercase text-metrics-muted"><tr><th className="px-3 py-2 text-left">Fecha o período</th>{m.tipo_conteo === "suma" && <th className="px-3 py-2 text-right">Valor</th>}<th className="px-3 py-2 text-left">Causa</th><th className="px-3 py-2 text-left">Nota</th><th className="w-20" /></tr></thead><tbody>{registros.map((d) => <tr key={d.id} className="border-t border-metrics-border/70"><td className="px-3 py-2 text-metrics-muted">{formatearPeriodo(d.periodo_inicio, d.periodo_fin)}</td>{m.tipo_conteo === "suma" && <td className="px-3 py-2 text-right tabular-nums">{d.valor} {m.unidad}</td>}<td className="max-w-[260px] truncate px-3 py-2">{d.causa ? `${d.causa.expediente_nro}${d.causa.caratula ? ` — ${d.causa.caratula}` : ""}` : "—"}</td><td className="max-w-[240px] truncate px-3 py-2 text-metrics-muted">{d.nota ?? "—"}</td><td className="whitespace-nowrap text-right"><Button size="icon" variant="ghost" aria-label="Editar registro" className="text-metrics-muted hover:text-metrics-foreground" onClick={() => abrirEditarDato(d)}><Pencil className="h-3.5 w-3.5" /></Button><Button size="icon" variant="ghost" aria-label="Borrar registro" className="text-metrics-muted hover:text-metrics-negative" onClick={async () => { if (!confirm("¿Borrar este registro?")) return; const r = await eliminarDato(d.id); if (r.error) toast.error(r.error); else toast.success("Registro borrado"); }}><Trash2 className="h-3.5 w-3.5" /></Button></td></tr>)}</tbody></table></div>}</div>}
+        </article>; })}
       </section>
       </div>
 
@@ -376,9 +275,11 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
               <Input id="metrica-nombre" value={mNombre} onChange={(e) => setMNombre(e.target.value)} placeholder="Ej: Audiencias realizadas" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="metrica-unidad">Unidad (opcional)</Label>
-              <Input id="metrica-unidad" value={mUnidad} onChange={(e) => setMUnidad(e.target.value)} placeholder="Ej: audiencias, días, %" />
+              <Label>Tipo de conteo</Label>
+              <Select value={mTipo} onValueChange={(v) => setMTipo(v as "conteo" | "suma")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="conteo">Conteo</SelectItem><SelectItem value="suma">Suma</SelectItem></SelectContent></Select>
+              <p className="text-xs text-muted-foreground">{mTipo === "conteo" ? "Cada registro suma 1 automáticamente." : "Cada registro aporta un valor numérico que se acumula."}</p>
             </div>
+            {mTipo === "suma" && <div className="space-y-1.5"><Label htmlFor="metrica-unidad">Unidad (opcional)</Label><Input id="metrica-unidad" value={mUnidad} onChange={(e) => setMUnidad(e.target.value)} placeholder="Ej: pesos, días, expedientes" /></div>}
             <div className="space-y-1.5">
               <Label>Color</Label>
               <div className="flex flex-wrap gap-2">
@@ -409,7 +310,7 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
       <Dialog open={datoOpen} onOpenChange={setDatoOpen}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editandoDato ? "Editar dato" : "Cargar dato"}</DialogTitle>
+            <DialogTitle>{editandoDato ? "Editar registro" : "Agregar registro"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -484,10 +385,10 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
               </div>
             )}
 
-            <div className="space-y-1.5">
+            {metricaDatoActual?.tipo_conteo === "suma" && <div className="space-y-1.5">
               <Label htmlFor="dato-valor">Valor</Label>
               <Input id="dato-valor" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Ej: 12" />
-            </div>
+            </div>}
 
             <div className="space-y-1.5">
               <Label>Causa vinculada (opcional)</Label>
