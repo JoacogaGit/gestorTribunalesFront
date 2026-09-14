@@ -544,6 +544,7 @@ export type Database = {
           nombre: string
           orden: number | null
           origen: string
+          tipo_conteo: string
           unidad: string | null
           vocalia_id: string
         }
@@ -555,6 +556,7 @@ export type Database = {
           nombre: string
           orden?: number | null
           origen?: string
+          tipo_conteo?: string
           unidad?: string | null
           vocalia_id: string
         }
@@ -566,6 +568,7 @@ export type Database = {
           nombre?: string
           orden?: number | null
           origen?: string
+          tipo_conteo?: string
           unidad?: string | null
           vocalia_id?: string
         }
