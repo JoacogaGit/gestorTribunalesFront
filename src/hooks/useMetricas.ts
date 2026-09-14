@@ -10,6 +10,7 @@ export interface Metrica {
   auto_fuente: string | null;
   color: string | null;
   orden: number | null;
+  tipo_conteo: "conteo" | "suma";
 }
 
 export interface MetricaDato {
@@ -28,6 +29,7 @@ export interface MetricaInput {
   nombre: string;
   unidad: string | null;
   color: string | null;
+  tipo_conteo: "conteo" | "suma";
 }
 
 export interface DatoInput {
@@ -50,7 +52,7 @@ export function useMetricas(vocaliaId: string | null) {
     const [{ data: m }, { data: d }] = await Promise.all([
       supabase
         .from("metricas")
-        .select("id,vocalia_id,nombre,unidad,origen,auto_fuente,color,orden")
+        .select("id,vocalia_id,nombre,unidad,origen,auto_fuente,color,orden,tipo_conteo")
         .eq("vocalia_id", vocaliaId)
         .order("orden", { ascending: true })
         .order("created_at", { ascending: true }),
@@ -74,6 +76,7 @@ export function useMetricas(vocaliaId: string | null) {
       nombre: input.nombre,
       unidad: input.unidad,
       color: input.color,
+      tipo_conteo: input.tipo_conteo,
       origen: "manual",
       orden: metricas.length,
     });
@@ -84,7 +87,8 @@ export function useMetricas(vocaliaId: string | null) {
 
   const actualizarMetrica = useCallback(async (id: string, input: MetricaInput) => {
     const { error } = await supabase.from("metricas").update({
-      nombre: input.nombre, unidad: input.unidad, color: input.color,
+      nombre: input.nombre, unidad: input.tipo_conteo === "conteo" ? null : input.unidad,
+      color: input.color, tipo_conteo: input.tipo_conteo,
     }).eq("id", id);
     if (error) return { error: error.message };
     await fetchAll();
@@ -126,7 +130,7 @@ export function useMetricas(vocaliaId: string | null) {
     if (!vocaliaId) return { error: "Sin espacio activo" };
     const { data, error } = await supabase
       .from("metricas")
-      .select("nombre,unidad,origen,auto_fuente,color,orden")
+      .select("nombre,unidad,origen,auto_fuente,color,orden,tipo_conteo")
       .eq("vocalia_id", origenVocaliaId);
     if (error) return { error: error.message };
     const existentes = new Set(metricas.map((m) => m.nombre.trim().toLowerCase()));

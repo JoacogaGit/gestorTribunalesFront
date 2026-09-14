@@ -498,7 +498,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className={`flex min-h-screen ${view === "metricas" ? "bg-metrics-background text-metrics-foreground" : "bg-background"}`}>
       <TutorialTour
         onNavigate={(v) => setView(v as View)}
         onOpenSidebar={setSidebarOpen}
@@ -511,15 +511,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       {!isMobile && sidebar}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="w-64 p-0 border-sidebar-border overflow-y-auto">
+          <SheetContent side="left" className={`w-64 p-0 overflow-y-auto ${view === "metricas" ? "border-metrics-border bg-metrics-background" : "border-sidebar-border"}`}>
             {sidebar}
           </SheetContent>
         </Sheet>
       )}
-      <main className={`flex-1 px-4 py-4 md:p-6 lg:p-8 flex flex-col ${isMobile ? "min-h-screen w-full" : "h-screen overflow-y-auto overflow-x-hidden"}`}>
+      <main className={`flex-1 flex flex-col ${view === "metricas" ? "bg-metrics-background" : "px-4 py-4 md:p-6 lg:p-8"} ${isMobile ? "min-h-screen w-full" : "h-screen overflow-y-auto overflow-x-hidden"}`}>
         {isMobile ? (
           <>
-            <div className="flex items-center justify-between gap-2 mb-3">
+             <div className={`flex items-center justify-between gap-2 mb-3 ${view === "metricas" ? "px-4 pt-4 text-metrics-foreground" : ""}`}>
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
@@ -560,7 +560,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
               />
             </div>
-            <div className="mb-4">
+             <div className={`mb-4 ${view === "metricas" ? "px-4 text-metrics-foreground" : ""}`}>
               <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">{sidebarLabel}</span>
               <h1 className="text-xl font-display font-bold text-foreground">{title}</h1>
               {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
@@ -572,8 +572,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             </div>
           </>
         ) : (
-        <div className="flex items-end justify-between mb-8 gap-4">
-          <div className="flex flex-col">
+        <div className={view === "metricas" ? "flex items-center justify-end gap-4 px-8 pt-4" : "flex items-end justify-between mb-8 gap-4"}>
+          <div className={view === "metricas" ? "hidden" : "flex flex-col"}>
             <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 mb-1">{sidebarLabel}</span>
             <h1 className="text-3xl font-display font-bold text-foreground title-underline">{title}</h1>
             <span className="text-xs text-muted-foreground mt-3">
@@ -675,7 +675,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
             data-tour="main"
-            className={view === "migrar" ? "hidden" : `flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
+             className={view === "migrar" ? "hidden" : `flex flex-col ${view === "metricas" ? "flex-1 min-h-0" : isMobile ? "" : "flex-1 min-h-0"}`}
           >
             {view === "dashboard" && (
               <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
