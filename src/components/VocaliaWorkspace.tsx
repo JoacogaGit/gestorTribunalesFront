@@ -572,8 +572,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             </div>
           </>
         ) : (
-        <div className={view === "metricas" ? "hidden" : "flex items-end justify-between mb-8 gap-4"}>
-          <div className="flex flex-col">
+        <div className={view === "metricas" ? "flex items-center justify-end gap-4 px-8 pt-4" : "flex items-end justify-between mb-8 gap-4"}>
+          <div className={view === "metricas" ? "hidden" : "flex flex-col"}>
             <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 mb-1">{sidebarLabel}</span>
             <h1 className="text-3xl font-display font-bold text-foreground title-underline">{title}</h1>
             <span className="text-xs text-muted-foreground mt-3">

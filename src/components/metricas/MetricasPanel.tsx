@@ -21,7 +21,7 @@ interface Props {
 
 /* -------------------- helpers de período -------------------- */
 
-type TipoPeriodo = "mensual" | "trimestral" | "rango";
+type TipoPeriodo = "puntual" | "mensual" | "trimestral" | "rango";
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
@@ -169,7 +169,7 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
   const abrirNuevoDato = (metricaId?: string) => {
     setEditandoDato(null);
     setDMetrica(metricaId ?? metricas[0]?.id ?? "");
-    setTipoPeriodo("mensual"); setAnio(hoy.getFullYear()); setMes(hoy.getMonth() + 1);
+    setTipoPeriodo("puntual"); setAnio(hoy.getFullYear()); setMes(hoy.getMonth() + 1);
     setTrim(Math.floor(hoy.getMonth() / 3) + 1);
     setDesde(""); setHasta(""); setValor(""); setCausa(null); setNota("");
     setDatoOpen(true);
@@ -192,7 +192,11 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
     const num = metricaSeleccionada?.tipo_conteo === "conteo" ? 1 : Number(valor.replace(",", "."));
     if (!Number.isFinite(num)) { toast.error("Ingresá un valor numérico."); return; }
     let inicio = "", fin = "";
-    if (tipoPeriodo === "mensual") ({ inicio, fin } = rangoMensual(anio, mes));
+    if (tipoPeriodo === "puntual") {
+      if (!desde) { toast.error("Elegí la fecha del registro."); return; }
+      inicio = desde; fin = desde;
+    }
+    else if (tipoPeriodo === "mensual") ({ inicio, fin } = rangoMensual(anio, mes));
     else if (tipoPeriodo === "trimestral") ({ inicio, fin } = rangoTrimestral(anio, trim));
     else {
       if (!desde || !hasta) { toast.error("Elegí las dos fechas del rango."); return; }
@@ -327,12 +331,20 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
               <Select value={tipoPeriodo} onValueChange={(v) => setTipoPeriodo(v as TipoPeriodo)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="puntual">Fecha puntual</SelectItem>
                   <SelectItem value="mensual">Mensual</SelectItem>
                   <SelectItem value="trimestral">Trimestral</SelectItem>
                   <SelectItem value="rango">Rango de fechas libre</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {tipoPeriodo === "puntual" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="dato-fecha">Fecha</Label>
+                <Input id="dato-fecha" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+              </div>
+            )}
 
             {tipoPeriodo === "mensual" && (
               <div className="grid grid-cols-2 gap-2">
