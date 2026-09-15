@@ -498,7 +498,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   );
 
   return (
-    <div className={`flex min-h-screen ${view === "metricas" ? "bg-metrics-background text-metrics-foreground" : "bg-background"}`}>
+    <div className={`flex ${isMobile ? "min-h-screen" : "h-dvh overflow-hidden"} ${view === "metricas" ? "bg-metrics-background text-metrics-foreground" : "bg-background"}`}>
       <TutorialTour
         onNavigate={(v) => setView(v as View)}
         onOpenSidebar={setSidebarOpen}
@@ -516,7 +516,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </SheetContent>
         </Sheet>
       )}
-      <main className={`flex-1 flex flex-col ${view === "metricas" ? "bg-metrics-background" : "px-4 py-4 md:p-6 lg:p-8"} ${isMobile ? "min-h-screen w-full" : "h-screen overflow-y-auto overflow-x-hidden"}`}>
+      <main className={`flex-1 min-w-0 flex flex-col ${view === "metricas" ? "bg-metrics-background" : "px-4 py-4 md:p-6 lg:p-8"} ${isMobile ? "min-h-screen w-full" : "h-dvh overflow-hidden"}`}>
         {isMobile ? (
           <>
              <div className={`flex items-center justify-between gap-2 mb-3 ${view === "metricas" ? "px-4 pt-4 text-metrics-foreground" : ""}`}>
@@ -529,6 +529,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <Menu className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-1.5">
+                 <RefreshButton onRefresh={() => window.location.reload()} label="Recargar página" />
                 <button
                   type="button"
                   data-tour="ayuda"
@@ -600,27 +601,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </>
             )}
 
-            {(() => {
-              const map: Record<string, { refetch: () => void; loading: boolean } | undefined> = {
-                dashboard: { refetch: () => { dashboardKpis.refetch(); dashCausasRemote.refetch(); }, loading: dashboardKpis.loading || dashCausasRemote.loading },
-                tramite: { refetch: tramiteRemote.refetch, loading: tramiteRemote.loading },
-                detenidos: { refetch: detenidosRemote.refetch, loading: detenidosRemote.loading },
-                rebeldes: { refetch: rebeldesRemote.refetch, loading: rebeldesRemote.loading },
-                sjp: { refetch: sjpRemote.refetch, loading: sjpRemote.loading },
-                recursos: { refetch: recursosRemote.refetch, loading: recursosRemote.loading },
-                terminadas: { refetch: terminadasRemote.refetch, loading: terminadasRemote.loading },
-                flagrancia: { refetch: flagranciaRemote.refetch, loading: flagranciaRemote.loading },
-              };
-              const cur = map[view];
-              if (!cur) return null;
-              const listViews = ["tramite", "detenidos", "rebeldes", "sjp", "recursos", "terminadas", "flagrancia"];
-              return (
-                <>
-                  {listViews.includes(view) && <ZoomControl />}
-                  <RefreshButton onRefresh={cur.refetch} loading={cur.loading} />
-                </>
-              );
-            })()}
+            {["tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "art196bis", "terminadas", "flagrancia", "instruccion", "elevadas", "recurridas"].includes(view) && <ZoomControl />}
+            <RefreshButton onRefresh={() => window.location.reload()} label="Recargar página" />
             <button
               type="button"
               data-tour="ayuda"

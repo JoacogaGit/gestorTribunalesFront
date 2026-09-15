@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCalendarioEventos } from "@/hooks/useCalendarioEventos";
 import { LayoutDashboard } from "lucide-react";
 import { CalendarEvento, CalendarTipo, CALENDAR_TIPO_LABEL, getSemaforoBg, getSemaforoDot } from "@/lib/eventoMapper";
-import RefreshButton from "@/components/RefreshButton";
 import EventoDetailDialog from "@/components/EventoDetailDialog";
 import GoogleCalendarSection from "@/components/GoogleCalendarSection";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -217,7 +216,6 @@ export default function CalendarioAlertas({ vocaliaId, onOpenCausa, causaIdsPerm
               Agenda
             </button>
           </div>
-          <RefreshButton onRefresh={refetch} loading={loading} />
         </div>
 
         <div className="relative">
@@ -409,7 +407,6 @@ modifiers={{ hasEvent: (date) => eventDates.has(toARDateString(date)) }}
                   className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
                 />
               </div>
-              <RefreshButton onRefresh={refetch} loading={loading} />
             </div>
           </div>
 

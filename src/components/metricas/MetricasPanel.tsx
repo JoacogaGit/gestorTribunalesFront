@@ -238,7 +238,8 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
   });
 
   return (
-    <div className="metrics-panel flex-1 min-h-0 overflow-y-auto bg-metrics-background p-4 text-metrics-foreground sm:p-6 lg:p-8">
+    <div className="metrics-panel relative flex-1 min-h-0 overflow-hidden bg-metrics-background text-metrics-foreground">
+      <div aria-hidden="true" className="pointer-events-none h-full select-none overflow-y-auto p-4 blur-sm sm:p-6 lg:p-8">
       <section className="mb-8 space-y-3 rounded-md border border-metrics-gold/45 bg-metrics-card p-4 shadow-metrics-glow">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><h2 className="flex items-center gap-2 text-lg font-semibold"><BarChart3 className="h-5 w-5 text-metrics-gold" /> Configurá tus relevamientos</h2><p className="mt-1 text-xs text-metrics-muted">Creá una métrica y luego agregá sus registros en contexto.</p></div>
@@ -440,5 +441,15 @@ export default function MetricasPanel({ vocaliaId, vocaliasTribunal }: Props) {
         </DialogContent>
       </Dialog>
       </div>
+      <div className="absolute inset-0 z-40 flex items-center justify-center bg-metrics-background/35 p-5 backdrop-blur-[2px]">
+        <section role="status" className="w-full max-w-xl rounded-md border border-metrics-gold/60 bg-metrics-card/95 px-6 py-8 text-center shadow-metrics-glow sm:px-10 sm:py-10">
+          <BarChart3 className="mx-auto mb-4 h-9 w-9 text-metrics-gold" />
+          <h2 className="text-2xl font-semibold text-metrics-foreground sm:text-3xl">Próximamente: Estadísticas</h2>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-metrics-muted sm:text-base">
+            Este apartado permitirá medir la actividad de la vocalía, cargar datos y generar los relevamientos que solicitan los organismos de control, con gráficos claros para analizar la información.
+          </p>
+        </section>
+      </div>
+    </div>
   );
 }

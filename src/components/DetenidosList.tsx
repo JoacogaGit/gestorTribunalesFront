@@ -21,7 +21,6 @@ import { useCausaMutations } from "@/hooks/useCausaMutations";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
 import { formatLocalDate } from "@/lib/parseDate";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useViewportListHeight } from "@/hooks/useViewportListHeight";
 
 interface DetenidoRow {
   imputado: Imputado;
@@ -57,7 +56,6 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
   const isMobile = useIsMobile();
-  const viewportList = useViewportListHeight<HTMLDivElement>(!isMobile);
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
@@ -105,7 +103,8 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
 
   const toggleCol = (key: string) => {
     const next = new Set(hiddenCols);
-    next.has(key) ? next.delete(key) : next.add(key);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     setHiddenCols(next);
     localStorage.setItem(storageKey, JSON.stringify([...next]));
   };
@@ -137,9 +136,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   return (
     <>
       <div
-        ref={viewportList.ref}
-        style={!isMobile && viewportList.height ? { height: viewportList.height, maxHeight: viewportList.height } : undefined}
-        className="flex min-h-0 flex-col"
+        className={`flex min-h-0 flex-col ${isMobile ? "" : "flex-1"}`}
       >
       <div className="flex items-center justify-between mb-4 shrink-0">
         <h2 className="text-lg font-display font-semibold text-foreground">
