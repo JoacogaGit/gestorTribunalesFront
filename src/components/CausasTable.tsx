@@ -41,7 +41,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { formatLocalDate, parseLocalTime } from "@/lib/parseDate";
 import { expedienteSortKey } from "@/lib/expedienteSort";
-import { useViewportListHeight } from "@/hooks/useViewportListHeight";
 
 const PALETA_COLORES: { hex: string; label: string }[] = [
   { hex: "#FCA5A5", label: "Rojo" },
@@ -184,7 +183,6 @@ export default function CausasTable({
   const categoriaFiltroNombre = categoriasVocalia.find((c) => c.id === categoriaFiltroId)?.nombre_categoria;
 
   const isMobile = useIsMobile();
-  const viewportList = useViewportListHeight<HTMLDivElement>(!isMobile);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const soloLectura = useSoloLectura();
   const { subestados } = useSubestadosTramite(vocaliaActual?.id ?? null);
@@ -713,9 +711,7 @@ export default function CausasTable({
   return (
     <>
       <div
-        ref={viewportList.ref}
-        style={!isMobile && viewportList.height ? { height: viewportList.height, maxHeight: viewportList.height } : undefined}
-        className={`flex flex-col ${isMobile ? "" : "min-h-0 shrink-0"}`}
+        className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
       >
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap shrink-0">
         {displayTitle && (
