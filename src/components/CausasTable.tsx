@@ -560,7 +560,8 @@ export default function CausasTable({
 
   const toggleCol = (key: string) => {
     const next = new Set(hiddenCols);
-    next.has(key) ? next.delete(key) : next.add(key);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     setHiddenCols(next);
     if (storageKey) localStorage.setItem(storageKey, JSON.stringify([...next]));
   };
