@@ -176,6 +176,7 @@ const LEX100_COLUMNAS: { etiqueta: string; alias: string[] }[] = [
   { etiqueta: "Cerrado", alias: ["cerrado"] },
   { etiqueta: "Con detenidos", alias: ["con detendidos", "con detenidos"] },
   { etiqueta: "Con menores", alias: ["con menores"] },
+  { etiqueta: "Fecha ingreso", alias: ["fecha ingreso"] },
 ];
 
 const normHeader = (s: string) =>
