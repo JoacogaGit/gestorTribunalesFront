@@ -211,14 +211,27 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                     <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                       <Scale className="w-7 h-7 text-primary" />
                     </div>
-                    {!isEditing && canEdit && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); startEdit(v); }}
-                        className="p-2 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Editar nombre"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                    {!isEditing && (canEdit || adminTribunalIds.has(v.tribunal_id)) && (
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canEdit && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); startEdit(v); }}
+                            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                            title="Editar nombre"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                        {canEdit && adminTribunalIds.has(v.tribunal_id) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setBorrarTarget(v); }}
+                            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Enviar a la papelera"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 
