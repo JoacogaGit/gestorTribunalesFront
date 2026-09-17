@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Shield, Search, Building2, Users, Folder, Calendar, ArrowRight, Loader2, RefreshCw, AlertTriangle, ArrowLeft, Trash2, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
