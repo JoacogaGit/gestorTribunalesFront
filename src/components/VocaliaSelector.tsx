@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox, Plus, Loader2 } from "lucide-react";
+import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox, Plus, Loader2, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useVocalias, VocaliaRow } from "@/hooks/useVocalias";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
