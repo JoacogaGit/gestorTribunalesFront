@@ -34,6 +34,19 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [createOpen, setCreateOpen] = useState<CreatableTribunal | null>(null);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [creating, setCreating] = useState(false);
+  const [borrarTarget, setBorrarTarget] = useState<VocaliaRow | null>(null);
+  const [borrando, setBorrando] = useState(false);
+
+  const handleEliminarEspacio = async () => {
+    if (!borrarTarget) return;
+    setBorrando(true);
+    const { error } = await supabase.rpc("eliminar_vocalia", { p_vocalia_id: borrarTarget.id });
+    setBorrando(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${borrarTarget.nombre} enviado a la papelera`);
+    setBorrarTarget(null);
+    refetch();
+  };
 
   // Cargar tribunales donde el usuario es admin para mostrar la tarjeta "Crear espacio"
   useEffect(() => {
