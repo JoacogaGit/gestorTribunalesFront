@@ -269,9 +269,19 @@ export default function SuperadminPanel() {
                       </td>
                       <td className="text-center px-3 py-3 tabular-nums text-muted-foreground">{t.causas_count}</td>
                       <td className="text-right px-4 py-3">
-                        <Button size="sm" variant="outline" onClick={() => restaurar(t.id, t.nombre)} className="gap-1.5">
-                          <RotateCcw className="w-3.5 h-3.5" /> Restaurar
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => restaurar(t.id, t.nombre)} className="gap-1.5">
+                            <RotateCcw className="w-3.5 h-3.5" /> Restaurar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            title="Eliminar definitivamente"
+                            onClick={() => { setBorrarTarget({ id: t.id, nombre: t.nombre }); setConfirmTexto(""); }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
