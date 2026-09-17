@@ -305,6 +305,24 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!borrarTarget} onOpenChange={(o) => { if (!o && !borrando) setBorrarTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Enviar “{borrarTarget?.nombre}” a la papelera?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El espacio y sus datos dejan de verse, pero se pueden recuperar desde la papelera durante 30 días.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={borrando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleEliminarEspacio(); }} disabled={borrando}>
+              {borrando && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Enviar a la papelera
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
