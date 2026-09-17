@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Shield, Search, Building2, Users, Folder, Calendar, ArrowRight, Loader2, RefreshCw, AlertTriangle, ArrowLeft, Trash2, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
@@ -52,6 +54,23 @@ export default function SuperadminPanel() {
     if (error) { toast.error(error.message); return; }
     toast.success(`${nombre} restaurado`);
     refetch();
+  };
+
+  const [borrarTarget, setBorrarTarget] = useState<{ id: string; nombre: string } | null>(null);
+  const [confirmTexto, setConfirmTexto] = useState("");
+  const [borrando, setBorrando] = useState(false);
+
+  const confirmarBorradoDefinitivo = async () => {
+    if (!borrarTarget) return;
+    setBorrando(true);
+    const { error } = await supabase.rpc("eliminar_tribunal_definitivo" as never, { p_tribunal_id: borrarTarget.id } as never);
+    setBorrando(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${borrarTarget.nombre} eliminado definitivamente`);
+    setBorrarTarget(null);
+    setConfirmTexto("");
+    refetch();
+    fetchVocaliasPapelera();
   };
 
   if (authLoading || rolLoading) {
@@ -184,13 +203,23 @@ export default function SuperadminPanel() {
                       </span>
                     </td>
                     <td className="text-right px-4 py-3">
-                      <Button
-                        size="sm"
-                        onClick={() => entrar(t.id, t.nombre)}
-                        className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white"
-                      >
-                        Entrar como superadmin <ArrowRight className="w-3.5 h-3.5" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => entrar(t.id, t.nombre)}
+                          className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white"
+                        >
+                          Entrar como superadmin <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          title="Eliminar definitivamente"
+                          onClick={() => { setBorrarTarget({ id: t.id, nombre: t.nombre }); setConfirmTexto(""); }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -240,9 +269,19 @@ export default function SuperadminPanel() {
                       </td>
                       <td className="text-center px-3 py-3 tabular-nums text-muted-foreground">{t.causas_count}</td>
                       <td className="text-right px-4 py-3">
-                        <Button size="sm" variant="outline" onClick={() => restaurar(t.id, t.nombre)} className="gap-1.5">
-                          <RotateCcw className="w-3.5 h-3.5" /> Restaurar
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => restaurar(t.id, t.nombre)} className="gap-1.5">
+                            <RotateCcw className="w-3.5 h-3.5" /> Restaurar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            title="Eliminar definitivamente"
+                            onClick={() => { setBorrarTarget({ id: t.id, nombre: t.nombre }); setConfirmTexto(""); }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -300,6 +339,43 @@ export default function SuperadminPanel() {
           )}
         </section>
       </main>
+
+      <Dialog open={!!borrarTarget} onOpenChange={(o) => { if (!o && !borrando) { setBorrarTarget(null); setConfirmTexto(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" /> Eliminar oficina definitivamente
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              Vas a eliminar <strong className="text-foreground">{borrarTarget?.nombre}</strong> con TODOS sus espacios,
+              causas, sujetos, eventos, anotaciones y datos asociados. Esta acción es irreversible y no pasa por la papelera.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm-borrado">Escribí CONFIRMAR para continuar</Label>
+            <Input
+              id="confirm-borrado"
+              value={confirmTexto}
+              onChange={(e) => setConfirmTexto(e.target.value)}
+              placeholder="CONFIRMAR"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBorrarTarget(null); setConfirmTexto(""); }} disabled={borrando}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmarBorradoDefinitivo}
+              disabled={borrando || confirmTexto.trim().toUpperCase() !== "CONFIRMAR"}
+            >
+              {borrando && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Eliminar definitivamente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

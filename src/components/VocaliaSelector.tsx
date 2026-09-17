@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox, Plus, Loader2 } from "lucide-react";
+import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox, Plus, Loader2, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useVocalias, VocaliaRow } from "@/hooks/useVocalias";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,19 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [createOpen, setCreateOpen] = useState<CreatableTribunal | null>(null);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [creating, setCreating] = useState(false);
+  const [borrarTarget, setBorrarTarget] = useState<VocaliaRow | null>(null);
+  const [borrando, setBorrando] = useState(false);
+
+  const handleEliminarEspacio = async () => {
+    if (!borrarTarget) return;
+    setBorrando(true);
+    const { error } = await supabase.rpc("eliminar_vocalia", { p_vocalia_id: borrarTarget.id });
+    setBorrando(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${borrarTarget.nombre} enviado a la papelera`);
+    setBorrarTarget(null);
+    refetch();
+  };
 
   // Cargar tribunales donde el usuario es admin para mostrar la tarjeta "Crear espacio"
   useEffect(() => {
@@ -197,14 +211,27 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                     <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                       <Scale className="w-7 h-7 text-primary" />
                     </div>
-                    {!isEditing && canEdit && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); startEdit(v); }}
-                        className="p-2 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Editar nombre"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                    {!isEditing && (canEdit || adminTribunalIds.has(v.tribunal_id)) && (
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canEdit && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); startEdit(v); }}
+                            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                            title="Editar nombre"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                        {canEdit && adminTribunalIds.has(v.tribunal_id) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setBorrarTarget(v); }}
+                            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Enviar a la papelera"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -278,6 +305,24 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!borrarTarget} onOpenChange={(o) => { if (!o && !borrando) setBorrarTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Enviar “{borrarTarget?.nombre}” a la papelera?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El espacio y sus datos dejan de verse, pero se pueden recuperar desde la papelera durante 30 días.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={borrando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleEliminarEspacio(); }} disabled={borrando}>
+              {borrando && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Enviar a la papelera
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
