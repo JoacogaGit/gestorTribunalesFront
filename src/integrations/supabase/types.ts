@@ -1313,6 +1313,10 @@ export type Database = {
         Args: { p_tribunal_id: string }
         Returns: number
       }
+      eliminar_tribunal_definitivo: {
+        Args: { p_tribunal_id: string }
+        Returns: undefined
+      }
       eliminar_vocalia: { Args: { p_vocalia_id: string }; Returns: undefined }
       es_admin_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_lector_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
