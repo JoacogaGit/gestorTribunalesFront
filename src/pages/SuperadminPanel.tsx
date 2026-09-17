@@ -203,13 +203,23 @@ export default function SuperadminPanel() {
                       </span>
                     </td>
                     <td className="text-right px-4 py-3">
-                      <Button
-                        size="sm"
-                        onClick={() => entrar(t.id, t.nombre)}
-                        className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white"
-                      >
-                        Entrar como superadmin <ArrowRight className="w-3.5 h-3.5" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => entrar(t.id, t.nombre)}
+                          className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white"
+                        >
+                          Entrar como superadmin <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          title="Eliminar definitivamente"
+                          onClick={() => { setBorrarTarget({ id: t.id, nombre: t.nombre }); setConfirmTexto(""); }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
