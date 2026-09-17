@@ -56,6 +56,23 @@ export default function SuperadminPanel() {
     refetch();
   };
 
+  const [borrarTarget, setBorrarTarget] = useState<{ id: string; nombre: string } | null>(null);
+  const [confirmTexto, setConfirmTexto] = useState("");
+  const [borrando, setBorrando] = useState(false);
+
+  const confirmarBorradoDefinitivo = async () => {
+    if (!borrarTarget) return;
+    setBorrando(true);
+    const { error } = await supabase.rpc("eliminar_tribunal_definitivo" as never, { p_tribunal_id: borrarTarget.id } as never);
+    setBorrando(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${borrarTarget.nombre} eliminado definitivamente`);
+    setBorrarTarget(null);
+    setConfirmTexto("");
+    refetch();
+    fetchVocaliasPapelera();
+  };
+
   if (authLoading || rolLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
