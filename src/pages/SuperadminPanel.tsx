@@ -339,6 +339,43 @@ export default function SuperadminPanel() {
           )}
         </section>
       </main>
+
+      <Dialog open={!!borrarTarget} onOpenChange={(o) => { if (!o && !borrando) { setBorrarTarget(null); setConfirmTexto(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" /> Eliminar oficina definitivamente
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              Vas a eliminar <strong className="text-foreground">{borrarTarget?.nombre}</strong> con TODOS sus espacios,
+              causas, sujetos, eventos, anotaciones y datos asociados. Esta acción es irreversible y no pasa por la papelera.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm-borrado">Escribí CONFIRMAR para continuar</Label>
+            <Input
+              id="confirm-borrado"
+              value={confirmTexto}
+              onChange={(e) => setConfirmTexto(e.target.value)}
+              placeholder="CONFIRMAR"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBorrarTarget(null); setConfirmTexto(""); }} disabled={borrando}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmarBorradoDefinitivo}
+              disabled={borrando || confirmTexto.trim().toUpperCase() !== "CONFIRMAR"}
+            >
+              {borrando && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Eliminar definitivamente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
