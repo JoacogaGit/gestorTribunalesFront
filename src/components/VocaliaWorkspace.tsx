@@ -516,7 +516,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </SheetContent>
         </Sheet>
       )}
-      <main className={`flex-1 min-w-0 flex flex-col ${view === "metricas" ? "bg-metrics-background" : "px-4 py-4 md:p-6 lg:p-8"} ${isMobile ? "min-h-screen w-full" : "h-dvh overflow-hidden"}`}>
+      <main className={`flex-1 min-w-0 flex flex-col ${view === "metricas" ? "bg-metrics-background" : "px-4 py-4 md:px-6 md:py-6 md:pb-2 lg:px-8 lg:pt-8 lg:pb-3"} ${isMobile ? "min-h-screen w-full" : "h-dvh overflow-hidden"}`}>
         {isMobile ? (
           <>
              <div className={`flex items-center justify-between gap-2 mb-3 ${view === "metricas" ? "px-4 pt-4 text-metrics-foreground" : ""}`}>
@@ -573,7 +573,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             </div>
           </>
         ) : (
-        <div className={view === "metricas" ? "flex items-center justify-end gap-4 px-8 pt-4" : "flex items-end justify-between mb-8 gap-4"}>
+        <div className={view === "metricas" ? "flex items-center justify-end gap-4 px-8 pt-4" : "flex items-end justify-between mb-4 gap-4"}>
           <div className={view === "metricas" ? "hidden" : "flex flex-col"}>
             <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 mb-1">{sidebarLabel}</span>
             <h1 className="text-3xl font-display font-bold text-foreground title-underline">{title}</h1>
@@ -660,7 +660,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
              className={view === "migrar" ? "hidden" : `flex flex-col ${view === "metricas" ? "flex-1 min-h-0" : isMobile ? "" : "flex-1 min-h-0"}`}
           >
             {view === "dashboard" && (
-              <div className={`space-y-3 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
+              <div className={`space-y-2 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
                 <div className="flex justify-end gap-1">
                   <Button data-tour="nueva-estadistica" size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
                     <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
@@ -682,7 +682,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       animate={{ opacity: 1, height: "auto", y: 0 }}
                       exit={{ opacity: 0, height: 0, y: -8 }}
                       transition={{ duration: 0.28, ease: "easeInOut" }}
-                      className="overflow-hidden shrink-0 space-y-4"
+                      className="overflow-hidden shrink-0 space-y-3"
                     >
                       {esEstudio
                         ? <KpiCardsEstudio
