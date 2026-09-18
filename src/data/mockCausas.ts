@@ -103,6 +103,14 @@ export interface Causa {
   rolEstudio?: string | null;
   /** Delitos de todos los sujetos (únicos). */
   delitos?: string[];
+  /** Modo judicial: firmante. */
+  firmante?: string | null;
+  /** Modo judicial: modo de inicio (Denuncia, Prevención, OVD, Oficio, Testimonio). */
+  modoInicio?: string | null;
+  /** Modo judicial: fiscalía interviniente. */
+  fiscaliaInterviniente?: string | null;
+  /** Modo judicial: fecha del último movimiento. ISO YYYY-MM-DD. */
+  ultimoMovimiento?: string | null;
 }
 
 export function createEmptyCausa(vocalia: number): Causa {
