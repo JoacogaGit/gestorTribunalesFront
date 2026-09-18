@@ -375,6 +375,32 @@ export default function CausasTable({
         )
         : <span className="text-muted-foreground/60">—</span>,
     },
+    {
+      key: "firmante", label: "Firmante",
+      cellClass: "text-xs text-muted-foreground max-w-[160px] break-words whitespace-normal align-top",
+      sortValue: (c) => c.firmante ?? "",
+      render: (c) => c.firmante ? c.firmante : <span className="text-muted-foreground/60">—</span>,
+    },
+    {
+      key: "modoInicio", label: "Modo de inicio", headClass: "whitespace-nowrap",
+      cellClass: "text-xs text-muted-foreground whitespace-nowrap",
+      sortValue: (c) => c.modoInicio ?? "",
+      render: (c) => c.modoInicio
+        ? <span className="inline-block px-1.5 py-0.5 rounded bg-muted/60 text-foreground/80">{c.modoInicio}</span>
+        : <span className="text-muted-foreground/60">—</span>,
+    },
+    {
+      key: "fiscaliaInterviniente", label: "Fiscalía interviniente",
+      cellClass: "text-xs text-muted-foreground max-w-[180px] break-words whitespace-normal align-top",
+      sortValue: (c) => c.fiscaliaInterviniente ?? "",
+      render: (c) => c.fiscaliaInterviniente ? c.fiscaliaInterviniente : <span className="text-muted-foreground/60">—</span>,
+    },
+    {
+      key: "ultimoMovimiento", label: "Último movimiento", headClass: "whitespace-nowrap",
+      cellClass: "text-xs text-muted-foreground whitespace-nowrap",
+      sortValue: (c) => parseLocalTime(c.ultimoMovimiento) || Number.MAX_SAFE_INTEGER,
+      render: (c) => c.ultimoMovimiento ? fmtDate(c.ultimoMovimiento) : <span className="text-muted-foreground/60">—</span>,
+    },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
 
     {
@@ -843,7 +869,7 @@ export default function CausasTable({
             <DropdownMenuTrigger data-tour="columnas" className="flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/40 rounded-md">
               Categorías <ChevronDown className="w-3 h-3" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuContent align="end" collisionPadding={12} className="w-64 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain">
               <DropdownMenuLabel className="text-xs">Mostrar / Ocultar</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {allColumns.map((col) => (
