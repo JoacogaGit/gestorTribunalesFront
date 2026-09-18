@@ -802,7 +802,7 @@ export default function CausasTable({
                   : "Subestado"}
                 <ChevronDown className="w-3 h-3" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" collisionPadding={12} className="w-56 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain">
                 <DropdownMenuLabel className="text-xs">Subestados de trámite</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSubestadosFiltro([]); }} className="text-xs flex items-center gap-2">
