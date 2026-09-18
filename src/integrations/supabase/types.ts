@@ -77,14 +77,17 @@ export type Database = {
           estado_procesal: string | null
           expediente_nro: string
           fecha_ingreso: string | null
+          firmante: string | null
           fiscal: string | null
           fiscalia: string | null
+          fiscalia_interviniente: string | null
           flagrancia: boolean
           fuero: string | null
           id: string
           juez: string | null
           link_externo: string | null
           modificado_por: string | null
+          modo_inicio: string | null
           numero_interno: string | null
           otros_intervinientes: string | null
           querella: string | null
@@ -95,6 +98,7 @@ export type Database = {
           tipo_recurso: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           tribunal_direccion: string | null
           tribunal_interviniente: string | null
+          ultimo_movimiento: string | null
           updated_at: string | null
           vocalia_id: string
         }
@@ -118,14 +122,17 @@ export type Database = {
           estado_procesal?: string | null
           expediente_nro: string
           fecha_ingreso?: string | null
+          firmante?: string | null
           fiscal?: string | null
           fiscalia?: string | null
+          fiscalia_interviniente?: string | null
           flagrancia?: boolean
           fuero?: string | null
           id?: string
           juez?: string | null
           link_externo?: string | null
           modificado_por?: string | null
+          modo_inicio?: string | null
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
@@ -136,6 +143,7 @@ export type Database = {
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           tribunal_direccion?: string | null
           tribunal_interviniente?: string | null
+          ultimo_movimiento?: string | null
           updated_at?: string | null
           vocalia_id: string
         }
@@ -159,14 +167,17 @@ export type Database = {
           estado_procesal?: string | null
           expediente_nro?: string
           fecha_ingreso?: string | null
+          firmante?: string | null
           fiscal?: string | null
           fiscalia?: string | null
+          fiscalia_interviniente?: string | null
           flagrancia?: boolean
           fuero?: string | null
           id?: string
           juez?: string | null
           link_externo?: string | null
           modificado_por?: string | null
+          modo_inicio?: string | null
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
@@ -177,6 +188,7 @@ export type Database = {
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
           tribunal_direccion?: string | null
           tribunal_interviniente?: string | null
+          ultimo_movimiento?: string | null
           updated_at?: string | null
           vocalia_id?: string
         }
