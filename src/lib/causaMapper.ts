@@ -82,6 +82,10 @@ export type DbCausa = {
   delegada?: boolean | null;
   art196bis?: boolean | null;
   subestados?: string[] | null;
+  firmante?: string | null;
+  modo_inicio?: string | null;
+  fiscalia_interviniente?: string | null;
+  ultimo_movimiento?: string | null;
   sujetos?: DbSujeto[];
 };
 
@@ -209,6 +213,10 @@ export function dbCausaToUI(row: DbCausa): Causa {
     estadoProcesal: row.estado_procesal ?? null,
     rolEstudio: row.rol_estudio ?? null,
     delitos: Array.from(new Set(sujetos.map((s) => (s.delito || "").trim()).filter(Boolean))),
+    firmante: row.firmante ?? null,
+    modoInicio: row.modo_inicio ?? null,
+    fiscaliaInterviniente: row.fiscalia_interviniente ?? null,
+    ultimoMovimiento: row.ultimo_movimiento ?? null,
     vocalia: 1,
   };
 }
