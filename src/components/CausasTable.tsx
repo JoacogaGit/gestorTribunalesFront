@@ -131,6 +131,8 @@ interface Props {
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
   /** Clave de columna que se mueve temporalmente al 3er lugar (después de N° y Carátula). */
   priorityColumnKey?: string | null;
+  /** Modo compacto: más filas visibles, menos alto por fila. */
+  compact?: boolean;
 }
 
 const PAGE_SIZE = 100;
@@ -165,6 +167,7 @@ export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
   onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction, priorityColumnKey,
+  compact = false,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
