@@ -28,6 +28,12 @@ export interface CausaInput {
   causa_conexa_id: string | null;
   link_externo?: string | null;
 
+  // Campos propios de oficinas judiciales
+  firmante?: string | null;
+  modo_inicio?: string | null;
+  fiscalia_interviniente?: string | null;
+  ultimo_movimiento?: string | null;
+
   // Campos exclusivos de oficinas tipo "estudio"
   fuero?: string | null;
   rol_estudio?: string | null;

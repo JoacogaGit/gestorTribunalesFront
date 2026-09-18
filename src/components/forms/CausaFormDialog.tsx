@@ -29,7 +29,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -76,6 +76,10 @@ function emptyCausa(): CausaInput {
     delegada: false,
     art196bis: false,
     fecha_ingreso: null,
+    firmante: "",
+    modo_inicio: null,
+    fiscalia_interviniente: "",
+    ultimo_movimiento: null,
     querella: "",
     actor_civil: "",
     otros_intervinientes: "",
@@ -254,6 +258,14 @@ export default function CausaFormDialog({
             tipo_proceso: ((data as any).tipo_proceso ?? null) as "unipersonal" | "colegiado" | null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fecha_ingreso: (data as any).fecha_ingreso ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            firmante: (data as any).firmante ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            modo_inicio: (data as any).modo_inicio ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fiscalia_interviniente: (data as any).fiscalia_interviniente ?? "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ultimo_movimiento: (data as any).ultimo_movimiento ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             flagrancia: !!(data as any).flagrancia,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -723,6 +735,54 @@ export default function CausaFormDialog({
                   </div>
                 </div>
               </section>
+
+              {/* Datos de la oficina judicial */}
+              {!esEstudio && (
+                <section className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Datos judiciales
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Firmante</Label>
+                      <Input
+                        value={causa.firmante ?? ""}
+                        onChange={(e) => updateCausa({ firmante: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Modo de inicio</Label>
+                      <Select
+                        value={causa.modo_inicio ?? "__none__"}
+                        onValueChange={(v) => updateCausa({ modo_inicio: v === "__none__" ? null : v })}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Seleccionar…" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">—</SelectItem>
+                          {['Denuncia', 'Prevención', 'OVD', 'Oficio', 'Testimonio'].map((modoInicio) => (
+                            <SelectItem key={modoInicio} value={modoInicio}>{modoInicio}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fiscalía interviniente</Label>
+                      <Input
+                        value={causa.fiscalia_interviniente ?? ""}
+                        onChange={(e) => updateCausa({ fiscalia_interviniente: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Último movimiento</Label>
+                      <Input
+                        type="date"
+                        value={causa.ultimo_movimiento ?? ""}
+                        onChange={(e) => updateCausa({ ultimo_movimiento: e.target.value || null })}
+                      />
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* Datos del estudio (solo oficinas tipo estudio) */}
               {esEstudio && (
