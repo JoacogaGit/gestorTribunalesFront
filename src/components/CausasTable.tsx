@@ -131,6 +131,8 @@ interface Props {
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
   /** Clave de columna que se mueve temporalmente al 3er lugar (después de N° y Carátula). */
   priorityColumnKey?: string | null;
+  /** Modo compacto: más filas visibles, menos alto por fila. */
+  compact?: boolean;
 }
 
 const PAGE_SIZE = 100;
@@ -165,6 +167,7 @@ export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
   onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction, priorityColumnKey,
+  compact = false,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -714,7 +717,7 @@ export default function CausasTable({
       <div
         className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
       >
-      <div className="flex items-center justify-between mb-2 gap-3 flex-wrap shrink-0">
+      <div className={`flex items-center justify-between gap-3 flex-wrap shrink-0 ${compact ? "mb-1" : "mb-2"}`}>
         {displayTitle && (
           <div className="flex items-center gap-2 group">
             {editingTitle ? (
@@ -732,7 +735,7 @@ export default function CausasTable({
               </div>
             ) : (
               <>
-                <h2 className="text-lg font-display font-semibold text-foreground">{displayTitle}</h2>
+                <h2 className={`font-display font-semibold text-foreground ${compact ? "text-base" : "text-lg"}`}>{displayTitle}</h2>
                 <button
                   onClick={() => { setCustomTitle(displayTitle || ""); setEditingTitle(true); }}
                   className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
@@ -971,7 +974,7 @@ export default function CausasTable({
         <div className="flex-1 min-h-0 overflow-auto">
 
 
-          <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)}`}>
+          <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)} ${compact ? "[&_td]:!py-1.5 [&_td]:!text-xs [&_th]:!h-7 [&_th]:!py-1 [&_th]:!text-[10px]" : ""}`}>
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
               <TableRow className="bg-transparent hover:bg-transparent">
                 <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60 w-10 text-right pr-2">#</TableHead>
@@ -1142,7 +1145,7 @@ export default function CausasTable({
           </table>
         </div>
         {shouldPaginate && (
-          <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-card/80 px-4 py-2 text-xs text-muted-foreground">
+          <div className={`flex items-center justify-between gap-3 border-t border-border/60 bg-card/80 text-xs text-muted-foreground ${compact ? "px-3 py-1" : "px-4 py-2"}`}>
             <span>
               Mostrando {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, sorted.length)} de {sorted.length} causas
             </span>
