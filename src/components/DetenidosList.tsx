@@ -20,7 +20,6 @@ import {
 import { useCausaMutations } from "@/hooks/useCausaMutations";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
 import { formatLocalDate } from "@/lib/parseDate";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DetenidoRow {
   imputado: Imputado;
@@ -55,7 +54,6 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
-  const isMobile = useIsMobile();
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
@@ -136,7 +134,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
   return (
     <>
       <div
-        className={`flex min-h-0 flex-col ${isMobile ? "" : "flex-1"}`}
+        className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
       >
       <div className="flex items-center justify-between mb-4 shrink-0">
         <h2 className="text-lg font-display font-semibold text-foreground">
@@ -170,7 +168,7 @@ export default function DetenidosList({ causas, vocalia = 1, onUpdateCausa, onDe
         </div>
       </div>
       <div className="glass-card rounded-lg overflow-hidden flex flex-1 min-h-0 flex-col">
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-scroll overscroll-contain">
           <Table className={zoomTableClass(zoom)}>
             <TableHeader>
               <TableRow className="bg-muted/30">
