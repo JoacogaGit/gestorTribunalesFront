@@ -494,6 +494,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         if (view === `tablero-${id}`) setView("dashboard");
       }}
       esEstudio={esEstudio}
+      userStorageKey={user.email}
     />
   );
 
@@ -871,7 +872,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "detenidos" && (
-              <div className="flex-1 min-h-0 pr-1">
+              <div className={`flex flex-1 min-h-0 flex-col overflow-hidden pr-1 ${isMobile ? "h-[calc(100dvh-10rem)]" : ""}`}>
                 <RemoteListSection
                   loading={detenidosRemote.loading}
                   error={detenidosRemote.error}
