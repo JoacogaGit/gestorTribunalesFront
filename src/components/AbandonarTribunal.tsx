@@ -97,6 +97,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     if (error) { toast.error(error.message); return; }
     toast.success(`Abandonaste ${tribunal?.nombre ?? "la oficina"}`);
     setStep("idle");
+    window.dispatchEvent(new CustomEvent("iustrack:membresias"));
     onAbandoned();
   };
 
@@ -163,10 +164,10 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
 
       {/* CASO 1 — simple */}
       <AlertDialog open={step === "case1"} onOpenChange={(o) => !o && cerrar()}>
-        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+        <AlertDialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Confirmás abandonar {tribunal?.nombre ?? "la oficina"}?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="whitespace-normal break-words">¿Confirmás abandonar {tribunal?.nombre ?? "la oficina"}?</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-normal break-words">
               Vas a perder el acceso a las causas, calendario y configuración. Si querés volver, alguien tiene que invitarte de nuevo.
             </AlertDialogDescription>
           </AlertDialogHeader>
