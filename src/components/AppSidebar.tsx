@@ -77,7 +77,7 @@ interface Props {
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
-  vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
+  vocaliaNombre, tribunalNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
   modoTribunal = "vocalias_separadas",
   listasPersonalizadas = [], onCreateLista,
   tableros = [], onCreateTablero, onDeleteTablero, esEstudio = false,
