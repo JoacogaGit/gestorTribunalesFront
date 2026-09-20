@@ -32,7 +32,7 @@ export function useTribunalesGlobal() {
         supabase.from("tribunales").select("id, nombre, codigo_acceso, created_at, eliminado_en, eliminado_por").order("nombre"),
         supabase.from("vocalias").select("id, tribunal_id"),
         supabase.from("miembros_tribunal").select("tribunal_id"),
-        supabase.from("causas").select("id, vocalia_id").is("borrado_en", null),
+        supabase.from("causas").select("id, vocalia_id, updated_at").is("borrado_en", null),
       ]);
       if (tRes.error) throw tRes.error;
       if (vRes.error) throw vRes.error;
