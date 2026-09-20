@@ -74,6 +74,7 @@ export function useTribunalesGlobal() {
         vocalias_count: vocaliasPorTribunal.get(t.id) ?? 0,
         miembros_count: miembrosPorTribunal.get(t.id) ?? 0,
         causas_count: causasPorTribunal.get(t.id) ?? 0,
+        ultimo_movimiento: ultimoMovPorTribunal.get(t.id) ?? null,
       }));
       setData(rows);
     } catch (e) {
