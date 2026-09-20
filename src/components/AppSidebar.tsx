@@ -57,6 +57,8 @@ interface Props {
   onRemoveBoard: (id: string) => void;
   onRenameBoard: (id: string, name: string) => void;
   vocaliaNombre: string;
+  /** Nombre de la oficina/dependencia, se muestra arriba de todo. */
+  tribunalNombre?: string | null;
   vocaliasTribunal: VocaliaRow[];
   currentVocaliaId: string | null;
   onSwitchVocalia: (v: VocaliaRow) => void;
