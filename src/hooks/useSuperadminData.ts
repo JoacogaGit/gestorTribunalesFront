@@ -52,10 +52,16 @@ export function useTribunalesGlobal() {
       });
 
       const causasPorTribunal = new Map<string, number>();
+      const ultimoMovPorTribunal = new Map<string, string>();
       (cRes.data ?? []).forEach((c) => {
         const tid = vocaliaToTribunal.get(c.vocalia_id);
         if (!tid) return;
         causasPorTribunal.set(tid, (causasPorTribunal.get(tid) ?? 0) + 1);
+        const upd = (c as { updated_at?: string | null }).updated_at ?? null;
+        if (upd) {
+          const prev = ultimoMovPorTribunal.get(tid);
+          if (!prev || upd > prev) ultimoMovPorTribunal.set(tid, upd);
+        }
       });
 
       const rows: TribunalGlobalRow[] = (tRes.data ?? []).map((t) => ({
