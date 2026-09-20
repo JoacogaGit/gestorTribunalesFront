@@ -209,6 +209,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
               const subtitle = isListaUnica ? "Listado único de causas" : "Listado de causas y seguimiento";
               const isEditing = editingId === v.id;
               const canEdit = !isListaUnica;
+              const canDelete = adminTribunalIds.has(v.tribunal_id) && (espaciosPorTribunal.get(v.tribunal_id) ?? 1) > 1;
               const cardClick = () => { if (!isEditing) handleSelect(v); };
               const cardKey = (e: React.KeyboardEvent) => {
                 if (isEditing) return;
