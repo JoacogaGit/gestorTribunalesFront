@@ -80,7 +80,24 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
   const [confirmEliminarVocalia, setConfirmEliminarVocalia] = useState<{ id: string; nombre: string } | null>(null);
   const [eliminandoVocalia, setEliminandoVocalia] = useState(false);
 
-  const soyAdmin = miembrosHook.miembros.some((m) => m.usuario_id === user?.id && m.rol === "admin");
+  const { esSuperadmin } = useEsSuperadmin();
+  const soyAdmin = esSuperadmin || miembrosHook.miembros.some((m) => m.usuario_id === user?.id && m.rol === "admin");
+
+  const [nuevoEspacio, setNuevoEspacio] = useState("");
+  const [creandoEspacio, setCreandoEspacio] = useState(false);
+
+  const handleCrearEspacio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const nombre = nuevoEspacio.trim();
+    if (!nombre) return;
+    setCreandoEspacio(true);
+    const { error } = await supabase.from("vocalias").insert({ tribunal_id: tribunalId, nombre });
+    setCreandoEspacio(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Espacio "${nombre}" creado`);
+    setNuevoEspacio("");
+    refetchVocalias();
+  };
 
   const handleEliminarVocalia = async () => {
     if (!confirmEliminarVocalia) return;
