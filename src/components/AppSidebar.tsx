@@ -57,6 +57,8 @@ interface Props {
   onRemoveBoard: (id: string) => void;
   onRenameBoard: (id: string, name: string) => void;
   vocaliaNombre: string;
+  /** Nombre de la oficina/dependencia, se muestra arriba de todo. */
+  tribunalNombre?: string | null;
   vocaliasTribunal: VocaliaRow[];
   currentVocaliaId: string | null;
   onSwitchVocalia: (v: VocaliaRow) => void;
@@ -75,7 +77,7 @@ interface Props {
 
 export default function AppSidebar({
   active, onNavigate, customBoards, onAddBoard, onRemoveBoard, onRenameBoard,
-  vocaliaNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
+  vocaliaNombre, tribunalNombre, vocaliasTribunal, currentVocaliaId, onSwitchVocalia, onBack, esAdmin,
   modoTribunal = "vocalias_separadas",
   listasPersonalizadas = [], onCreateLista,
   tableros = [], onCreateTablero, onDeleteTablero, esEstudio = false,
@@ -172,6 +174,14 @@ export default function AppSidebar({
   return (
     <TooltipProvider>
       <aside data-tour="sidebar" className={`${collapsed ? "w-16" : "w-56"} shrink-0 ${metricasActivas ? "bg-metrics-background text-metrics-foreground border-metrics-border" : "bg-gradient-sidebar text-sidebar-foreground border-sidebar-border"} flex flex-col min-h-screen border-r shadow-elevated transition-[width,background-color] duration-200`}>
+        {!collapsed && tribunalNombre && (
+          <div className="px-5 pt-4 pb-2 border-b border-sidebar-border/40">
+            <p className="text-[9px] uppercase tracking-[0.18em] text-sidebar-foreground/50 font-semibold">Oficina</p>
+            <p className="font-display text-sm font-semibold text-sidebar-accent-foreground leading-snug break-words">
+              {tribunalNombre}
+            </p>
+          </div>
+        )}
         <div className={`${collapsed ? "px-2" : "px-5"} py-6`}>
           <div className={`flex items-center ${collapsed ? "justify-center" : "gap-2"} mb-3`}>
             <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center shadow-soft shrink-0">

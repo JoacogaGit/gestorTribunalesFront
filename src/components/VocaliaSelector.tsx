@@ -64,16 +64,22 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Lista de tribunales donde se puede crear vocalía: admin + modo separado
+  // Lista de tribunales donde se puede crear espacio: cualquier oficina donde sea admin
   const tribunalesCreables = useMemo<CreatableTribunal[]>(() => {
     const map = new Map<string, CreatableTribunal>();
     vocalias.forEach((v) => {
-      if (v.tribunal_modo !== "vocalias_separadas") return;
       if (!adminTribunalIds.has(v.tribunal_id)) return;
       if (!map.has(v.tribunal_id)) map.set(v.tribunal_id, { id: v.tribunal_id, nombre: v.tribunal_nombre || "Oficina" });
     });
     return Array.from(map.values());
   }, [vocalias, adminTribunalIds]);
+
+  // Cantidad de espacios por oficina (para no permitir borrar el último)
+  const espaciosPorTribunal = useMemo(() => {
+    const m = new Map<string, number>();
+    vocalias.forEach((v) => m.set(v.tribunal_id, (m.get(v.tribunal_id) ?? 0) + 1));
+    return m;
+  }, [vocalias]);
 
   const startEdit = (v: VocaliaRow) => {
     setEditingId(v.id);
@@ -99,6 +105,16 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const handleSelect = (v: VocaliaRow) => {
     onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
   };
+
+  // Oficina de espacio único: entrar directo, sin pasar por el selector.
+  useEffect(() => {
+    if (loading || error) return;
+    if (vocalias.length !== 1) return;
+    const v = vocalias[0];
+    if (v.tribunal_modo !== "lista_unica") return;
+    onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, error, vocalias]);
 
   const handleCrear = async () => {
     if (!createOpen) return;
@@ -193,6 +209,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
               const subtitle = isListaUnica ? "Listado único de causas" : "Listado de causas y seguimiento";
               const isEditing = editingId === v.id;
               const canEdit = !isListaUnica;
+              const canDelete = adminTribunalIds.has(v.tribunal_id) && (espaciosPorTribunal.get(v.tribunal_id) ?? 1) > 1;
               const cardClick = () => { if (!isEditing) handleSelect(v); };
               const cardKey = (e: React.KeyboardEvent) => {
                 if (isEditing) return;
@@ -211,7 +228,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                     <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                       <Scale className="w-7 h-7 text-primary" />
                     </div>
-                    {!isEditing && (canEdit || adminTribunalIds.has(v.tribunal_id)) && (
+                    {!isEditing && (canEdit || canDelete) && (
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         {canEdit && (
                           <button
@@ -222,7 +239,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                             <Pencil className="w-4 h-4" />
                           </button>
                         )}
-                        {canEdit && adminTribunalIds.has(v.tribunal_id) && (
+                        {canDelete && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setBorrarTarget(v); }}
                             className="p-2 text-muted-foreground hover:text-destructive transition-colors"

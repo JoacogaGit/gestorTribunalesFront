@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2, List, Building2 } from "lucide-react";
+import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2, List, Building2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useEsSuperadmin } from "@/hooks/useEsSuperadmin";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,7 +80,24 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
   const [confirmEliminarVocalia, setConfirmEliminarVocalia] = useState<{ id: string; nombre: string } | null>(null);
   const [eliminandoVocalia, setEliminandoVocalia] = useState(false);
 
-  const soyAdmin = miembrosHook.miembros.some((m) => m.usuario_id === user?.id && m.rol === "admin");
+  const { esSuperadmin } = useEsSuperadmin();
+  const soyAdmin = esSuperadmin || miembrosHook.miembros.some((m) => m.usuario_id === user?.id && m.rol === "admin");
+
+  const [nuevoEspacio, setNuevoEspacio] = useState("");
+  const [creandoEspacio, setCreandoEspacio] = useState(false);
+
+  const handleCrearEspacio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const nombre = nuevoEspacio.trim();
+    if (!nombre) return;
+    setCreandoEspacio(true);
+    const { error } = await supabase.from("vocalias").insert({ tribunal_id: tribunalId, nombre });
+    setCreandoEspacio(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Espacio "${nombre}" creado`);
+    setNuevoEspacio("");
+    refetchVocalias();
+  };
 
   const handleEliminarVocalia = async () => {
     if (!confirmEliminarVocalia) return;
@@ -244,7 +263,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                 <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Building2 className="w-4 h-4 text-muted-foreground" /> {v.nombre}
                 </span>
-                {soyAdmin && (
+                {soyAdmin && cantidadVocalias > 1 && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -259,8 +278,22 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
           )}
         </div>
         {soyAdmin && (
+          <form onSubmit={handleCrearEspacio} className="flex items-center gap-2">
+            <Input
+              value={nuevoEspacio}
+              onChange={(e) => setNuevoEspacio(e.target.value)}
+              placeholder="Nombre del nuevo espacio"
+              className="h-9 max-w-xs"
+            />
+            <Button type="submit" size="sm" disabled={creandoEspacio || !nuevoEspacio.trim()}>
+              {creandoEspacio ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1.5" />}
+              Crear espacio
+            </Button>
+          </form>
+        )}
+        {soyAdmin && (
           <p className="text-xs text-muted-foreground">
-            Al eliminar un espacio se archiva con todas sus causas. Se puede recuperar durante 30 días.
+            Al eliminar un espacio se archiva con todas sus causas. Se puede recuperar durante 30 días. La oficina debe conservar al menos un espacio.
           </p>
         )}
       </section>

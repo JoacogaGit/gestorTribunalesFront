@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useEsSuperadmin } from "@/hooks/useEsSuperadmin";
 
 export type RolTribunal = "admin" | "miembro" | "lector" | null;
 
 export function useRolTribunal(tribunalId: string | null | undefined) {
   const { user } = useAuth();
+  const { esSuperadmin, loading: superLoading } = useEsSuperadmin();
   const [rol, setRol] = useState<RolTribunal>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,11 +20,13 @@ export function useRolTribunal(tribunalId: string | null | undefined) {
       .eq("tribunal_id", tribunalId)
       .eq("usuario_id", user.id)
       .maybeSingle();
-    setRol((data?.rol as RolTribunal) ?? null);
+    // El superadmin accede a la gestión de cualquier oficina sin figurar como miembro.
+    const rolMembresia = (data?.rol as RolTribunal) ?? null;
+    setRol(rolMembresia ?? (esSuperadmin ? "admin" : null));
     setLoading(false);
-  }, [user, tribunalId]);
+  }, [user, tribunalId, esSuperadmin]);
 
-  useEffect(() => { refetch(); }, [refetch]);
+  useEffect(() => { if (!superLoading) refetch(); }, [refetch, superLoading]);
 
   return { rol, esAdmin: rol === "admin", soloLectura: rol === "lector", loading, refetch };
 }

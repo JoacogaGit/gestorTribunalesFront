@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Scale, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export const TUTORIAL_EVENT = "iustrack:tutorial";
 
@@ -523,7 +524,11 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       cerrarFormulario();
       if (isMobile) onOpenSidebar?.(false);
       if (celebrar) setFase("final");
-      else { setFase("idle"); void marcarCompletado(); }
+      else {
+        setFase("idle");
+        void marcarCompletado();
+        toast.info("Podés volver a ver el tutorial cuando quieras tocando el signo de pregunta (?).", { duration: 7000 });
+      }
     },
     [isMobile, marcarCompletado, onOpenSidebar]
   );
