@@ -473,6 +473,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       onRemoveBoard={removeBoard}
       onRenameBoard={renameBoard}
       vocaliaNombre={sidebarLabel}
+      tribunalNombre={tribunal?.nombre ?? null}
       vocaliasTribunal={vocaliasTribunal}
       currentVocaliaId={vocaliaId}
       onSwitchVocalia={handleSwitchVocalia}
