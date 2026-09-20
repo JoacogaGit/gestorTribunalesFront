@@ -64,16 +64,22 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Lista de tribunales donde se puede crear vocalía: admin + modo separado
+  // Lista de tribunales donde se puede crear espacio: cualquier oficina donde sea admin
   const tribunalesCreables = useMemo<CreatableTribunal[]>(() => {
     const map = new Map<string, CreatableTribunal>();
     vocalias.forEach((v) => {
-      if (v.tribunal_modo !== "vocalias_separadas") return;
       if (!adminTribunalIds.has(v.tribunal_id)) return;
       if (!map.has(v.tribunal_id)) map.set(v.tribunal_id, { id: v.tribunal_id, nombre: v.tribunal_nombre || "Oficina" });
     });
     return Array.from(map.values());
   }, [vocalias, adminTribunalIds]);
+
+  // Cantidad de espacios por oficina (para no permitir borrar el último)
+  const espaciosPorTribunal = useMemo(() => {
+    const m = new Map<string, number>();
+    vocalias.forEach((v) => m.set(v.tribunal_id, (m.get(v.tribunal_id) ?? 0) + 1));
+    return m;
+  }, [vocalias]);
 
   const startEdit = (v: VocaliaRow) => {
     setEditingId(v.id);
