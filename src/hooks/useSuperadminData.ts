@@ -11,6 +11,8 @@ export interface TribunalGlobalRow {
   vocalias_count: number;
   miembros_count: number;
   causas_count: number;
+  /** Fecha de la última actividad: updated_at más reciente entre las causas de la oficina. */
+  ultimo_movimiento: string | null;
 }
 
 /**
