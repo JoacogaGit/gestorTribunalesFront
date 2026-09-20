@@ -173,6 +173,7 @@ export default function SuperadminPanel() {
                   <th className="text-center px-3 py-2.5 font-medium">Miembros</th>
                   <th className="text-center px-3 py-2.5 font-medium">Causas</th>
                   <th className="text-left px-3 py-2.5 font-medium">Creado</th>
+                  <th className="text-left px-3 py-2.5 font-medium">Último movimiento</th>
                   <th className="text-right px-4 py-2.5 font-medium"></th>
                 </tr>
               </thead>
@@ -200,6 +201,14 @@ export default function SuperadminPanel() {
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" />
                         {t.created_at ? new Date(t.created_at).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" }) : "—"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {t.ultimo_movimiento
+                          ? new Date(t.ultimo_movimiento).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })
+                          : "—"}
                       </span>
                     </td>
                     <td className="text-right px-4 py-3">
