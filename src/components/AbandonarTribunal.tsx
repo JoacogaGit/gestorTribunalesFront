@@ -109,6 +109,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     if (error) { toast.error(error.message); return; }
     toast.success("Oficina archivado en papelera por 30 días");
     setStep("idle");
+    window.dispatchEvent(new CustomEvent("iustrack:membresias"));
     onAbandoned();
   };
 
@@ -120,6 +121,7 @@ const AbandonarTribunal = forwardRef<AbandonarTribunalHandle, Props>(function Ab
     if (error) { toast.error(error.message); return; }
     toast.success("Oficina eliminado definitivamente");
     setStep("idle");
+    window.dispatchEvent(new CustomEvent("iustrack:membresias"));
     onAbandoned();
   };
 
