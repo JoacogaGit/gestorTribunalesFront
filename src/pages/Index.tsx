@@ -23,6 +23,13 @@ export default function Index() {
     if (t) { localStorage.removeItem("pending_invitation_token"); navigate(`/invitacion/${t}`, { replace: true }); }
   }, [user, navigate]);
 
+  // Tras abandonar una oficina, refrescar membresías para volver al menú inicial.
+  useEffect(() => {
+    const h = () => { clearVocalia(); refetch(); };
+    window.addEventListener("iustrack:membresias", h);
+    return () => window.removeEventListener("iustrack:membresias", h);
+  }, [refetch, clearVocalia]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
