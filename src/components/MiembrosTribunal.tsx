@@ -263,7 +263,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
                 <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Building2 className="w-4 h-4 text-muted-foreground" /> {v.nombre}
                 </span>
-                {soyAdmin && (
+                {soyAdmin && cantidadVocalias > 1 && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -278,8 +278,22 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
           )}
         </div>
         {soyAdmin && (
+          <form onSubmit={handleCrearEspacio} className="flex items-center gap-2">
+            <Input
+              value={nuevoEspacio}
+              onChange={(e) => setNuevoEspacio(e.target.value)}
+              placeholder="Nombre del nuevo espacio"
+              className="h-9 max-w-xs"
+            />
+            <Button type="submit" size="sm" disabled={creandoEspacio || !nuevoEspacio.trim()}>
+              {creandoEspacio ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1.5" />}
+              Crear espacio
+            </Button>
+          </form>
+        )}
+        {soyAdmin && (
           <p className="text-xs text-muted-foreground">
-            Al eliminar un espacio se archiva con todas sus causas. Se puede recuperar durante 30 días.
+            Al eliminar un espacio se archiva con todas sus causas. Se puede recuperar durante 30 días. La oficina debe conservar al menos un espacio.
           </p>
         )}
       </section>
