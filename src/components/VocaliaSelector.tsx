@@ -106,6 +106,16 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
   };
 
+  // Oficina de espacio único: entrar directo, sin pasar por el selector.
+  useEffect(() => {
+    if (loading || error) return;
+    if (vocalias.length !== 1) return;
+    const v = vocalias[0];
+    if (v.tribunal_modo !== "lista_unica") return;
+    onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, error, vocalias]);
+
   const handleCrear = async () => {
     if (!createOpen) return;
     const limpio = nuevoNombre.trim();
