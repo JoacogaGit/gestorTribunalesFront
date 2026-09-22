@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { fetchCausasOcultasDeTramite } from "@/lib/causasOcultasTramite";
 
 export interface DashboardKpis {
   detenidos: number;
