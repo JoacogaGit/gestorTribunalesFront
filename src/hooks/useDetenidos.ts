@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI, DbCausa, DbSujeto, mapSujeto } from "@/lib/causaMapper";
+import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 const DETENIDOS_SELECT = "id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,causas!inner(id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado)";
 
@@ -36,8 +37,9 @@ export function useDetenidos(vocaliaId: string | null) {
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = (data as any[]) ?? [];
+      const ocultas = await fetchCausasOcultasDe(vocaliaId, "detenidos");
       const synthetic: Causa[] = rows
-        .filter((r) => r.causas)
+        .filter((r) => r.causas && !ocultas.has(r.causas.id))
         .map((r) => {
           const sujeto = r as DbSujeto;
           const causa = r.causas as DbCausa;

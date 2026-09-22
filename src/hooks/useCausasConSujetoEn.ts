@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI, DbSituacionLibertad } from "@/lib/causaMapper";
+import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados_tramite(nombre),delegada,art196bis,subestados,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en)";
 
@@ -52,13 +53,15 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
     } else {
       // Mostrar la causa pero conservando SOLO los sujetos que están en la situación pedida,
       // para destacarlos como protagonistas (mismo patrón que useDetenidos).
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rows = (data as any[]).map((r) => ({
+      const ocultas = await fetchCausasOcultasDe(vocaliaId, situacion === "rebelde" ? "rebeldes" : "sjp");
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+      const rows = (data as any[]).filter((r) => !ocultas.has(r.id)).map((r) => ({
         ...r,
         sujetos: ((r.sujetos as any[]) || []).filter(
           (s) => s.borrado_en == null && s.situacion_libertad === situacion,
         ),
       }));
+      /* eslint-enable @typescript-eslint/no-explicit-any */
       setCausas(rows.map(dbCausaToUI));
     }
     setLoading(false);

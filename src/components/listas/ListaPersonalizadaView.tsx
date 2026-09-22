@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Plus, Trash2, RefreshCw, FolderOpen } from "lucide-react";
+import { Plus, Trash2, RefreshCw, FolderOpen, Settings2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import OcultaDeSelector from "@/components/listas/OcultaDeSelector";
 import { toast } from "sonner";
 import CausasTable from "@/components/CausasTable";
 import EmptyState from "@/components/EmptyState";
@@ -24,11 +28,35 @@ interface Props {
 export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrada, onNavigateToConexa, filtrarCausas }: Props) {
   const { causas: causasRaw, loading, error, refetch, agregarCausa, sacarCausa } = useCausasDeLista(lista.id);
   const causas = useMemo(() => filtrarCausas ? filtrarCausas(causasRaw) : causasRaw, [causasRaw, filtrarCausas]);
-  const { borrarLista, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
+  const { borrarLista, actualizarOcultaDe, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
   const [showAdd, setShowAdd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemoveCausa, setConfirmRemoveCausa] = useState<Causa | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [ocultar, setOcultar] = useState((lista.oculta_de ?? []).length > 0);
+  const [ocultaDe, setOcultaDe] = useState<string[]>(lista.oculta_de ?? []);
+
+  const abrirConfig = () => {
+    setOcultaDe(lista.oculta_de ?? []);
+    setOcultar((lista.oculta_de ?? []).length > 0);
+    setShowConfig(true);
+  };
+
+  const guardarConfig = async () => {
+    setSavingConfig(true);
+    try {
+      await actualizarOcultaDe(lista.id, ocultar ? ocultaDe : []);
+      toast.success("Configuración guardada");
+      setShowConfig(false);
+    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      toast.error((e as any)?.message ?? "No se pudo guardar la configuración");
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   const idsEnLista = useMemo(() => new Set(causas.map((c) => c.id)), [causas]);
 
@@ -64,6 +92,9 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-3">
       <div className="flex items-center justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={abrirConfig}>
+          <Settings2 className="w-4 h-4 mr-1" /> Configurar lista
+        </Button>
         <Button size="sm" variant="outline" onClick={() => setShowAdd(true)}>
           <Plus className="w-4 h-4 mr-1" /> Agregar causa
         </Button>
@@ -117,6 +148,28 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
         causasYaEnListaIds={idsEnLista}
         onAgregar={agregarCausa}
       />
+
+      <Dialog open={showConfig} onOpenChange={(v) => !savingConfig && setShowConfig(v)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurar "{lista.nombre}"</DialogTitle>
+            <DialogDescription>
+              Elegí de qué pestañas se ocultan las causas agregadas a esta lista.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="flex items-start justify-between gap-4">
+              <Label htmlFor="ocultar-config">¿Las causas de esta lista deben ocultarse de otras pestañas?</Label>
+              <Switch id="ocultar-config" checked={ocultar} onCheckedChange={setOcultar} disabled={savingConfig} />
+            </div>
+            {ocultar && <OcultaDeSelector value={ocultaDe} onChange={setOcultaDe} disabled={savingConfig} />}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfig(false)} disabled={savingConfig}>Cancelar</Button>
+            <Button onClick={guardarConfig} disabled={savingConfig}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={confirmDelete} onOpenChange={(v) => !deleting && setConfirmDelete(v)}>
         <AlertDialogContent>
