@@ -53,9 +53,8 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
     } else {
       // Mostrar la causa pero conservando SOLO los sujetos que están en la situación pedida,
       // para destacarlos como protagonistas (mismo patrón que useDetenidos).
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ocultas = await fetchCausasOcultasDe(vocaliaId, situacion === "rebelde" ? "rebeldes" : "sjp");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const rows = (data as any[]).filter((r) => !ocultas.has(r.id)).map((r) => ({
         ...r,
         sujetos: ((r.sujetos as any[]) || []).filter(
