@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI, DbEstadoCausa } from "@/lib/causaMapper";
+import { fetchCausasOcultasDeTramite } from "@/lib/causasOcultasTramite";
 
 interface Options {
   /** Excluir causas que tengan al menos un sujeto con alguna de estas situaciones (valores DB). */
@@ -36,6 +37,11 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let rows = data as any[];
+      // Trámite: ocultar causas presentes en las listas especiales "Conexidades"/"Azules".
+      if (estado === "tramite") {
+        const ocultas = await fetchCausasOcultasDeTramite(vocaliaId);
+        if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
+      }
       const excl = excluirKey ? excluirKey.split(",") : [];
       if (excl.length > 0) {
         rows = rows.filter((r) => {

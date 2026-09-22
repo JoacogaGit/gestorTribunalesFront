@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { fetchCausasOcultasDeTramite } from "@/lib/causasOcultasTramite";
 
 export interface DashboardKpis {
   detenidos: number;
@@ -55,15 +56,23 @@ export function useDashboardKpis(vocaliaId: string | null) {
       const ppCalcDesde = (() => { const d = new Date(hoyDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
       const ppCalcHasta = (() => { const d = new Date(finDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
 
+      // Causas ocultas: pertenecen a las listas especiales "Conexidades"/"Azules".
+      const ocultas = await fetchCausasOcultasDeTramite(vocaliaId);
+      const excluirCausas = <T>(q: T, columna: string): T => {
+        if (ocultas.size === 0) return q;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (q as any).not(columna, "in", `(${[...ocultas].join(",")})`) as T;
+      };
+
       const [detenidos, juicios, pp, ppCalc, rebeldes, evt30, total] = await Promise.all([
-        supabase.from("sujetos")
+        excluirCausas(supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .eq("situacion_libertad", "detenido")
           .in("causas.estado_causa", ACTIVOS)
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
-          .is("causas.borrado_en", null),
-        supabase.from("eventos")
+          .is("causas.borrado_en", null), "causas.id"),
+        excluirCausas(supabase.from("eventos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .in("tipo_evento", ["audiencia", "juicio"])
           .gte("fecha_hora", mesIni)
@@ -71,18 +80,18 @@ export function useDashboardKpis(vocaliaId: string | null) {
           .in("causas.estado_causa", ACTIVOS)
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
-          .is("causas.borrado_en", null),
+          .is("causas.borrado_en", null), "causas.id"),
         // PP manual cargado en rango [hoy, hoy+30d]
-        supabase.from("sujetos")
+        excluirCausas(supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .gte("vencimiento_pp", hoyDate)
           .lte("vencimiento_pp", finDate)
           .in("causas.estado_causa", ACTIVOS)
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
-          .is("causas.borrado_en", null),
+          .is("causas.borrado_en", null), "causas.id"),
         // PP calculado: sin vencimiento_pp ni vencimiento_pena, con fecha_detencion+2y en el rango.
-        supabase.from("sujetos")
+        excluirCausas(supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .is("vencimiento_pp", null)
           .is("vencimiento_pena", null)
@@ -91,27 +100,27 @@ export function useDashboardKpis(vocaliaId: string | null) {
           .in("causas.estado_causa", ACTIVOS)
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
-          .is("causas.borrado_en", null),
-        supabase.from("sujetos")
+          .is("causas.borrado_en", null), "causas.id"),
+        excluirCausas(supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .eq("situacion_libertad", "rebelde")
           .in("causas.estado_causa", ACTIVOS)
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
-          .is("causas.borrado_en", null),
-        supabase.from("eventos")
+          .is("causas.borrado_en", null), "causas.id"),
+        excluirCausas(supabase.from("eventos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .gte("fecha_hora", hoyISO)
           .lte("fecha_hora", finISO)
           .in("causas.estado_causa", ACTIVOS)
           .eq("causas.vocalia_id", vocaliaId)
           .is("borrado_en", null)
-          .is("causas.borrado_en", null),
-        supabase.from("causas")
+          .is("causas.borrado_en", null), "causas.id"),
+        excluirCausas(supabase.from("causas")
           .select("id", { count: "exact", head: true })
           .in("estado_causa", ACTIVOS)
           .eq("vocalia_id", vocaliaId)
-          .is("borrado_en", null),
+          .is("borrado_en", null), "id"),
       ]);
 
       setKpis({
