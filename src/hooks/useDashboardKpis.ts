@@ -56,8 +56,16 @@ export function useDashboardKpis(vocaliaId: string | null) {
       const ppCalcDesde = (() => { const d = new Date(hoyDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
       const ppCalcHasta = (() => { const d = new Date(finDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
 
+      // Causas ocultas: pertenecen a las listas especiales "Conexidades"/"Azules".
+      const ocultas = await fetchCausasOcultasDeTramite(vocaliaId);
+      const excluirCausas = <T>(q: T, columna: string): T => {
+        if (ocultas.size === 0) return q;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (q as any).not(columna, "in", `(${[...ocultas].join(",")})`) as T;
+      };
+
       const [detenidos, juicios, pp, ppCalc, rebeldes, evt30, total] = await Promise.all([
-        supabase.from("sujetos")
+        excluirCausas(supabase.from("sujetos")
           .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
           .eq("situacion_libertad", "detenido")
           .in("causas.estado_causa", ACTIVOS)
