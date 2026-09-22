@@ -61,6 +61,7 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
           (s) => s.borrado_en == null && s.situacion_libertad === situacion,
         ),
       }));
+      /* eslint-enable @typescript-eslint/no-explicit-any */
       setCausas(rows.map(dbCausaToUI));
     }
     setLoading(false);
