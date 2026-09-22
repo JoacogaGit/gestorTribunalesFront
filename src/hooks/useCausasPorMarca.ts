@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI } from "@/lib/causaMapper";
+import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados_tramite(nombre),delegada,art196bis,subestados,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,fuero,estado_procesal,rol_estudio,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en)";
 
@@ -30,8 +31,13 @@ export function useCausasPorMarca(marca: MarcaCausa, vocaliaId: string | null) {
       .is("sujetos.borrado_en", null)
       .order("created_at", { ascending: false });
     if (error) { setError(error.message); setCausas([]); }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    else setCausas((data as any[]).map(dbCausaToUI));
+    else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let rows = data as any[];
+      const ocultas = await fetchCausasOcultasDe(vocaliaId, marca === "delegada" ? "delegadas" : "art196bis");
+      if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
+      setCausas(rows.map(dbCausaToUI));
+    }
     setLoading(false);
   }, [marca, vocaliaId]);
 
