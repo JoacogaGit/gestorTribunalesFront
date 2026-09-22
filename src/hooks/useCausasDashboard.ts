@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI } from "@/lib/causaMapper";
-import { fetchCausasOcultasDeTramite } from "@/lib/causasOcultasTramite";
+import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 const ACTIVOS = ["tramite", "recurso"] as const;
 const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados_tramite(nombre),delegada,art196bis,subestados,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,fuero,estado_procesal,rol_estudio,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en)";
@@ -34,8 +34,8 @@ export function useCausasDashboard(vocaliaId: string | null, incluirTodos = fals
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let rows = data as any[];
-      // Ocultar del dashboard las causas de las listas especiales "Conexidades"/"Azules".
-      const ocultas = await fetchCausasOcultasDeTramite(vocaliaId);
+      // Ocultar del dashboard las causas de listas personalizadas ocultas de Trámite.
+      const ocultas = await fetchCausasOcultasDe(vocaliaId, "tramite");
       if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
       setCausas(rows.map(dbCausaToUI));
     }

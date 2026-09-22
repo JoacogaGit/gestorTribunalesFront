@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
-import { fetchCausasOcultasDeTramite } from "@/lib/causasOcultasTramite";
+import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 export interface DashboardKpis {
   detenidos: number;
@@ -56,8 +56,8 @@ export function useDashboardKpis(vocaliaId: string | null) {
       const ppCalcDesde = (() => { const d = new Date(hoyDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
       const ppCalcHasta = (() => { const d = new Date(finDate + "T12:00:00"); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
 
-      // Causas ocultas: pertenecen a las listas especiales "Conexidades"/"Azules".
-      const ocultas = await fetchCausasOcultasDeTramite(vocaliaId);
+      // Causas ocultas de Trámite por configuración de listas personalizadas.
+      const ocultas = await fetchCausasOcultasDe(vocaliaId, "tramite");
       const excluirCausas = <T>(q: T, columna: string): T => {
         if (ocultas.size === 0) return q;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
