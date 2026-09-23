@@ -35,7 +35,6 @@ export function calcularPpEfectivo(s: PpInput): PpEfectivo {
   const pena = s.vencimiento_pena || null;
   const det = s.fecha_detencion || null;
   if (pp) return { fecha: pp.slice(0, 10), calculado: false };
-  if (pena) return { fecha: null, calculado: false };
-  if (det) return { fecha: addYearsISO(det.slice(0, 10), 2), calculado: true };
+  void pena; void det; // Sin cálculo automático: solo el PP cargado manualmente.
   return { fecha: null, calculado: false };
 }
