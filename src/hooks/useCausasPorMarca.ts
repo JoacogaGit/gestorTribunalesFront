@@ -33,7 +33,7 @@ export function useCausasPorMarca(marca: MarcaCausa, vocaliaId: string | null) {
     if (error) { setError(error.message); setCausas([]); }
     else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let rows = data as any[];
+      let rows = (data ?? []) as any[];
       const ocultas = await fetchCausasOcultasDe(vocaliaId, marca === "delegada" ? "delegadas" : "art196bis");
       if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
       setCausas(rows.map(dbCausaToUI));

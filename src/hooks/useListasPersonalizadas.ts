@@ -33,15 +33,16 @@ export function useListasPersonalizadas(vocaliaId: string | null) {
       setListas([]);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setListas((data as any[]).map((r) => ({
+      setListas(((data ?? []) as any[]).map((r) => ({
         id: r.id,
         vocalia_id: r.vocalia_id,
         nombre: r.nombre,
         created_at: r.created_at,
-        oculta_de: (r.oculta_de ?? []) as string[],
+        oculta_de: Array.isArray(r.oculta_de) ? (r.oculta_de as string[]) : [],
         count: (r.listas_personalizadas_causas ?? []).length,
       })));
     }
+
     setLoading(false);
   }, [vocaliaId]);
 

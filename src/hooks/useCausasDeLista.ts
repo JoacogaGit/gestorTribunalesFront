@@ -23,7 +23,7 @@ export function useCausasDeLista(listaId: string | null) {
       setCausas([]);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rows = (data as any[])
+      const rows = ((data ?? []) as any[])
         .map((r) => r.causas)
         .filter((c) => c && c.borrado_en == null)
         .map((c) => ({

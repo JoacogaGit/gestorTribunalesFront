@@ -33,7 +33,7 @@ export function useCausasDashboard(vocaliaId: string | null, incluirTodos = fals
       setCausas([]);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let rows = data as any[];
+      let rows = (data ?? []) as any[];
       // Ocultar del dashboard las causas de listas personalizadas ocultas de Trámite.
       const ocultas = await fetchCausasOcultasDe(vocaliaId, "tramite");
       if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
