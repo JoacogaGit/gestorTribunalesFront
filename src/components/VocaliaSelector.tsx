@@ -143,6 +143,10 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     onSelect({ id: data.id, nombre: data.nombre, tribunalId: data.tribunal_id });
   };
 
+  if (menuInicial) {
+    return <WelcomeNoTribunal onCreated={volverAlMenuInicial} />;
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-4xl w-full">
