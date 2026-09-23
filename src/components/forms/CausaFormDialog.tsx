@@ -788,6 +788,36 @@ export default function CausaFormDialog({
                 </div>
               </section>
 
+              {/* Imputados */}
+              <section data-tour="form-imputados" className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Imputados ({visibleSujetos.length})
+                  </h3>
+                  <Button type="button" size="sm" variant="outline" onClick={addSujeto}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Agregar imputado
+                  </Button>
+                </div>
+
+                {visibleSujetos.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Sin imputados cargados.</p>
+                )}
+
+                <div className="space-y-3">
+                  {visibleSujetos.map((s) => (
+                    <SujetoCard
+                      key={s._localKey}
+                      sujeto={s}
+                      onChange={(patch) => updateSujeto(s._localKey, patch)}
+                      onPrescripcionesChange={(prescripciones) => updateSujeto(s._localKey, { prescripciones })}
+                      onRemove={() => confirmRemoveSujeto(s)}
+                    />
+                  ))}
+                </div>
+              </section>
+
+              <Separator />
+
               {/* Datos de la oficina judicial */}
               {!esEstudio && (
                 <section className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-3">
@@ -967,35 +997,6 @@ export default function CausaFormDialog({
                 </CollapsibleContent>
               </Collapsible>
 
-              <Separator />
-
-              {/* Imputados */}
-              <section data-tour="form-imputados" className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Imputados ({visibleSujetos.length})
-                  </h3>
-                  <Button type="button" size="sm" variant="outline" onClick={addSujeto}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Agregar imputado
-                  </Button>
-                </div>
-
-                {visibleSujetos.length === 0 && (
-                  <p className="text-xs text-muted-foreground italic">Sin imputados cargados.</p>
-                )}
-
-                <div className="space-y-3">
-                  {visibleSujetos.map((s) => (
-                    <SujetoCard
-                      key={s._localKey}
-                      sujeto={s}
-                      onChange={(patch) => updateSujeto(s._localKey, patch)}
-                      onPrescripcionesChange={(prescripciones) => updateSujeto(s._localKey, { prescripciones })}
-                      onRemove={() => confirmRemoveSujeto(s)}
-                    />
-                  ))}
-                </div>
-              </section>
 
               {mode === "editar" && causaId && (
                 <>
@@ -1194,29 +1195,18 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               value={sujeto.vencimiento_pp ?? ""}
               onChange={(e) => onChange({ vencimiento_pp: e.target.value || null })}
             />
-            {(() => {
-              if (sujeto.vencimiento_pp) return null;
-              if (sujeto.vencimiento_pena) return null;
-              if (!sujeto.fecha_detencion) return null;
-              // Mostrar el calculado en gris.
-              const base = sujeto.fecha_detencion.slice(0, 10);
-              const d = new Date(base + "T12:00:00");
-              if (isNaN(d.getTime())) return null;
-              d.setFullYear(d.getFullYear() + 2);
-              const calc = d.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
-              return (
-                <p className="text-[10px] text-muted-foreground/70">
-                  Calculado automático: {calc} (detención + 2 años). Dejá vacío para usar el calculado.
-                </p>
-              );
-            })()}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Vto. Pena</Label>
             <Input
               type="date"
               value={sujeto.vencimiento_pena ?? ""}
-              onChange={(e) => onChange({ vencimiento_pena: e.target.value || null })}
+              onChange={(e) => {
+                const v = e.target.value || null;
+                // Al cargar/cambiar la pena se borra el PP; si luego cargan un PP manual, se conserva.
+                if (v && v !== sujeto.vencimiento_pena) onChange({ vencimiento_pena: v, vencimiento_pp: null });
+                else onChange({ vencimiento_pena: v });
+              }}
             />
             <Input
               value={sujeto.vencimiento_pena_nota ?? ""}
