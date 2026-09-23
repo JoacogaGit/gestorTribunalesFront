@@ -43,6 +43,7 @@ export type DbSujeto = {
   prescripcion_fecha: string | null;
   vencimiento_pp: string | null;
   vencimiento_pena: string | null;
+  vencimiento_pena_nota?: string | null;
   observaciones: string | null;
   lugar_alojamiento: string | null;
   causa_id: string;
@@ -120,6 +121,7 @@ export function mapSujeto(s: DbSujeto): Imputado {
       ? (s.lugar_alojamiento ?? s.observaciones ?? undefined)
       : undefined,
     fechaVencimientoPena: s.vencimiento_pena ?? undefined,
+    vencimientoPenaNota: s.vencimiento_pena_nota ?? undefined,
     defensor: {
       nombre: s.defensor || "—",
       tipo: "DPO",

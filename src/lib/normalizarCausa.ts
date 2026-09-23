@@ -99,7 +99,7 @@ export function normalizarCausa(c: unknown): CausaIA {
     numero_interno: toStringOrNull(src.numero_interno),
     caratula: toStringOrNull(src.caratula),
     color_destacado: toStringOrNull(src.color_destacado),
-    despachante: toStringOrNull((src as Record<string, unknown>).despachante)?.slice(0, 3) ?? null,
+    despachante: toStringOrNull((src as Record<string, unknown>).despachante)?.slice(0, 50) ?? null,
 
     estado_causa: estado,
     tipo_recurso: tipoRec,

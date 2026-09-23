@@ -402,6 +402,7 @@ export default function CausasTable({
       render: (c) => c.ultimoMovimiento ? fmtDate(c.ultimoMovimiento) : <span className="text-muted-foreground/60">—</span>,
     },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
+    { key: "lugarDetencion", label: "Lugar de detención", cellClass: "text-xs text-muted-foreground max-w-[180px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.lugarDetencion || "", render: (c) => c.imputados.map((i) => i.lugarDetencion).filter(Boolean).join(", ") || "—" },
 
     {
       key: "tipoProceso", label: "Tipo",
@@ -464,14 +465,17 @@ export default function CausasTable({
       },
       render: (c: Causa) => {
         const items = c.imputados
-          .map((i) => ({ nombre: i.nombre, fecha: i.fechaVencimientoPena }))
+          .map((i) => ({ nombre: i.nombre, fecha: i.fechaVencimientoPena, nota: i.vencimientoPenaNota }))
           .filter((x) => !!x.fecha) as { nombre: string; fecha: string }[];
         if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
         items.sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
         return (
           <div className="space-y-0.5 text-xs whitespace-nowrap max-h-[48px] overflow-hidden">
             {items.map((it, i) => (
-              <div key={i} className={getProximityColor(it.fecha)}>{fmtDate(it.fecha)}</div>
+              <div key={i}>
+                <div className={getProximityColor(it.fecha)}>{fmtDate(it.fecha)}</div>
+                {it.nota && <div className="max-w-[180px] whitespace-normal break-words text-[10px] leading-tight text-muted-foreground">{it.nota}</div>}
+              </div>
             ))}
           </div>
         );
@@ -741,7 +745,7 @@ export default function CausasTable({
   return (
     <>
       <div
-        className={`flex flex-col ${isMobile ? "" : "flex-1 min-h-0"}`}
+        className="flex flex-1 min-h-0 flex-col overflow-hidden"
       >
       <div className={`flex items-center justify-between gap-3 flex-wrap shrink-0 ${compact ? "mb-1" : "mb-2"}`}>
         {displayTitle && (
@@ -917,7 +921,7 @@ export default function CausasTable({
       </div>
 
       {isMobile && (
-        <div className="flex flex-col gap-2 pb-4">
+        <div className="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain pb-4 pr-1">
           {visibleRows.map((c, idx) => {
             const rowColor = colorOf(c);
             const expanded = expandedId === c.id;

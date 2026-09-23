@@ -244,7 +244,7 @@ export function useMigracion() {
           numero_interno: c.numero_interno ?? null,
           caratula: c.caratula,
           color_destacado: c.color_destacado ?? null,
-          despachante: (c.despachante ?? null)?.toString().slice(0, 3) || null,
+          despachante: (c.despachante ?? null)?.toString().slice(0, 50) || null,
 
 
           estado_causa: c.estado_causa,

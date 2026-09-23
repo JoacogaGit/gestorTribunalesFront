@@ -59,6 +59,7 @@ export interface SujetoInput {
   prescripcion_fecha: string | null;
   vencimiento_pp: string | null;
   vencimiento_pena: string | null;
+  vencimiento_pena_nota: string | null;
   observaciones: string | null;
 }
 
