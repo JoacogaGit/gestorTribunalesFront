@@ -151,7 +151,7 @@ export function parseCaratulaTexto(lineas: string[]): CaratulaLex100 {
   r.querella = querellas.join("; ");
   r.otros_intervinientes = damnificados.map((d) => `Damnf. ${d}`).join("; ");
   r.caratula = r.sujetos.length
-    ? r.sujetos.map((s) => s.nombre_completo).join(" y otros / ").split(" y otros / ").join("; ")
+    ? r.sujetos.map((s) => s.nombre_completo).join("; ")
     : r.expediente_nro;
   return r;
 }
