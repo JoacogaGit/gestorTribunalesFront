@@ -36,16 +36,29 @@ export async function fetchCausasOcultasDe(
   vocaliaId: string,
   pestana: PestanaOcultable,
 ): Promise<Set<string>> {
-  const { data: listas } = await supabase
-    .from("listas_personalizadas")
-    .select("id, oculta_de")
-    .eq("vocalia_id", vocaliaId)
-    .contains("oculta_de", [pestana]);
-  const listaIds = (listas ?? []).map((l) => l.id);
-  if (listaIds.length === 0) return new Set();
-  const { data: filas } = await supabase
-    .from("listas_personalizadas_causas")
-    .select("causa_id")
-    .in("lista_id", listaIds);
-  return new Set((filas ?? []).map((f) => f.causa_id));
+  const vacio = new Set<string>();
+  if (!vocaliaId) return vacio;
+  try {
+    const { data: listas, error } = await supabase
+      .from("listas_personalizadas")
+      .select("id, oculta_de")
+      .eq("vocalia_id", vocaliaId)
+      .contains("oculta_de", [pestana]);
+    if (error) return vacio;
+    const listaIds = (listas ?? [])
+      .filter((l) => Array.isArray(l?.oculta_de) && l.oculta_de.includes(pestana))
+      .map((l) => l.id)
+      .filter(Boolean);
+    if (listaIds.length === 0) return vacio;
+    const { data: filas, error: e2 } = await supabase
+      .from("listas_personalizadas_causas")
+      .select("causa_id")
+      .in("lista_id", listaIds);
+    if (e2) return vacio;
+    return new Set((filas ?? []).map((f) => f.causa_id).filter(Boolean) as string[]);
+  } catch {
+    // Nunca romper la carga de causas por la configuración de listas.
+    return vacio;
+  }
 }
+

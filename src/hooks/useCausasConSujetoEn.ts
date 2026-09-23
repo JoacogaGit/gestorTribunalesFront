@@ -55,7 +55,7 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
       // para destacarlos como protagonistas (mismo patrón que useDetenidos).
       const ocultas = await fetchCausasOcultasDe(vocaliaId, situacion === "rebelde" ? "rebeldes" : "sjp");
       /* eslint-disable @typescript-eslint/no-explicit-any */
-      const rows = (data as any[]).filter((r) => !ocultas.has(r.id)).map((r) => ({
+      const rows = ((data ?? []) as any[]).filter((r) => !ocultas.has(r.id)).map((r) => ({
         ...r,
         sujetos: ((r.sujetos as any[]) || []).filter(
           (s) => s.borrado_en == null && s.situacion_libertad === situacion,

@@ -58,79 +58,92 @@ export function useDashboardKpis(vocaliaId: string | null) {
 
       // Causas ocultas de Trámite por configuración de listas personalizadas.
       const ocultas = await fetchCausasOcultasDe(vocaliaId, "tramite");
-      const excluirCausas = <T>(q: T, columna: string): T => {
-        if (ocultas.size === 0) return q;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (q as any).not(columna, "in", `(${[...ocultas].join(",")})`) as T;
+
+      const correr = async (ids: string[]): Promise<DashboardKpis> => {
+        const excluirCausas = <T>(q: T, columna: string): T => {
+          if (ids.length === 0) return q;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (q as any).not(columna, "in", `(${ids.map((i) => `"${i}"`).join(",")})`) as T;
+        };
+
+        const [detenidos, juicios, pp, ppCalc, rebeldes, evt30, total] = await Promise.all([
+          excluirCausas(supabase.from("sujetos")
+            .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
+            .eq("situacion_libertad", "detenido")
+            .in("causas.estado_causa", ACTIVOS)
+            .eq("causas.vocalia_id", vocaliaId)
+            .is("borrado_en", null)
+            .is("causas.borrado_en", null), "causas.id"),
+          excluirCausas(supabase.from("eventos")
+            .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
+            .in("tipo_evento", ["audiencia", "juicio"])
+            .gte("fecha_hora", mesIni)
+            .lt("fecha_hora", mesFin)
+            .in("causas.estado_causa", ACTIVOS)
+            .eq("causas.vocalia_id", vocaliaId)
+            .is("borrado_en", null)
+            .is("causas.borrado_en", null), "causas.id"),
+          // PP manual cargado en rango [hoy, hoy+30d]
+          excluirCausas(supabase.from("sujetos")
+            .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
+            .gte("vencimiento_pp", hoyDate)
+            .lte("vencimiento_pp", finDate)
+            .in("causas.estado_causa", ACTIVOS)
+            .eq("causas.vocalia_id", vocaliaId)
+            .is("borrado_en", null)
+            .is("causas.borrado_en", null), "causas.id"),
+          // PP calculado: sin vencimiento_pp ni vencimiento_pena, con fecha_detencion+2y en el rango.
+          excluirCausas(supabase.from("sujetos")
+            .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
+            .is("vencimiento_pp", null)
+            .is("vencimiento_pena", null)
+            .gte("fecha_detencion", ppCalcDesde)
+            .lte("fecha_detencion", ppCalcHasta)
+            .in("causas.estado_causa", ACTIVOS)
+            .eq("causas.vocalia_id", vocaliaId)
+            .is("borrado_en", null)
+            .is("causas.borrado_en", null), "causas.id"),
+          excluirCausas(supabase.from("sujetos")
+            .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
+            .eq("situacion_libertad", "rebelde")
+            .in("causas.estado_causa", ACTIVOS)
+            .eq("causas.vocalia_id", vocaliaId)
+            .is("borrado_en", null)
+            .is("causas.borrado_en", null), "causas.id"),
+          excluirCausas(supabase.from("eventos")
+            .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
+            .gte("fecha_hora", hoyISO)
+            .lte("fecha_hora", finISO)
+            .in("causas.estado_causa", ACTIVOS)
+            .eq("causas.vocalia_id", vocaliaId)
+            .is("borrado_en", null)
+            .is("causas.borrado_en", null), "causas.id"),
+          excluirCausas(supabase.from("causas")
+            .select("id", { count: "exact", head: true })
+            .in("estado_causa", ACTIVOS)
+            .eq("vocalia_id", vocaliaId)
+            .is("borrado_en", null), "id"),
+        ]);
+
+        return {
+          detenidos: await countOrThrow(detenidos),
+          juiciosEsteMes: await countOrThrow(juicios),
+          ppProximas: (await countOrThrow(pp)) + (await countOrThrow(ppCalc)),
+          rebeldes: await countOrThrow(rebeldes),
+          eventos30d: await countOrThrow(evt30),
+          totalCausas: await countOrThrow(total),
+        };
       };
 
-      const [detenidos, juicios, pp, ppCalc, rebeldes, evt30, total] = await Promise.all([
-        excluirCausas(supabase.from("sujetos")
-          .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
-          .eq("situacion_libertad", "detenido")
-          .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId)
-          .is("borrado_en", null)
-          .is("causas.borrado_en", null), "causas.id"),
-        excluirCausas(supabase.from("eventos")
-          .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
-          .in("tipo_evento", ["audiencia", "juicio"])
-          .gte("fecha_hora", mesIni)
-          .lt("fecha_hora", mesFin)
-          .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId)
-          .is("borrado_en", null)
-          .is("causas.borrado_en", null), "causas.id"),
-        // PP manual cargado en rango [hoy, hoy+30d]
-        excluirCausas(supabase.from("sujetos")
-          .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
-          .gte("vencimiento_pp", hoyDate)
-          .lte("vencimiento_pp", finDate)
-          .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId)
-          .is("borrado_en", null)
-          .is("causas.borrado_en", null), "causas.id"),
-        // PP calculado: sin vencimiento_pp ni vencimiento_pena, con fecha_detencion+2y en el rango.
-        excluirCausas(supabase.from("sujetos")
-          .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
-          .is("vencimiento_pp", null)
-          .is("vencimiento_pena", null)
-          .gte("fecha_detencion", ppCalcDesde)
-          .lte("fecha_detencion", ppCalcHasta)
-          .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId)
-          .is("borrado_en", null)
-          .is("causas.borrado_en", null), "causas.id"),
-        excluirCausas(supabase.from("sujetos")
-          .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
-          .eq("situacion_libertad", "rebelde")
-          .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId)
-          .is("borrado_en", null)
-          .is("causas.borrado_en", null), "causas.id"),
-        excluirCausas(supabase.from("eventos")
-          .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
-          .gte("fecha_hora", hoyISO)
-          .lte("fecha_hora", finISO)
-          .in("causas.estado_causa", ACTIVOS)
-          .eq("causas.vocalia_id", vocaliaId)
-          .is("borrado_en", null)
-          .is("causas.borrado_en", null), "causas.id"),
-        excluirCausas(supabase.from("causas")
-          .select("id", { count: "exact", head: true })
-          .in("estado_causa", ACTIVOS)
-          .eq("vocalia_id", vocaliaId)
-          .is("borrado_en", null), "id"),
-      ]);
+      let resultado: DashboardKpis;
+      try {
+        resultado = await correr([...ocultas]);
+      } catch {
+        // Si el filtro por listas personalizadas falla, mostramos los datos sin excluir nada.
+        resultado = await correr([]);
+      }
+      setKpis(resultado);
 
-      setKpis({
-        detenidos: await countOrThrow(detenidos),
-        juiciosEsteMes: await countOrThrow(juicios),
-        ppProximas: (await countOrThrow(pp)) + (await countOrThrow(ppCalc)),
-        rebeldes: await countOrThrow(rebeldes),
-        eventos30d: await countOrThrow(evt30),
-        totalCausas: await countOrThrow(total),
-      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar KPIs");
     } finally {

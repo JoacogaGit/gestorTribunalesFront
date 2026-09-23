@@ -43,7 +43,7 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
       setCausas([]);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let rows = data as any[];
+      let rows = (data ?? []) as any[];
       // Ocultar causas de listas personalizadas configuradas para esta pestaña.
       const pestana = PESTANA_POR_ESTADO[estado];
       if (pestana) {
