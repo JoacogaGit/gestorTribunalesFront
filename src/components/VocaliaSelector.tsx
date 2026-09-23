@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { VocaliaActual } from "@/context/VocaliaContext";
 import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
+import WelcomeNoTribunal from "@/components/WelcomeNoTribunal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
