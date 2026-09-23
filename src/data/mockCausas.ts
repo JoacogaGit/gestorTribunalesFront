@@ -94,6 +94,8 @@ export interface Causa {
   extra?: Record<string, string>;
   /** Color de fondo para destacar la fila (compartido entre todos los miembros del tribunal). */
   colorDestacado?: string | null;
+  /** Clave de fila única cuando una misma causa aparece varias veces (ej. una fila por detenido). */
+  rowKey?: string;
   /** Subestado dentro de "En trámite" (configurable por vocalía). */
   subestadoTramiteId?: string | null;
   subestadoTramite?: string | null;

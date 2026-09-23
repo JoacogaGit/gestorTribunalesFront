@@ -20,13 +20,29 @@ export interface CaratulaLex100 {
   caratula: string;
 }
 
+// pdfjs se carga una sola vez y se reutiliza (precarga al abrir el formulario).
+let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
+export function precargarPdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = Promise.all([
+      import("pdfjs-dist"),
+      import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
+    ]).then(([pdfjs, w]) => {
+      pdfjs.GlobalWorkerOptions.workerSrc = w.default;
+      return pdfjs;
+    }).catch((e) => { pdfjsPromise = null; throw e; });
+  }
+  return pdfjsPromise;
+}
+
 async function extraerLineas(buf: ArrayBuffer): Promise<string[]> {
-  const pdfjs = await import("pdfjs-dist");
-  const workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
-  const doc = await pdfjs.getDocument({ data: buf }).promise;
+  const pdfjs = await precargarPdfjs();
+  const doc = await pdfjs.getDocument({
+    data: buf, disableFontFace: true, isEvalSupported: false, disableAutoFetch: true, disableStream: true,
+  }).promise;
   const out: string[] = [];
-  for (let n = 1; n <= doc.numPages; n++) {
+  const total = Math.min(doc.numPages, 2);
+  for (let n = 1; n <= total; n++) {
     const page = await doc.getPage(n);
     const content = await page.getTextContent();
     const lineas = new Map<number, { x: number; str: string }[]>();
@@ -114,38 +130,67 @@ export function parseCaratulaTexto(lineas: string[]): CaratulaLex100 {
       if (r.modo_inicio) continue;
     }
 
-    // Secciones
-    let valor: string | null = null;
-    const hit = SECCIONES.find((s) => s.re.test(N));
-    if (hit) {
-      sec = hit.sec;
-      const m = N.match(hit.re)!;
-      valor = linea.slice(m[0].length).trim();
+    // Secciones: una línea puede traer varias etiquetas pegadas
+    // (ej. "IMPUTADO: X (D) LETRADOS: Y IMPUTADO: Z"). Se parte por etiqueta.
+    const segs: { sec: Seccion | "cont"; valor: string }[] = [];
+    const reEtq = /\b(IMPUTAD[OA]S?|LETRADOS?|SOBRE|QUERELLANTES?|DAMNIFICAD[OA]S?)\b\s*:?/g;
+    const marcas: { idx: number; len: number; sec: Seccion }[] = [];
+    let mm: RegExpExecArray | null;
+    while ((mm = reEtq.exec(N))) {
+      const et = mm[1];
+      const s: Seccion = et.startsWith("IMPUTAD") ? "imputado" : et.startsWith("LETRADO") ? "letrados"
+        : et === "SOBRE" ? "sobre" : et.startsWith("QUERELL") ? "querellante" : "damnificado";
+      // "SOBRE" solo cuenta como etiqueta al inicio de línea o seguido de ":"
+      if (s === "sobre" && mm.index !== 0 && !mm[0].includes(":")) continue;
+      marcas.push({ idx: mm.index, len: mm[0].length, sec: s });
+    }
+    if (marcas.length) {
+      const antes = linea.slice(0, marcas[0].idx).trim();
+      if (antes && sec && !CORTES.test(N)) segs.push({ sec: "cont", valor: antes });
+      marcas.forEach((m, i) => {
+        const fin = i + 1 < marcas.length ? marcas[i + 1].idx : linea.length;
+        segs.push({ sec: m.sec, valor: linea.slice(m.idx + m.len, fin).trim() });
+      });
     } else if (CORTES.test(N)) {
       sec = null;
       continue;
     } else if (sec) {
-      valor = linea;
+      segs.push({ sec: "cont", valor: linea });
     }
-    if (!sec || !valor) continue;
-    valor = valor.replace(/^[:\-–\s]+/, "").trim();
-    if (!valor) continue;
 
-    if (sec === "imputado") {
-      const detenido = /\(\s*D\s*\)/i.test(valor);
-      const nombre = valor.replace(/\(\s*D\s*\)/gi, "").replace(/\s+/g, " ").trim();
-      if (nombre) r.sujetos.push({ nombre_completo: nombre, detenido, defensor: "" });
-    } else if (sec === "letrados") {
-      const ult = r.sujetos[r.sujetos.length - 1];
-      if (ult) ult.defensor = ult.defensor ? `${ult.defensor}; ${valor}` : valor;
-    } else if (sec === "sobre") {
-      delitos.push(valor);
-    } else if (sec === "querellante") {
-      querellas.push(valor);
-    } else if (sec === "damnificado") {
-      damnificados.push(valor);
+    for (const sg of segs) {
+      const nuevo = sg.sec !== "cont";
+      if (nuevo) sec = sg.sec as Seccion;
+      if (!sec) continue;
+      const valor = sg.valor.replace(/^[:\-–\s]+/, "").trim();
+      if (sec === "imputado") {
+        const detenido = /\(\s*D\s*\)/i.test(valor);
+        const nombre = valor.replace(/\(\s*D\s*\)/gi, "").replace(/\s+/g, " ").trim();
+        const ult = r.sujetos[r.sujetos.length - 1];
+        if (nuevo) {
+          // Cada etiqueta IMPUTADO es un sujeto nuevo y distinto.
+          r.sujetos.push({ nombre_completo: nombre, detenido, defensor: "" });
+        } else if (ult && valor) {
+          // Continuación del nombre del mismo imputado
+          ult.nombre_completo = `${ult.nombre_completo} ${nombre}`.trim();
+          if (detenido) ult.detenido = true;
+        }
+        continue;
+      }
+      if (!valor) continue;
+      if (sec === "letrados") {
+        const ult = r.sujetos[r.sujetos.length - 1];
+        if (ult) ult.defensor = ult.defensor ? `${ult.defensor}; ${valor}` : valor;
+      } else if (sec === "sobre") {
+        delitos.push(valor);
+      } else if (sec === "querellante") {
+        querellas.push(valor);
+      } else if (sec === "damnificado") {
+        damnificados.push(valor);
+      }
     }
   }
+  r.sujetos = r.sujetos.filter((s) => s.nombre_completo);
 
   r.delito = delitos.join(" ").trim();
   r.querella = querellas.join("; ");

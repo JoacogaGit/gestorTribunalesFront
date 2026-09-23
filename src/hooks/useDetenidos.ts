@@ -38,19 +38,17 @@ export function useDetenidos(vocaliaId: string | null) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = (data as any[]) ?? [];
       const ocultas = await fetchCausasOcultasDe(vocaliaId, "detenidos");
-      const agrupadas = new Map<string, DbCausa>();
-      rows
+      // Una fila por cada detenido individual: cada sujeto genera su propia
+      // entrada con la causa embebida y solo ese imputado.
+      const filas: Causa[] = rows
         .filter((r) => r.causas && !ocultas.has(r.causas.id))
-        .forEach((r) => {
+        .map((r) => {
           const sujeto = r as DbSujeto;
           const causa = r.causas as DbCausa;
-          const previa = agrupadas.get(causa.id);
-          agrupadas.set(causa.id, {
-            ...causa,
-            sujetos: [...(previa?.sujetos ?? []), sujeto],
-          });
+          const ui = dbCausaToUI({ ...causa, sujetos: [sujeto] });
+          return { ...ui, rowKey: `${causa.id}::${sujeto.id}` };
         });
-      setCausas(Array.from(agrupadas.values()).map(dbCausaToUI));
+      setCausas(filas);
     }
     setLoading(false);
   }, [vocaliaId]);
