@@ -192,8 +192,18 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             </div>
             <h3 className="font-display text-lg font-semibold text-foreground">No hay espacios disponibles</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Pedile a un administrador de la oficina que te dé acceso a un espacio.
+              Pedile a un administrador de la oficina que te dé acceso a un espacio, o empezá con una oficina propia.
             </p>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <Button onClick={() => setMenuInicial(true)}>
+                <Plus className="w-4 h-4 mr-1.5" />
+                Crear oficina o unirme con código
+              </Button>
+              <Button variant="outline" onClick={refetch}>
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+                Reintentar
+              </Button>
+            </div>
           </div>
         )}
 
