@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { VocaliaActual } from "@/context/VocaliaContext";
 import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
+import WelcomeNoTribunal from "@/components/WelcomeNoTribunal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
@@ -36,6 +37,13 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [creating, setCreating] = useState(false);
   const [borrarTarget, setBorrarTarget] = useState<VocaliaRow | null>(null);
   const [borrando, setBorrando] = useState(false);
+  const [menuInicial, setMenuInicial] = useState(false);
+
+  const volverAlMenuInicial = () => {
+    setMenuInicial(false);
+    window.dispatchEvent(new Event("iustrack:membresias"));
+    refetch();
+  };
 
   const handleEliminarEspacio = async () => {
     if (!borrarTarget) return;
@@ -135,6 +143,10 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     onSelect({ id: data.id, nombre: data.nombre, tribunalId: data.tribunal_id });
   };
 
+  if (menuInicial) {
+    return <WelcomeNoTribunal onCreated={volverAlMenuInicial} />;
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-4xl w-full">
@@ -180,8 +192,18 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             </div>
             <h3 className="font-display text-lg font-semibold text-foreground">No hay espacios disponibles</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Pedile a un administrador de la oficina que te dé acceso a un espacio.
+              Pedile a un administrador de la oficina que te dé acceso a un espacio, o empezá con una oficina propia.
             </p>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <Button onClick={() => setMenuInicial(true)}>
+                <Plus className="w-4 h-4 mr-1.5" />
+                Crear oficina o unirme con código
+              </Button>
+              <Button variant="outline" onClick={refetch}>
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+                Reintentar
+              </Button>
+            </div>
           </div>
         )}
 
@@ -288,6 +310,15 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="mt-10 flex justify-center">
+            <Button variant="ghost" size="sm" onClick={() => setMenuInicial(true)}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              Crear otra oficina o unirme con un código
+            </Button>
           </div>
         )}
       </div>
