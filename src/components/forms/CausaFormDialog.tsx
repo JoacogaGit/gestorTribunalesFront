@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ExternalLink, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Loader2, Plus, Trash2, X } from "lucide-react";
+import { parseCaratulaLex100 } from "@/lib/parseCaratulaLex100";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
@@ -365,6 +366,41 @@ export default function CausaFormDialog({
   const updateSujeto = (key: string, patch: Partial<SujetoState>) =>
     setSujetos((arr) => arr.map((s) => s._localKey === key ? { ...s, ...patch } : s));
 
+  const [cargandoCaratula, setCargandoCaratula] = useState(false);
+  const cargarCaratula = async (file: File | undefined) => {
+    if (!file) return;
+    setCargandoCaratula(true);
+    try {
+      const d = await parseCaratulaLex100(file);
+      const patch: Partial<CausaInput> = {};
+      if (d.despachante) patch.despachante = d.despachante;
+      if (d.expediente_nro) patch.expediente_nro = d.expediente_nro;
+      if (d.fecha_ingreso) patch.fecha_ingreso = d.fecha_ingreso;
+      if (d.modo_inicio) patch.modo_inicio = d.modo_inicio;
+      if (d.querella) patch.querella = d.querella;
+      if (d.otros_intervinientes) patch.otros_intervinientes = d.otros_intervinientes;
+      if (d.fiscalia_interviniente) patch.fiscalia_interviniente = d.fiscalia_interviniente;
+      if (d.caratula) patch.caratula = d.caratula;
+      updateCausa(patch);
+      if (d.sujetos.length) {
+        setSujetos(d.sujetos.map((s) => ({
+          ...emptySujeto(s.detenido ? "detenido" : "libre"),
+          nombre_completo: s.nombre_completo,
+          defensor: s.defensor,
+          delito: d.delito,
+        })));
+      }
+      const n = Object.keys(patch).length + d.sujetos.length;
+      if (n === 0) toast.error("No se reconocieron datos en el PDF. ¿Es una carátula de Lex100?");
+      else toast.success("Carátula cargada. Revisá los datos antes de guardar.");
+    } catch (e) {
+      console.error(e);
+      toast.error("No se pudo leer el PDF.");
+    } finally {
+      setCargandoCaratula(false);
+    }
+  };
+
   const addSujeto = () => setSujetos((arr) => [emptySujeto(), ...arr]);
 
   const removeSujetoLocal = (key: string) => {
@@ -576,6 +612,19 @@ export default function CausaFormDialog({
               {/* Datos generales */}
               <section data-tour="form-datos" className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Datos generales</h3>
+                {mode === "crear" && !esEstudio && (
+                  <label className="flex items-center justify-center gap-2 rounded-md border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-sm font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                    {cargandoCaratula ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                    {cargandoCaratula ? "Leyendo carátula…" : "Cargar carátula Lex100 (PDF)"}
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      disabled={cargandoCaratula}
+                      onChange={(e) => { cargarCaratula(e.target.files?.[0]); e.target.value = ""; }}
+                    />
+                  </label>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">N° Expediente *</Label>
