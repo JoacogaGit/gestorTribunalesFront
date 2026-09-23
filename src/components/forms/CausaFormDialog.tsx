@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ExternalLink, FileText, Loader2, Plus, Trash2, X } from "lucide-react";
-import { parseCaratulaLex100 } from "@/lib/parseCaratulaLex100";
+import { parseCaratulaLex100, precargarPdfjs } from "@/lib/parseCaratulaLex100";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
@@ -366,6 +366,7 @@ export default function CausaFormDialog({
   const updateSujeto = (key: string, patch: Partial<SujetoState>) =>
     setSujetos((arr) => arr.map((s) => s._localKey === key ? { ...s, ...patch } : s));
 
+  useEffect(() => { if (open && mode === "crear") precargarPdfjs().catch(() => {}); }, [open, mode]);
   const [cargandoCaratula, setCargandoCaratula] = useState(false);
   const cargarCaratula = async (file: File | undefined) => {
     if (!file) return;
