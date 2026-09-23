@@ -312,6 +312,15 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
             })}
           </div>
         )}
+
+        {!loading && !error && (
+          <div className="mt-10 flex justify-center">
+            <Button variant="ghost" size="sm" onClick={() => setMenuInicial(true)}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              Crear otra oficina o unirme con un código
+            </Button>
+          </div>
+        )}
       </div>
 
       <Dialog open={!!createOpen} onOpenChange={(o) => { if (!o) { setCreateOpen(null); setNuevoNombre(""); } }}>
