@@ -92,11 +92,11 @@ export function useDashboardKpis(vocaliaId: string | null) {
             .eq("causas.vocalia_id", vocaliaId)
             .is("borrado_en", null)
             .is("causas.borrado_en", null), "causas.id"),
-          // PP calculado: sin vencimiento_pp ni vencimiento_pena, con fecha_detencion+2y en el rango.
+          // PP calculado: desactivado (ya no se calcula automáticamente). Consulta que no matchea nada.
           excluirCausas(supabase.from("sujetos")
             .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
             .is("vencimiento_pp", null)
-            .is("vencimiento_pena", null)
+            .not("vencimiento_pp", "is", null)
             .gte("fecha_detencion", ppCalcDesde)
             .lte("fecha_detencion", ppCalcHasta)
             .in("causas.estado_causa", ACTIVOS)
