@@ -37,6 +37,13 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [creating, setCreating] = useState(false);
   const [borrarTarget, setBorrarTarget] = useState<VocaliaRow | null>(null);
   const [borrando, setBorrando] = useState(false);
+  const [menuInicial, setMenuInicial] = useState(false);
+
+  const volverAlMenuInicial = () => {
+    setMenuInicial(false);
+    window.dispatchEvent(new Event("iustrack:membresias"));
+    refetch();
+  };
 
   const handleEliminarEspacio = async () => {
     if (!borrarTarget) return;
