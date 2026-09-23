@@ -21,6 +21,8 @@ export interface Imputado {
   estadoLibertad: EstadoLibertad;
   lugarDetencion?: string;
   fechaVencimientoPena?: string;
+  /** Aclaración libre que se muestra debajo del vencimiento de pena. */
+  vencimientoPenaNota?: string;
   defensor: { nombre: string; tipo: "DPO" | "Particular"; contacto: string };
 }
 
@@ -43,7 +45,7 @@ export interface Causa {
   numero: string;
   /** Número interno del tribunal (separado del nº de expediente). */
   numeroInterno?: string | null;
-  /** Despachante (máx 3 caracteres). */
+  /** Despachante de la causa. */
   despachante?: string | null;
   /** Causa tramitada bajo el régimen de flagrancia. */
   flagrancia?: boolean;

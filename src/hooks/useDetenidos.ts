@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
-import { dbCausaToUI, DbCausa, DbSujeto, mapSujeto } from "@/lib/causaMapper";
+import { dbCausaToUI, DbCausa, DbSujeto } from "@/lib/causaMapper";
 import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
-const DETENIDOS_SELECT = "id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,lugar_alojamiento,causa_id,created_at,causas!inner(id,expediente_nro,numero_interno,despachante,caratula,estado_causa,tipo_recurso,tipo_proceso,fecha_ingreso,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado)";
+const DETENIDOS_SELECT = "id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,observaciones,lugar_alojamiento,causa_id,created_at,causas!inner(id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados_tramite(nombre),delegada,art196bis,subestados,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,fuero,estado_procesal,rol_estudio)";
 
 /**
  * Trae sujetos detenidos con su causa embebida.
- * Devuelve "causas sintéticas" con un único imputado (el detenido), de forma
- * que DetenidosList -que itera detenidos dentro de cada causa- muestre una
- * fila por sujeto detenido sin más cambios.
+ * Agrupa por causa y conserva únicamente sus sujetos detenidos. Así la vista
+ * puede reutilizar la tabla completa sin duplicar claves cuando una causa
+ * tiene más de una persona detenida.
  */
 export function useDetenidos(vocaliaId: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
@@ -38,16 +38,19 @@ export function useDetenidos(vocaliaId: string | null) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = (data as any[]) ?? [];
       const ocultas = await fetchCausasOcultasDe(vocaliaId, "detenidos");
-      const synthetic: Causa[] = rows
+      const agrupadas = new Map<string, DbCausa>();
+      rows
         .filter((r) => r.causas && !ocultas.has(r.causas.id))
-        .map((r) => {
+        .forEach((r) => {
           const sujeto = r as DbSujeto;
           const causa = r.causas as DbCausa;
-          const ui = dbCausaToUI({ ...causa, sujetos: [sujeto] });
-          ui.imputados = [mapSujeto(sujeto)];
-          return ui;
+          const previa = agrupadas.get(causa.id);
+          agrupadas.set(causa.id, {
+            ...causa,
+            sujetos: [...(previa?.sujetos ?? []), sujeto],
+          });
         });
-      setCausas(synthetic);
+      setCausas(Array.from(agrupadas.values()).map(dbCausaToUI));
     }
     setLoading(false);
   }, [vocaliaId]);

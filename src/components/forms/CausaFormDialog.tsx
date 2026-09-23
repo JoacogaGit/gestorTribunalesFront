@@ -29,7 +29,7 @@ import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -143,6 +143,7 @@ function emptySujeto(situacion: DbSituacionLibertad = "libre"): SujetoState {
     prescripcion_fecha: null,
     vencimiento_pp: null,
     vencimiento_pena: null,
+    vencimiento_pena_nota: null,
     observaciones: "",
     prescripciones: [],
   };
@@ -197,9 +198,9 @@ export default function CausaFormDialog({
 
   const [causa, setCausa] = useState<CausaInput>(emptyCausa());
   const [sujetos, setSujetos] = useState<SujetoState[]>(() =>
-    mode === "crear" && initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []
+    mode === "crear" ? [emptySujeto(initialSujetoSituacion)] : []
   );
-  const [openExtras, setOpenExtras] = useState(false);
+  const [openExtras, setOpenExtras] = useState(mode === "crear");
   /** Modo estudio: al abrir una causa existente mostramos primero un resumen limpio. */
   const [vistaResumen, setVistaResumen] = useState(false);
   useEffect(() => {
@@ -220,7 +221,8 @@ export default function CausaFormDialog({
         setSujetos(draft.sujetos ?? []);
       } else {
         setCausa(emptyCausa());
-        setSujetos(initialSujetoSituacion ? [emptySujeto(initialSujetoSituacion)] : []);
+        setSujetos([emptySujeto(initialSujetoSituacion)]);
+        setOpenExtras(true);
       }
       setErrorMsg(null);
       return;
@@ -334,6 +336,7 @@ export default function CausaFormDialog({
             prescripcion_fecha: s.prescripcion_fecha ?? null,
             vencimiento_pp: s.vencimiento_pp ?? null,
             vencimiento_pena: s.vencimiento_pena ?? null,
+            vencimiento_pena_nota: s.vencimiento_pena_nota ?? null,
             observaciones: s.observaciones ?? "",
             prescripciones: duplicando
               ? (prescByID[s.id] ?? []).map((pr) => ({ _key: `dup-${pr._key}`, fecha: pr.fecha, descripcion: pr.descripcion }))
@@ -378,7 +381,7 @@ export default function CausaFormDialog({
   const isSujetoEmpty = (s: SujetoState) => {
     return !s.nombre_completo.trim() && !s.delito && !s.defensor && !s.fecha_detencion
       && !s.lugar_alojamiento && !s.prescripcion_fecha && !s.vencimiento_pp
-      && !s.vencimiento_pena && !s.observaciones && s.situacion_libertad === "libre"
+      && !s.vencimiento_pena && !s.vencimiento_pena_nota && !s.observaciones && s.situacion_libertad === "libre"
       && (s.prescripciones?.length ?? 0) === 0;
   };
 
@@ -596,9 +599,9 @@ export default function CausaFormDialog({
                     <Label className="text-xs">Despachante</Label>
                     <Input
                       value={causa.despachante ?? ""}
-                      onChange={(e) => updateCausa({ despachante: e.target.value.slice(0, 3) })}
-                      maxLength={3}
-                      placeholder="3 letras"
+                      onChange={(e) => updateCausa({ despachante: e.target.value })}
+                      maxLength={50}
+                      placeholder="Nombre o identificación"
                     />
                   </div>
                   )}
@@ -627,7 +630,7 @@ export default function CausaFormDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  {causa.estado_causa === "tramite" && subestados.length > 0 && (
+                  {(mode === "crear" || causa.estado_causa === "tramite") && subestados.length > 0 && (
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-xs">Subestados de trámite (podés elegir varios)</Label>
                       <div className="flex flex-wrap gap-1.5">
@@ -657,7 +660,7 @@ export default function CausaFormDialog({
                       </div>
                     </div>
                   )}
-                  {causa.estado_causa === "recurso" && (
+                  {(mode === "crear" || causa.estado_causa === "recurso") && (
                     <div className="space-y-1.5">
                       <Label className="text-xs">Tipo de recurso *</Label>
                       <Select
@@ -873,7 +876,7 @@ export default function CausaFormDialog({
 
               {/* Datos complementarios */}
               <Collapsible open={openExtras} onOpenChange={setOpenExtras}>
-                <CollapsibleTrigger className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground">
+                <CollapsibleTrigger className={`items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground ${mode === "crear" ? "hidden" : "flex"}`}>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openExtras ? "rotate-180" : ""}`} />
                   Datos complementarios
                 </CollapsibleTrigger>
@@ -1086,7 +1089,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
   };
 
   return (
-    <div className="bg-muted/40 rounded-md p-3 space-y-3 border border-border/60">
+    <div className="rounded-md border border-primary/25 bg-primary/[0.055] p-3 space-y-3 shadow-sm">
       <div className="flex items-start gap-2">
         <div className="flex-1 grid grid-cols-2 gap-3">
           <div className="space-y-1.5 col-span-2">
@@ -1118,7 +1121,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
             <Label className="text-xs">Defensor</Label>
             <Input value={sujeto.defensor ?? ""} onChange={(e) => onChange({ defensor: e.target.value })} />
           </div>
-          {sujeto.situacion_libertad === "detenido" && (
+          {(sujeto.situacion_libertad === "detenido" || !sujeto.id) && (
             <div className="space-y-1.5">
               <Label className="text-xs">Lugar de alojamiento</Label>
               <Input
@@ -1165,6 +1168,11 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               type="date"
               value={sujeto.vencimiento_pena ?? ""}
               onChange={(e) => onChange({ vencimiento_pena: e.target.value || null })}
+            />
+            <Input
+              value={sujeto.vencimiento_pena_nota ?? ""}
+              onChange={(e) => onChange({ vencimiento_pena_nota: e.target.value || null })}
+              placeholder="Aclaración del vencimiento (opcional)"
             />
           </div>
           <div className="space-y-1.5">

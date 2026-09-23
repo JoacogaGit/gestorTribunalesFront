@@ -4,7 +4,6 @@ import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
 import KpiCardsEstudio from "@/components/KpiCardsEstudio";
 import CausasTable from "@/components/CausasTable";
-import DetenidosList from "@/components/DetenidosList";
 import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
 import NotificationBell from "@/components/NotificationBell";
@@ -518,7 +517,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           </SheetContent>
         </Sheet>
       )}
-      <main className={`flex-1 min-w-0 flex flex-col ${view === "metricas" ? "bg-metrics-background" : "px-4 py-4 md:px-6 md:py-6 md:pb-0 lg:px-8 lg:pt-8 lg:pb-0"} ${isMobile ? "min-h-screen w-full" : "h-dvh overflow-hidden"}`}>
+      <main className={`h-dvh min-h-0 flex-1 min-w-0 overflow-hidden flex flex-col ${view === "metricas" ? "bg-metrics-background" : "px-4 py-4 md:px-6 md:py-6 md:pb-0 lg:px-8 lg:pt-8 lg:pb-0"}`}>
         {isMobile ? (
           <>
              <div className={`flex items-center justify-between gap-2 mb-3 ${view === "metricas" ? "px-4 pt-4 text-metrics-foreground" : ""}`}>
@@ -659,10 +658,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
             data-tour="main"
-             className={view === "migrar" ? "hidden" : `flex flex-col ${view === "metricas" ? "flex-1 min-h-0" : isMobile ? "" : "flex-1 min-h-0"}`}
+             className={view === "migrar" ? "hidden" : "flex flex-1 min-h-0 flex-col overflow-hidden"}
           >
             {view === "dashboard" && (
-              <div className={`space-y-1 flex flex-col ${isMobile ? "" : "flex-1 min-h-0 pr-1 [&>*:not(:last-child)]:shrink-0"}`}>
+              <div className="flex flex-1 min-h-0 flex-col gap-1 overflow-hidden pr-1 [&>*:not(:last-child)]:shrink-0">
                 <div className="flex justify-end gap-1">
                   <Button data-tour="nueva-estadistica" size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
                     <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
@@ -684,7 +683,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                       animate={{ opacity: 1, height: "auto", y: 0 }}
                       exit={{ opacity: 0, height: 0, y: -8 }}
                       transition={{ duration: 0.28, ease: "easeInOut" }}
-                      className="overflow-hidden shrink-0 space-y-2"
+                      className="max-h-[34dvh] shrink-0 space-y-2 overflow-y-auto overscroll-contain"
                     >
                       {esEstudio
                         ? <KpiCardsEstudio
@@ -873,7 +872,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </RemoteListSection>
             )}
             {view === "detenidos" && (
-              <div className={`flex flex-1 min-h-0 flex-col overflow-hidden pr-1 ${isMobile ? "h-[calc(100dvh-10rem)]" : ""}`}>
+              <div className="flex flex-1 min-h-0 flex-col overflow-hidden pr-1">
                 <RemoteListSection
                   loading={detenidosRemote.loading}
                   error={detenidosRemote.error}
@@ -883,12 +882,17 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   onRetry={detenidosRemote.refetch}
                   onCreateCausa={() => setShowCreateCausa(true)}
                 >
-                  <DetenidosList
+                  <CausasTable
                     causas={responsableFiltro.filtrar(detenidosRemote.causas)}
-                    onUpdateCausa={remoteNoop}
-                    onDeleteCausa={remoteNoop}
-                    onCreateCausa={remoteNoop}
+                    title="Detenidos"
+                    listKey="detenidos"
+                    allCausas={responsableFiltro.filtrar(detenidosRemote.causas)}
                     onMutated={detenidosRemote.refetch}
+                    onNavigateToConexa={navigateToCausa}
+                    openCausaId={pendingOpenCausaId}
+                    onOpenedCausa={consumePending}
+                    priorityColumnKey="libertad"
+                    {...remoteTableCommon}
                   />
                 </RemoteListSection>
               </div>
