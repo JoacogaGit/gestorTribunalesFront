@@ -20,13 +20,29 @@ export interface CaratulaLex100 {
   caratula: string;
 }
 
+// pdfjs se carga una sola vez y se reutiliza (precarga al abrir el formulario).
+let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
+export function precargarPdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = Promise.all([
+      import("pdfjs-dist"),
+      import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
+    ]).then(([pdfjs, w]) => {
+      pdfjs.GlobalWorkerOptions.workerSrc = w.default;
+      return pdfjs;
+    }).catch((e) => { pdfjsPromise = null; throw e; });
+  }
+  return pdfjsPromise;
+}
+
 async function extraerLineas(buf: ArrayBuffer): Promise<string[]> {
-  const pdfjs = await import("pdfjs-dist");
-  const workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
-  const doc = await pdfjs.getDocument({ data: buf }).promise;
+  const pdfjs = await precargarPdfjs();
+  const doc = await pdfjs.getDocument({
+    data: buf, disableFontFace: true, isEvalSupported: false, disableAutoFetch: true, disableStream: true,
+  }).promise;
   const out: string[] = [];
-  for (let n = 1; n <= doc.numPages; n++) {
+  const total = Math.min(doc.numPages, 2);
+  for (let n = 1; n <= total; n++) {
     const page = await doc.getPage(n);
     const content = await page.getTextContent();
     const lineas = new Map<number, { x: number; str: string }[]>();
