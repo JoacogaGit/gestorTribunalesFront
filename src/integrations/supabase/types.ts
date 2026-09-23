@@ -967,6 +967,7 @@ export type Database = {
           situacion_libertad: Database["public"]["Enums"]["situacion_libertad_enum"]
           updated_at: string | null
           vencimiento_pena: string | null
+          vencimiento_pena_nota: string | null
           vencimiento_pp: string | null
           vencimiento_sjp: string | null
         }
@@ -988,6 +989,7 @@ export type Database = {
           situacion_libertad?: Database["public"]["Enums"]["situacion_libertad_enum"]
           updated_at?: string | null
           vencimiento_pena?: string | null
+          vencimiento_pena_nota?: string | null
           vencimiento_pp?: string | null
           vencimiento_sjp?: string | null
         }
@@ -1009,6 +1011,7 @@ export type Database = {
           situacion_libertad?: Database["public"]["Enums"]["situacion_libertad_enum"]
           updated_at?: string | null
           vencimiento_pena?: string | null
+          vencimiento_pena_nota?: string | null
           vencimiento_pp?: string | null
           vencimiento_sjp?: string | null
         }
