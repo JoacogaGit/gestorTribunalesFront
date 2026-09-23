@@ -1,6 +1,6 @@
-- [ ] Igualar filtros y columnas de Detenidos con Trámite
-- [ ] Permitir despachante largo
-- [ ] Agregar nota de vencimiento de pena y mostrarla debajo de la fecha
-- [ ] Estabilizar altura y scroll del dashboard en desktop y móvil
-- [ ] Mostrar todos los campos al crear y diferenciar el bloque de imputado
-- [ ] Validar tipos, pruebas y vista
+- [x] Igualar filtros y columnas de Detenidos con Trámite
+- [x] Permitir despachante largo
+- [x] Agregar nota de vencimiento de pena y mostrarla debajo de la fecha
+- [x] Estabilizar altura y scroll del dashboard en desktop y móvil
+- [x] Mostrar todos los campos al crear y diferenciar el bloque de imputado
+- [x] Validar tipos, pruebas y vista
