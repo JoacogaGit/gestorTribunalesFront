@@ -924,16 +924,17 @@ export default function CausasTable({
         <div className="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain pb-4 pr-1">
           {visibleRows.map((c, idx) => {
             const rowColor = colorOf(c);
-            const expanded = expandedId === c.id;
+            const rk = c.rowKey ?? c.id;
+            const expanded = expandedId === rk;
             return (
               <div
-                key={c.id}
+                key={rk}
                 className="elevated-card rounded-xl p-3 border-l-4"
                 style={{ borderLeftColor: rowColor || "hsl(var(--border))" }}
               >
                 <button
                   type="button"
-                  onClick={() => setExpandedId(expanded ? null : c.id)}
+                  onClick={() => setExpandedId(expanded ? null : rk)}
                   className="w-full text-left min-h-[44px]"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -1042,7 +1043,7 @@ export default function CausasTable({
               {visibleRows.map((c, idx) => {
                 const rowColor = colorOf(c);
                 return (
-                <ContextMenu key={c.id}>
+                <ContextMenu key={c.rowKey ?? c.id}>
                   <ContextMenuTrigger asChild>
                     <CausaRow
                       causa={c}
