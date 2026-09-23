@@ -630,7 +630,7 @@ export default function CausaFormDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  {causa.estado_causa === "tramite" && subestados.length > 0 && (
+                  {(mode === "crear" || causa.estado_causa === "tramite") && subestados.length > 0 && (
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-xs">Subestados de trámite (podés elegir varios)</Label>
                       <div className="flex flex-wrap gap-1.5">
@@ -660,7 +660,7 @@ export default function CausaFormDialog({
                       </div>
                     </div>
                   )}
-                  {causa.estado_causa === "recurso" && (
+                  {(mode === "crear" || causa.estado_causa === "recurso") && (
                     <div className="space-y-1.5">
                       <Label className="text-xs">Tipo de recurso *</Label>
                       <Select
@@ -1121,7 +1121,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
             <Label className="text-xs">Defensor</Label>
             <Input value={sujeto.defensor ?? ""} onChange={(e) => onChange({ defensor: e.target.value })} />
           </div>
-          {sujeto.situacion_libertad === "detenido" && (
+          {(sujeto.situacion_libertad === "detenido" || !sujeto.id) && (
             <div className="space-y-1.5">
               <Label className="text-xs">Lugar de alojamiento</Label>
               <Input

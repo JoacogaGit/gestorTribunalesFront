@@ -466,7 +466,7 @@ export default function CausasTable({
       render: (c: Causa) => {
         const items = c.imputados
           .map((i) => ({ nombre: i.nombre, fecha: i.fechaVencimientoPena, nota: i.vencimientoPenaNota }))
-          .filter((x) => !!x.fecha) as { nombre: string; fecha: string }[];
+          .filter((x): x is { nombre: string; fecha: string; nota: string | undefined } => !!x.fecha);
         if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
         items.sort((a, b) => parseLocalTime(a.fecha) - parseLocalTime(b.fecha));
         return (
