@@ -341,10 +341,13 @@ export default function CausasTable({
     {
       key: "caratula", label: "Carátula",
       cellClass: "text-[15px] font-semibold text-foreground max-w-[250px] break-words whitespace-normal align-top",
-      sortValue: (c) => getCaratula(c),
-      render: (c) => c.link
-        ? <span className="line-clamp-2"><a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-baseline gap-1">{getCaratula(c)}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a></span>
-        : <span className="line-clamp-2">{getCaratula(c)}</span>,
+      sortValue: (c) => listKey === "detenidos" ? (c.imputados[0]?.nombre ?? "") : getCaratula(c),
+      render: (c) => {
+        const texto = listKey === "detenidos" ? (c.imputados[0]?.nombre || "—") : getCaratula(c);
+        return c.link
+          ? <span className="line-clamp-2"><a href={c.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline inline-flex items-baseline gap-1">{texto}<ExternalLink className="w-3 h-3 shrink-0 opacity-70" /></a></span>
+          : <span className="line-clamp-2">{texto}</span>;
+      },
     },
     { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[250px] break-words whitespace-normal align-top", sortValue: (c) => c.delito, render: (c) => c.delito },
     {
@@ -546,7 +549,7 @@ export default function CausasTable({
         );
       },
     },
-  ], [onNavigateToConexa, proximasMap]);
+  ], [listKey, onNavigateToConexa, proximasMap]);
 
   const storageKey = listKey ? `cols-hidden-${listKey}` : null;
   const customColsKey = listKey ? `cols-custom-${listKey}` : null;
