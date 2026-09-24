@@ -21,6 +21,7 @@ export interface CaratulaLex100 {
 }
 
 // pdfjs se carga una sola vez y se reutiliza (precarga al abrir el formulario).
+// El worker es LOCAL (empaquetado por Vite con ?url), nunca desde una CDN.
 let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
 export function precargarPdfjs() {
   if (!pdfjsPromise) {
@@ -35,11 +36,30 @@ export function precargarPdfjs() {
   return pdfjsPromise;
 }
 
+// Respaldo para redes restrictivas que bloquean el archivo del worker:
+// se carga el worker (local) en el hilo principal ("fake worker" de pdfjs).
+let fakeWorkerListo: Promise<void> | null = null;
+function activarWorkerEnHiloPrincipal() {
+  if (!fakeWorkerListo) {
+    fakeWorkerListo = import("pdfjs-dist/build/pdf.worker.min.mjs").then((mod) => {
+      (globalThis as any).pdfjsWorker = mod;
+    }).catch((e) => { fakeWorkerListo = null; throw e; });
+  }
+  return fakeWorkerListo;
+}
+
+const OPCIONES = { disableFontFace: true, isEvalSupported: false, disableAutoFetch: true, disableStream: true };
+
 async function extraerLineas(buf: ArrayBuffer): Promise<string[]> {
   const pdfjs = await precargarPdfjs();
-  const doc = await pdfjs.getDocument({
-    data: buf, disableFontFace: true, isEvalSupported: false, disableAutoFetch: true, disableStream: true,
-  }).promise;
+  let doc: any;
+  try {
+    doc = await pdfjs.getDocument({ data: buf.slice(0), ...OPCIONES }).promise;
+  } catch (e) {
+    console.warn("pdfjs worker falló, reintentando en hilo principal", e);
+    await activarWorkerEnHiloPrincipal();
+    doc = await pdfjs.getDocument({ data: buf.slice(0), ...OPCIONES }).promise;
+  }
   const out: string[] = [];
   const total = Math.min(doc.numPages, 2);
   for (let n = 1; n <= total; n++) {

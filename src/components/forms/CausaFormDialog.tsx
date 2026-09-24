@@ -396,7 +396,7 @@ export default function CausaFormDialog({
       else toast.success("Carátula cargada. Revisá los datos antes de guardar.");
     } catch (e) {
       console.error(e);
-      toast.error("No se pudo leer el PDF.");
+      toast.error("No se pudo leer el PDF. Verificá que sea una carátula de Lex100 en PDF de texto. Podés seguir cargando la causa a mano.", { duration: 7000 });
     } finally {
       setCargandoCaratula(false);
     }
