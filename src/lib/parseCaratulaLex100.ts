@@ -1,5 +1,6 @@
 // Autocompletado de causa desde la carátula PDF de Lex100 (1 página, texto seleccionable).
 // Tolerante: si un campo no aparece, queda vacío.
+import "./polyfills";
 
 export interface CaratulaSujeto {
   nombre_completo: string;
@@ -21,68 +22,69 @@ export interface CaratulaLex100 {
 }
 
 // pdfjs se carga una sola vez y se reutiliza (precarga al abrir el formulario).
-// El worker es LOCAL (empaquetado por Vite con ?url), nunca desde una CDN.
+// Se instala el WorkerMessageHandler en este mismo contexto antes de cargar pdfjs:
+// así PDFWorker usa su "fake worker" y nunca crea un Worker separado.
 let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
 export function precargarPdfjs() {
   if (!pdfjsPromise) {
-    pdfjsPromise = Promise.all([
-      import("pdfjs-dist"),
-      import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
-    ]).then(([pdfjs, w]) => {
-      pdfjs.GlobalWorkerOptions.workerSrc = w.default;
-      return pdfjs;
-    }).catch((e) => { pdfjsPromise = null; throw e; });
+    pdfjsPromise = import("pdfjs-dist/build/pdf.worker.min.mjs")
+      .then((workerModule) => {
+        (globalThis as typeof globalThis & { pdfjsWorker?: typeof workerModule }).pdfjsWorker = workerModule;
+        return import("pdfjs-dist");
+      })
+      .catch((e) => { pdfjsPromise = null; throw e; });
   }
   return pdfjsPromise;
 }
 
-// Respaldo para redes restrictivas que bloquean el archivo del worker:
-// se carga el worker (local) en el hilo principal ("fake worker" de pdfjs).
-let fakeWorkerListo: Promise<void> | null = null;
-function activarWorkerEnHiloPrincipal() {
-  if (!fakeWorkerListo) {
-    fakeWorkerListo = import("pdfjs-dist/build/pdf.worker.min.mjs").then((mod) => {
-      (globalThis as any).pdfjsWorker = mod;
-    }).catch((e) => { fakeWorkerListo = null; throw e; });
-  }
-  return fakeWorkerListo;
-}
-
 const OPCIONES = { disableFontFace: true, isEvalSupported: false, disableAutoFetch: true, disableStream: true };
+const PDF_TIMEOUT_MS = 8000;
 
 async function extraerLineas(buf: ArrayBuffer): Promise<string[]> {
   const pdfjs = await precargarPdfjs();
-  let doc: any;
+  let loadingTask: ReturnType<typeof pdfjs.getDocument> | null = null;
+  let doc: Awaited<ReturnType<typeof pdfjs.getDocument>["promise"]> | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      void loadingTask?.destroy();
+      reject(new Error("La lectura del PDF excedió el tiempo máximo."));
+    }, PDF_TIMEOUT_MS);
+  });
+
   try {
-    doc = await pdfjs.getDocument({ data: buf.slice(0), ...OPCIONES }).promise;
-  } catch (e) {
-    console.warn("pdfjs worker falló, reintentando en hilo principal", e);
-    await activarWorkerEnHiloPrincipal();
-    doc = await pdfjs.getDocument({ data: buf.slice(0), ...OPCIONES }).promise;
+    const lectura = (async () => {
+      loadingTask = pdfjs.getDocument({ data: buf.slice(0), ...OPCIONES });
+      doc = await loadingTask.promise;
+      const out: string[] = [];
+      const total = Math.min(doc.numPages, 2);
+      for (let n = 1; n <= total; n++) {
+        const page = await doc.getPage(n);
+        const content = await page.getTextContent();
+        const lineas = new Map<number, { x: number; str: string }[]>();
+        for (const item of content.items as any[]) {
+          const str = String(item.str ?? "");
+          if (!str.trim()) continue;
+          const x = item.transform?.[4] ?? 0;
+          const y = Math.round((item.transform?.[5] ?? 0) / 3) * 3;
+          const arr = lineas.get(y) ?? [];
+          arr.push({ x, str });
+          lineas.set(y, arr);
+        }
+        Array.from(lineas.entries())
+          .sort((a, b) => b[0] - a[0])
+          .forEach(([, items]) => {
+            const t = items.sort((a, b) => a.x - b.x).map((i) => i.str.trim()).join(" ").replace(/\s+/g, " ").trim();
+            if (t) out.push(t);
+          });
+      }
+      return out;
+    })();
+    return await Promise.race([lectura, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-  const out: string[] = [];
-  const total = Math.min(doc.numPages, 2);
-  for (let n = 1; n <= total; n++) {
-    const page = await doc.getPage(n);
-    const content = await page.getTextContent();
-    const lineas = new Map<number, { x: number; str: string }[]>();
-    for (const item of content.items as any[]) {
-      const str = String(item.str ?? "");
-      if (!str.trim()) continue;
-      const x = item.transform?.[4] ?? 0;
-      const y = Math.round((item.transform?.[5] ?? 0) / 3) * 3;
-      const arr = lineas.get(y) ?? [];
-      arr.push({ x, str });
-      lineas.set(y, arr);
-    }
-    Array.from(lineas.entries())
-      .sort((a, b) => b[0] - a[0])
-      .forEach(([, items]) => {
-        const t = items.sort((a, b) => a.x - b.x).map((i) => i.str.trim()).join(" ").replace(/\s+/g, " ").trim();
-        if (t) out.push(t);
-      });
-  }
-  return out;
 }
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
