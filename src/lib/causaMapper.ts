@@ -3,11 +3,11 @@ import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 import { parseLocalTime } from "@/lib/parseDate";
 
 export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "probation" | "condenado";
-export type DbEstadoCausa = "tramite" | "recurso" | "terminada" | "delegada";
+export type DbEstadoCausa = "tramite" | "recurso" | "terminada" | "delegada" | "para_sentencia" | "para_comunicar";
 export type DbTipoRecurso = "casacion" | "rex" | "queja_corte" | "apelacion" | "tsj" | null;
 
 export const SITUACIONES_LIBERTAD: DbSituacionLibertad[] = ["libre", "detenido", "rebelde", "probation", "condenado"];
-export const ESTADOS_CAUSA_DB: DbEstadoCausa[] = ["tramite", "recurso", "terminada", "delegada"];
+export const ESTADOS_CAUSA_DB: DbEstadoCausa[] = ["tramite", "recurso", "para_sentencia", "para_comunicar", "terminada", "delegada"];
 export const TIPOS_RECURSO: Exclude<DbTipoRecurso, null>[] = ["casacion", "rex", "queja_corte", "apelacion", "tsj"];
 
 export const labelEstadoCausa: Record<DbEstadoCausa, string> = {
@@ -15,6 +15,8 @@ export const labelEstadoCausa: Record<DbEstadoCausa, string> = {
   recurso: "Recurso",
   terminada: "Terminada",
   delegada: "Delegada",
+  para_sentencia: "Para sacar sentencia",
+  para_comunicar: "Para comunicar",
 };
 
 export const labelTipoRecurso: Record<Exclude<DbTipoRecurso, null>, string> = {
@@ -102,6 +104,8 @@ function mapEstadoCausa(estado: DbEstadoCausa, tipo: DbTipoRecurso): EstadoCausa
   if (estado === "tramite") return "En trámite";
   if (estado === "terminada") return "Terminada";
   if (estado === "delegada") return "Delegada";
+  if (estado === "para_sentencia") return "Para sacar sentencia";
+  if (estado === "para_comunicar") return "Para comunicar";
   // recurso
   switch (tipo) {
     case "casacion": return "Casación";

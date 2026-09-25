@@ -129,7 +129,7 @@ type View = string;
 
 /** Vistas donde aplica el filtro por responsable. */
 const VISTAS_CON_FILTRO: string[] = [
-  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "terminadas", "flagrancia",
+  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "terminadas", "flagrancia", "para_sentencia", "para_comunicar",
   "calendario", "fueros", "delitos", "instruccion", "elevadas", "recurridas",
 ];
 
@@ -258,6 +258,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       : d.estado_causa === "recurso" ? "recursos"
       : d.estado_causa === "terminada" ? "terminadas"
       : d.estado_causa === "delegada" ? "delegadas"
+      : d.estado_causa === "para_sentencia" ? "para_sentencia"
+      : d.estado_causa === "para_comunicar" ? "para_comunicar"
       : "tramite";
     setView(targetView);
     setPendingOpenCausaId(causaId);
@@ -278,6 +280,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
+  const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId);
+  const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId);
   const delegadasRemote = useCausasPorMarca("delegada", vocaliaId);
   const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId);
   const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
@@ -428,6 +432,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     recursos: "Recursos (Casación / Queja / REX / Apelación / TSJ)",
     delegadas: "Causas Delegadas",
     terminadas: "Causas Terminadas",
+    para_sentencia: "Para sacar sentencia",
+    para_comunicar: "Para comunicar",
     flagrancia: "Causas en Flagrancia",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
@@ -602,7 +608,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </>
             )}
 
-            {["tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "art196bis", "terminadas", "flagrancia", "instruccion", "elevadas", "recurridas"].includes(view) && <ZoomControl />}
+            {["tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "art196bis", "terminadas", "flagrancia", "para_sentencia", "para_comunicar", "instruccion", "elevadas", "recurridas"].includes(view) && <ZoomControl />}
             <RefreshButton onRefresh={() => window.location.reload()} label="Recargar página" />
             <button
               type="button"
@@ -1010,6 +1016,50 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 />
               </RemoteListSection>
             )}
+            {view === "para_sentencia" && (
+              <RemoteListSection
+                loading={paraSentenciaRemote.loading}
+                error={paraSentenciaRemote.error}
+                isEmpty={responsableFiltro.filtrar(paraSentenciaRemote.causas).length === 0}
+                emptyTitle="Todavía no hay causas para sacar sentencia"
+                emptyMessage="Las causas aparecerán acá cuando cambies su estado a “Para sacar sentencia”."
+                onRetry={paraSentenciaRemote.refetch}
+              >
+                <CausasTable
+                  causas={responsableFiltro.filtrar(paraSentenciaRemote.causas)}
+                  title="Para sacar sentencia"
+                  listKey="para_sentencia"
+                  allCausas={responsableFiltro.filtrar(paraSentenciaRemote.causas)}
+                  onMutated={paraSentenciaRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
+                  {...remoteTableCommon}
+                />
+              </RemoteListSection>
+            )}
+            {view === "para_comunicar" && (
+              <RemoteListSection
+                loading={paraComunicarRemote.loading}
+                error={paraComunicarRemote.error}
+                isEmpty={responsableFiltro.filtrar(paraComunicarRemote.causas).length === 0}
+                emptyTitle="Todavía no hay causas para comunicar"
+                emptyMessage="Las causas aparecerán acá cuando cambies su estado a “Para comunicar”."
+                onRetry={paraComunicarRemote.refetch}
+              >
+                <CausasTable
+                  causas={responsableFiltro.filtrar(paraComunicarRemote.causas)}
+                  title="Para comunicar"
+                  listKey="para_comunicar"
+                  allCausas={responsableFiltro.filtrar(paraComunicarRemote.causas)}
+                  onMutated={paraComunicarRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
+                  {...remoteTableCommon}
+                />
+              </RemoteListSection>
+            )}
             {view === "terminadas" && (
               <RemoteListSection
                 loading={terminadasRemote.loading}
@@ -1185,6 +1235,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
           sjpRemote.refetch();
           recursosRemote.refetch();
           terminadasRemote.refetch();
+          paraSentenciaRemote.refetch();
+          paraComunicarRemote.refetch();
           delegadasRemote.refetch();
           flagranciaRemote.refetch();
           art196bisRemote.refetch();

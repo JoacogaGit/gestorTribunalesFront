@@ -16,6 +16,8 @@ const navBeforeTerminadas = [
   { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle },
   { id: "sjp", label: "SJP en Trámite", icon: Pause },
   { id: "recursos", label: "Recursos", icon: Users },
+  { id: "para_sentencia", label: "Para sacar sentencia", icon: Gavel },
+  { id: "para_comunicar", label: "Para comunicar", icon: FolderOpen },
   { id: "delegadas", label: "Delegadas", icon: FolderOpen },
   { id: "art196bis", label: "196bis / NN", icon: Lock },
   { id: "flagrancia", label: "Flagrancia", icon: Zap },

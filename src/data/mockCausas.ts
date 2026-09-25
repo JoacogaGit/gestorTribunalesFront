@@ -2,7 +2,7 @@ import { isFechaPasadaAR, parseLocalTime } from "@/lib/parseDate";
 
 
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
-export type EstadoCausa = "En trámite" | "Delegada" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ";
+export type EstadoCausa = "En trámite" | "Delegada" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ" | "Para sacar sentencia" | "Para comunicar";
 
 export interface Audiencia {
   tipo: string;
