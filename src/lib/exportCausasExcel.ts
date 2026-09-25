@@ -44,6 +44,8 @@ function estadoLabel(c: CausaRow): string {
     case "recurso": return LABEL_RECURSO[c.tipo_recurso ?? ""] ?? "Recurso";
     case "terminada": return "Terminada";
     case "delegada": return "Delegada";
+    case "para_sentencia": return "Para sacar sentencia";
+    case "para_comunicar": return "Para comunicar";
     default: return c.estado_causa;
   }
 }

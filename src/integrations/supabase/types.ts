@@ -1384,7 +1384,13 @@ export type Database = {
       unirse_por_codigo: { Args: { p_codigo: string }; Returns: string }
     }
     Enums: {
-      estado_causa_enum: "tramite" | "recurso" | "terminada" | "delegada"
+      estado_causa_enum:
+        | "tramite"
+        | "recurso"
+        | "terminada"
+        | "delegada"
+        | "para_sentencia"
+        | "para_comunicar"
       modo_tribunal_enum: "lista_unica" | "vocalias_separadas"
       rol_global_enum: "superadmin" | "usuario"
       rol_miembro_enum: "admin" | "miembro" | "lector"
@@ -1528,7 +1534,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      estado_causa_enum: ["tramite", "recurso", "terminada", "delegada"],
+      estado_causa_enum: [
+        "tramite",
+        "recurso",
+        "terminada",
+        "delegada",
+        "para_sentencia",
+        "para_comunicar",
+      ],
       modo_tribunal_enum: ["lista_unica", "vocalias_separadas"],
       rol_global_enum: ["superadmin", "usuario"],
       rol_miembro_enum: ["admin", "miembro", "lector"],
