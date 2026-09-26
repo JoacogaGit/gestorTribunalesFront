@@ -3,7 +3,7 @@ import { driver, type Driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Scale, PartyPopper } from "lucide-react";
+import { Scale, PartyPopper, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -28,6 +28,8 @@ interface Paso {
   /** Mini demo animada que corre al llegar al paso. */
   demo?: () => Promise<void>;
   side?: "top" | "bottom" | "left" | "right";
+  /** Tinta el popover con la estética verde de Supabase. */
+  supabase?: boolean;
 }
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -430,6 +432,26 @@ function construirPasos(props: Props): Paso[] {
     });
   }
 
+  // 14b — Seguridad / Supabase (anteúltimo paso, estética especial)
+  pasos.push({
+    target: '[data-tour="ayuda"]',
+    supabase: true,
+    titulo: "¿Y dónde vive todo esto?",
+    texto:
+      `<div class="iustrack-tour-supabase-head">
+         <svg class="iustrack-tour-supabase-logo" viewBox="0 0 109 113" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+           <path d="M63.708 110.284c-2.86 3.601-8.658 1.628-8.727-2.97l-1.007-67.719h45.59c8.26 0 12.865 9.52 7.733 15.965l-43.589 54.724Z" fill="#3ECF8E"/>
+           <path d="M63.708 110.284c-2.86 3.601-8.658 1.628-8.727-2.97l-1.007-67.719h45.59c8.26 0 12.865 9.52 7.733 15.965l-43.589 54.724Z" fill="#249361" fill-opacity=".55"/>
+           <path d="M45.317.317c2.86-3.601 8.658-1.628 8.727 2.97l.436 67.719H9.361c-8.26 0-12.865-9.52-7.733-15.965L45.317.317Z" fill="#96F2D7"/>
+         </svg>
+         <span class="iustrack-tour-supabase-brand">Seguridad &middot; Supabase</span>
+       </div>
+       <p class="iustrack-tour-lead">Toda la información de IusTrack se almacena en <strong style="color:#3ECF8E">Supabase</strong>, una plataforma profesional construida sobre PostgreSQL, uno de los motores de bases de datos más robustos y usados del mundo.</p>
+       <p>Supabase funciona sobre la infraestructura de Amazon Web Services (AWS), el mismo servicio en la nube que utilizan bancos, gobiernos y grandes empresas a nivel global.</p>
+       <p>Tus datos viajan siempre cifrados y están protegidos por reglas de acceso que garantizan que cada oficina vea únicamente su propia información.</p>
+       <p class="iustrack-tour-hint">En resumen: la información judicial que cargás está alojada con estándares de seguridad de nivel empresarial.</p>`,
+  });
+
   // 15 — Cierre
   pasos.push({
     target: '[data-tour="ayuda"]',
@@ -568,6 +590,9 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       onHighlighted: () => {
         const paso = pasosRef.current[idxRef.current];
         if (paso?.demo) void paso.demo();
+        document
+          .querySelector(".driver-popover")
+          ?.classList.toggle("iustrack-tour-supabase", !!paso?.supabase);
       },
       onNextClick: async () => {
         const next = idxRef.current + 1;
@@ -594,14 +619,15 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
   return (
     <>
-      {/* Botón "Saltar tutorial" siempre visible durante el recorrido */}
+      {/* Botón "Salir del tutorial" siempre visible durante el recorrido */}
       {fase === "recorrido" && (
         <button
           type="button"
           onClick={() => terminar(false)}
-          className="fixed top-4 right-4 z-[10000] rounded-full bg-background/90 px-4 py-2 text-xs font-medium text-foreground shadow-elevated border border-border hover:bg-muted transition-colors animate-fade-in"
+          className="fixed top-4 right-4 z-[10000] flex items-center gap-2 rounded-full bg-background/95 px-4 py-2 text-sm font-medium text-foreground shadow-elevated border border-border hover:bg-muted transition-colors animate-fade-in"
         >
-          Saltar tutorial
+          <X className="h-4 w-4 text-muted-foreground" />
+          Salir del tutorial
         </button>
       )}
 
