@@ -392,7 +392,7 @@
   background: linear-gradient(160deg, #0c1f16 0%, #0a2317 55%, #0d2a1c 100%);
   color: #e6f8ef;
   border: 1px solid #3ecf8e;
-  box-shadow: 0 20px 45px -15px hsl(150 70% 20% / 0.55), 0 0 0 4px #3ecf8e / 0.12;
+  box-shadow: 0 20px 45px -15px hsl(150 70% 20% / 0.55), 0 0 0 4px rgba(62, 207, 142, 0.12);
 }
 .driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-title {
   color: #7ef0b8;
