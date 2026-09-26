@@ -387,6 +387,66 @@
   font-size: 0.9rem;
   color: hsl(var(--muted-foreground));
 }
+/* ===== Paso especial: Seguridad / Supabase ===== */
+.driver-popover.iustrack-tour.iustrack-tour-supabase {
+  background: linear-gradient(160deg, #0c1f16 0%, #0a2317 55%, #0d2a1c 100%);
+  color: #e6f8ef;
+  border: 1px solid #3ecf8e;
+  box-shadow: 0 20px 45px -15px hsl(150 70% 20% / 0.55), 0 0 0 4px #3ecf8e / 0.12;
+}
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-title {
+  color: #7ef0b8;
+}
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-description {
+  color: #cfeee0;
+}
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-description p { margin: 0 0 0.55rem; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-description p:last-child { margin-bottom: 0; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase .iustrack-tour-lead {
+  color: #e6f8ef;
+}
+.driver-popover.iustrack-tour.iustrack-tour-supabase .iustrack-tour-hint {
+  color: #a9e3c7;
+  background: #ffffff1a;
+  border: 1px solid #3ecf8e66;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.8rem;
+}
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-arrow-side-bottom { border-bottom-color: #0d2a1c; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-arrow-side-top { border-top-color: #0d2a1c; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-arrow-side-left { border-left-color: #0d2a1c; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase .driver-popover-arrow-side-right { border-right-color: #0d2a1c; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase button {
+  background: #123524;
+  color: #e6f8ef;
+  border-color: #2c5f43;
+}
+.driver-popover.iustrack-tour.iustrack-tour-supabase button.driver-popover-next-btn {
+  background: #3ecf8e;
+  color: #06210f;
+  font-weight: 600;
+}
+.driver-popover.iustrack-tour.iustrack-tour-supabase .iustrack-tour-progress { background: #123524; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase .iustrack-tour-progress > span { background: #3ecf8e; }
+.driver-popover.iustrack-tour.iustrack-tour-supabase .iustrack-tour-count { color: #a9e3c7; }
+.iustrack-tour-supabase-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+.iustrack-tour-supabase-logo {
+  width: 2.4rem;
+  height: 2.4rem;
+  flex-shrink: 0;
+}
+.iustrack-tour-supabase-brand {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #3ecf8e;
+}
 .iustrack-confetti {
   position: absolute;
   top: -12px;
