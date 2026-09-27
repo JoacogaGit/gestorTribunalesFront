@@ -647,11 +647,14 @@ export default function CausaFormDialog({
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          data-tour="form-causa"
           className="max-w-[min(1580px,97vw)] p-0 gap-0 bg-transparent border-0 shadow-none overflow-visible [&>button]:hidden"
         >
           <div className="flex items-start justify-center">
-          <div className="relative z-10 w-full max-w-3xl min-w-0 max-h-[92vh] overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
+          <div
+            data-tour="form-causa"
+            className="relative z-10 w-full max-w-3xl min-w-0 max-h-[92vh] overflow-y-auto bg-card border border-border rounded-lg shadow-lg"
+          >
+
 
           <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3">
             <DialogHeader className="flex-1 min-w-0">
