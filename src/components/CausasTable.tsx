@@ -91,6 +91,18 @@ const libertadBadge: Record<string, string> = {
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
+const DELITO_MAX_CARACTERES = 55;
+
+/** Corta textos largos (delitos) en un límite legible, sin cortar una palabra a la mitad. */
+function truncarTexto(texto: string | null | undefined, max: number): string {
+  const t = (texto ?? "").trim();
+  if (t.length <= max) return t;
+  const corte = t.slice(0, max);
+  const enPalabra = /\s/.test(t[max]);
+  const base = enPalabra ? corte : (corte.replace(/\s+\S*$/, "") || corte);
+  return `${base.trimEnd()}…`;
+}
+
 const estadosCausa: EstadoCausa[] = ["En trámite", "Delegada", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ"];
 
 interface ColDef {
@@ -349,18 +361,27 @@ export default function CausasTable({
           : <span className="line-clamp-2">{texto}</span>;
       },
     },
-    { key: "delito", label: "Delito", cellClass: "text-xs text-muted-foreground max-w-[250px] break-words whitespace-normal align-top", sortValue: (c) => c.delito, render: (c) => c.delito },
+    {
+      key: "delito", label: "Delito",
+      cellClass: "text-xs text-muted-foreground max-w-[250px] break-words whitespace-normal align-top",
+      sortValue: (c) => c.delito,
+      render: (c) => <span title={c.delito}>{truncarTexto(c.delito, DELITO_MAX_CARACTERES)}</span>,
+    },
     {
       key: "libertad", label: "Libertad",
-      cellClass: "max-w-[140px] align-top",
-      sortValue: (c) => c.imputados[0]?.estadoLibertad,
-      render: (c) => (
-        <div className="flex flex-wrap gap-1 max-h-[48px] overflow-hidden">
-          {c.imputados.map((imp, i) => (
-            <span key={i} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${libertadBadge[imp.estadoLibertad]}`}>{imp.estadoLibertad}</span>
-          ))}
-        </div>
-      ),
+      cellClass: "max-w-[180px] align-top",
+      sortValue: (c) => (c.imputados ?? [])[0]?.estadoLibertad,
+      render: (c) => {
+        const imputados = c.imputados ?? [];
+        if (imputados.length === 0) return <span className="text-muted-foreground/60">—</span>;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {imputados.map((imp, i) => (
+              <span key={i} title={imp.nombre || undefined} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${libertadBadge[imp.estadoLibertad] ?? "bg-muted text-muted-foreground"}`}>{imp.estadoLibertad}</span>
+            ))}
+          </div>
+        );
+      },
     },
     { key: "estado", label: "Estado", cellClass: "text-xs text-foreground max-w-[120px] break-words whitespace-normal align-top", sortValue: (c) => c.estadoCausa, render: (c) => c.estadoCausa },
     {
