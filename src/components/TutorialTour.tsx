@@ -413,7 +413,7 @@ function construirPasos(props: Props): Paso[] {
         `<p class="iustrack-tour-lead">Una causa puede tener varias personas imputadas, cada una con sus datos:</p>
          ${bullets([
            ["Situación", "libre, detenida, rebelde, con probation o condenada."],
-           ["Vencimientos", "prisión preventiva (se calcula sola desde la fecha de detención), pena y suspensión de juicio a prueba."],
+            ["Vencimientos", "prisión preventiva, pena y suspensión de juicio a prueba; cada fecha se carga cuando corresponde."],
            ["Prescripciones", "las fechas de prescripción con su descripción."],
          ])}`,
       side: "left",

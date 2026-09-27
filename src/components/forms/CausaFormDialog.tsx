@@ -711,7 +711,7 @@ export default function CausaFormDialog({
                     </div>
                   )}
                   {(mode === "crear" || causa.estado_causa === "recurso") && (
-                    <div className="space-y-1.5" data-tour-field="responsable">
+                    <div className="space-y-1.5">
                       <Label className="text-xs">Tipo de recurso *</Label>
                       <Select
                         value={causa.tipo_recurso ?? ""}
@@ -826,7 +826,7 @@ export default function CausaFormDialog({
                     Datos judiciales
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5" data-tour-field="responsable">
                       <Label className="text-xs">Firmante</Label>
                       <Input
                         value={causa.firmante ?? ""}
@@ -1150,11 +1150,11 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               onChange={(e) => onChange({ nombre_completo: e.target.value })}
             />
           </div>
-          <div className="space-y-1.5" data-tour-field="imputado-situacion">
+          <div className="space-y-1.5">
             <Label className="text-xs">Delito</Label>
             <Input value={sujeto.delito ?? ""} onChange={(e) => onChange({ delito: e.target.value })} />
           </div>
-          <div className="space-y-1.5" data-tour-field="imputado-defensor">
+          <div className="space-y-1.5" data-tour-field="imputado-situacion">
             <Label className="text-xs">Situación de libertad</Label>
             <Select
               value={sujeto.situacion_libertad}
@@ -1168,7 +1168,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5" data-tour-field="imputado-vencimientos">
+          <div className="space-y-1.5" data-tour-field="imputado-defensor">
             <Label className="text-xs">Defensor</Label>
             <Input value={sujeto.defensor ?? ""} onChange={(e) => onChange({ defensor: e.target.value })} />
           </div>
@@ -1181,7 +1181,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               />
             </div>
           )}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-tour-field="imputado-vencimientos">
             <Label className="text-xs">Fecha de detención</Label>
             <Input
               type="date"
