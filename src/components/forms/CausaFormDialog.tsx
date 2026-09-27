@@ -208,6 +208,25 @@ export default function CausaFormDialog({
     if (open) setVistaResumen(esEstudio && mode === "editar");
   }, [open, esEstudio, mode]);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
+  const [ultimaMod, setUltimaMod] = useState<{ nombre: string | null; fecha: string | null } | null>(null);
+  useEffect(() => {
+    if (!open || mode !== "editar" || !causaId) { setUltimaMod(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("causas").select("modificado_por,updated_at").eq("id", causaId).maybeSingle();
+      if (cancelled || !data) return;
+      let nombre: string | null = null;
+      if (data.modificado_por) {
+        const { data: p } = await supabase.from("perfiles").select("nombre_completo,email").eq("id", data.modificado_por).maybeSingle();
+        nombre = p?.nombre_completo || p?.email || null;
+      }
+      if (!cancelled) setUltimaMod({ nombre, fecha: data.updated_at });
+    })();
+    return () => { cancelled = true; };
+  }, [open, mode, causaId]);
+  const ultimaModTexto = ultimaMod?.fecha
+    ? `Última modificación${ultimaMod.nombre ? ` por ${ultimaMod.nombre}` : ""} · ${new Date(ultimaMod.fecha).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short" })}`
+    : null;
   // Clave de borrador local (por modo + causa)
   const duplicando = mode === "crear" && !!duplicarDeId;
   const draftKey = `causa-form:${mode}:${causaId ?? (duplicarDeId ? `dup-${duplicarDeId}` : "new")}`;
