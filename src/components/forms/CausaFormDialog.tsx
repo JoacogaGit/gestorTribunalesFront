@@ -614,7 +614,7 @@ export default function CausaFormDialog({
               <section data-tour="form-datos" className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Datos generales</h3>
                 {mode === "crear" && !esEstudio && (
-                  <label className="flex items-center justify-center gap-2 rounded-md border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-sm font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                  <label data-tour-field="caratula-pdf" className="flex items-center justify-center gap-2 rounded-md border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-sm font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
                     {cargandoCaratula ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                     {cargandoCaratula ? "Leyendo carátula…" : "Cargar carátula Lex100 (PDF)"}
                     <input
@@ -742,7 +742,7 @@ export default function CausaFormDialog({
                     </Select>
                   </div>
                   )}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="marca-flagrancia">
                     <Label className="text-xs">Flagrancia</Label>
                     <div className="flex items-center gap-2 h-10">
                       <Switch
@@ -754,7 +754,7 @@ export default function CausaFormDialog({
                       </span>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="marca-delegada">
                     <Label className="text-xs">Delegada</Label>
                     <div className="flex items-center gap-2 h-10">
                       <Switch
@@ -766,7 +766,7 @@ export default function CausaFormDialog({
                       </span>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="marca-196bis">
                     <Label className="text-xs">196bis / NN</Label>
                     <div className="flex items-center gap-2 h-10">
                       <Switch
@@ -778,7 +778,7 @@ export default function CausaFormDialog({
                       </span>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="fecha-ingreso">
                     <Label className="text-xs">Fecha de ingreso</Label>
                     <Input
                       type="date"
@@ -821,7 +821,7 @@ export default function CausaFormDialog({
 
               {/* Datos de la oficina judicial */}
               {!esEstudio && (
-                <section className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-3">
+                <section data-tour-field="datos-judiciales" className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-3">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Datos judiciales
                   </h3>
@@ -1013,7 +1013,7 @@ export default function CausaFormDialog({
               )}
 
               {/* Acciones */}
-              <div className="flex items-center justify-between pt-2 border-t border-border/60">
+              <div data-tour-field="acciones" className="flex items-center justify-between pt-2 border-t border-border/60">
                 {mode === "editar" ? (
                   <Button
                     type="button"
