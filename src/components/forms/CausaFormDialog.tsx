@@ -256,23 +256,26 @@ export default function CausaFormDialog({
   };
 
   const [ultimaMod, setUltimaMod] = useState<{ autor: string | null; fecha: string | null } | null>(null);
+  const cargarUltimaMod = useCallback(async (cid: string) => {
+    const { data } = await supabase
+      .from("causas")
+      .select("modificado_por,creado_por,updated_at")
+      .eq("id", cid)
+      .maybeSingle();
+    if (!data) return;
+    // Si nadie registró la última modificación, usamos quien creó la causa.
+    // Cuando tampoco hay autor conocido mostramos solo la fecha: nunca un id.
+    const autor = await resolverNombreUsuario(data.modificado_por ?? data.creado_por);
+    setUltimaMod({ autor, fecha: data.updated_at });
+  }, []);
   useEffect(() => {
     if (!open || mode !== "editar" || !causaId) { setUltimaMod(null); return; }
     let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("causas")
-        .select("modificado_por,creado_por,updated_at")
-        .eq("id", causaId)
-        .maybeSingle();
-      if (cancelled || !data) return;
-      // Si nadie registró la última modificación, usamos quien creó la causa.
-      // Cuando tampoco hay autor conocido mostramos solo la fecha: nunca un id.
-      const autor = await resolverNombreUsuario(data.modificado_por ?? data.creado_por);
-      if (!cancelled) setUltimaMod({ autor, fecha: data.updated_at });
-    })();
+    cargarUltimaMod(causaId).then(() => {
+      if (cancelled) setUltimaMod(null);
+    });
     return () => { cancelled = true; };
-  }, [open, mode, causaId]);
+  }, [open, mode, causaId, cargarUltimaMod]);
   const ultimaModTexto = ultimaMod?.fecha
     ? `Última modificación${ultimaMod.autor ? ` por ${ultimaMod.autor}` : ""}, ${formatoCorta(ultimaMod.fecha)}`
     : null;
