@@ -613,7 +613,17 @@ export default function CausaFormDialog({
                 Guardar cambios
               </Button>
             )}
+            <button
+              type="button"
+              onClick={() => handleOpenChange(false)}
+              title="Cerrar"
+              aria-label="Cerrar"
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
+
           <div className="px-6 pb-6 pt-2">
 
           {loading ? (
