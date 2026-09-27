@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.registrar_modificacion_sujeto() FROM PUBLIC, anon, authenticated;
