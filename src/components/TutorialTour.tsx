@@ -413,7 +413,7 @@ function construirPasos(props: Props): Paso[] {
     },
     {
       view: vistaLista,
-      target: '[data-tour="columnas"]',
+      target: '[data-tour-column="caratula"]',
       efecto: "pulso",
       titulo: "Filtrá por cada columna",
       texto:
@@ -486,7 +486,7 @@ function construirPasos(props: Props): Paso[] {
         { target: '[data-tour-field="imputado-nombre"]', titulo: "Persona", texto: "Cada imputado se carga por separado.", lado: "left", ejemplo: "PÉREZ, JUAN" },
         { target: '[data-tour-field="imputado-situacion"]', titulo: "Situación de libertad", texto: "Libre, detenido, rebelde… Detenidos y rebeldes generan su propia lista.", lado: "right", ejemplo: "Detenido" },
         { target: '[data-tour-field="imputado-defensor"]', titulo: "Defensor", texto: "El letrado de esta persona.", lado: "left", ejemplo: "Dra. Ana López" },
-        { target: '[data-tour-field="imputado-vencimientos"]', titulo: "Vencimientos", texto: "Prisión preventiva y pena: viajan solos al calendario.", lado: "right", ejemplo: "15/12/2026" },
+        { target: '[data-tour-field="imputado-vencimientos"]', titulo: "Vencimientos", texto: "Prisión preventiva y pena: viajan solos al calendario.", lado: "right", ejemplo: "2026-12-15" },
       ],
     },
     {
