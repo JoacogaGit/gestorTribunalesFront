@@ -30,6 +30,8 @@ interface Paso {
   side?: "top" | "bottom" | "left" | "right";
   /** Tinta el popover con la estética verde de Supabase. */
   supabase?: boolean;
+  /** Ayudas externas conectadas a campos concretos del formulario. */
+  anotaciones?: { target: string; titulo: string; texto: string; lado?: "left" | "right" }[];
 }
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -106,6 +108,79 @@ function inputPorEtiqueta(scope: Element, etiqueta: string): HTMLInputElement | 
   const labels = Array.from(scope.querySelectorAll("label"));
   const lab = labels.find((l) => (l.textContent ?? "").toLowerCase().includes(etiqueta.toLowerCase()));
   return (lab?.parentElement?.querySelector("input") as HTMLInputElement) ?? null;
+}
+
+function limpiarAnotacionesFormulario() {
+  document.getElementById("iustrack-tour-field-guides")?.remove();
+}
+
+function mostrarAnotacionesFormulario(anotaciones: NonNullable<Paso["anotaciones"]>) {
+  limpiarAnotacionesFormulario();
+  if (window.innerWidth < 1100) return;
+
+  const layer = document.createElement("div");
+  layer.id = "iustrack-tour-field-guides";
+  layer.className = "iustrack-tour-field-guides";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("aria-hidden", "true");
+  layer.appendChild(svg);
+
+  const cards = anotaciones.flatMap((item) => {
+    const target = document.querySelector<HTMLElement>(item.target);
+    if (!target) return [];
+    const card = document.createElement("div");
+    card.className = `iustrack-tour-field-card iustrack-tour-field-card-${item.lado ?? "right"}`;
+    card.innerHTML = `<strong>${item.titulo}</strong><span>${item.texto}</span>`;
+    layer.appendChild(card);
+    return [{ item, target, card }];
+  });
+  if (!cards.length) return;
+  document.body.appendChild(layer);
+
+  const posicionar = () => {
+    svg.replaceChildren();
+    const dialog = document.querySelector<HTMLElement>('[data-tour="form-causa"]');
+    if (!dialog) return;
+    const dialogRect = dialog.getBoundingClientRect();
+    const bySide = { left: cards.filter((c) => (c.item.lado ?? "right") === "left"), right: cards.filter((c) => (c.item.lado ?? "right") === "right") };
+    (["left", "right"] as const).forEach((side) => {
+      bySide[side].forEach((entry, index) => {
+        const targetRect = entry.target.getBoundingClientRect();
+        const cardWidth = Math.min(220, Math.max(170, (window.innerWidth - dialogRect.width) / 2 - 36));
+        const top = Math.max(18, Math.min(window.innerHeight - 112, targetRect.top + index * 18));
+        const left = side === "left"
+          ? Math.max(14, dialogRect.left - cardWidth - 24)
+          : Math.min(window.innerWidth - cardWidth - 14, dialogRect.right + 24);
+        Object.assign(entry.card.style, { width: `${cardWidth}px`, left: `${left}px`, top: `${top}px` });
+
+        const cardRect = entry.card.getBoundingClientRect();
+        const startX = side === "left" ? cardRect.right : cardRect.left;
+        const startY = cardRect.top + cardRect.height / 2;
+        const endX = side === "left" ? targetRect.left - 5 : targetRect.right + 5;
+        const endY = targetRect.top + Math.min(targetRect.height / 2, 24);
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        const bend = side === "left" ? startX + 14 : startX - 14;
+        line.setAttribute("d", `M ${startX} ${startY} L ${bend} ${startY} L ${endX} ${endY}`);
+        line.setAttribute("marker-end", "url(#iustrack-tour-arrowhead)");
+        svg.appendChild(line);
+      });
+    });
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defs.innerHTML = '<marker id="iustrack-tour-arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker>';
+    svg.prepend(defs);
+  };
+  requestAnimationFrame(posicionar);
+  window.addEventListener("resize", posicionar, { signal: guideAbort.signal });
+  document.querySelector('[data-tour="form-causa"]')?.addEventListener("scroll", posicionar, { signal: guideAbort.signal });
+}
+
+let guideAbort = new AbortController();
+
+function renovarAnotacionesFormulario(anotaciones?: Paso["anotaciones"]) {
+  guideAbort.abort();
+  guideAbort = new AbortController();
+  limpiarAnotacionesFormulario();
+  if (anotaciones?.length) mostrarAnotacionesFormulario(anotaciones);
 }
 
 /** Completa en vivo los primeros campos de la causa, como ejemplo. */
@@ -290,22 +365,14 @@ function construirPasos(props: Props): Paso[] {
     {
       target: '[data-tour="form-datos"]',
       titulo: "Los datos de la causa",
-      texto: esEstudio
-        ? bullets([
-            ["Expediente y carátula", "identifican la causa."],
-            ["Fuero", "penal, civil, laboral, etc."],
-            ["Rol del estudio", "defensa, querella o denunciante."],
-            ["Juez, fiscal y fiscalía", "quiénes intervienen."],
-            ["Estado procesal", "en qué etapa está."],
-          ])
-        : bullets([
-            ["Expediente y carátula", "identifican la causa."],
-            ["Estado", "trámite, recurso, delegada o terminada."],
-            ["Subestado", "el detalle del trámite (para indagar, para fijar juicio…)."],
-            ["Tipo de recurso", "casación, queja, apelación y demás."],
-            ["Despachante", "quién tiene la causa a cargo."],
-          ]),
+      texto: "Mirá cada campo junto con su explicación. Las tarjetas laterales no tapan la ficha.",
       side: "left",
+      anotaciones: [
+        { target: '[data-tour-field="expediente"]', titulo: "Expediente", texto: "El número único que identifica la causa.", lado: "left" },
+        { target: '[data-tour-field="caratula"]', titulo: "Carátula", texto: "El nombre con el que vas a reconocerla.", lado: "right" },
+        { target: '[data-tour-field="estado"]', titulo: "Estado", texto: "Define en qué lista aparece la causa.", lado: "right" },
+        { target: '[data-tour-field="responsable"]', titulo: esEstudio ? "Empleado" : "Despachante", texto: "La persona responsable de impulsarla.", lado: "left" },
+      ],
     },
     {
       target: '[data-tour="form-causa"]',
@@ -323,13 +390,14 @@ function construirPasos(props: Props): Paso[] {
       target: '[data-tour="form-imputados"]',
       titulo: "Las personas de la causa",
       texto:
-        `<p class="iustrack-tour-lead">Una causa puede tener varias personas imputadas, cada una con sus datos:</p>
-         ${bullets([
-           ["Situación", "libre, detenida, rebelde, con probation o condenada."],
-           ["Vencimientos", "prisión preventiva (se calcula sola desde la fecha de detención), pena y suspensión de juicio a prueba."],
-           ["Prescripciones", "las fechas de prescripción con su descripción."],
-         ])}`,
+        `<p class="iustrack-tour-lead">Cada persona tiene su propio bloque. Las tarjetas señalan sus campos sin ocultarlos.</p>`,
       side: "left",
+      anotaciones: [
+        { target: '[data-tour-field="imputado-nombre"]', titulo: "Persona", texto: "Cada imputado se carga por separado.", lado: "left" },
+        { target: '[data-tour-field="imputado-situacion"]', titulo: "Situación", texto: "Libre, detenida, rebelde o condenada.", lado: "right" },
+        { target: '[data-tour-field="imputado-defensor"]', titulo: "Defensor", texto: "El letrado correspondiente a esta persona.", lado: "left" },
+        { target: '[data-tour-field="imputado-vencimientos"]', titulo: "Vencimientos", texto: "Fechas importantes de la situación de la persona.", lado: "right" },
+      ],
     },
   );
 
@@ -434,7 +502,6 @@ function construirPasos(props: Props): Paso[] {
 
   // 14b — Seguridad / Supabase (anteúltimo paso, estética especial)
   pasos.push({
-    target: '[data-tour="ayuda"]',
     supabase: true,
     titulo: "¿Y dónde vive todo esto?",
     texto:
@@ -541,6 +608,8 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
   const terminar = useCallback(
     (celebrar: boolean) => {
+      renovarAnotacionesFormulario();
+      document.body.classList.remove("iustrack-tour-supabase-active");
       driverRef.current?.destroy();
       driverRef.current = null;
       cerrarFormulario();
@@ -566,7 +635,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     await prepararPaso(0);
 
     const d = driver({
-      allowClose: false,
+      allowClose: true,
       animate: true,
       overlayColor: "hsl(222 47% 6% / 0.82)",
       stagePadding: 6,
@@ -575,10 +644,12 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       nextBtnText: "Siguiente →",
       prevBtnText: "Atrás",
       doneBtnText: "Terminar",
-      showButtons: ["next", "previous"],
+      showButtons: ["next", "previous", "close"],
+      onCloseClick: () => terminar(false),
       steps: pasos.map((p, i) => ({
         element: p.target,
         popover: {
+          popoverClass: `iustrack-tour${p.supabase ? " iustrack-tour-supabase" : ""}${p.anotaciones ? " iustrack-tour-fields" : ""}`,
           title: p.titulo,
           description: `${p.texto}<div class="iustrack-tour-progress"><span style="width:${
             ((i + 2) / TOTAL) * 100
@@ -590,9 +661,8 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       onHighlighted: () => {
         const paso = pasosRef.current[idxRef.current];
         if (paso?.demo) void paso.demo();
-        document
-          .querySelector(".driver-popover")
-          ?.classList.toggle("iustrack-tour-supabase", !!paso?.supabase);
+        document.body.classList.toggle("iustrack-tour-supabase-active", !!paso?.supabase);
+        renovarAnotacionesFormulario(paso?.anotaciones);
       },
       onNextClick: async () => {
         const next = idxRef.current + 1;
@@ -608,7 +678,11 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
         idxRef.current = prev;
         d.movePrevious();
       },
-      onDestroyed: () => { driverRef.current = null; },
+      onDestroyed: () => {
+        renovarAnotacionesFormulario();
+        document.body.classList.remove("iustrack-tour-supabase-active");
+        driverRef.current = null;
+      },
     });
 
     driverRef.current = d;
@@ -619,18 +693,6 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
 
   return (
     <>
-      {/* Botón "Salir del tutorial" siempre visible durante el recorrido */}
-      {fase === "recorrido" && (
-        <button
-          type="button"
-          onClick={() => terminar(false)}
-          className="fixed top-4 right-4 z-[10000] flex items-center gap-2 rounded-full bg-background/95 px-4 py-2 text-sm font-medium text-foreground shadow-elevated border border-border hover:bg-muted transition-colors animate-fade-in"
-        >
-          <X className="h-4 w-4 text-muted-foreground" />
-          Salir del tutorial
-        </button>
-      )}
-
       {/* Paso 1 — Bienvenida */}
       <Dialog open={fase === "bienvenida"} onOpenChange={(o) => { if (!o && fase === "bienvenida") terminar(false); }}>
         <DialogContent className="sm:max-w-2xl text-center animate-scale-in">

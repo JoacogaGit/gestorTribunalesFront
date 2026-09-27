@@ -627,7 +627,7 @@ export default function CausaFormDialog({
                   </label>
                 )}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="expediente">
                     <Label className="text-xs">N° Expediente *</Label>
                     <Input
                       value={causa.expediente_nro}
@@ -645,7 +645,7 @@ export default function CausaFormDialog({
                     />
                   </div>
                   {!esEstudio && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="responsable">
                     <Label className="text-xs">Despachante</Label>
                     <Input
                       value={causa.despachante ?? ""}
@@ -656,14 +656,14 @@ export default function CausaFormDialog({
                   </div>
                   )}
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="caratula">
                     <Label className="text-xs">Carátula</Label>
                     <Input
                       value={causa.caratula ?? ""}
                       onChange={(e) => updateCausa({ caratula: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5" data-tour-field="estado">
                     <Label className="text-xs">Estado *</Label>
                     <Select
                       value={causa.estado_causa}
@@ -833,7 +833,7 @@ export default function CausaFormDialog({
                         onChange={(e) => updateCausa({ firmante: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5" data-tour-field="responsable">
                       <Label className="text-xs">Modo de inicio</Label>
                       <Select
                         value={causa.modo_inicio ?? "__none__"}
@@ -1143,7 +1143,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
     <div className="rounded-md border border-primary/25 bg-primary/[0.055] p-3 space-y-3 shadow-sm">
       <div className="flex items-start gap-2">
         <div className="flex-1 grid grid-cols-2 gap-3">
-          <div className="space-y-1.5 col-span-2">
+          <div className="space-y-1.5 col-span-2" data-tour-field="imputado-nombre">
             <Label className="text-xs">Nombre completo *</Label>
             <Input
               value={sujeto.nombre_completo}
@@ -1154,7 +1154,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
             <Label className="text-xs">Delito</Label>
             <Input value={sujeto.delito ?? ""} onChange={(e) => onChange({ delito: e.target.value })} />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-tour-field="imputado-situacion">
             <Label className="text-xs">Situación de libertad</Label>
             <Select
               value={sujeto.situacion_libertad}
@@ -1168,7 +1168,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-tour-field="imputado-defensor">
             <Label className="text-xs">Defensor</Label>
             <Input value={sujeto.defensor ?? ""} onChange={(e) => onChange({ defensor: e.target.value })} />
           </div>
@@ -1181,7 +1181,7 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               />
             </div>
           )}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-tour-field="imputado-vencimientos">
             <Label className="text-xs">Fecha de detención</Label>
             <Input
               type="date"
