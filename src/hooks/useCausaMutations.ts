@@ -74,11 +74,14 @@ export function useCausaMutations() {
     if (!vocalia) return { ok: false, error: "No hay espacio seleccionado." };
     setSaving(true);
     try {
+      const { data: ses } = await supabase.auth.getSession();
+      const uid = ses.session?.user.id ?? null;
       const { data: causaData, error: causaErr } = await supabase
         .from("causas")
-        .insert({ ...causa, vocalia_id: vocalia.id })
+        .insert({ ...causa, vocalia_id: vocalia.id, creado_por: uid, modificado_por: uid } as never)
         .select("id")
         .single();
+
       if (causaErr || !causaData) {
         return { ok: false, error: causaErr?.message || "No se pudo crear la causa." };
       }
