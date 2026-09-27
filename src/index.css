@@ -562,6 +562,75 @@ body.iustrack-tour-supabase-active .driver-overlay {
 @keyframes tour-move { 0%,15% { left: 8%; top: 52%; } 55%,100% { left: 58%; top: 52%; } }
 @keyframes tour-move-color { 0%,40% { background: hsl(var(--primary) / 0.15); } 60%,100% { background: hsl(var(--accent) / 0.25); } }
 
+/* Demostraciones puntuales: listas, filtros y movimiento de categorías */
+.iustrack-tour-list-focus {
+  position: relative;
+  z-index: 10002;
+  color: hsl(var(--sidebar-accent-foreground)) !important;
+  background: hsl(var(--sidebar-accent)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--sidebar-primary)), 0 0 18px hsl(var(--sidebar-primary) / 0.45);
+}
+.iustrack-tour-filter-focus,
+.iustrack-tour-drag-target {
+  position: relative;
+  z-index: 10002;
+  background: hsl(var(--accent) / 0.16) !important;
+  box-shadow: inset 0 -2px 0 hsl(var(--accent)), 0 0 16px hsl(var(--accent) / 0.32);
+}
+.iustrack-tour-drag-demo {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10004;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transform: translate(-100px, -100px);
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(.2,.8,.2,1);
+}
+.iustrack-tour-drag-label {
+  transform: translate(-50%, -50%);
+  padding: 0.35rem 0.65rem;
+  border: 1px solid hsl(var(--accent));
+  border-radius: 0.45rem;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: var(--shadow-elevated);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.iustrack-tour-cursor {
+  transform: translate(-0.7rem, 0.6rem) rotate(-12deg);
+  color: hsl(var(--foreground));
+  font-size: 1.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px hsl(var(--background) / 0.8));
+}
+.iustrack-tour-drag-demo.is-grabbing .iustrack-tour-cursor { transform: translate(-0.7rem, 0.6rem) rotate(-12deg) scale(0.88); }
+.iustrack-tour-example-value {
+  display: inline-flex;
+  margin-top: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.35rem;
+  background: hsl(var(--accent) / 0.14);
+  color: hsl(var(--foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* El cartel del calendario queda arriba y deja libre la agenda. */
+.driver-popover.iustrack-tour.iustrack-tour-top {
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+}
+.driver-popover.iustrack-tour.iustrack-tour-top .driver-popover-arrow { display: none; }
+
 .driver-popover.iustrack-tour { animation: tour-pop 0.35s cubic-bezier(.2,.8,.2,1); }
 .driver-popover.iustrack-tour .driver-popover-title { animation: tour-rise 0.4s ease-out both; }
 .driver-popover.iustrack-tour .driver-popover-description > *,
@@ -623,4 +692,5 @@ body[data-tour-fx="marco"] [data-tour="form-causa"].driver-active-element { outl
 
 @media (prefers-reduced-motion: reduce) {
   .driver-popover.iustrack-tour, .driver-popover.iustrack-tour *, .driver-active-element, .iustrack-tour-move-chip, .iustrack-tour-field-card { animation: none !important; }
+  .iustrack-tour-drag-demo { transition-duration: 0ms !important; }
 }
