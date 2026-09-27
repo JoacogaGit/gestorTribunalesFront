@@ -4,4 +4,4 @@
 - [x] Completar datos ficticios durante la explicación de la ficha
 - [x] Reubicar el recuadro del calendario y descubrir Migración
 - [x] Abrir Gestión de oficina y destacar su código único
-- [ ] Validar compilación y comportamiento visible
+- [x] Validar compilación y comportamiento visible

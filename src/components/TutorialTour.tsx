@@ -60,6 +60,11 @@ function setInputValue(el: HTMLInputElement, value: string) {
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function setDemoInputValue(el: HTMLInputElement, value: string) {
+  if (!el.dataset.tourOriginalValue) el.dataset.tourOriginalValue = el.value || "__EMPTY__";
+  setInputValue(el, value);
+}
+
 async function demoBuscador() {
   const el = document.querySelector<HTMLInputElement>('[data-tour="buscador"]');
   if (!el) return;
@@ -86,6 +91,11 @@ function limpiarDemos() {
   });
   document.getElementById("iustrack-tour-drag-demo")?.remove();
   document.querySelectorAll(".iustrack-tour-example-value").forEach((el) => el.remove());
+  document.querySelectorAll<HTMLInputElement>("input[data-tour-original-value]").forEach((el) => {
+    const original = el.dataset.tourOriginalValue;
+    setInputValue(el, original === "__EMPTY__" ? "" : (original ?? ""));
+    delete el.dataset.tourOriginalValue;
+  });
 }
 
 /** Recorre ágilmente los nombres de las listas y termina en Crear nueva lista. */
@@ -116,10 +126,10 @@ async function demoFiltroCaratula() {
   if (!header || !input) return;
   header.classList.add("iustrack-tour-filter-focus");
   await esperar(350);
-  for (const [i, letra] of Array.from("Gómez").entries()) {
+  for (const [i] of Array.from("Gómez").entries()) {
     if (signal.aborted) return;
-    setInputValue(input, `Gómez`.slice(0, i + 1));
-    await esperar(letra ? 150 : 150);
+    setDemoInputValue(input, `Gómez`.slice(0, i + 1));
+    await esperar(150);
   }
 }
 
@@ -204,7 +214,7 @@ function cargarEjemplo(item: CampoGuiado, target: HTMLElement) {
   const input = target.querySelector<HTMLInputElement>('input:not([type="file"]):not([type="hidden"])');
   const textarea = target.querySelector<HTMLTextAreaElement>("textarea");
   if (input) {
-    setInputValue(input, item.ejemplo);
+    setDemoInputValue(input, item.ejemplo);
     return;
   }
   if (textarea) {
