@@ -596,7 +596,8 @@ export default function CausaFormDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent data-tour="form-causa" className="max-w-3xl max-h-[92vh] overflow-y-auto bg-card border-border p-0">
+        <DialogContent data-tour="form-causa" className="max-w-3xl p-0 gap-0 bg-transparent border-0 shadow-none overflow-visible">
+          <div className="max-h-[92vh] overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
           <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3">
             <DialogHeader className="flex-1 min-w-0">
               <DialogTitle className="font-display text-lg truncate">
@@ -1019,10 +1020,10 @@ export default function CausaFormDialog({
 
 
               {mode === "editar" && causaId && (
-                <>
+                <div className="xl:hidden space-y-4">
                   <Separator />
                   <AnotacionesSection causaId={causaId} />
-                </>
+                </div>
               )}
 
               {errorMsg && (
@@ -1056,7 +1057,16 @@ export default function CausaFormDialog({
               </div>
             </div>
           )}
+          {ultimaModTexto && !loading && (
+            <p className="mt-3 text-center text-[10px] text-muted-foreground/70">{ultimaModTexto}</p>
+          )}
           </div>
+          </div>
+          {mode === "editar" && causaId && (
+            <aside className="hidden xl:block absolute left-full top-8 -z-10 -ml-3 w-[360px] max-h-[calc(92vh-4rem)] overflow-y-auto rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-7 pr-4 py-4">
+              <AnotacionesSection causaId={causaId} />
+            </aside>
+          )}
         </DialogContent>
       </Dialog>
 
