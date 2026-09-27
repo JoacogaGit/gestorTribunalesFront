@@ -1062,11 +1062,38 @@ export default function CausaFormDialog({
           )}
           </div>
           </div>
-          {mode === "editar" && causaId && (
-            <aside className="hidden xl:block absolute left-full top-8 -z-10 -ml-3 w-[360px] max-h-[calc(92vh-4rem)] overflow-y-auto rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-7 pr-4 py-4">
-              <AnotacionesSection causaId={causaId} />
+          {mode === "editar" && causaId && !panelAnotaciones && (
+            <button
+              type="button"
+              onClick={mostrarPanel}
+              title="Mostrar anotaciones"
+              className="hidden xl:flex shrink-0 self-start mt-16 items-center gap-1 rounded-r-lg border border-l-0 border-border bg-card px-2 py-3 text-[11px] font-medium text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <PanelRightOpen className="h-3.5 w-3.5" />
+              <span className="[writing-mode:vertical-rl] tracking-wide">Anotaciones</span>
+            </button>
+          )}
+
+          {mode === "editar" && causaId && panelAnotaciones && (
+            <aside className="relative -z-10 hidden xl:flex h-[92vh] max-h-[92vh] w-[38vw] min-w-[380px] max-w-[760px] shrink-0 -ml-4 flex-col rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-8 pr-4 py-4">
+              <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3">
+                <h2 className="text-sm font-semibold text-foreground">Anotaciones de la causa</h2>
+                <button
+                  type="button"
+                  onClick={ocultarPanel}
+                  title="Ocultar panel de anotaciones"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <PanelRightClose className="h-3.5 w-3.5" /> Ocultar
+                </button>
+              </div>
+              <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1">
+                <AnotacionesSection causaId={causaId} variante="panel" />
+              </div>
             </aside>
           )}
+          </div>
+
         </DialogContent>
       </Dialog>
 
