@@ -1135,7 +1135,7 @@ export default function CausaFormDialog({
               type="button"
               onClick={mostrarPanel}
               title="Mostrar anotaciones"
-              className="hidden xl:flex shrink-0 self-start mt-16 items-center gap-1 rounded-r-lg border border-l-0 border-border bg-card px-2 py-3 text-[11px] font-medium text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+              className="relative z-30 hidden xl:flex shrink-0 self-start mt-16 pointer-events-auto items-center gap-1 rounded-r-lg border border-l-0 border-border bg-card px-2 py-3 text-[11px] font-medium text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
             >
               <PanelRightOpen className="h-3.5 w-3.5" />
               <span className="[writing-mode:vertical-rl] tracking-wide">Anotaciones</span>
@@ -1143,7 +1143,7 @@ export default function CausaFormDialog({
           )}
 
           {mode === "editar" && causaId && panelAnotaciones && (
-            <aside className="relative -z-10 hidden xl:flex h-[92vh] max-h-[92vh] w-[38vw] min-w-[380px] max-w-[760px] shrink-0 -ml-4 flex-col rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-8 pr-4 py-4">
+            <aside className="relative z-30 isolate hidden xl:flex h-[92vh] max-h-[92vh] w-[38vw] min-w-[380px] max-w-[760px] shrink-0 -ml-4 pointer-events-auto flex-col rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-8 pr-4 py-4">
               <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3">
                 <h2 className="text-sm font-semibold text-foreground">Anotaciones de la causa</h2>
                 <button

@@ -177,7 +177,7 @@ export default function AnotacionesSection({ causaId, variante = "form" }: Props
   const subtitulo = enPanel ? "text-xs" : "text-[11px]";
 
   return (
-    <section className={cn(enPanel ? "space-y-4" : "space-y-3")}>
+    <section className={cn(enPanel ? "relative z-10 pointer-events-auto space-y-4" : "space-y-3")}>
       <div className={cn("flex items-center", enPanel ? "justify-end" : "justify-between")}>
         {!enPanel && (
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
