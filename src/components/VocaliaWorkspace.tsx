@@ -86,7 +86,9 @@ interface RemoteListSectionProps {
 }
 
 function RemoteListSection({ loading, error, isEmpty, emptyTitle, emptyMessage, onRetry, onCreateCausa, children }: RemoteListSectionProps) {
-  if (loading) {
+  // Skeleton solo en la carga inicial: un refetch no debe desmontar la lista
+  // (perdería búsqueda, filtros y posición de scroll).
+  if (loading && isEmpty) {
     return (
       <div className="space-y-3">
         <Skeleton className="h-8 w-64" />

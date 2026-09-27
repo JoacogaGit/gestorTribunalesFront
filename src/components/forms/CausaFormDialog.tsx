@@ -1434,10 +1434,10 @@ function ResumenEstudio({
       )}
 
       {causaId && (
-        <>
+        <div className="xl:hidden space-y-4">
           <Separator />
           <AnotacionesSection causaId={causaId} />
-        </>
+        </div>
       )}
 
       <div className="flex justify-end gap-2 pt-1">
