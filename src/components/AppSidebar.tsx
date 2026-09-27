@@ -152,6 +152,7 @@ export default function AppSidebar({
         key={item.id}
         onClick={() => onNavigate(item.id)}
         data-tour={`nav-${item.id}`}
+        data-tour-list-item="predeterminada"
         className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
           isActive
             ? metricasActivas ? "bg-metrics-accent text-metrics-foreground shadow-soft" : "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"

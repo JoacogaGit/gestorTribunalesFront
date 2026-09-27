@@ -189,7 +189,7 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
         </div>
 
         {tribunal?.codigo_acceso && (
-          <div className="mt-4 rounded-md bg-muted/40 border border-border p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div data-tour="codigo-oficina" className="mt-4 rounded-md bg-muted/40 border border-border p-4 flex items-center justify-between gap-3 flex-wrap">
             <div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
                 Compartí este código con quien quieras invitar

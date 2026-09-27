@@ -1,6 +1,7 @@
-- [x] Igualar filtros y columnas de Detenidos con Trámite
-- [x] Permitir despachante largo
-- [x] Agregar nota de vencimiento de pena y mostrarla debajo de la fecha
-- [x] Estabilizar altura y scroll del dashboard en desktop y móvil
-- [x] Mostrar todos los campos al crear y diferenciar el bloque de imputado
-- [x] Validar tipos, pruebas y vista
+- [x] Recorrer las listas predeterminadas una por una y terminar en Crear lista
+- [x] Agregar demostración de filtro por carátula
+- [x] Mostrar el movimiento reversible de una categoría
+- [x] Completar datos ficticios durante la explicación de la ficha
+- [x] Reubicar el recuadro del calendario y descubrir Migración
+- [x] Abrir Gestión de oficina y destacar su código único
+- [ ] Validar compilación y comportamiento visible

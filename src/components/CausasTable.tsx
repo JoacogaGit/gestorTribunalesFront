@@ -72,6 +72,7 @@ function SortableHead({
   return (
     <TableHead
       ref={setNodeRef}
+      data-tour-column={id}
       style={style}
       className={className}
       onClick={onClick}
@@ -1031,7 +1032,7 @@ export default function CausasTable({
 
           <table className={`w-full caption-bottom text-sm ${zoomTableClass(zoom)} ${compact ? "[&_td]:!py-1.5 [&_td]:!text-xs [&_th]:!h-7 [&_th]:!py-1 [&_th]:!text-[10px]" : ""}`}>
             <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md [&_tr]:border-b border-border/70">
-              <TableRow className="bg-transparent hover:bg-transparent">
+              <TableRow data-tour="column-headers" className="bg-transparent hover:bg-transparent">
                 <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60 w-10 text-right pr-2">#</TableHead>
                 <DndContext
                   sensors={sensors}

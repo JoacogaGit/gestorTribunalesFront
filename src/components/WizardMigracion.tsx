@@ -1137,7 +1137,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   // PASO 1 — Subida
   return (
     <div className="px-4 pt-8 pb-6">
-      <div className="w-full max-w-2xl mx-auto">
+      <div data-tour="migracion-panel" className="w-full max-w-2xl mx-auto">
         {/* Encabezado */}
         <div className="text-center mb-4">
           <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 mb-4 shadow-[var(--shadow-soft)]">
