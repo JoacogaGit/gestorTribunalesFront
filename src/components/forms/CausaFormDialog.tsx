@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -604,6 +604,7 @@ export default function CausaFormDialog({
     fireVocaliaResync();
     clearDraft(draftKey);
     onMutated?.();
+    if (causaId) void cargarUltimaMod(causaId);
     onOpenChange(false);
 
   };
