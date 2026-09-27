@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ExternalLink, FileText, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Loader2, PanelRightClose, PanelRightOpen, Plus, Trash2, X } from "lucide-react";
 import { parseCaratulaLex100, precargarPdfjs } from "@/lib/parseCaratulaLex100";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,19 @@ import {
 import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
+import { resolverNombreUsuario } from "@/lib/nombresUsuarios";
+import { useAuth } from "@/context/AuthContext";
+
+/** "25/09 14:30" en hora de Argentina. */
+function formatoCorta(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const opts: Intl.DateTimeFormatOptions = { timeZone: "America/Argentina/Buenos_Aires" };
+  const fecha = d.toLocaleDateString("es-AR", { ...opts, day: "2-digit", month: "2-digit" });
+  const hora = d.toLocaleTimeString("es-AR", { ...opts, hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${fecha} ${hora}`;
+}
+
 
 const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,observaciones,created_at,borrado_en)";
 
@@ -208,25 +221,62 @@ export default function CausaFormDialog({
     if (open) setVistaResumen(esEstudio && mode === "editar");
   }, [open, esEstudio, mode]);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
-  const [ultimaMod, setUltimaMod] = useState<{ nombre: string | null; fecha: string | null } | null>(null);
+  /** Panel lateral de anotaciones: visible u oculto, guardado por usuario. */
+  const { user } = useAuth();
+  const panelKey = `iustrack_panel_anotaciones_${user?.email ?? "anon"}`;
+  const [panelAnotaciones, setPanelAnotaciones] = useState(() => {
+    try {
+      return localStorage.getItem(panelKey) !== "oculto";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      setPanelAnotaciones(localStorage.getItem(panelKey) !== "oculto");
+    } catch {
+      /* sin localStorage: el panel queda visible */
+    }
+  }, [panelKey]);
+  const ocultarPanel = () => {
+    setPanelAnotaciones(false);
+    try {
+      localStorage.setItem(panelKey, "oculto");
+    } catch {
+      /* nada que guardar */
+    }
+  };
+  const mostrarPanel = () => {
+    setPanelAnotaciones(true);
+    try {
+      localStorage.setItem(panelKey, "visible");
+    } catch {
+      /* nada que guardar */
+    }
+  };
+
+  const [ultimaMod, setUltimaMod] = useState<{ autor: string | null; fecha: string | null } | null>(null);
   useEffect(() => {
     if (!open || mode !== "editar" || !causaId) { setUltimaMod(null); return; }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.from("causas").select("modificado_por,updated_at").eq("id", causaId).maybeSingle();
+      const { data } = await supabase
+        .from("causas")
+        .select("modificado_por,creado_por,updated_at")
+        .eq("id", causaId)
+        .maybeSingle();
       if (cancelled || !data) return;
-      let nombre: string | null = null;
-      if (data.modificado_por) {
-        const { data: p } = await supabase.from("perfiles").select("nombre_completo,email").eq("id", data.modificado_por).maybeSingle();
-        nombre = p?.nombre_completo || p?.email || null;
-      }
-      if (!cancelled) setUltimaMod({ nombre, fecha: data.updated_at });
+      // Si nadie registró la última modificación, usamos quien creó la causa.
+      // Cuando tampoco hay autor conocido mostramos solo la fecha: nunca un id.
+      const autor = await resolverNombreUsuario(data.modificado_por ?? data.creado_por);
+      if (!cancelled) setUltimaMod({ autor, fecha: data.updated_at });
     })();
     return () => { cancelled = true; };
   }, [open, mode, causaId]);
   const ultimaModTexto = ultimaMod?.fecha
-    ? `Última modificación${ultimaMod.nombre ? ` por ${ultimaMod.nombre}` : ""} · ${new Date(ultimaMod.fecha).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short" })}`
+    ? `Última modificación${ultimaMod.autor ? ` por ${ultimaMod.autor}` : ""}, ${formatoCorta(ultimaMod.fecha)}`
     : null;
+
   // Clave de borrador local (por modo + causa)
   const duplicando = mode === "crear" && !!duplicarDeId;
   const draftKey = `causa-form:${mode}:${causaId ?? (duplicarDeId ? `dup-${duplicarDeId}` : "new")}`;
