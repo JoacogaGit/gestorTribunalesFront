@@ -13,11 +13,14 @@ import { useCategoriasVocalia } from "@/hooks/useCategoriasVocalia";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import { getSemaforoBg, getSemaforoText } from "@/lib/eventoMapper";
 import { formatLocalDate } from "@/lib/parseDate";
+import { cn } from "@/lib/utils";
 import EventoFormInline from "./EventoFormInline";
 
 interface Props {
   causaId: string;
   onMutated?: () => void;
+  /** "panel" = columna lateral junto a la ficha: una sola columna y texto más grande. */
+  variante?: "form" | "panel";
 }
 
 function fmt(d: string) {
@@ -29,7 +32,8 @@ function fmtCreado(d: string | null) {
   return new Date(d).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 }
 
-export default function AnotacionesSection({ causaId }: Props) {
+export default function AnotacionesSection({ causaId, variante = "form" }: Props) {
+  const enPanel = variante === "panel";
   const { conFecha, sinFecha, loading, refetch } = useEventosCausa(causaId);
   const { vocalia } = useVocaliaActual();
   const { categorias } = useCategoriasVocalia(vocalia?.id ?? null);
@@ -102,13 +106,17 @@ export default function AnotacionesSection({ causaId }: Props) {
     return (
       <div
         key={e.id}
-        className={`rounded-md p-3 border-l-4 flex items-start gap-3 ${
-          withDate && e.fecha_hora ? getSemaforoBg(e.fecha_hora) : "bg-muted/40 border-l-border"
-        }`}
+        className={cn(
+          "rounded-md border-l-4 flex items-start gap-3",
+          enPanel ? "p-4" : "p-3",
+          withDate && e.fecha_hora ? getSemaforoBg(e.fecha_hora) : "bg-muted/40 border-l-border",
+        )}
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-foreground truncate">{e.titulo}</span>
+            <span className={cn("font-semibold text-foreground", enPanel ? "text-sm" : "text-xs")}>
+              {e.titulo}
+            </span>
             {catName && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
                 <Tag className="w-2.5 h-2.5" /> {catName}
@@ -118,24 +126,39 @@ export default function AnotacionesSection({ causaId }: Props) {
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{e.tipo_evento}</Badge>
             )}
             {withDate && e.fecha_hora && (
-              <span className={`text-[11px] font-mono ${getSemaforoText(e.fecha_hora)}`}>
+              <span className={cn("font-mono", enPanel ? "text-xs" : "text-[11px]", getSemaforoText(e.fecha_hora))}>
                 {fmt(e.fecha_hora)}
               </span>
             )}
             {!withDate && e.created_at && (
-              <span className="text-[10px] text-muted-foreground">creado {fmtCreado(e.created_at)}</span>
+              <span className={cn("text-muted-foreground", enPanel ? "text-[11px]" : "text-[10px]")}>
+                creado {fmtCreado(e.created_at)}
+              </span>
             )}
           </div>
           {e.descripcion && (
-            <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{e.descripcion}</p>
+            <p className={cn(
+              "mt-1.5 whitespace-pre-wrap break-words",
+              enPanel ? "text-sm leading-relaxed text-muted-foreground" : "text-xs text-muted-foreground mt-1",
+            )}>
+              {e.descripcion}
+            </p>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => { setEditingId(e.id); setAdding(false); }} className="p-1 text-muted-foreground hover:text-primary" title="Editar">
-            <Pencil className="w-3.5 h-3.5" />
+          <button
+            onClick={() => { setEditingId(e.id); setAdding(false); }}
+            className="p-1 text-muted-foreground hover:text-primary"
+            title="Editar"
+          >
+            <Pencil className={cn(enPanel ? "h-4 w-4" : "h-3.5 w-3.5")} />
           </button>
-          <button onClick={() => setConfirmDelete(e)} className="p-1 text-muted-foreground hover:text-destructive" title="Borrar">
-            <Trash2 className="w-3.5 h-3.5" />
+          <button
+            onClick={() => setConfirmDelete(e)}
+            className="p-1 text-muted-foreground hover:text-destructive"
+            title="Borrar"
+          >
+            <Trash2 className={cn(enPanel ? "h-4 w-4" : "h-3.5 w-3.5")} />
           </button>
         </div>
       </div>
@@ -151,15 +174,25 @@ export default function AnotacionesSection({ causaId }: Props) {
     }
   });
 
+  const subtitulo = enPanel ? "text-xs" : "text-[11px]";
+
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Anotaciones y eventos
-        </h3>
+    <section className={cn(enPanel ? "space-y-4" : "space-y-3")}>
+      <div className={cn("flex items-center", enPanel ? "justify-end" : "justify-between")}>
+        {!enPanel && (
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Anotaciones y eventos
+          </h3>
+        )}
         {!adding && (
-          <Button type="button" size="sm" variant="outline" onClick={() => { setAdding(true); setEditingId(null); }}>
-            <Plus className="w-3.5 h-3.5 mr-1" /> Agregar anotación
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className={cn(enPanel && "h-9 px-3 text-sm")}
+            onClick={() => { setAdding(true); setEditingId(null); }}
+          >
+            <Plus className={cn("mr-1", enPanel ? "h-4 w-4" : "h-3.5 w-3.5")} /> Agregar anotación
           </Button>
         )}
       </div>
@@ -178,9 +211,11 @@ export default function AnotacionesSection({ causaId }: Props) {
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando…
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={cn("grid gap-5", enPanel ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 gap-4")}>
           <div className="space-y-2">
-            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">Eventos con fecha</h4>
+            <h4 className={cn(subtitulo, "font-semibold uppercase tracking-wider text-muted-foreground/80")}>
+              Eventos con fecha
+            </h4>
             {conFecha.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 italic">Sin eventos con fecha</p>
             ) : (
@@ -188,7 +223,9 @@ export default function AnotacionesSection({ causaId }: Props) {
             )}
           </div>
           <div className="space-y-2">
-            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">Anotaciones sin fecha</h4>
+            <h4 className={cn(subtitulo, "font-semibold uppercase tracking-wider text-muted-foreground/80")}>
+              Anotaciones sin fecha
+            </h4>
             {sinFecha.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 italic">Sin anotaciones sueltas</p>
             ) : (
@@ -199,8 +236,10 @@ export default function AnotacionesSection({ causaId }: Props) {
       )}
 
       {categoriasUsadas.size > 0 && (
-        <div className="pt-2 border-t border-border/60">
-          <p className="text-[11px] text-muted-foreground mb-1.5">Agregar otra entrada de categoría:</p>
+        <div className={cn("border-t border-border/60", enPanel ? "pt-3" : "pt-2")}>
+          <p className={cn("text-muted-foreground mb-1.5", enPanel ? "text-xs" : "text-[11px]")}>
+            Agregar otra entrada de categoría:
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {Array.from(categoriasUsadas.entries()).map(([id, nombre]) => (
               <Button

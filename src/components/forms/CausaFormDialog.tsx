@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ExternalLink, FileText, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Loader2, PanelRightClose, PanelRightOpen, Plus, Trash2, X } from "lucide-react";
 import { parseCaratulaLex100, precargarPdfjs } from "@/lib/parseCaratulaLex100";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,19 @@ import {
 import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection from "./AnotacionesSection";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
+import { resolverNombreUsuario } from "@/lib/nombresUsuarios";
+import { useAuth } from "@/context/AuthContext";
+
+/** "25/09 14:30" en hora de Argentina. */
+function formatoCorta(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const opts: Intl.DateTimeFormatOptions = { timeZone: "America/Argentina/Buenos_Aires" };
+  const fecha = d.toLocaleDateString("es-AR", { ...opts, day: "2-digit", month: "2-digit" });
+  const hora = d.toLocaleTimeString("es-AR", { ...opts, hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${fecha} ${hora}`;
+}
+
 
 const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,observaciones,created_at,borrado_en)";
 
@@ -208,25 +221,62 @@ export default function CausaFormDialog({
     if (open) setVistaResumen(esEstudio && mode === "editar");
   }, [open, esEstudio, mode]);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
-  const [ultimaMod, setUltimaMod] = useState<{ nombre: string | null; fecha: string | null } | null>(null);
+  /** Panel lateral de anotaciones: visible u oculto, guardado por usuario. */
+  const { user } = useAuth();
+  const panelKey = `iustrack_panel_anotaciones_${user?.email ?? "anon"}`;
+  const [panelAnotaciones, setPanelAnotaciones] = useState(() => {
+    try {
+      return localStorage.getItem(panelKey) !== "oculto";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      setPanelAnotaciones(localStorage.getItem(panelKey) !== "oculto");
+    } catch {
+      /* sin localStorage: el panel queda visible */
+    }
+  }, [panelKey]);
+  const ocultarPanel = () => {
+    setPanelAnotaciones(false);
+    try {
+      localStorage.setItem(panelKey, "oculto");
+    } catch {
+      /* nada que guardar */
+    }
+  };
+  const mostrarPanel = () => {
+    setPanelAnotaciones(true);
+    try {
+      localStorage.setItem(panelKey, "visible");
+    } catch {
+      /* nada que guardar */
+    }
+  };
+
+  const [ultimaMod, setUltimaMod] = useState<{ autor: string | null; fecha: string | null } | null>(null);
   useEffect(() => {
     if (!open || mode !== "editar" || !causaId) { setUltimaMod(null); return; }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.from("causas").select("modificado_por,updated_at").eq("id", causaId).maybeSingle();
+      const { data } = await supabase
+        .from("causas")
+        .select("modificado_por,creado_por,updated_at")
+        .eq("id", causaId)
+        .maybeSingle();
       if (cancelled || !data) return;
-      let nombre: string | null = null;
-      if (data.modificado_por) {
-        const { data: p } = await supabase.from("perfiles").select("nombre_completo,email").eq("id", data.modificado_por).maybeSingle();
-        nombre = p?.nombre_completo || p?.email || null;
-      }
-      if (!cancelled) setUltimaMod({ nombre, fecha: data.updated_at });
+      // Si nadie registró la última modificación, usamos quien creó la causa.
+      // Cuando tampoco hay autor conocido mostramos solo la fecha: nunca un id.
+      const autor = await resolverNombreUsuario(data.modificado_por ?? data.creado_por);
+      if (!cancelled) setUltimaMod({ autor, fecha: data.updated_at });
     })();
     return () => { cancelled = true; };
   }, [open, mode, causaId]);
   const ultimaModTexto = ultimaMod?.fecha
-    ? `Última modificación${ultimaMod.nombre ? ` por ${ultimaMod.nombre}` : ""} · ${new Date(ultimaMod.fecha).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short" })}`
+    ? `Última modificación${ultimaMod.autor ? ` por ${ultimaMod.autor}` : ""}, ${formatoCorta(ultimaMod.fecha)}`
     : null;
+
   // Clave de borrador local (por modo + causa)
   const duplicando = mode === "crear" && !!duplicarDeId;
   const draftKey = `causa-form:${mode}:${causaId ?? (duplicarDeId ? `dup-${duplicarDeId}` : "new")}`;
@@ -596,8 +646,16 @@ export default function CausaFormDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent data-tour="form-causa" className="max-w-3xl p-0 gap-0 bg-transparent border-0 shadow-none overflow-visible">
-          <div className="max-h-[92vh] overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
+        <DialogContent
+          className="max-w-[min(1580px,97vw)] p-0 gap-0 bg-transparent border-0 shadow-none overflow-visible [&>button]:hidden"
+        >
+          <div className="flex items-start justify-center">
+          <div
+            data-tour="form-causa"
+            className="relative z-10 w-full max-w-3xl min-w-0 max-h-[92vh] overflow-y-auto bg-card border border-border rounded-lg shadow-lg"
+          >
+
+
           <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border px-6 py-3 flex items-center justify-between gap-3">
             <DialogHeader className="flex-1 min-w-0">
               <DialogTitle className="font-display text-lg truncate">
@@ -613,7 +671,17 @@ export default function CausaFormDialog({
                 Guardar cambios
               </Button>
             )}
+            <button
+              type="button"
+              onClick={() => handleOpenChange(false)}
+              title="Cerrar"
+              aria-label="Cerrar"
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
+
           <div className="px-6 pb-6 pt-2">
 
           {loading ? (
@@ -1062,11 +1130,38 @@ export default function CausaFormDialog({
           )}
           </div>
           </div>
-          {mode === "editar" && causaId && (
-            <aside className="hidden xl:block absolute left-full top-8 -z-10 -ml-3 w-[360px] max-h-[calc(92vh-4rem)] overflow-y-auto rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-7 pr-4 py-4">
-              <AnotacionesSection causaId={causaId} />
+          {mode === "editar" && causaId && !panelAnotaciones && (
+            <button
+              type="button"
+              onClick={mostrarPanel}
+              title="Mostrar anotaciones"
+              className="hidden xl:flex shrink-0 self-start mt-16 items-center gap-1 rounded-r-lg border border-l-0 border-border bg-card px-2 py-3 text-[11px] font-medium text-muted-foreground shadow-md transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <PanelRightOpen className="h-3.5 w-3.5" />
+              <span className="[writing-mode:vertical-rl] tracking-wide">Anotaciones</span>
+            </button>
+          )}
+
+          {mode === "editar" && causaId && panelAnotaciones && (
+            <aside className="relative -z-10 hidden xl:flex h-[92vh] max-h-[92vh] w-[38vw] min-w-[380px] max-w-[760px] shrink-0 -ml-4 flex-col rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-8 pr-4 py-4">
+              <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3">
+                <h2 className="text-sm font-semibold text-foreground">Anotaciones de la causa</h2>
+                <button
+                  type="button"
+                  onClick={ocultarPanel}
+                  title="Ocultar panel de anotaciones"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <PanelRightClose className="h-3.5 w-3.5" /> Ocultar
+                </button>
+              </div>
+              <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1">
+                <AnotacionesSection causaId={causaId} variante="panel" />
+              </div>
             </aside>
           )}
+          </div>
+
         </DialogContent>
       </Dialog>
 
