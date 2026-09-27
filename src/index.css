@@ -319,6 +319,23 @@
   background: hsl(var(--muted));
   color: hsl(var(--foreground));
 }
+@media (min-width: 1100px) {
+  .driver-popover.iustrack-tour.iustrack-tour-fields {
+    position: fixed !important;
+    top: 0.65rem !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(31rem, calc(100vw - 2rem));
+    max-width: 31rem;
+    padding-block: 0.8rem;
+  }
+  .driver-popover.iustrack-tour.iustrack-tour-fields .driver-popover-arrow { display: none; }
+  .driver-popover.iustrack-tour.iustrack-tour-fields .driver-popover-title { font-size: 1.25rem; margin-bottom: 0.25rem; }
+  .driver-popover.iustrack-tour.iustrack-tour-fields .driver-popover-description { font-size: 0.92rem; line-height: 1.35; }
+  .driver-popover.iustrack-tour.iustrack-tour-fields .iustrack-tour-progress { margin-top: 0.45rem; }
+}
 .driver-popover.iustrack-tour .driver-popover-title {
   font-family: 'Playfair Display', serif;
   font-size: 1.7rem;

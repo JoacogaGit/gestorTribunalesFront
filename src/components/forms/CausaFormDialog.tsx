@@ -826,14 +826,14 @@ export default function CausaFormDialog({
                     Datos judiciales
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5" data-tour-field="responsable">
+                    <div className="space-y-1.5">
                       <Label className="text-xs">Firmante</Label>
                       <Input
                         value={causa.firmante ?? ""}
                         onChange={(e) => updateCausa({ firmante: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5" data-tour-field="responsable">
                       <Label className="text-xs">Modo de inicio</Label>
                       <Select
                         value={causa.modo_inicio ?? "__none__"}

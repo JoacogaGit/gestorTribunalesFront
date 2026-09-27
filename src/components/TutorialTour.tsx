@@ -365,21 +365,7 @@ function construirPasos(props: Props): Paso[] {
     {
       target: '[data-tour="form-datos"]',
       titulo: "Los datos de la causa",
-      texto: esEstudio
-        ? bullets([
-            ["Expediente y carátula", "identifican la causa."],
-            ["Fuero", "penal, civil, laboral, etc."],
-            ["Rol del estudio", "defensa, querella o denunciante."],
-            ["Juez, fiscal y fiscalía", "quiénes intervienen."],
-            ["Estado procesal", "en qué etapa está."],
-          ])
-        : bullets([
-            ["Expediente y carátula", "identifican la causa."],
-            ["Estado", "trámite, recurso, delegada o terminada."],
-            ["Subestado", "el detalle del trámite (para indagar, para fijar juicio…)."],
-            ["Tipo de recurso", "casación, queja, apelación y demás."],
-            ["Despachante", "quién tiene la causa a cargo."],
-          ]),
+      texto: "Mirá cada campo junto con su explicación. Las tarjetas laterales no tapan la ficha.",
       side: "left",
       anotaciones: [
         { target: '[data-tour-field="expediente"]', titulo: "Expediente", texto: "El número único que identifica la causa.", lado: "left" },
@@ -399,24 +385,19 @@ function construirPasos(props: Props): Paso[] {
         ])}
         <p class="iustrack-tour-hint">Importante: al cambiar los datos, la causa se mueve sola a las listas que le corresponden. Si marcás una persona detenida, aparece en Detenidos; si la pasás a terminada, sale de trámite.</p>`,
       side: "left",
-      anotaciones: [
-        { target: '[data-tour-field="imputado-nombre"]', titulo: "Persona", texto: "Cada imputado se carga por separado.", lado: "left" },
-        { target: '[data-tour-field="imputado-situacion"]', titulo: "Situación", texto: "Libre, detenida, rebelde o condenada.", lado: "right" },
-        { target: '[data-tour-field="imputado-defensor"]', titulo: "Defensor", texto: "El letrado correspondiente a esta persona.", lado: "left" },
-        { target: '[data-tour-field="imputado-vencimientos"]', titulo: "Vencimientos", texto: "Fechas de prisión preventiva y pena.", lado: "right" },
-      ],
     },
     {
       target: '[data-tour="form-imputados"]',
       titulo: "Las personas de la causa",
       texto:
-        `<p class="iustrack-tour-lead">Una causa puede tener varias personas imputadas, cada una con sus datos:</p>
-         ${bullets([
-           ["Situación", "libre, detenida, rebelde, con probation o condenada."],
-            ["Vencimientos", "prisión preventiva, pena y suspensión de juicio a prueba; cada fecha se carga cuando corresponde."],
-           ["Prescripciones", "las fechas de prescripción con su descripción."],
-         ])}`,
+        `<p class="iustrack-tour-lead">Cada persona tiene su propio bloque. Las tarjetas señalan sus campos sin ocultarlos.</p>`,
       side: "left",
+      anotaciones: [
+        { target: '[data-tour-field="imputado-nombre"]', titulo: "Persona", texto: "Cada imputado se carga por separado.", lado: "left" },
+        { target: '[data-tour-field="imputado-situacion"]', titulo: "Situación", texto: "Libre, detenida, rebelde o condenada.", lado: "right" },
+        { target: '[data-tour-field="imputado-defensor"]', titulo: "Defensor", texto: "El letrado correspondiente a esta persona.", lado: "left" },
+        { target: '[data-tour-field="imputado-vencimientos"]', titulo: "Vencimientos", texto: "Fechas importantes de la situación de la persona.", lado: "right" },
+      ],
     },
   );
 
@@ -668,7 +649,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       steps: pasos.map((p, i) => ({
         element: p.target,
         popover: {
-          popoverClass: `iustrack-tour${p.supabase ? " iustrack-tour-supabase" : ""}`,
+          popoverClass: `iustrack-tour${p.supabase ? " iustrack-tour-supabase" : ""}${p.anotaciones ? " iustrack-tour-fields" : ""}`,
           title: p.titulo,
           description: `${p.texto}<div class="iustrack-tour-progress"><span style="width:${
             ((i + 2) / TOTAL) * 100
