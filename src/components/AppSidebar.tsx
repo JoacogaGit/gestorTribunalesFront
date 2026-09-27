@@ -147,12 +147,14 @@ export default function AppSidebar({
 
   const renderNavButton = (item: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }) => {
     const isActive = active === item.id;
+    const esListaPredeterminada = (esEstudio ? navEstudio : navBeforeTerminadas).some((navItem) => navItem.id === item.id)
+      || item.id === terminadasItem.id;
     const btn = (
       <button
         key={item.id}
         onClick={() => onNavigate(item.id)}
         data-tour={`nav-${item.id}`}
-        data-tour-list-item="predeterminada"
+        data-tour-list-item={esListaPredeterminada ? "predeterminada" : undefined}
         className={`relative w-full flex items-center ${collapsed ? "justify-center px-0" : "gap-3 px-3"} py-2.5 rounded-md text-sm font-medium transition-all ${
           isActive
             ? metricasActivas ? "bg-metrics-accent text-metrics-foreground shadow-soft" : "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
