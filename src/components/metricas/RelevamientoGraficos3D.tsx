@@ -28,7 +28,14 @@ function usePalette(): Palette | null {
   const [palette, setPalette] = useState<Palette | null>(null);
   useEffect(() => {
     const css = getComputedStyle(document.documentElement);
-    const color = (token: string) => `hsl(${css.getPropertyValue(token).trim()})`;
+    const color = (token: string) => {
+      const muestra = document.createElement("span");
+      muestra.style.color = `hsl(${css.getPropertyValue(token).trim()})`;
+      document.body.appendChild(muestra);
+      const resuelto = getComputedStyle(muestra).color;
+      muestra.remove();
+      return resuelto;
+    };
     setPalette({
       fondo: color("--metrics-background"), tarjeta: color("--metrics-card"),
       violeta: color("--metrics-accent"), oro: color("--metrics-gold"),

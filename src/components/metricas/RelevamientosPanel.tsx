@@ -29,8 +29,6 @@ interface Relevamiento {
 }
 
 const fmt = (s: string) => s.split("-").reverse().join("/");
-const campo = "border-metrics-border bg-metrics-background text-metrics-foreground";
-
 export default function RelevamientosPanel({ vocaliaId, tribunalId, vocaliasTribunal }: Props) {
   const [lista, setLista] = useState<Relevamiento[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -218,8 +216,8 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
       return [k, Math.max(0, (base[k] ?? 0) + (ajustes[k] ?? 0))];
     })));
   };
-  const finales = useMemo(() => Object.fromEntries(BLOQUES.map((b) => [b.id, finalesDe(b) ?? {}])) as Record<BloqueId, Valores>, [rel, auto]);
-  const bases = useMemo(() => Object.fromEntries(BLOQUES.map((b) => [b.id, baseDe(b) ?? {}])) as Record<BloqueId, Valores>, [rel, auto]);
+  const finales = Object.fromEntries(BLOQUES.map((b) => [b.id, finalesDe(b) ?? {}])) as Record<BloqueId, Valores>;
+  const bases = Object.fromEntries(BLOQUES.map((b) => [b.id, baseDe(b) ?? {}])) as Record<BloqueId, Valores>;
 
   const cerrar = () => {
     if (!auto) return toast.error("Esperá a que terminen de calcularse los datos.");
