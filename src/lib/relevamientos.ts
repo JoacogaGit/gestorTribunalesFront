@@ -60,7 +60,7 @@ const DET = [{ id: "con", label: "Con detenido" }, { id: "sin", label: "Sin dete
 
 export const BLOQUES: BloqueDef[] = [
   {
-    id: "causas", titulo: "1. Causas", subtitulo: "Por tipo de causa y situación de detención", modoDefault: "auto",
+    id: "causas", titulo: "Causas", subtitulo: "Por tipo de causa y situación de detención", modoDefault: "auto",
     filas: TIPOS.flatMap((t) => DET.map((d) => ({ id: `${t.id}_${d.id}`, label: `${t.label} · ${d.label.toLowerCase()}` }))),
     columnas: [
       { id: "inicio", label: "Existentes al inicio" },
@@ -71,12 +71,12 @@ export const BLOQUES: BloqueDef[] = [
     totalFila: true,
   },
   {
-    id: "resoluciones", titulo: "2. Resoluciones adoptadas", subtitulo: "Causas terminadas dentro del período, por modo de terminación", modoDefault: "auto",
+    id: "resoluciones", titulo: "Resoluciones adoptadas", subtitulo: "Causas terminadas dentro del período, por modo de terminación", modoDefault: "auto",
     filas: MODOS_RESOLUCION.map((m) => ({ id: m.id, label: m.label })),
     columnas: DET, totalColumna: true, totalFila: true,
   },
   {
-    id: "habeas", titulo: "3. Hábeas corpus", modoDefault: "manual",
+    id: "habeas", titulo: "Hábeas corpus", modoDefault: "manual",
     filas: [
       { id: "ingresados", label: "Ingresados" },
       { id: "rechazados", label: "Rechazados" },
@@ -88,12 +88,12 @@ export const BLOQUES: BloqueDef[] = [
     columnas: [{ id: "cant", label: "Cantidad" }], totalFila: true, excluirDeTotal: ["ingresados"],
   },
   {
-    id: "audiencias", titulo: "4. Flagrancia – audiencias", modoDefault: "manual",
+    id: "audiencias", titulo: "Flagrancia", subtitulo: "Audiencias virtuales y presenciales", modoDefault: "manual",
     filas: [{ id: "virtuales", label: "Virtuales" }, { id: "presenciales", label: "Presenciales" }],
     columnas: [{ id: "cant", label: "Cantidad" }], totalFila: true,
   },
   {
-    id: "violencia", titulo: "5. Violencia de género (Ley 26.485)", subtitulo: "Causas en trámite durante el período con violencia de género", modoDefault: "auto",
+    id: "violencia", titulo: "Violencia de género", subtitulo: "Ley 26.485 · Causas en trámite durante el período", modoDefault: "auto",
     filas: TIPOS_VG.map((t) => ({ id: t, label: t })),
     columnas: [{ id: "cant", label: "Causas" }], totalFila: true,
   },
