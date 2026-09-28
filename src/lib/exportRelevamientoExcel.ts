@@ -12,6 +12,8 @@ interface ExportarRelevamientoOptions {
   nombre: string;
   encabezado: EncabezadoRelevamiento;
   finales: Partial<Record<BloqueId, Valores>>;
+  bases: Partial<Record<BloqueId, Valores>>;
+  resolPorTipo: Valores | null;
 }
 
 const PLANTILLA_URL = "/planilla_estadisticas.xlsx";
@@ -20,7 +22,7 @@ const COLS = "CDEFGHIJKLMNOPQRST".split("");
 const nombreArchivo = (nombre: string) =>
   nombre.replace(/[\\/:*?"<>|]/g, "").trim().replace(/\s+/g, "_").slice(0, 80) || "relevamiento";
 
-export async function exportarRelevamientoExcel({ nombre, encabezado, finales }: ExportarRelevamientoOptions) {
+export async function exportarRelevamientoExcel({ nombre, encabezado, finales, bases, resolPorTipo }: ExportarRelevamientoOptions) {
   const res = await fetch(PLANTILLA_URL);
   if (!res.ok) throw new Error("No se encontró la planilla oficial.");
   const wb = new ExcelJS.Workbook();
@@ -48,17 +50,21 @@ export async function exportarRelevamientoExcel({ nombre, encabezado, finales }:
     num(`I${fila}`, causas[`${t.id}_sin|ingresadas`]);
   });
 
-  // Resoluciones: el bloque en la app no separa por tipo de causa si no tiene claves con tipo;
-  // se aceptan claves "tipo_modo|con" o, en su defecto, "modo|con" volcadas en la fila Común.
+  // Resoluciones: conteo por tipo desde las causas; ajustes/valores manuales (diferencia con lo calculado) van a la fila Común.
   const resol = finales.resoluciones ?? {};
+  const baseRes = bases.resoluciones ?? {};
   TIPOS.forEach((t, i) => {
     const fila = 26 + i;
     MODOS_RESOLUCION.forEach((m, j) => {
       ["con", "sin"].forEach((d, k) => {
-        const col = COLS[j * 2 + k];
-        const conTipo = resol[`${t.id}_${m.id}|${d}`];
-        const sinTipo = t.id === "comun" ? resol[`${m.id}|${d}`] : undefined;
-        num(`${col}${fila}`, conTipo ?? sinTipo);
+        const clave = `${m.id}|${d}`;
+        let v: number;
+        if (!resolPorTipo) v = t.id === "comun" ? (resol[clave] ?? 0) : 0;
+        else {
+          v = resolPorTipo[`${t.id}_${clave}`] ?? 0;
+          if (t.id === "comun") v += (resol[clave] ?? 0) - (baseRes[clave] ?? 0);
+        }
+        num(`${COLS[j * 2 + k]}${fila}`, Math.max(0, v));
       });
     });
   });

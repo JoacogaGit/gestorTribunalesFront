@@ -11,12 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { VocaliaRow } from "@/hooks/useVocalias";
 import { BLOQUES, BloqueDef, BloqueId, CausaRel, ModoBloque, Valores, calcularAuto } from "@/lib/relevamientos";
 import { hoyArgentina } from "@/lib/terminacion";
-import { exportarRelevamientoExcel } from "@/lib/exportRelevamientoExcel";
+import { exportarRelevamientoExcel, type EncabezadoRelevamiento } from "@/lib/exportRelevamientoExcel";
+import { resolucionesPorTipo } from "@/lib/relevamientos";
 import RelevamientoGraficos3D from "@/components/metricas/RelevamientoGraficos3D";
 
 interface Props { vocaliaId: string; tribunalId: string | null; vocaliasTribunal: VocaliaRow[] }
 
-interface Config { modos?: Partial<Record<BloqueId, ModoBloque>> }
+interface Config { modos?: Partial<Record<BloqueId, ModoBloque>>; encabezado?: EncabezadoRelevamiento }
 interface Datos {
   manual?: Partial<Record<BloqueId, Valores>>;
   ajustes?: Partial<Record<BloqueId, Valores>>;
@@ -225,13 +226,20 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
     toast.success("Relevamiento cerrado: los datos quedaron congelados.");
   };
   const reabrir = () => guardar({ estado: "borrador", cerrado_at: null });
-  const exportar = () => {
-    exportarRelevamientoExcel({
-      nombre: rel.nombre, periodoInicio: rel.periodo_inicio, periodoFin: rel.periodo_fin, alcance: rel.alcance,
-      modos: rel.config.modos ?? {}, bases, ajustes: rel.datos.ajustes ?? {}, finales,
-    });
-    toast.success("Relevamiento exportado a Excel.");
+  const exportar = async () => {
+    try {
+      const cerradoSinCambios = cerrado && rel.config.modos?.resoluciones === "manual";
+      await exportarRelevamientoExcel({
+        nombre: rel.nombre, encabezado: rel.config.encabezado ?? {}, finales, bases,
+        resolPorTipo: causas && !cerradoSinCambios ? resolucionesPorTipo(causas, rel.periodo_inicio, rel.periodo_fin) : null,
+      });
+      toast.success("Planilla oficial exportada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo exportar la planilla.");
+    }
   };
+  const [enc, setEnc] = useState<EncabezadoRelevamiento>(rel.config.encabezado ?? {});
+  const guardarEnc = () => guardar({ config: { ...rel.config, encabezado: enc } });
 
   return (
     <section className="space-y-4">
@@ -250,6 +258,12 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
             ? <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={reabrir}><LockOpen className="mr-1 h-4 w-4" /> Reabrir a borrador</Button>
             : <Button className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={cerrar}><Lock className="mr-1 h-4 w-4" /> Cerrar relevamiento</Button>}
         </div>
+      </div>
+      <div className="grid gap-3 rounded-md border border-metrics-border bg-metrics-card/70 p-4 sm:grid-cols-2 lg:grid-cols-4">
+        {([["juzgado", "Número de juzgado", "Ej: 23"], ["fiscalia", "Fiscalía de turno en el semestre", "Ej: 53"], ["defensoria", "Defensoría/s de turno", "Ej: 19/18"], ["distritos", "Distritos de turno", "Ej: 06/05/07"]] as const).map(([k, l, ph]) => (
+          <div key={k}><Label className="text-metrics-muted">{l}</Label>
+            <Input value={enc[k] ?? ""} placeholder={ph} disabled={cerrado} onChange={(e) => setEnc((p) => ({ ...p, [k]: e.target.value }))} onBlur={guardarEnc} /></div>
+        ))}
       </div>
       {error && <p className="text-sm text-metrics-negative">No se pudieron leer las causas para el cálculo automático.</p>}
 
