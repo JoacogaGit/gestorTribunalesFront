@@ -1,3 +1,4 @@
+import TerminadasFiltros, { aplicarFiltroTerminadas, FILTRO_TERMINADAS_VACIO, FiltroTerminadas } from "@/components/TerminadasFiltros";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
@@ -282,6 +283,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
+  const [filtroTerm, setFiltroTerm] = useState<FiltroTerminadas>(FILTRO_TERMINADAS_VACIO);
+  const terminadasBase = responsableFiltro.filtrar(terminadasRemote.causas);
+  const terminadasFiltradas = aplicarFiltroTerminadas(terminadasBase, filtroTerm);
   const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId);
   const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId);
   const delegadasRemote = useCausasPorMarca("delegada", vocaliaId);
@@ -1066,22 +1070,27 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <RemoteListSection
                 loading={terminadasRemote.loading}
                 error={terminadasRemote.error}
-                isEmpty={responsableFiltro.filtrar(terminadasRemote.causas).length === 0}
+                isEmpty={terminadasBase.length === 0}
                 emptyTitle="Todavía no hay causas terminadas"
                 emptyMessage="Las causas terminadas aparecerán acá cuando cambies el estado de una causa existente."
                 onRetry={terminadasRemote.refetch}
               >
+                <div className="flex h-full min-h-0 flex-1 flex-col gap-2">
+                {!esEstudio && (
+                  <TerminadasFiltros causas={terminadasBase} value={filtroTerm} onChange={setFiltroTerm} total={terminadasFiltradas.length} />
+                )}
                 <CausasTable
-                  causas={responsableFiltro.filtrar(terminadasRemote.causas)}
+                  causas={!esEstudio ? terminadasFiltradas : terminadasBase}
                   title="Causas Terminadas"
                   listKey="terminadas"
-                  allCausas={responsableFiltro.filtrar(terminadasRemote.causas)}
+                  allCausas={terminadasBase}
                   onMutated={terminadasRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}
                   {...remoteTableCommon}
                 />
+                </div>
               </RemoteListSection>
             )}
             {esEstudio && (view === "fueros" || view === "delitos") && (
