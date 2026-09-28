@@ -89,6 +89,10 @@ export type DbCausa = {
   modo_inicio?: string | null;
   fiscalia_interviniente?: string | null;
   ultimo_movimiento?: string | null;
+  modo_terminacion?: string | null;
+  fecha_terminacion?: string | null;
+  violencia_genero?: boolean | null;
+  tipo_violencia_genero?: string | null;
   sujetos?: DbSujeto[];
 };
 
@@ -223,6 +227,10 @@ export function dbCausaToUI(row: DbCausa): Causa {
     modoInicio: row.modo_inicio ?? null,
     fiscaliaInterviniente: row.fiscalia_interviniente ?? null,
     ultimoMovimiento: row.ultimo_movimiento ?? null,
+    modoTerminacion: row.modo_terminacion ?? null,
+    fechaTerminacion: row.fecha_terminacion ?? null,
+    violenciaGenero: !!row.violencia_genero,
+    tipoViolenciaGenero: row.tipo_violencia_genero ?? null,
     vocalia: 1,
   };
 }

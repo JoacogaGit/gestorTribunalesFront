@@ -33,6 +33,10 @@ export interface CausaInput {
   modo_inicio?: string | null;
   fiscalia_interviniente?: string | null;
   ultimo_movimiento?: string | null;
+  modo_terminacion?: string | null;
+  fecha_terminacion?: string | null;
+  violencia_genero?: boolean;
+  tipo_violencia_genero?: string | null;
 
   // Campos exclusivos de oficinas tipo "estudio"
   fuero?: string | null;
