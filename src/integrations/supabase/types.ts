@@ -77,6 +77,7 @@ export type Database = {
           estado_procesal: string | null
           expediente_nro: string
           fecha_ingreso: string | null
+          fecha_terminacion: string | null
           firmante: string | null
           fiscal: string | null
           fiscalia: string | null
@@ -88,6 +89,7 @@ export type Database = {
           link_externo: string | null
           modificado_por: string | null
           modo_inicio: string | null
+          modo_terminacion: string | null
           numero_interno: string | null
           otros_intervinientes: string | null
           querella: string | null
@@ -96,10 +98,12 @@ export type Database = {
           subestados: string[]
           tipo_proceso: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso: Database["public"]["Enums"]["tipo_recurso_enum"] | null
+          tipo_violencia_genero: string | null
           tribunal_direccion: string | null
           tribunal_interviniente: string | null
           ultimo_movimiento: string | null
           updated_at: string | null
+          violencia_genero: boolean
           vocalia_id: string
         }
         Insert: {
@@ -122,6 +126,7 @@ export type Database = {
           estado_procesal?: string | null
           expediente_nro: string
           fecha_ingreso?: string | null
+          fecha_terminacion?: string | null
           firmante?: string | null
           fiscal?: string | null
           fiscalia?: string | null
@@ -133,6 +138,7 @@ export type Database = {
           link_externo?: string | null
           modificado_por?: string | null
           modo_inicio?: string | null
+          modo_terminacion?: string | null
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
@@ -141,10 +147,12 @@ export type Database = {
           subestados?: string[]
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
+          tipo_violencia_genero?: string | null
           tribunal_direccion?: string | null
           tribunal_interviniente?: string | null
           ultimo_movimiento?: string | null
           updated_at?: string | null
+          violencia_genero?: boolean
           vocalia_id: string
         }
         Update: {
@@ -167,6 +175,7 @@ export type Database = {
           estado_procesal?: string | null
           expediente_nro?: string
           fecha_ingreso?: string | null
+          fecha_terminacion?: string | null
           firmante?: string | null
           fiscal?: string | null
           fiscalia?: string | null
@@ -178,6 +187,7 @@ export type Database = {
           link_externo?: string | null
           modificado_por?: string | null
           modo_inicio?: string | null
+          modo_terminacion?: string | null
           numero_interno?: string | null
           otros_intervinientes?: string | null
           querella?: string | null
@@ -186,10 +196,12 @@ export type Database = {
           subestados?: string[]
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
           tipo_recurso?: Database["public"]["Enums"]["tipo_recurso_enum"] | null
+          tipo_violencia_genero?: string | null
           tribunal_direccion?: string | null
           tribunal_interviniente?: string | null
           ultimo_movimiento?: string | null
           updated_at?: string | null
+          violencia_genero?: boolean
           vocalia_id?: string
         }
         Relationships: [
