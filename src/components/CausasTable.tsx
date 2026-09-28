@@ -281,6 +281,9 @@ export default function CausasTable({
                 <Zap className="w-2.5 h-2.5" /> FLAG
               </span>
             )}
+            {c.violenciaGenero && (
+              <span title={`Violencia de género (Ley 26.485)${c.tipoViolenciaGenero ? " · " + c.tipoViolenciaGenero : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
+            )}
             {c.delegada && (
               <span title="Causa delegada" className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
                 DELEG
@@ -425,6 +428,18 @@ export default function CausasTable({
       cellClass: "text-xs text-muted-foreground whitespace-nowrap",
       sortValue: (c) => parseLocalTime(c.ultimoMovimiento) || Number.MAX_SAFE_INTEGER,
       render: (c) => c.ultimoMovimiento ? fmtDate(c.ultimoMovimiento) : <span className="text-muted-foreground/60">—</span>,
+    },
+    {
+      key: "modoTerminacion", label: "Modo de terminación", headClass: "whitespace-nowrap",
+      cellClass: "text-xs text-muted-foreground max-w-[180px] break-words whitespace-normal align-top",
+      sortValue: (c) => c.modoTerminacion ?? "",
+      render: (c) => c.modoTerminacion ? c.modoTerminacion : <span className="text-muted-foreground/60">—</span>,
+    },
+    {
+      key: "fechaTerminacion", label: "Fecha de terminación", headClass: "whitespace-nowrap",
+      cellClass: "text-xs text-muted-foreground whitespace-nowrap",
+      sortValue: (c) => parseLocalTime(c.fechaTerminacion) || Number.MAX_SAFE_INTEGER,
+      render: (c) => c.fechaTerminacion ? fmtDate(c.fechaTerminacion) : <span className="text-muted-foreground/60">—</span>,
     },
     { key: "defensor", label: "Defensor", cellClass: "text-xs text-muted-foreground max-w-[200px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.defensor.nombre || "", render: (c) => c.imputados[0]?.defensor.nombre || "—" },
     { key: "lugarDetencion", label: "Lugar de detención", cellClass: "text-xs text-muted-foreground max-w-[180px] break-words whitespace-normal align-top", sortValue: (c) => c.imputados[0]?.lugarDetencion || "", render: (c) => c.imputados.map((i) => i.lugarDetencion).filter(Boolean).join(", ") || "—" },
@@ -971,6 +986,9 @@ export default function CausasTable({
                             <Zap className="w-2.5 h-2.5" /> FLAG
                           </span>
                         )}
+                        {c.violenciaGenero && (
+                  <span title={`Violencia de género (Ley 26.485)${c.tipoViolenciaGenero ? " · " + c.tipoViolenciaGenero : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
+                )}
                         {c.delegada && (
                           <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">DELEG</span>
                         )}

@@ -115,6 +115,10 @@ export interface Causa {
   fiscaliaInterviniente?: string | null;
   /** Modo judicial: fecha del último movimiento. ISO YYYY-MM-DD. */
   ultimoMovimiento?: string | null;
+  modoTerminacion?: string | null;
+  fechaTerminacion?: string | null;
+  violenciaGenero?: boolean;
+  tipoViolenciaGenero?: string | null;
 }
 
 export function createEmptyCausa(vocalia: number): Causa {
