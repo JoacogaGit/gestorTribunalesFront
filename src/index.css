@@ -192,6 +192,13 @@
     letter-spacing: -0.01em;
   }
 
+  .metrics-section h1,
+  .metrics-section h2,
+  .metrics-section h3 {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0;
+  }
+
   /* Refined scrollbars */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
