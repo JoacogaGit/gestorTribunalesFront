@@ -98,7 +98,7 @@ function RadialViolencia({ datos, palette }: { datos: DatoGrafico[]; palette: Pa
   })}</group>;
 }
 
-function Escena({ def, datos, palette }: { def: BloqueDef; datos: DatoGrafico[]; palette: Palette }) {
+function Escena({ def, datos, palette, movimiento }: { def: BloqueDef; datos: DatoGrafico[]; palette: Palette; movimiento: boolean }) {
   const grafico = def.id === "causas" ? <BarrasAgrupadas datos={datos} palette={palette} />
     : def.id === "resoluciones" ? <TorresResoluciones datos={datos} palette={palette} />
       : def.id === "habeas" ? <AnillosHabeas datos={datos} palette={palette} />
@@ -114,14 +114,18 @@ function Escena({ def, datos, palette }: { def: BloqueDef; datos: DatoGrafico[];
         <circleGeometry args={[5.5, 48]} />
         <meshStandardMaterial color={palette.tarjeta} roughness={0.78} metalness={0.08} />
       </mesh>
-      <OrbitControls enablePan={false} minDistance={7} maxDistance={14} minPolarAngle={0.55} maxPolarAngle={1.38} autoRotate autoRotateSpeed={0.45} />
+      <OrbitControls enablePan={false} minDistance={7} maxDistance={14} minPolarAngle={0.55} maxPolarAngle={1.38} autoRotate={movimiento} autoRotateSpeed={0.45} />
     </Canvas>
   );
 }
 
 export default function RelevamientoGraficos3D({ open, onOpenChange, nombre, valores }: Props) {
   const [activo, setActivo] = useState<BloqueId>("causas");
+  const [movimiento, setMovimiento] = useState(true);
   const palette = usePalette();
+  useEffect(() => {
+    setMovimiento(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, []);
   const def = BLOQUES.find((b) => b.id === activo) ?? BLOQUES[0];
   const datos = useMemo(() => datosDe(def, valores[def.id] ?? {}), [def, valores]);
   const total = datos.reduce((s, d) => s + d.value, 0);
@@ -135,7 +139,7 @@ export default function RelevamientoGraficos3D({ open, onOpenChange, nombre, val
         </div>
         <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="h-[430px] overflow-hidden rounded-md border border-metrics-border bg-metrics-card/60">
-            {palette && <Escena def={def} datos={datos} palette={palette} />}
+            {palette && <Escena def={def} datos={datos} palette={palette} movimiento={movimiento} />}
           </div>
           <aside className="max-h-[430px] overflow-y-auto rounded-md border border-metrics-border bg-metrics-card/55 p-4">
             <h3 className="text-center font-sans text-lg font-semibold">{def.titulo}</h3>
