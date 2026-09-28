@@ -15,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ExternalLink, FileText, Loader2, PanelRightClose, PanelRightOpen, Plus, Trash2, X } from "lucide-react";
 import { parseCaratulaLex100, precargarPdfjs } from "@/lib/parseCaratulaLex100";
 import { toast } from "sonner";
+import { MODOS_TERMINACION_BASE, TIPOS_VIOLENCIA_GENERO, leerModosPropios, guardarModosPropios, hoyArgentina } from "@/lib/terminacion";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
 import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
@@ -94,6 +95,10 @@ function emptyCausa(): CausaInput {
     modo_inicio: null,
     fiscalia_interviniente: "",
     ultimo_movimiento: null,
+    modo_terminacion: null,
+    fecha_terminacion: null,
+    violencia_genero: false,
+    tipo_violencia_genero: null,
     querella: "",
     actor_civil: "",
     otros_intervinientes: "",
@@ -179,6 +184,22 @@ export default function CausaFormDialog({
   const { vocalia } = useVocaliaActual();
   const { subestados } = useSubestadosTramite(vocalia?.id ?? null);
   const { esEstudio } = useTipoOficina(vocalia?.tribunalId ?? null);
+  const [modosPropios, setModosPropios] = useState<string[]>(() => leerModosPropios(vocalia?.id));
+  const [nuevoModo, setNuevoModo] = useState("");
+  useEffect(() => { setModosPropios(leerModosPropios(vocalia?.id)); }, [vocalia?.id]);
+  const agregarModoPropio = () => {
+    const m = nuevoModo.trim();
+    if (!m || !vocalia?.id) return;
+    const lista = modosPropios.includes(m) || MODOS_TERMINACION_BASE.includes(m) ? modosPropios : [...modosPropios, m];
+    setModosPropios(lista); guardarModosPropios(vocalia.id, lista);
+    updateCausa({ modo_terminacion: m });
+    setNuevoModo("");
+  };
+  const quitarModoPropio = (m: string) => {
+    if (!vocalia?.id) return;
+    const lista = modosPropios.filter((x) => x !== m);
+    setModosPropios(lista); guardarModosPropios(vocalia.id, lista);
+  };
   // Lista editable: opciones base + valores ya usados por el estudio.
   const [estadosCustom, setEstadosCustom] = useState<string[]>([]);
   useEffect(() => {
@@ -341,6 +362,14 @@ export default function CausaFormDialog({
             fiscalia_interviniente: (data as any).fiscalia_interviniente ?? "",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ultimo_movimiento: (data as any).ultimo_movimiento ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            modo_terminacion: (data as any).modo_terminacion ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            fecha_terminacion: (data as any).fecha_terminacion ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            violencia_genero: !!(data as any).violencia_genero,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            tipo_violencia_genero: (data as any).tipo_violencia_genero ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             flagrancia: !!(data as any).flagrancia,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -519,6 +548,10 @@ export default function CausaFormDialog({
       delegada: !!causa.delegada,
       art196bis: !!causa.art196bis,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
+      modo_terminacion: causa.estado_causa === "terminada" ? (causa.modo_terminacion ?? null) : null,
+      fecha_terminacion: causa.estado_causa === "terminada" ? (causa.fecha_terminacion ?? null) : null,
+      violencia_genero: !!causa.violencia_genero,
+      tipo_violencia_genero: causa.violencia_genero ? (causa.tipo_violencia_genero ?? null) : null,
       causa_conexa_id: causa.causa_conexa_texto?.trim() ? (causa.causa_conexa_id ?? null) : null,
     };
     // Filtrar sujetos completamente vacíos (no se persisten).
@@ -762,6 +795,7 @@ export default function CausaFormDialog({
                       onValueChange={(v) => updateCausa({
                         estado_causa: v as DbEstadoCausa,
                         tipo_recurso: v === "recurso" ? causa.tipo_recurso : null,
+                        ...(v === "terminada" && !causa.fecha_terminacion ? { fecha_terminacion: hoyArgentina() } : {}),
                       })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -772,6 +806,57 @@ export default function CausaFormDialog({
                       </SelectContent>
                     </Select>
                   </div>
+                  {causa.estado_causa === "terminada" && (
+                    <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-md border border-border/60 bg-background/60 p-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Modo de terminación</Label>
+                        <Select
+                          value={causa.modo_terminacion ?? "__none__"}
+                          onValueChange={(v) => updateCausa({ modo_terminacion: v === "__none__" ? null : v })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Seleccionar…" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            {Array.from(new Set([...MODOS_TERMINACION_BASE, ...modosPropios, ...(causa.modo_terminacion ? [causa.modo_terminacion] : [])])).map((m) => (
+                              <SelectItem key={m} value={m}>{m}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex gap-1.5">
+                          <Input
+                            value={nuevoModo}
+                            placeholder="Agregar modo propio…"
+                            className="h-8 text-xs"
+                            onChange={(e) => setNuevoModo(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); agregarModoPropio(); } }}
+                          />
+                          <Button type="button" size="sm" variant="outline" className="h-8" onClick={agregarModoPropio}>
+                            <Plus className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        {modosPropios.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {modosPropios.map((m) => (
+                              <span key={m} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px]">
+                                {m}
+                                <button type="button" title="Quitar de la lista" onClick={() => quitarModoPropio(m)} className="text-muted-foreground hover:text-destructive">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Fecha de terminación</Label>
+                        <Input
+                          type="date"
+                          value={causa.fecha_terminacion ?? ""}
+                          onChange={(e) => updateCausa({ fecha_terminacion: e.target.value || null })}
+                        />
+                      </div>
+                    </div>
+                  )}
                   {(mode === "crear" || causa.estado_causa === "tramite") && subestados.length > 0 && (
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-xs">Subestados de trámite (podés elegir varios)</Label>
@@ -954,6 +1039,33 @@ export default function CausaFormDialog({
                         value={causa.ultimo_movimiento ?? ""}
                         onChange={(e) => updateCausa({ ultimo_movimiento: e.target.value || null })}
                       />
+                    </div>
+                    <div className="sm:col-span-2 flex flex-wrap items-end gap-3 rounded-md border border-fuchsia-500/30 bg-fuchsia-500/5 p-3">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={!!causa.violencia_genero}
+                          onCheckedChange={(v) => updateCausa({ violencia_genero: v, tipo_violencia_genero: v ? causa.tipo_violencia_genero ?? null : null })}
+                        />
+                        <Label className="text-xs font-semibold">Violencia de género (Ley 26.485)</Label>
+                        {causa.violencia_genero && (
+                          <span className="rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-fuchsia-600 dark:text-fuchsia-400">VG</span>
+                        )}
+                      </div>
+                      {causa.violencia_genero && (
+                        <div className="space-y-1.5 min-w-[200px] flex-1">
+                          <Label className="text-xs">Tipo</Label>
+                          <Select
+                            value={causa.tipo_violencia_genero ?? "__none__"}
+                            onValueChange={(v) => updateCausa({ tipo_violencia_genero: v === "__none__" ? null : v })}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Seleccionar…" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">—</SelectItem>
+                              {TIPOS_VIOLENCIA_GENERO.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>
