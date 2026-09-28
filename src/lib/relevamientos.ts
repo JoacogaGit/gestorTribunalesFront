@@ -148,3 +148,15 @@ export function calcularAuto(causas: CausaRel[], inicio: string, fin: string): R
   }
   return { causas: causasV, resoluciones: res, violencia: vg, habeas: {}, audiencias: {} };
 }
+
+/** Resoluciones separadas por tipo de causa (claves `${tipo}_${modo}|con|sin`), para la planilla oficial. */
+export function resolucionesPorTipo(causas: CausaRel[], inicio: string, fin: string): Valores {
+  const out: Valores = {};
+  for (const c of causas) {
+    if (c.estado_causa === "terminada" && c.fecha_terminacion && c.fecha_terminacion >= inicio && c.fecha_terminacion <= fin) {
+      const k = `${tipoDeCausa(c)}_${modoResolucion(c.modo_terminacion)}|${conDetenido(c) ? "con" : "sin"}`;
+      out[k] = (out[k] ?? 0) + 1;
+    }
+  }
+  return out;
+}
