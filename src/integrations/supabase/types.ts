@@ -928,6 +928,69 @@ export type Database = {
         }
         Relationships: []
       }
+      relevamientos: {
+        Row: {
+          alcance: string
+          cerrado_at: string | null
+          config: Json | null
+          creado_por: string | null
+          created_at: string | null
+          datos: Json | null
+          estado: string
+          id: string
+          nombre: string
+          periodo_fin: string
+          periodo_inicio: string
+          tribunal_id: string | null
+          vocalia_id: string | null
+        }
+        Insert: {
+          alcance?: string
+          cerrado_at?: string | null
+          config?: Json | null
+          creado_por?: string | null
+          created_at?: string | null
+          datos?: Json | null
+          estado?: string
+          id?: string
+          nombre: string
+          periodo_fin: string
+          periodo_inicio: string
+          tribunal_id?: string | null
+          vocalia_id?: string | null
+        }
+        Update: {
+          alcance?: string
+          cerrado_at?: string | null
+          config?: Json | null
+          creado_por?: string | null
+          created_at?: string | null
+          datos?: Json | null
+          estado?: string
+          id?: string
+          nombre?: string
+          periodo_fin?: string
+          periodo_inicio?: string
+          tribunal_id?: string | null
+          vocalia_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relevamientos_tribunal_id_fkey"
+            columns: ["tribunal_id"]
+            isOneToOne: false
+            referencedRelation: "tribunales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relevamientos_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: false
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subestados_tramite: {
         Row: {
           created_at: string
