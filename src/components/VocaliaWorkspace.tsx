@@ -41,7 +41,7 @@ import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
 import CategoriasManager from "@/components/CategoriasManager";
-import MetricasPanel from "@/components/metricas/MetricasPanel";
+import RelevamientosPanel from "@/components/metricas/RelevamientosPanel";
 import TutorialTour, { lanzarTutorial } from "@/components/TutorialTour";
 import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -1150,7 +1150,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </div>
             )}
             {view === "metricas" && vocaliaId && (
-              <MetricasPanel vocaliaId={vocaliaId} vocaliasTribunal={vocaliasTribunal} />
+              <RelevamientosPanel vocaliaId={vocaliaId} tribunalId={tribunalId ?? null} vocaliasTribunal={vocaliasTribunal} />
             )}
             {view === "miembros" && esAdmin && tribunalId && (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
