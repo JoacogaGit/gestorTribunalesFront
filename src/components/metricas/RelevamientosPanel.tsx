@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, ArrowLeft, FolderOpen, Lock, LockOpen, Plus, Sparkles, Trash2, Loader2 } from "lucide-react";
+import { Activity, ArrowLeft, BarChart3, Download, FolderOpen, Lock, LockOpen, Minus, Plus, Sparkles, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { VocaliaRow } from "@/hooks/useVocalias";
 import { BLOQUES, BloqueDef, BloqueId, CausaRel, ModoBloque, Valores, calcularAuto } from "@/lib/relevamientos";
 import { hoyArgentina } from "@/lib/terminacion";
+import { exportarRelevamientoExcel } from "@/lib/exportRelevamientoExcel";
+import RelevamientoGraficos3D from "@/components/metricas/RelevamientoGraficos3D";
 
 interface Props { vocaliaId: string; tribunalId: string | null; vocaliasTribunal: VocaliaRow[] }
 
 interface Config { modos?: Partial<Record<BloqueId, ModoBloque>> }
-interface Datos { manual?: Partial<Record<BloqueId, Valores>>; snapshot?: Partial<Record<BloqueId, Valores>> }
+interface Datos {
+  manual?: Partial<Record<BloqueId, Valores>>;
+  ajustes?: Partial<Record<BloqueId, Valores>>;
+  snapshot?: Partial<Record<BloqueId, Valores>>;
+  snapshotBase?: Partial<Record<BloqueId, Valores>>;
+}
 interface Relevamiento {
   id: string; nombre: string; periodo_inicio: string; periodo_fin: string; estado: string; alcance: string;
   vocalia_id: string | null; tribunal_id: string | null; config: Config; datos: Datos; cerrado_at: string | null;
@@ -53,7 +60,7 @@ export default function RelevamientosPanel({ vocaliaId, tribunalId, vocaliasTrib
   };
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+    <div className="metrics-section h-full min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="mx-auto max-w-3xl text-center">
           <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-md border border-metrics-gold/40 bg-metrics-gold/10 text-metrics-gold"><Activity className="h-5 w-5" /></div>
@@ -175,6 +182,7 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
   const cerrado = rel.estado === "cerrado";
   const [causas, setCausas] = useState<CausaRel[] | null>(null);
   const [error, setError] = useState(false);
+  const [graficos, setGraficos] = useState(false);
 
   const ids = useMemo(() => (rel.alcance === "oficina" && vocaliasTribunal.length ? vocaliasTribunal.map((v) => v.id) : [rel.vocalia_id ?? vocaliaId]), [rel.alcance, rel.vocalia_id, vocaliaId, vocaliasTribunal]);
   useEffect(() => {
@@ -193,19 +201,39 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
   };
 
   const modo = (b: BloqueDef): ModoBloque => rel.config.modos?.[b.id] ?? b.modoDefault;
-  const valoresDe = (b: BloqueDef): Valores | null => {
+  const baseDe = (b: BloqueDef): Valores | null => {
+    if (cerrado) return rel.datos.snapshotBase?.[b.id] ?? rel.datos.snapshot?.[b.id] ?? {};
     if (modo(b) === "manual") return rel.datos.manual?.[b.id] ?? {};
-    if (cerrado) return rel.datos.snapshot?.[b.id] ?? {};
     return auto ? auto[b.id] : null;
   };
+  const ajusteDe = (b: BloqueDef): Valores => modo(b) === "auto" ? (rel.datos.ajustes?.[b.id] ?? {}) : {};
+  const finalesDe = (b: BloqueDef): Valores | null => {
+    if (cerrado) return rel.datos.snapshot?.[b.id] ?? {};
+    const base = baseDe(b);
+    if (!base) return null;
+    if (modo(b) === "manual") return base;
+    const ajustes = ajusteDe(b);
+    return Object.fromEntries(b.filas.flatMap((f) => b.columnas.map((c) => {
+      const k = `${f.id}|${c.id}`;
+      return [k, Math.max(0, (base[k] ?? 0) + (ajustes[k] ?? 0))];
+    })));
+  };
+  const finales = useMemo(() => Object.fromEntries(BLOQUES.map((b) => [b.id, finalesDe(b) ?? {}])) as Record<BloqueId, Valores>, [rel, auto]);
+  const bases = useMemo(() => Object.fromEntries(BLOQUES.map((b) => [b.id, baseDe(b) ?? {}])) as Record<BloqueId, Valores>, [rel, auto]);
 
   const cerrar = () => {
     if (!auto) return toast.error("Esperá a que terminen de calcularse los datos.");
-    const snapshot = Object.fromEntries(BLOQUES.map((b) => [b.id, auto[b.id]]));
-    guardar({ estado: "cerrado", cerrado_at: new Date().toISOString(), datos: { ...rel.datos, snapshot } });
+    guardar({ estado: "cerrado", cerrado_at: new Date().toISOString(), datos: { ...rel.datos, snapshot: finales, snapshotBase: bases } });
     toast.success("Relevamiento cerrado: los datos quedaron congelados.");
   };
   const reabrir = () => guardar({ estado: "borrador", cerrado_at: null });
+  const exportar = () => {
+    exportarRelevamientoExcel({
+      nombre: rel.nombre, periodoInicio: rel.periodo_inicio, periodoFin: rel.periodo_fin, alcance: rel.alcance,
+      modos: rel.config.modos ?? {}, bases, ajustes: rel.datos.ajustes ?? {}, finales,
+    });
+    toast.success("Relevamiento exportado a Excel.");
+  };
 
   return (
     <section className="space-y-4">
@@ -217,27 +245,47 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
             <p className="text-xs text-metrics-muted">{fmt(rel.periodo_inicio)} — {fmt(rel.periodo_fin)} · {rel.alcance === "oficina" ? "Toda la oficina" : "Este espacio"} · {cerrado ? "Cerrado (datos congelados)" : "Borrador (se actualiza en vivo)"}</p>
           </div>
         </div>
-        {cerrado
-          ? <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={reabrir}><LockOpen className="mr-1 h-4 w-4" /> Reabrir a borrador</Button>
-          : <Button className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={cerrar}><Lock className="mr-1 h-4 w-4" /> Cerrar relevamiento</Button>}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={() => setGraficos(true)}><BarChart3 className="mr-1.5 h-4 w-4" /> Ver gráficos</Button>
+          <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={exportar}><Download className="mr-1.5 h-4 w-4" /> Exportar a Excel</Button>
+          {cerrado
+            ? <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={reabrir}><LockOpen className="mr-1 h-4 w-4" /> Reabrir a borrador</Button>
+            : <Button className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={cerrar}><Lock className="mr-1 h-4 w-4" /> Cerrar relevamiento</Button>}
+        </div>
       </div>
       {error && <p className="text-sm text-metrics-negative">No se pudieron leer las causas para el cálculo automático.</p>}
 
       {BLOQUES.map((b) => (
-        <BloqueTabla key={b.id} def={b} modo={modo(b)} cerrado={cerrado} valores={valoresDe(b)}
+        <BloqueTabla key={b.id} def={b} modo={modo(b)} cerrado={cerrado} base={baseDe(b)} ajustes={ajusteDe(b)} valores={finalesDe(b)}
           onModo={(m) => guardar({ config: { ...rel.config, modos: { ...rel.config.modos, [b.id]: m } } })}
-          onValor={(k, v) => guardar({ datos: { ...rel.datos, manual: { ...rel.datos.manual, [b.id]: { ...(rel.datos.manual?.[b.id] ?? {}), [k]: v } } } })} />
+          onValor={(k, v) => guardar({ datos: { ...rel.datos, manual: { ...rel.datos.manual, [b.id]: { ...(rel.datos.manual?.[b.id] ?? {}), [k]: v } } } })}
+          onAjuste={(k, v) => guardar({ datos: { ...rel.datos, ajustes: { ...rel.datos.ajustes, [b.id]: { ...(rel.datos.ajustes?.[b.id] ?? {}), [k]: v } } } })} />
       ))}
+      <RelevamientoGraficos3D open={graficos} onOpenChange={setGraficos} nombre={rel.nombre} valores={finales} />
     </section>
   );
 }
 
-function BloqueTabla({ def, modo, cerrado, valores, onModo, onValor }: {
-  def: BloqueDef; modo: ModoBloque; cerrado: boolean; valores: Valores | null;
-  onModo: (m: ModoBloque) => void; onValor: (k: string, v: number) => void;
+function NumericStepper({ value, min, onChange, label }: { value: number; min?: number; onChange: (value: number) => void; label: string }) {
+  const ajustar = (n: number) => onChange(min === undefined ? n : Math.max(min, n));
+  return (
+    <div className="ml-auto flex h-9 w-[116px] overflow-hidden rounded-md border border-metrics-border bg-metrics-background shadow-sm focus-within:ring-2 focus-within:ring-metrics-gold/45">
+      <Button type="button" size="icon" variant="ghost" aria-label={`Restar uno a ${label}`} onClick={() => ajustar(value - 1)} className="h-9 w-8 shrink-0 rounded-none border-r border-metrics-border text-metrics-muted hover:bg-metrics-card hover:text-metrics-gold"><Minus className="h-3.5 w-3.5" /></Button>
+      <Input type="number" value={value} onChange={(e) => ajustar(Number(e.target.value) || 0)} aria-label={label} className="h-9 min-w-0 flex-1 appearance-none rounded-none border-0 bg-transparent px-1 text-center tabular-nums text-metrics-foreground shadow-none focus-visible:ring-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+      <Button type="button" size="icon" variant="ghost" aria-label={`Sumar uno a ${label}`} onClick={() => ajustar(value + 1)} className="h-9 w-8 shrink-0 rounded-none border-l border-metrics-border text-metrics-muted hover:bg-metrics-card hover:text-metrics-gold"><Plus className="h-3.5 w-3.5" /></Button>
+    </div>
+  );
+}
+
+function BloqueTabla({ def, modo, cerrado, base, ajustes, valores, onModo, onValor, onAjuste }: {
+  def: BloqueDef; modo: ModoBloque; cerrado: boolean; base: Valores | null; ajustes: Valores; valores: Valores | null;
+  onModo: (m: ModoBloque) => void; onValor: (k: string, v: number) => void; onAjuste: (k: string, v: number) => void;
 }) {
   const editable = modo === "manual" && !cerrado;
+  const ajustable = modo === "auto" && !cerrado;
   const v = (f: string, c: string) => valores?.[`${f}|${c}`] ?? 0;
+  const baseV = (f: string, c: string) => base?.[`${f}|${c}`] ?? 0;
+  const ajusteV = (f: string, c: string) => ajustes[`${f}|${c}`] ?? 0;
   const filaTotal = (f: string) => def.columnas.reduce((s, c) => s + v(f, c.id), 0);
   const filasSuma = def.filas.filter((f) => !def.excluirDeTotal?.includes(f.id));
   const colTotal = (c: string) => filasSuma.reduce((s, f) => s + v(f.id, c), 0);
@@ -246,9 +294,10 @@ function BloqueTabla({ def, modo, cerrado, valores, onModo, onValor }: {
 
   return (
     <article className="overflow-hidden rounded-md border border-metrics-border bg-metrics-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-metrics-border px-4 py-3">
-        <div><h3 className="font-semibold text-metrics-foreground">{def.titulo}</h3>{def.subtitulo && <p className="text-xs text-metrics-muted">{def.subtitulo}</p>}</div>
-        <label className="flex items-center gap-2 text-xs text-metrics-muted">
+      <div className="grid gap-3 border-b border-metrics-border px-4 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+        <div className="hidden sm:block" />
+        <div className="text-center"><h3 className="font-sans text-lg font-semibold text-metrics-foreground">{def.titulo}</h3>{def.subtitulo && <p className="text-xs text-metrics-muted">{def.subtitulo}</p>}</div>
+        <label className="flex items-center justify-center gap-2 text-xs text-metrics-muted sm:justify-self-end">
           <span className={modo === "manual" ? "text-metrics-foreground" : ""}>Manual</span>
           <Switch checked={modo === "auto"} disabled={cerrado} onCheckedChange={(on) => onModo(on ? "auto" : "manual")} aria-label="Automático" />
           <span className={modo === "auto" ? "text-metrics-gold" : ""}>Automático</span>
@@ -268,11 +317,9 @@ function BloqueTabla({ def, modo, cerrado, valores, onModo, onValor }: {
                   <td className="px-3 py-2">{f.label}</td>
                   {def.columnas.map((c) => (
                     <td key={c.id} className={celda}>
-                      {editable
-                        ? <Input type="number" min={0} defaultValue={v(f.id, c.id) || ""} key={`${f.id}|${c.id}|${v(f.id, c.id)}`}
-                            onBlur={(e) => { const n = Math.max(0, Number(e.target.value) || 0); if (n !== v(f.id, c.id)) onValor(`${f.id}|${c.id}`, n); }}
-                            className={`ml-auto h-8 w-20 text-right ${campo}`} />
-                        : v(f.id, c.id)}
+                      {editable ? <NumericStepper value={v(f.id, c.id)} min={0} label={`${f.label}, ${c.label}`} onChange={(n) => onValor(`${f.id}|${c.id}`, n)} />
+                        : ajustable ? <div className="min-w-[140px]"><div className="font-semibold text-metrics-foreground">{v(f.id, c.id)}</div><NumericStepper value={ajusteV(f.id, c.id)} label={`Ajuste de ${f.label}, ${c.label}`} onChange={(n) => onAjuste(`${f.id}|${c.id}`, n)} /><p className={`mt-1 whitespace-nowrap text-[10px] ${ajusteV(f.id, c.id) ? "font-medium text-metrics-gold" : "text-metrics-muted"}`}>Calculado {baseV(f.id, c.id)} · ajuste {ajusteV(f.id, c.id) > 0 ? "+" : ""}{ajusteV(f.id, c.id)}</p></div>
+                          : <div><span>{v(f.id, c.id)}</span>{ajusteV(f.id, c.id) !== 0 && <p className="mt-0.5 whitespace-nowrap text-[10px] text-metrics-gold">Incluye ajuste {ajusteV(f.id, c.id) > 0 ? "+" : ""}{ajusteV(f.id, c.id)}</p>}</div>}
                     </td>
                   ))}
                   {def.totalColumna && <td className={`${celda} font-semibold text-metrics-gold`}>{filaTotal(f.id)}</td>}
