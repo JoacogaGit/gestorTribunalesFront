@@ -5,9 +5,9 @@
 - [x] Reubicar el recuadro del calendario y descubrir Migración
 - [x] Abrir Gestión de oficina y destacar su código único
 - [x] Validar compilación y comportamiento visible
-- [ ] Permitir ajustes manuales registrados sobre cálculos automáticos
-- [ ] Modernizar los controles numéricos y centrar los títulos sin numeración
-- [ ] Agregar vista de gráficos 3D para los cinco bloques
-- [ ] Agregar exportación básica del relevamiento a Excel
-- [ ] Unificar los títulos de Estadísticas con tipografía sans-serif
-- [ ] Verificar cálculos, exportación y vista en escritorio y móvil
+- [x] Permitir ajustes manuales registrados sobre cálculos automáticos
+- [x] Modernizar los controles numéricos y centrar los títulos sin numeración
+- [x] Agregar vista de gráficos 3D para los cinco bloques
+- [x] Agregar exportación básica del relevamiento a Excel
+- [x] Unificar los títulos de Estadísticas con tipografía sans-serif
+- [x] Verificar cálculos y carga pública; la vista autenticada requiere sesión disponible
