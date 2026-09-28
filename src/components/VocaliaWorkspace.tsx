@@ -283,9 +283,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
-  const [filtroTerm, setFiltroTerm] = useState<FiltroTerminadas>(FILTRO_TERMINADAS_VACIO);
-  const terminadasBase = responsableFiltro.filtrar(terminadasRemote.causas);
-  const terminadasFiltradas = aplicarFiltroTerminadas(terminadasBase, filtroTerm);
   const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId);
   const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId);
   const delegadasRemote = useCausasPorMarca("delegada", vocaliaId);
@@ -296,6 +293,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const flagranciaRemote = useCausasFlagrancia(vocaliaId);
   const { esEstudio } = useTipoOficina(tribunalId);
   const responsableFiltro = useResponsableFilter(vocaliaId, esEstudio);
+  const [filtroTerm, setFiltroTerm] = useState<FiltroTerminadas>(FILTRO_TERMINADAS_VACIO);
+  const terminadasBase = responsableFiltro.filtrar(terminadasRemote.causas);
+  const terminadasFiltradas = aplicarFiltroTerminadas(terminadasBase, filtroTerm);
   const dashboardKpis = useDashboardKpis(vocaliaId);
   const dashCausasRemote = useCausasDashboard(vocaliaId, esEstudio);
   const eventos30d = useEventosProximos30d(vocaliaId);
