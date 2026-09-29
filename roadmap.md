@@ -11,3 +11,8 @@
 - [x] Agregar exportación básica del relevamiento a Excel
 - [x] Unificar los títulos de Estadísticas con tipografía sans-serif
 - [x] Verificar cálculos y carga pública; la vista autenticada requiere sesión disponible
+- [ ] Permitir arrastrar y soltar la carátula PDF en la creación de causa
+- [ ] Mover violencia de género de la causa a cada imputado y actualizar listados
+- [ ] Contar causas con imputados VG en el relevamiento, agrupadas sin duplicar cada causa por tipo
+- [ ] Corregir movimiento de categorías y aclarar ficha y miembros en el tutorial
+- [ ] Validar ficha, relevamientos y tutorial sin modificar funciones externas
