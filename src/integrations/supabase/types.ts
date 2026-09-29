@@ -1040,11 +1040,13 @@ export type Database = {
           observaciones: string | null
           prescripcion_fecha: string | null
           situacion_libertad: Database["public"]["Enums"]["situacion_libertad_enum"]
+          tipo_violencia_genero: string | null
           updated_at: string | null
           vencimiento_pena: string | null
           vencimiento_pena_nota: string | null
           vencimiento_pp: string | null
           vencimiento_sjp: string | null
+          violencia_genero: boolean
         }
         Insert: {
           borrado_en?: string | null
@@ -1062,11 +1064,13 @@ export type Database = {
           observaciones?: string | null
           prescripcion_fecha?: string | null
           situacion_libertad?: Database["public"]["Enums"]["situacion_libertad_enum"]
+          tipo_violencia_genero?: string | null
           updated_at?: string | null
           vencimiento_pena?: string | null
           vencimiento_pena_nota?: string | null
           vencimiento_pp?: string | null
           vencimiento_sjp?: string | null
+          violencia_genero?: boolean
         }
         Update: {
           borrado_en?: string | null
@@ -1084,11 +1088,13 @@ export type Database = {
           observaciones?: string | null
           prescripcion_fecha?: string | null
           situacion_libertad?: Database["public"]["Enums"]["situacion_libertad_enum"]
+          tipo_violencia_genero?: string | null
           updated_at?: string | null
           vencimiento_pena?: string | null
           vencimiento_pena_nota?: string | null
           vencimiento_pp?: string | null
           vencimiento_sjp?: string | null
+          violencia_genero?: boolean
         }
         Relationships: [
           {
