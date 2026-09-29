@@ -527,7 +527,8 @@ export default function CausaFormDialog({
   const isSujetoEmpty = (s: SujetoState) => {
     return !s.nombre_completo.trim() && !s.delito && !s.defensor && !s.fecha_detencion
       && !s.lugar_alojamiento && !s.prescripcion_fecha && !s.vencimiento_pp
-      && !s.vencimiento_pena && !s.vencimiento_pena_nota && !s.observaciones && s.situacion_libertad === "libre"
+      && !s.vencimiento_pena && !s.vencimiento_pena_nota && !s.violencia_genero
+      && !s.tipo_violencia_genero && !s.observaciones && s.situacion_libertad === "libre"
       && (s.prescripciones?.length ?? 0) === 0;
   };
 

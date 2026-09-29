@@ -93,6 +93,7 @@ export type DbCausa = {
   ultimo_movimiento?: string | null;
   modo_terminacion?: string | null;
   fecha_terminacion?: string | null;
+  /** Campos históricos de causa; la marca vigente se deriva de sujetos. */
   violencia_genero?: boolean | null;
   tipo_violencia_genero?: string | null;
   sujetos?: DbSujeto[];
