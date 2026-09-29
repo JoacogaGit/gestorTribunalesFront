@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -44,7 +44,7 @@ function formatoCorta(iso: string): string {
 }
 
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,violencia_genero,tipo_violencia_genero,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -97,8 +97,6 @@ function emptyCausa(): CausaInput {
     ultimo_movimiento: null,
     modo_terminacion: null,
     fecha_terminacion: null,
-    violencia_genero: false,
-    tipo_violencia_genero: null,
     querella: "",
     actor_civil: "",
     otros_intervinientes: "",
@@ -163,6 +161,8 @@ function emptySujeto(situacion: DbSituacionLibertad = "libre"): SujetoState {
     vencimiento_pp: null,
     vencimiento_pena: null,
     vencimiento_pena_nota: null,
+    violencia_genero: false,
+    tipo_violencia_genero: null,
     observaciones: "",
     prescripciones: [],
   };
@@ -367,10 +367,6 @@ export default function CausaFormDialog({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fecha_terminacion: (data as any).fecha_terminacion ?? null,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            violencia_genero: !!(data as any).violencia_genero,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            tipo_violencia_genero: (data as any).tipo_violencia_genero ?? null,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             flagrancia: !!(data as any).flagrancia,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             delegada: !!(data as any).delegada || data.estado_causa === "delegada",
@@ -439,6 +435,8 @@ export default function CausaFormDialog({
             vencimiento_pp: s.vencimiento_pp ?? null,
             vencimiento_pena: s.vencimiento_pena ?? null,
             vencimiento_pena_nota: s.vencimiento_pena_nota ?? null,
+            violencia_genero: !!s.violencia_genero,
+            tipo_violencia_genero: s.tipo_violencia_genero ?? null,
             observaciones: s.observaciones ?? "",
             prescripciones: duplicando
               ? (prescByID[s.id] ?? []).map((pr) => ({ _key: `dup-${pr._key}`, fecha: pr.fecha, descripcion: pr.descripcion }))
@@ -469,8 +467,13 @@ export default function CausaFormDialog({
 
   useEffect(() => { if (open && mode === "crear") precargarPdfjs().catch(() => {}); }, [open, mode]);
   const [cargandoCaratula, setCargandoCaratula] = useState(false);
+  const [arrastrandoCaratula, setArrastrandoCaratula] = useState(false);
   const cargarCaratula = async (file: File | undefined) => {
     if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("El archivo debe ser un PDF. Podés seguir completando la causa a mano.");
+      return;
+    }
     setCargandoCaratula(true);
     try {
       const d = await parseCaratulaLex100(file);
@@ -502,6 +505,11 @@ export default function CausaFormDialog({
       setCargandoCaratula(false);
     }
   };
+  const soltarCaratula = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setArrastrandoCaratula(false);
+    void cargarCaratula(event.dataTransfer.files?.[0]);
+  };
 
   const addSujeto = () => setSujetos((arr) => [emptySujeto(), ...arr]);
 
@@ -519,7 +527,8 @@ export default function CausaFormDialog({
   const isSujetoEmpty = (s: SujetoState) => {
     return !s.nombre_completo.trim() && !s.delito && !s.defensor && !s.fecha_detencion
       && !s.lugar_alojamiento && !s.prescripcion_fecha && !s.vencimiento_pp
-      && !s.vencimiento_pena && !s.vencimiento_pena_nota && !s.observaciones && s.situacion_libertad === "libre"
+      && !s.vencimiento_pena && !s.vencimiento_pena_nota && !s.violencia_genero
+      && !s.tipo_violencia_genero && !s.observaciones && s.situacion_libertad === "libre"
       && (s.prescripciones?.length ?? 0) === 0;
   };
 
@@ -550,8 +559,6 @@ export default function CausaFormDialog({
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
       modo_terminacion: causa.estado_causa === "terminada" ? (causa.modo_terminacion ?? null) : null,
       fecha_terminacion: causa.estado_causa === "terminada" ? (causa.fecha_terminacion ?? null) : null,
-      violencia_genero: !!causa.violencia_genero,
-      tipo_violencia_genero: causa.violencia_genero ? (causa.tipo_violencia_genero ?? null) : null,
       causa_conexa_id: causa.causa_conexa_texto?.trim() ? (causa.causa_conexa_id ?? null) : null,
     };
     // Filtrar sujetos completamente vacíos (no se persisten).
@@ -739,9 +746,19 @@ export default function CausaFormDialog({
               <section data-tour="form-datos" className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Datos generales</h3>
                 {mode === "crear" && !esEstudio && (
-                  <label data-tour-field="caratula-pdf" className="flex items-center justify-center gap-2 rounded-md border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-sm font-medium text-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                  <label
+                    data-tour-field="caratula-pdf"
+                    onDragEnter={(event) => { event.preventDefault(); setArrastrandoCaratula(true); }}
+                    onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setArrastrandoCaratula(true); }}
+                    onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setArrastrandoCaratula(false); }}
+                    onDrop={soltarCaratula}
+                    className={`flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed px-3 py-3 text-sm font-medium transition-colors ${arrastrandoCaratula ? "border-primary bg-primary/15 text-primary" : "border-primary/50 bg-primary/5 text-primary hover:bg-primary/10"}`}
+                  >
+                    <span className="flex items-center gap-2">
                     {cargandoCaratula ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                     {cargandoCaratula ? "Leyendo carátula…" : "Cargar carátula Lex100 (PDF)"}
+                    </span>
+                    {!cargandoCaratula && <span className="text-xs font-normal text-muted-foreground">Elegí el archivo o arrastralo hasta acá</span>}
                     <input
                       type="file"
                       accept="application/pdf,.pdf"
@@ -1039,33 +1056,6 @@ export default function CausaFormDialog({
                         value={causa.ultimo_movimiento ?? ""}
                         onChange={(e) => updateCausa({ ultimo_movimiento: e.target.value || null })}
                       />
-                    </div>
-                    <div className="sm:col-span-2 flex flex-wrap items-end gap-3 rounded-md border border-fuchsia-500/30 bg-fuchsia-500/5 p-3">
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={!!causa.violencia_genero}
-                          onCheckedChange={(v) => updateCausa({ violencia_genero: v, tipo_violencia_genero: v ? causa.tipo_violencia_genero ?? null : null })}
-                        />
-                        <Label className="text-xs font-semibold">Violencia de género (Ley 26.485)</Label>
-                        {causa.violencia_genero && (
-                          <span className="rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-fuchsia-600 dark:text-fuchsia-400">VG</span>
-                        )}
-                      </div>
-                      {causa.violencia_genero && (
-                        <div className="space-y-1.5 min-w-[200px] flex-1">
-                          <Label className="text-xs">Tipo</Label>
-                          <Select
-                            value={causa.tipo_violencia_genero ?? "__none__"}
-                            onValueChange={(v) => updateCausa({ tipo_violencia_genero: v === "__none__" ? null : v })}
-                          >
-                            <SelectTrigger><SelectValue placeholder="Seleccionar…" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">—</SelectItem>
-                              {TIPOS_VIOLENCIA_GENERO.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </section>
@@ -1390,9 +1380,34 @@ function SujetoCard({ sujeto, onChange, onPrescripcionesChange, onRemove }: Suje
               onChange={(e) => onChange({ nombre_completo: e.target.value })}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-tour-field="imputado-delito">
             <Label className="text-xs">Delito</Label>
             <Input value={sujeto.delito ?? ""} onChange={(e) => onChange({ delito: e.target.value })} />
+          </div>
+          <div className="space-y-2 rounded-md border border-fuchsia-500/30 bg-fuchsia-500/5 p-2.5" data-tour-field="imputado-vg">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={!!sujeto.violencia_genero}
+                onCheckedChange={(valor) => onChange({
+                  violencia_genero: valor,
+                  tipo_violencia_genero: valor ? (sujeto.tipo_violencia_genero ?? null) : null,
+                })}
+              />
+              <Label className="text-xs font-semibold">Violencia de género (Ley 26.485)</Label>
+              {sujeto.violencia_genero && <span className="rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-fuchsia-600 dark:text-fuchsia-400">VG</span>}
+            </div>
+            {sujeto.violencia_genero && (
+              <Select
+                value={sujeto.tipo_violencia_genero ?? "__none__"}
+                onValueChange={(valor) => onChange({ tipo_violencia_genero: valor === "__none__" ? null : valor })}
+              >
+                <SelectTrigger><SelectValue placeholder="Tipo de violencia" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Seleccionar tipo…</SelectItem>
+                  {TIPOS_VIOLENCIA_GENERO.map((tipo) => <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="space-y-1.5" data-tour-field="imputado-situacion">
             <Label className="text-xs">Situación de libertad</Label>

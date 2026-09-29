@@ -49,6 +49,8 @@ interface Paso {
   campos?: CampoGuiado[];
   /** Fija el recuadro arriba para no cubrir el contenido señalado. */
   popoverArriba?: boolean;
+  /** Mantiene visible y sin oscurecer el contenido de fondo. */
+  fondoClaro?: boolean;
 }
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -142,6 +144,9 @@ async function demoMoverCategoria() {
   if (!origen || !destino) return;
   origen.classList.add("iustrack-tour-drag-target");
   destino.classList.add("iustrack-tour-drag-target");
+  origen.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  await esperar(350);
+  if (signal.aborted) return;
   const a = origen.getBoundingClientRect();
   const b = destino.getBoundingClientRect();
   const layer = document.createElement("div");
@@ -151,7 +156,8 @@ async function demoMoverCategoria() {
   document.body.appendChild(layer);
   const mover = (x: number, y: number, duracion: number) => {
     layer.style.transitionDuration = `${duracion}ms`;
-    layer.style.transform = `translate(${x}px, ${y}px)`;
+    layer.style.left = `${x}px`;
+    layer.style.top = `${y}px`;
   };
   mover(a.left + a.width / 2, a.top + a.height / 2, 0);
   await esperar(450);
@@ -476,6 +482,7 @@ function construirPasos(props: Props): Paso[] {
   pasos.push(
     {
       ...fichaBase,
+      fondoClaro: true,
       demo: demoAbrirFormulario,
       titulo: "La ficha de la causa",
       texto: `<p class="iustrack-tour-lead">Mirá cómo se ilumina cada campo, uno por uno, con su explicación al costado.</p>`,
@@ -490,6 +497,7 @@ function construirPasos(props: Props): Paso[] {
     },
     {
       ...fichaBase,
+      fondoClaro: true,
       titulo: "La ficha del imputado",
       texto: `<p class="iustrack-tour-lead">Cada persona tiene su propio bloque, con color diferenciado.</p>`,
       campos: [
@@ -501,6 +509,7 @@ function construirPasos(props: Props): Paso[] {
     },
     {
       ...fichaBase,
+      fondoClaro: true,
       titulo: "Marcas y datos secundarios",
       texto: `<p class="iustrack-tour-lead">Las marcas agregan la causa a su propia lista con un solo toque.</p>`,
       campos: [
@@ -588,6 +597,7 @@ function construirPasos(props: Props): Paso[] {
     view: esAdmin ? "miembros" : undefined,
     target: esAdmin ? '[data-tour="codigo-oficina"]' : '[data-tour="sidebar"]',
     efecto: "pulso",
+    fondoClaro: true,
     side: "right",
     titulo: "Tu equipo y los permisos",
     texto:
@@ -723,6 +733,12 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       if (paso.view) onNavigate(paso.view);
       if (isMobile) onOpenSidebar?.(!!paso.abrirSidebar);
       await esperar(paso.view || paso.abrirSidebar ? 500 : 180);
+      // Algunas vistas administrativas terminan de montar después de navegar.
+      if (paso.target) {
+        for (let intento = 0; intento < 12 && !document.querySelector(paso.target); intento += 1) {
+          await esperar(150);
+        }
+      }
     },
     [isMobile, onNavigate, onOpenSidebar]
   );
@@ -732,6 +748,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       limpiarGuias();
       limpiarDemos();
       document.body.classList.remove("iustrack-tour-supabase-active");
+      document.body.classList.remove("iustrack-tour-clear-background");
       delete document.body.dataset.tourFx;
       driverRef.current?.destroy();
       driverRef.current = null;
@@ -786,6 +803,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
         limpiarGuias();
         limpiarDemos();
         document.body.classList.toggle("iustrack-tour-supabase-active", !!paso?.supabase);
+        document.body.classList.toggle("iustrack-tour-clear-background", !!paso?.fondoClaro);
         document.body.dataset.tourFx = paso?.efecto ?? "marco";
         void (async () => {
           if (paso?.demo) await paso.demo();
@@ -810,6 +828,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
         limpiarGuias();
         limpiarDemos();
         document.body.classList.remove("iustrack-tour-supabase-active");
+        document.body.classList.remove("iustrack-tour-clear-background");
         delete document.body.dataset.tourFx;
         driverRef.current = null;
       },

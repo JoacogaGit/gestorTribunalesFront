@@ -593,12 +593,11 @@ body.iustrack-tour-supabase-active .driver-overlay {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  transform: translate(-100px, -100px);
-  transition-property: transform;
+  transform: translate(-50%, -50%);
+  transition-property: left, top;
   transition-timing-function: cubic-bezier(.2,.8,.2,1);
 }
 .iustrack-tour-drag-label {
-  transform: translate(-50%, -50%);
   padding: 0.35rem 0.65rem;
   border: 1px solid hsl(var(--accent));
   border-radius: 0.45rem;
@@ -616,6 +615,12 @@ body.iustrack-tour-supabase-active .driver-overlay {
   filter: drop-shadow(0 2px 2px hsl(var(--background) / 0.8));
 }
 .iustrack-tour-drag-demo.is-grabbing .iustrack-tour-cursor { transform: translate(-0.7rem, 0.6rem) rotate(-12deg) scale(0.88); }
+
+/* La ficha y la gestión de miembros deben permanecer completamente legibles. */
+body.iustrack-tour-clear-background .driver-overlay path {
+  fill: transparent !important;
+  opacity: 0 !important;
+}
 .iustrack-tour-example-value {
   display: inline-flex;
   margin-top: 0.35rem;

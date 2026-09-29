@@ -15,9 +15,12 @@ export interface CausaRel {
   created_at: string | null;
   fecha_terminacion: string | null;
   modo_terminacion: string | null;
-  violencia_genero: boolean | null;
-  tipo_violencia_genero: string | null;
-  sujetos: { situacion_libertad: string; borrado_en: string | null }[] | null;
+  sujetos: {
+    situacion_libertad: string;
+    violencia_genero: boolean | null;
+    tipo_violencia_genero: string | null;
+    borrado_en: string | null;
+  }[] | null;
 }
 
 export interface BloqueDef {
@@ -141,9 +144,11 @@ export function calcularAuto(causas: CausaRel[], inicio: string, fin: string): R
       add(res, `${modoResolucion(c.modo_terminacion)}|${conDetenido(c) ? "con" : "sin"}`);
     }
 
-    if (c.violencia_genero && (existente || ingresada)) {
-      const t = TIPOS_VG.includes(c.tipo_violencia_genero || "") ? c.tipo_violencia_genero! : "Otras";
-      add(vg, `${t}|cant`);
+    if (existente || ingresada) {
+      const tipos = new Set((c.sujetos ?? [])
+        .filter((s) => !s.borrado_en && s.violencia_genero)
+        .map((s) => TIPOS_VG.includes(s.tipo_violencia_genero || "") ? (s.tipo_violencia_genero as string) : "Otras"));
+      tipos.forEach((tipo) => add(vg, `${tipo}|cant`));
     }
   }
   return { causas: causasV, resoluciones: res, violencia: vg, habeas: {}, audiencias: {} };
