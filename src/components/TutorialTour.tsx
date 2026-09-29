@@ -733,6 +733,12 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       if (paso.view) onNavigate(paso.view);
       if (isMobile) onOpenSidebar?.(!!paso.abrirSidebar);
       await esperar(paso.view || paso.abrirSidebar ? 500 : 180);
+      // Algunas vistas administrativas terminan de montar después de navegar.
+      if (paso.target) {
+        for (let intento = 0; intento < 12 && !document.querySelector(paso.target); intento += 1) {
+          await esperar(150);
+        }
+      }
     },
     [isMobile, onNavigate, onOpenSidebar]
   );
