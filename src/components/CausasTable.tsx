@@ -282,7 +282,7 @@ export default function CausasTable({
               </span>
             )}
             {c.violenciaGenero && (
-              <span title={`Violencia de género (Ley 26.485)${c.tipoViolenciaGenero ? " · " + c.tipoViolenciaGenero : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
+              <span title={`Violencia de género (Ley 26.485)${c.tiposViolenciaGenero?.length ? " · " + c.tiposViolenciaGenero.join(", ") : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
             )}
             {c.delegada && (
               <span title="Causa delegada" className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
@@ -987,7 +987,7 @@ export default function CausasTable({
                           </span>
                         )}
                         {c.violenciaGenero && (
-                  <span title={`Violencia de género (Ley 26.485)${c.tipoViolenciaGenero ? " · " + c.tipoViolenciaGenero : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
+                  <span title={`Violencia de género (Ley 26.485)${c.tiposViolenciaGenero?.length ? " · " + c.tiposViolenciaGenero.join(", ") : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
                 )}
                         {c.delegada && (
                           <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">DELEG</span>

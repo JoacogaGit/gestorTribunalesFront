@@ -35,8 +35,6 @@ export interface CausaInput {
   ultimo_movimiento?: string | null;
   modo_terminacion?: string | null;
   fecha_terminacion?: string | null;
-  violencia_genero?: boolean;
-  tipo_violencia_genero?: string | null;
 
   // Campos exclusivos de oficinas tipo "estudio"
   fuero?: string | null;
@@ -64,6 +62,8 @@ export interface SujetoInput {
   vencimiento_pp: string | null;
   vencimiento_pena: string | null;
   vencimiento_pena_nota: string | null;
+  violencia_genero: boolean;
+  tipo_violencia_genero: string | null;
   observaciones: string | null;
 }
 

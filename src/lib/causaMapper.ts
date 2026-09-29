@@ -46,6 +46,8 @@ export type DbSujeto = {
   vencimiento_pp: string | null;
   vencimiento_pena: string | null;
   vencimiento_pena_nota?: string | null;
+  violencia_genero?: boolean | null;
+  tipo_violencia_genero?: string | null;
   observaciones: string | null;
   lugar_alojamiento: string | null;
   causa_id: string;
@@ -130,6 +132,8 @@ export function mapSujeto(s: DbSujeto): Imputado {
       : undefined,
     fechaVencimientoPena: s.vencimiento_pena ?? undefined,
     vencimientoPenaNota: s.vencimiento_pena_nota ?? undefined,
+    violenciaGenero: !!s.violencia_genero,
+    tipoViolenciaGenero: s.tipo_violencia_genero ?? null,
     defensor: {
       nombre: s.defensor || "—",
       tipo: "DPO",
@@ -229,8 +233,10 @@ export function dbCausaToUI(row: DbCausa): Causa {
     ultimoMovimiento: row.ultimo_movimiento ?? null,
     modoTerminacion: row.modo_terminacion ?? null,
     fechaTerminacion: row.fecha_terminacion ?? null,
-    violenciaGenero: !!row.violencia_genero,
-    tipoViolenciaGenero: row.tipo_violencia_genero ?? null,
+    violenciaGenero: sujetos.some((s) => !!s.violencia_genero),
+    tiposViolenciaGenero: Array.from(new Set(sujetos
+      .filter((s) => !!s.violencia_genero)
+      .map((s) => s.tipo_violencia_genero?.trim() || "Otras"))),
     vocalia: 1,
   };
 }

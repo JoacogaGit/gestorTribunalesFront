@@ -19,6 +19,8 @@ export interface AgendaItem {
 export interface Imputado {
   nombre: string;
   estadoLibertad: EstadoLibertad;
+  violenciaGenero?: boolean;
+  tipoViolenciaGenero?: string | null;
   lugarDetencion?: string;
   fechaVencimientoPena?: string;
   /** Aclaración libre que se muestra debajo del vencimiento de pena. */
@@ -117,8 +119,10 @@ export interface Causa {
   ultimoMovimiento?: string | null;
   modoTerminacion?: string | null;
   fechaTerminacion?: string | null;
+  /** Se deriva de los imputados para mostrar el indicador en las listas. */
   violenciaGenero?: boolean;
-  tipoViolenciaGenero?: string | null;
+  /** Tipos únicos presentes entre los imputados marcados. */
+  tiposViolenciaGenero?: string[];
 }
 
 export function createEmptyCausa(vocalia: number): Causa {

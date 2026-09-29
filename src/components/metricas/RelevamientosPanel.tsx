@@ -166,7 +166,7 @@ async function traerCausas(vocaliaIds: string[]): Promise<CausaRel[]> {
   const paso = 1000;
   for (let desde = 0; ; desde += paso) {
     const { data, error } = await supabase.from("causas")
-      .select("id,estado_causa,flagrancia,delegada,art196bis,fecha_ingreso,created_at,fecha_terminacion,modo_terminacion,violencia_genero,tipo_violencia_genero,sujetos(situacion_libertad,borrado_en)")
+      .select("id,estado_causa,flagrancia,delegada,art196bis,fecha_ingreso,created_at,fecha_terminacion,modo_terminacion,sujetos(situacion_libertad,violencia_genero,tipo_violencia_genero,borrado_en)")
       .in("vocalia_id", vocaliaIds).is("borrado_en", null).order("id").range(desde, desde + paso - 1);
     if (error) throw error;
     out.push(...((data ?? []) as unknown as CausaRel[]));
