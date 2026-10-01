@@ -25,14 +25,22 @@ export interface CaratulaLex100 {
 // Se instala el WorkerMessageHandler en este mismo contexto antes de cargar pdfjs:
 // así PDFWorker usa su "fake worker" y nunca crea un Worker separado.
 let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
+const PRECARGA_TIMEOUT_MS = 10000;
+
 export function precargarPdfjs() {
   if (!pdfjsPromise) {
-    pdfjsPromise = import("pdfjs-dist/build/pdf.worker.min.mjs")
-      .then((workerModule) => {
-        (globalThis as typeof globalThis & { pdfjsWorker?: typeof workerModule }).pdfjsWorker = workerModule;
-        return import("pdfjs-dist");
-      })
-      .catch((e) => { pdfjsPromise = null; throw e; });
+    // Con límite de tiempo: si la carga del módulo nunca termina (navegadores
+    // antiguos o redes que bloquean recursos), falla y permite seguir a mano.
+    pdfjsPromise = Promise.race([
+      import("pdfjs-dist/build/pdf.worker.min.mjs")
+        .then((workerModule) => {
+          (globalThis as typeof globalThis & { pdfjsWorker?: typeof workerModule }).pdfjsWorker = workerModule;
+          return import("pdfjs-dist");
+        }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("La preparación del lector PDF excedió el tiempo máximo.")), PRECARGA_TIMEOUT_MS),
+      ),
+    ]).catch((e) => { pdfjsPromise = null; throw e; });
   }
   return pdfjsPromise;
 }
