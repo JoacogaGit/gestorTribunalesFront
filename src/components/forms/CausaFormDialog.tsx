@@ -468,6 +468,16 @@ export default function CausaFormDialog({
   useEffect(() => { if (open && mode === "crear") precargarPdfjs().catch(() => {}); }, [open, mode]);
   const [cargandoCaratula, setCargandoCaratula] = useState(false);
   const [arrastrandoCaratula, setArrastrandoCaratula] = useState(false);
+  const PDF_TIMEOUT_SEGURIDAD_MS = 15000;
+  // Límite de seguridad: si la lectura del PDF nunca termina (ni bien ni mal),
+  // cortamos igual para que el "Leyendo…" siempre se apague.
+  const conLimite = <T,>(p: Promise<T>, ms: number): Promise<T> =>
+    Promise.race([
+      p,
+      new Promise<never>((_, rej) =>
+        setTimeout(() => rej(new Error("La lectura del PDF excedió el tiempo máximo.")), ms),
+      ),
+    ]);
   const cargarCaratula = async (file: File | undefined) => {
     if (!file) return;
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
@@ -476,7 +486,7 @@ export default function CausaFormDialog({
     }
     setCargandoCaratula(true);
     try {
-      const d = await parseCaratulaLex100(file);
+      const d = await conLimite(parseCaratulaLex100(file), PDF_TIMEOUT_SEGURIDAD_MS);
       const patch: Partial<CausaInput> = {};
       if (d.despachante) patch.despachante = d.despachante;
       if (d.expediente_nro) patch.expediente_nro = d.expediente_nro;
