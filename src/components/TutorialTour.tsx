@@ -49,6 +49,8 @@ interface Paso {
   campos?: CampoGuiado[];
   /** Fija el recuadro arriba para no cubrir el contenido señalado. */
   popoverArriba?: boolean;
+  /** Ubica el recuadro sobre el panel derecho y deja libre la ficha principal. */
+  popoverFicha?: boolean;
   /** Mantiene visible y sin oscurecer el contenido de fondo. */
   fondoClaro?: boolean;
 }
@@ -92,7 +94,10 @@ function limpiarDemos() {
     el.classList.remove("iustrack-tour-list-focus", "iustrack-tour-filter-focus", "iustrack-tour-drag-target");
   });
   document.getElementById("iustrack-tour-drag-demo")?.remove();
-  document.getElementById("iustrack-tour-notes-demo")?.remove();
+  document.querySelectorAll(".iustrack-tour-note-example").forEach((el) => el.remove());
+  document.querySelectorAll<HTMLElement>("[data-tour-empty].iustrack-tour-empty-hidden").forEach((el) => {
+    el.classList.remove("iustrack-tour-empty-hidden");
+  });
   document.querySelectorAll(".iustrack-tour-example-value").forEach((el) => el.remove());
   document.querySelectorAll<HTMLInputElement>("input[data-tour-original-value]").forEach((el) => {
     const original = el.dataset.tourOriginalValue;
@@ -176,31 +181,47 @@ async function demoMoverCategoria() {
   layer.classList.remove("is-grabbing");
 }
 
-/** Carga cuatro anotaciones ficticias en paralelo, sin guardar datos. */
+/** Carga cuatro anotaciones ficticias dentro de las listas reales, sin tocar el estado ni guardar datos. */
 async function demoAnotaciones() {
   const signal = demoAbort.signal;
-  const aside = document.querySelector<HTMLElement>('[data-tour="panel-anotaciones-causa"]');
-  const visible = aside && aside.getBoundingClientRect().width > 0;
-  const panel = document.createElement("div");
-  panel.id = "iustrack-tour-notes-demo";
-  panel.className = visible ? "iustrack-tour-notes-demo en-panel" : "iustrack-tour-notes-demo";
-  panel.innerHTML = `
-    <div class="iustrack-tour-notes-heading"><strong>Anotaciones de ejemplo</strong><span>Se cargan en paralelo</span></div>
-    <div class="iustrack-tour-notes-grid">
-      <article style="--note-delay:0ms"><strong>Revisar escrito presentado</strong><span class="sin-fecha">Sin fecha · pendiente</span></article>
-      <article style="--note-delay:140ms"><strong>Audiencia de declaración</strong><span class="con-fecha">Con fecha · 12 oct., 10:30</span></article>
-      <article style="--note-delay:280ms"><strong>Llamar a la fiscalía</strong><span class="sin-fecha">Sin fecha · recordatorio</span></article>
-      <article style="--note-delay:420ms"><strong>Vence traslado</strong><span class="con-fecha">Con fecha · 18 oct.</span></article>
-    </div>
-    <p>Las que tienen fecha aparecen en el calendario en tiempo real.</p>`;
-  if (visible) {
-    const titulo = aside!.firstElementChild;
-    if (titulo) titulo.after(panel); else aside!.prepend(panel);
-  } else {
-    document.body.appendChild(panel);
+  let aside = document.querySelector<HTMLElement>('[data-tour="panel-anotaciones-causa"]');
+  if (!aside || aside.getBoundingClientRect().width === 0) {
+    document.querySelector<HTMLButtonElement>('[data-tour="mostrar-panel-anotaciones"]')?.click();
+    await esperar(180);
+    aside = document.querySelector<HTMLElement>('[data-tour="panel-anotaciones-causa"]');
   }
-  await esperar(2600);
-  if (signal.aborted) panel.remove();
+  if (!aside || signal.aborted) return;
+
+  const conFecha = aside.querySelector<HTMLElement>('[data-tour="anotaciones-con-fecha"]');
+  const sinFecha = aside.querySelector<HTMLElement>('[data-tour="anotaciones-sin-fecha"]');
+  if (!conFecha || !sinFecha) return;
+
+  const crearEjemplo = (titulo: string, detalle: string, conFechaEjemplo: boolean, demora: number) => {
+    const item = document.createElement("div");
+    item.className = `iustrack-tour-note-example ${conFechaEjemplo ? "con-fecha" : "sin-fecha"}`;
+    item.style.setProperty("--note-delay", `${demora}ms`);
+    item.innerHTML = `<strong>${titulo}</strong><span>${detalle}</span>`;
+    return item;
+  };
+
+  [conFecha, sinFecha].forEach((grupo) => {
+    grupo.querySelector<HTMLElement>("[data-tour-empty]")?.classList.add("iustrack-tour-empty-hidden");
+  });
+  conFecha.append(
+    crearEjemplo("Audiencia de declaración", "12 oct., 10:30 · aparece en Calendario", true, 0),
+    crearEjemplo("Vence traslado", "18 oct. · aparece en Calendario", true, 280),
+  );
+  sinFecha.append(
+    crearEjemplo("Revisar escrito presentado", "Nota sin fecha", false, 140),
+    crearEjemplo("Llamar a la fiscalía", "Pendiente sin fecha", false, 420),
+  );
+  await esperar(700);
+  if (signal.aborted) return;
+}
+
+async function demoFichaConAnotaciones() {
+  await demoAbrirFormulario();
+  await demoAnotaciones();
 }
 
 interface Props {
@@ -510,14 +531,18 @@ function construirPasos(props: Props): Paso[] {
   });
 
   // 7 — Ficha de causa: sombreado progresivo
-  const fichaBase = { target: '[data-tour="form-causa"]', side: "left" as const, efecto: "marco" as Efecto };
+  const fichaBase = { target: '[data-tour="form-causa"]', side: "left" as const, efecto: "marco" as Efecto, popoverFicha: true };
   pasos.push(
     {
       ...fichaBase,
       fondoClaro: true,
-      demo: demoAbrirFormulario,
+      demo: demoFichaConAnotaciones,
       titulo: "La ficha de la causa",
-      texto: `<p class="iustrack-tour-lead">Mirá cómo se ilumina cada campo, uno por uno, con su explicación al costado.</p>`,
+      texto: `<p class="iustrack-tour-lead">Mirá cómo se ilumina cada campo, uno por uno. En el panel derecho aparecen cuatro anotaciones de ejemplo integradas a la ficha.</p>
+        ${bullets([
+          ["Con fecha", "impactan en tiempo real en el calendario, que vas a ver a continuación."],
+          ["Sin fecha", "quedan como notas o pendientes de la causa."],
+        ])}`,
       campos: [
         { target: '[data-tour-field="expediente"]', titulo: "Expediente", texto: "El número único que identifica la causa.", lado: "left", ejemplo: "12345/2026" },
         { target: '[data-tour-field="caratula"]', titulo: "Carátula", texto: "El nombre con el que la vas a reconocer.", lado: "right", ejemplo: "PÉREZ, JUAN s/ ROBO" },
@@ -538,20 +563,6 @@ function construirPasos(props: Props): Paso[] {
         { target: '[data-tour-field="imputado-defensor"]', titulo: "Defensor", texto: "El letrado de esta persona.", lado: "left", ejemplo: "Dra. Ana López" },
         { target: '[data-tour-field="imputado-vencimientos"]', titulo: "Vencimientos", texto: "Prisión preventiva y pena: viajan solos al calendario.", lado: "right", ejemplo: "2026-12-15" },
       ],
-    },
-    {
-      target: '[data-tour="panel-anotaciones-causa"]',
-      side: "left" as const,
-      efecto: "marco" as Efecto,
-      fondoClaro: true,
-      titulo: "Anotaciones de la causa",
-      texto:
-        `<p class="iustrack-tour-lead">A la derecha de la ficha cargás eventos y notas, incluso mientras creás la causa.</p>
-         ${bullets([
-           ["Con fecha", "se convierten en eventos y aparecen en tiempo real en el calendario (el paso siguiente)."],
-           ["Sin fecha", "quedan como notas o pendientes de la causa."],
-         ])}`,
-      demo: demoAnotaciones,
     },
     {
       ...fichaBase,
@@ -764,6 +775,9 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       if (paso.view) onNavigate(paso.view);
       if (isMobile) onOpenSidebar?.(!!paso.abrirSidebar);
       await esperar(paso.view || paso.abrirSidebar ? 500 : 180);
+      if (paso.target?.startsWith('[data-tour="form') && !document.querySelector(paso.target)) {
+        await demoAbrirFormulario();
+      }
       // Algunas vistas administrativas terminan de montar después de navegar.
       if (paso.target) {
         for (let intento = 0; intento < 12 && !document.querySelector(paso.target); intento += 1) {
@@ -820,7 +834,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       steps: pasos.map((p, i) => ({
         element: p.target,
         popover: {
-          popoverClass: `iustrack-tour${p.supabase ? " iustrack-tour-supabase" : ""}${p.campos ? " iustrack-tour-fields" : ""}${p.destacado ? " iustrack-tour-destacado" : ""}${p.popoverArriba ? " iustrack-tour-top" : ""}`,
+          popoverClass: `iustrack-tour${p.supabase ? " iustrack-tour-supabase" : ""}${p.campos ? " iustrack-tour-fields" : ""}${p.destacado ? " iustrack-tour-destacado" : ""}${p.popoverArriba ? " iustrack-tour-top" : ""}${p.popoverFicha ? " iustrack-tour-form-corner" : ""}`,
           title: p.titulo,
           description: `${p.texto}<div class="iustrack-tour-progress"><span style="width:${
             ((i + 2) / TOTAL) * 100

@@ -1261,6 +1261,7 @@ export default function CausaFormDialog({
           </div>
           {conPanelAnot && !panelAnotaciones && (
             <button
+              data-tour="mostrar-panel-anotaciones"
               type="button"
               onClick={mostrarPanel}
               title="Mostrar anotaciones"

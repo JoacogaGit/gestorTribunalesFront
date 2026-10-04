@@ -653,44 +653,22 @@ body.iustrack-tour-supabase-active .driver-overlay {
   from { opacity: 0; transform: translateY(12px) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
-.iustrack-tour-notes-demo {
-  position: fixed;
-  z-index: 10003;
-  right: clamp(1rem, 4vw, 4rem);
-  bottom: clamp(1rem, 5vh, 3.5rem);
-  width: min(44rem, calc(100vw - 2rem));
-  padding: 1rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.75rem;
-  background: hsl(var(--card));
-  color: hsl(var(--foreground));
-  box-shadow: var(--shadow-elevated);
-  pointer-events: none;
-}
-.iustrack-tour-notes-demo.en-panel { position: relative; z-index: 1; right: auto; bottom: auto; width: auto; margin-top: 0.75rem; }
-.iustrack-tour-notes-demo.en-panel .iustrack-tour-notes-grid { grid-template-columns: 1fr; }
-.iustrack-tour-notes-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
-.iustrack-tour-notes-heading span, .iustrack-tour-notes-demo > p { color: hsl(var(--muted-foreground)); font-size: 0.8rem; }
-.iustrack-tour-notes-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
-.iustrack-tour-notes-grid article {
+.iustrack-tour-note-example {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 0.4rem;
-  padding: 0.75rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.55rem;
-  background: hsl(var(--muted) / 0.45);
+  padding: 1rem;
+  border-left: 4px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  background: hsl(var(--muted) / 0.4);
+  color: hsl(var(--foreground));
   animation: tour-note-enter 0.42s ease-out var(--note-delay) both;
 }
-.iustrack-tour-notes-grid article span { width: fit-content; border-radius: 999px; padding: 0.2rem 0.5rem; font-size: 0.72rem; font-weight: 700; }
-.iustrack-tour-notes-grid .con-fecha { background: hsl(var(--primary) / 0.16); color: hsl(var(--primary)); }
-.iustrack-tour-notes-grid .sin-fecha { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
-.iustrack-tour-notes-demo > p { margin-top: 0.75rem; font-weight: 600; }
-@media (max-width: 700px) {
-  .iustrack-tour-notes-demo { right: 1rem; bottom: 1rem; }
-  .iustrack-tour-notes-grid { grid-template-columns: 1fr; }
-}
+.iustrack-tour-note-example.con-fecha { border-left-color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1); }
+.iustrack-tour-note-example strong { font-size: 0.875rem; }
+.iustrack-tour-note-example span { color: hsl(var(--muted-foreground)); font-size: 0.75rem; }
+.iustrack-tour-empty-hidden { display: none; }
 
 /* La ficha y la gestión de miembros deben permanecer completamente legibles. */
 body.iustrack-tour-clear-background .driver-overlay path {
@@ -718,6 +696,18 @@ body.iustrack-tour-clear-background .driver-overlay path {
   transform: none !important;
 }
 .driver-popover.iustrack-tour.iustrack-tour-top .driver-popover-arrow { display: none; }
+
+/* En la ficha, el cartel ocupa la esquina inferior del panel derecho y no tapa los campos ni los ejemplos superiores. */
+.driver-popover.iustrack-tour.iustrack-tour-form-corner {
+  position: fixed !important;
+  top: auto !important;
+  right: 1rem !important;
+  bottom: 1rem !important;
+  left: auto !important;
+  width: min(22rem, calc(100vw - 2rem)) !important;
+  transform: none !important;
+}
+.driver-popover.iustrack-tour.iustrack-tour-form-corner .driver-popover-arrow { display: none; }
 
 .driver-popover.iustrack-tour { animation: tour-pop 0.35s cubic-bezier(.2,.8,.2,1); }
 .driver-popover.iustrack-tour .driver-popover-title { animation: tour-rise 0.4s ease-out both; }
@@ -781,5 +771,5 @@ body[data-tour-fx="marco"] [data-tour="form-causa"].driver-active-element { outl
 @media (prefers-reduced-motion: reduce) {
   .driver-popover.iustrack-tour, .driver-popover.iustrack-tour *, .driver-active-element, .iustrack-tour-move-chip, .iustrack-tour-field-card { animation: none !important; }
   .iustrack-tour-drag-demo { transition-duration: 0ms !important; }
-  .iustrack-tour-notes-grid article { animation: none !important; }
+  .iustrack-tour-note-example { animation: none !important; }
 }
