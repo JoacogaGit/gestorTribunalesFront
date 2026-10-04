@@ -618,13 +618,17 @@ body.iustrack-tour-supabase-active .driver-overlay {
   pointer-events: none;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  transform: translate(-50%, -50%);
+  justify-content: center;
   transition-property: left, top;
   transition-timing-function: cubic-bezier(.2,.8,.2,1);
 }
 .iustrack-tour-drag-label {
-  padding: 0.35rem 0.65rem;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
   border: 1px solid hsl(var(--accent));
   border-radius: 0.45rem;
   background: hsl(var(--card));
@@ -634,13 +638,57 @@ body.iustrack-tour-supabase-active .driver-overlay {
   font-weight: 700;
 }
 .iustrack-tour-cursor {
-  transform: translate(-0.7rem, 0.6rem) rotate(-12deg);
+  position: absolute;
+  right: -0.7rem;
+  bottom: -0.9rem;
+  transform: rotate(-12deg);
   color: hsl(var(--foreground));
   font-size: 1.8rem;
   line-height: 1;
   filter: drop-shadow(0 2px 2px hsl(var(--background) / 0.8));
 }
-.iustrack-tour-drag-demo.is-grabbing .iustrack-tour-cursor { transform: translate(-0.7rem, 0.6rem) rotate(-12deg) scale(0.88); }
+.iustrack-tour-drag-demo.is-grabbing .iustrack-tour-cursor { transform: rotate(-12deg) scale(0.88); }
+
+@keyframes tour-note-enter {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.iustrack-tour-notes-demo {
+  position: fixed;
+  z-index: 10003;
+  right: clamp(1rem, 4vw, 4rem);
+  bottom: clamp(1rem, 5vh, 3.5rem);
+  width: min(44rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: var(--shadow-elevated);
+  pointer-events: none;
+}
+.iustrack-tour-notes-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+.iustrack-tour-notes-heading span, .iustrack-tour-notes-demo > p { color: hsl(var(--muted-foreground)); font-size: 0.8rem; }
+.iustrack-tour-notes-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+.iustrack-tour-notes-grid article {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.55rem;
+  background: hsl(var(--muted) / 0.45);
+  animation: tour-note-enter 0.42s ease-out var(--note-delay) both;
+}
+.iustrack-tour-notes-grid article span { width: fit-content; border-radius: 999px; padding: 0.2rem 0.5rem; font-size: 0.72rem; font-weight: 700; }
+.iustrack-tour-notes-grid .con-fecha { background: hsl(var(--primary) / 0.16); color: hsl(var(--primary)); }
+.iustrack-tour-notes-grid .sin-fecha { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+.iustrack-tour-notes-demo > p { margin-top: 0.75rem; font-weight: 600; }
+@media (max-width: 700px) {
+  .iustrack-tour-notes-demo { right: 1rem; bottom: 1rem; }
+  .iustrack-tour-notes-grid { grid-template-columns: 1fr; }
+}
 
 /* La ficha y la gestión de miembros deben permanecer completamente legibles. */
 body.iustrack-tour-clear-background .driver-overlay path {
@@ -731,4 +779,5 @@ body[data-tour-fx="marco"] [data-tour="form-causa"].driver-active-element { outl
 @media (prefers-reduced-motion: reduce) {
   .driver-popover.iustrack-tour, .driver-popover.iustrack-tour *, .driver-active-element, .iustrack-tour-move-chip, .iustrack-tour-field-card { animation: none !important; }
   .iustrack-tour-drag-demo { transition-duration: 0ms !important; }
+  .iustrack-tour-notes-grid article { animation: none !important; }
 }

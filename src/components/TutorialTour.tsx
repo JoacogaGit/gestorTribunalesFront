@@ -92,6 +92,7 @@ function limpiarDemos() {
     el.classList.remove("iustrack-tour-list-focus", "iustrack-tour-filter-focus", "iustrack-tour-drag-target");
   });
   document.getElementById("iustrack-tour-drag-demo")?.remove();
+  document.getElementById("iustrack-tour-notes-demo")?.remove();
   document.querySelectorAll(".iustrack-tour-example-value").forEach((el) => el.remove());
   document.querySelectorAll<HTMLInputElement>("input[data-tour-original-value]").forEach((el) => {
     const original = el.dataset.tourOriginalValue;
@@ -138,37 +139,64 @@ async function demoFiltroCaratula() {
 /** Cursor ficticio que arrastra Carátula hacia otra posición y la devuelve. */
 async function demoMoverCategoria() {
   const signal = demoAbort.signal;
+  const buscador = document.querySelector<HTMLInputElement>('[data-tour="buscador"]');
+  if (buscador) setInputValue(buscador, "");
   const origen = document.querySelector<HTMLElement>('[data-tour-column="caratula"]');
   const destino = document.querySelector<HTMLElement>('[data-tour-column="delito"]')
     ?? document.querySelector<HTMLElement>('[data-tour-column="libertad"]');
   if (!origen || !destino) return;
   origen.classList.add("iustrack-tour-drag-target");
   destino.classList.add("iustrack-tour-drag-target");
-  origen.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-  await esperar(350);
+  origen.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+  await esperar(250);
   if (signal.aborted) return;
   const a = origen.getBoundingClientRect();
   const b = destino.getBoundingClientRect();
   const layer = document.createElement("div");
   layer.id = "iustrack-tour-drag-demo";
   layer.className = "iustrack-tour-drag-demo";
-  layer.innerHTML = '<span class="iustrack-tour-drag-label">Carátula</span><span class="iustrack-tour-cursor">↖</span>';
+  layer.innerHTML = `<span class="iustrack-tour-drag-label">${origen.textContent?.trim() || "Carátula"}</span><span class="iustrack-tour-cursor">↖</span>`;
   document.body.appendChild(layer);
+  layer.style.width = `${a.width}px`;
+  layer.style.height = `${a.height}px`;
   const mover = (x: number, y: number, duracion: number) => {
     layer.style.transitionDuration = `${duracion}ms`;
     layer.style.left = `${x}px`;
     layer.style.top = `${y}px`;
   };
-  mover(a.left + a.width / 2, a.top + a.height / 2, 0);
+  mover(a.left, a.top, 0);
   await esperar(450);
   if (signal.aborted) return;
   layer.classList.add("is-grabbing");
-  mover(b.left + b.width / 2, b.top + b.height / 2, 850);
+  mover(b.left, a.top, 850);
   await esperar(1050);
   if (signal.aborted) return;
-  mover(a.left + a.width / 2, a.top + a.height / 2, 850);
+  mover(a.left, a.top, 850);
   await esperar(1050);
   layer.classList.remove("is-grabbing");
+}
+
+/** Carga cuatro anotaciones ficticias en paralelo, sin guardar datos. */
+async function demoAnotaciones() {
+  const signal = demoAbort.signal;
+  const target = document.querySelector<HTMLElement>('[data-tour="main"]')
+    ?? document.querySelector<HTMLElement>('[data-tour="anotaciones"]');
+  if (!target) return;
+  const panel = document.createElement("div");
+  panel.id = "iustrack-tour-notes-demo";
+  panel.className = "iustrack-tour-notes-demo";
+  panel.innerHTML = `
+    <div class="iustrack-tour-notes-heading"><strong>Anotaciones de ejemplo</strong><span>Se cargan en paralelo</span></div>
+    <div class="iustrack-tour-notes-grid">
+      <article style="--note-delay:0ms"><strong>Revisar escrito presentado</strong><span class="sin-fecha">Sin fecha · pendiente</span></article>
+      <article style="--note-delay:140ms"><strong>Audiencia de declaración</strong><span class="con-fecha">Con fecha · 12 oct., 10:30</span></article>
+      <article style="--note-delay:280ms"><strong>Llamar a la fiscalía</strong><span class="sin-fecha">Sin fecha · recordatorio</span></article>
+      <article style="--note-delay:420ms"><strong>Vence traslado</strong><span class="con-fecha">Con fecha · 18 oct.</span></article>
+    </div>
+    <p>Las que tienen fecha aparecen en el calendario en tiempo real.</p>`;
+  document.body.appendChild(panel);
+  await esperar(2600);
+  if (signal.aborted) panel.remove();
 }
 
 interface Props {
@@ -530,12 +558,13 @@ function construirPasos(props: Props): Paso[] {
     side: tableroView ? "left" : "right",
     titulo: "Anotaciones: tus pendientes en columnas",
     texto:
-      `<p class="iustrack-tour-lead">Un tablero de notas con tarjetas que arrastrás entre columnas.</p>
+      `<p class="iustrack-tour-lead">Las anotaciones pueden tener fecha o quedar como pendientes sin fecha.</p>
        ${bullets([
-         ["Columnas compartidas", "las tarjetas con fecha van al calendario de todo el equipo."],
-         ["Columnas personales", "solo las ves vos y van a tu calendario."],
+         ["Con fecha", "se convierten en eventos y aparecen en tiempo real en el calendario del paso siguiente."],
+         ["Sin fecha", "quedan como notas o pendientes dentro del tablero."],
        ])}`,
     abrirSidebar: !tableroView,
+    demo: demoAnotaciones,
   });
 
   // 9 — Calendario (diferencial)
@@ -599,6 +628,7 @@ function construirPasos(props: Props): Paso[] {
     efecto: "pulso",
     fondoClaro: true,
     side: "right",
+    popoverArriba: true,
     titulo: "Tu equipo y los permisos",
     texto:
       `<p class="iustrack-tour-lead">Invitá por email o compartí el <strong>código único</strong> de tu oficina para que se unan.</p>
