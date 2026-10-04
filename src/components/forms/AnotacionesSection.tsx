@@ -16,8 +16,14 @@ import { formatLocalDate } from "@/lib/parseDate";
 import { cn } from "@/lib/utils";
 import EventoFormInline from "./EventoFormInline";
 
+/** Anotación cargada antes de crear la causa; se guarda al crearla. */
+export interface AnotacionBorrador extends EventoInput { _id: string; _creado: string }
+
 interface Props {
-  causaId: string;
+  /** Sin causaId la sección trabaja en modo borrador (causa nueva). */
+  causaId?: string | null;
+  borradores?: AnotacionBorrador[];
+  onBorradoresChange?: (b: AnotacionBorrador[]) => void;
   onMutated?: () => void;
   /** "panel" = columna lateral junto a la ficha: una sola columna y texto más grande. */
   variante?: "form" | "panel";
@@ -32,9 +38,21 @@ function fmtCreado(d: string | null) {
   return new Date(d).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 }
 
-export default function AnotacionesSection({ causaId, variante = "form" }: Props) {
+export default function AnotacionesSection({ causaId, borradores = [], onBorradoresChange, variante = "form" }: Props) {
   const enPanel = variante === "panel";
-  const { conFecha, sinFecha, loading, refetch } = useEventosCausa(causaId);
+  const local = !causaId;
+  const remoto = useEventosCausa(causaId);
+  const borradoresComoEventos: EventoCausa[] = borradores.map((b) => ({
+    id: b._id, causa_id: "", titulo: b.titulo, descripcion: b.descripcion, fecha_hora: b.fecha,
+    tipo_evento: b.tipo_evento, completado: false, created_at: b._creado,
+    categoria_personalizada_id: b.categoria_personalizada_id ?? null,
+  }));
+  const conFecha = local
+    ? borradoresComoEventos.filter((e) => !!e.fecha_hora).sort((a, b) => (a.fecha_hora! < b.fecha_hora! ? -1 : 1))
+    : remoto.conFecha;
+  const sinFecha = local ? borradoresComoEventos.filter((e) => !e.fecha_hora) : remoto.sinFecha;
+  const loading = local ? false : remoto.loading;
+  const refetch = remoto.refetch;
   const { vocalia } = useVocaliaActual();
   const { categorias } = useCategoriasVocalia(vocalia?.id ?? null);
   const muts = useEventoMutations();
@@ -47,7 +65,12 @@ export default function AnotacionesSection({ causaId, variante = "form" }: Props
   const afterMutation = async () => { await refetch(); };
 
   const handleCreate = async (v: EventoInput) => {
-    const r = await muts.crearEvento(causaId, v);
+    if (local) {
+      onBorradoresChange?.([...borradores, { ...v, _id: `borrador-${Date.now()}`, _creado: new Date().toISOString() }]);
+      setAdding(false);
+      return;
+    }
+    const r = await muts.crearEvento(causaId!, v);
     if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Anotación agregada");
     setAdding(false);
@@ -55,6 +78,11 @@ export default function AnotacionesSection({ causaId, variante = "form" }: Props
   };
 
   const handleUpdate = async (id: string, v: EventoInput) => {
+    if (local) {
+      onBorradoresChange?.(borradores.map((b) => (b._id === id ? { ...b, ...v } : b)));
+      setEditingId(null);
+      return;
+    }
     const r = await muts.actualizarEvento(id, v);
     if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Anotación actualizada");
@@ -64,6 +92,11 @@ export default function AnotacionesSection({ causaId, variante = "form" }: Props
 
   const handleDelete = async () => {
     if (!confirmDelete) return;
+    if (local) {
+      onBorradoresChange?.(borradores.filter((b) => b._id !== confirmDelete.id));
+      setConfirmDelete(null);
+      return;
+    }
     const r = await muts.borrarEvento(confirmDelete.id);
     if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Anotación borrada");
@@ -72,7 +105,11 @@ export default function AnotacionesSection({ causaId, variante = "form" }: Props
   };
 
   const agregarOtraDeCategoria = async (categoriaId: string, titulo: string) => {
-    const r = await muts.crearEvento(causaId, {
+    if (local) {
+      await handleCreate({ titulo, descripcion: null, tipo_evento: null, fecha: null, categoria_personalizada_id: categoriaId });
+      return;
+    }
+    const r = await muts.crearEvento(causaId!, {
       titulo,
       descripcion: null,
       tipo_evento: null,
@@ -196,6 +233,12 @@ export default function AnotacionesSection({ causaId, variante = "form" }: Props
           </Button>
         )}
       </div>
+
+      {local && (
+        <p className={cn("rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-muted-foreground", enPanel ? "text-xs" : "text-[11px]")}>
+          Se guardan junto con la causa cuando tocás “Crear causa”.
+        </p>
+      )}
 
       {adding && (
         <EventoFormInline
