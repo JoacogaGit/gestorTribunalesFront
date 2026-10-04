@@ -28,8 +28,12 @@ const fechaLarga = (iso: string | undefined) => {
   return `${d} de ${MESES[m - 1]} de ${y}`;
 };
 
-export const tituloRelevamiento = (inicio: string, fin: string) =>
-  `Estadísticas del período ${fechaLarga(inicio)} - ${fechaLarga(fin)}`;
+export const tituloRelevamiento = (inicio: string, fin: string) => {
+  const a = fechaLarga(inicio);
+  const b = fechaLarga(fin);
+  if (!a || !b) return "";
+  return `Estadísticas del período ${a} - ${b}`;
+};
 
 const nombreArchivo = (nombre: string) =>
   nombre.replace(/[\\/:*?"<>|]/g, "").trim().replace(/\s+/g, "_").slice(0, 80) || "relevamiento";
@@ -47,6 +51,11 @@ export async function exportarRelevamientoExcel({ nombre, encabezado, finales, b
     c.numFmt = "@";
     c.value = (v ?? "").trim();
   };
+
+  const titulo = tituloRelevamiento(periodo.inicio, periodo.fin);
+  if (titulo) ws.getCell(CELDA_TITULO).value = titulo;
+
+
 
   texto("I5", encabezado.juzgado);
   texto("I6", encabezado.fiscalia);
