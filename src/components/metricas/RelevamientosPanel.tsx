@@ -143,7 +143,7 @@ function NuevoDialog({ open, onOpenChange, vocaliaId, tribunalId, onCreado }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="metrics-section border-metrics-border bg-metrics-background text-metrics-foreground">
         <DialogHeader><DialogTitle>Nuevo relevamiento</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><Label>Nombre</Label><Input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Primer semestre 2026" /></div>
@@ -153,7 +153,7 @@ function NuevoDialog({ open, onOpenChange, vocaliaId, tribunalId, onCreado }: {
           </div>
           <div><Label>Alcance</Label>
             <Select value={alcance} onValueChange={setAlcance}><SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="vocalia">Este espacio</SelectItem>{tribunalId && <SelectItem value="oficina">Toda la oficina</SelectItem>}</SelectContent></Select></div>
+              <SelectContent className="metrics-section"><SelectItem value="vocalia">Este espacio</SelectItem>{tribunalId && <SelectItem value="oficina">Toda la oficina</SelectItem>}</SelectContent></Select></div>
         </div>
         <DialogFooter><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button><Button onClick={crear} disabled={guardando}>Crear</Button></DialogFooter>
       </DialogContent>
