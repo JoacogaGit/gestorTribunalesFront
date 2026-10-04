@@ -14,15 +14,31 @@ interface ExportarRelevamientoOptions {
   finales: Partial<Record<BloqueId, Valores>>;
   bases: Partial<Record<BloqueId, Valores>>;
   resolPorTipo: Valores | null;
+  periodo: { inicio: string; fin: string };
 }
 
 const PLANTILLA_URL = "/planilla_estadisticas.xlsx";
 const COLS = "CDEFGHIJKLMNOPQRST".split("");
+const CELDA_TITULO = "B2";
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+const fechaLarga = (iso: string | undefined) => {
+  const [y, m, d] = (iso ?? "").slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d || m < 1 || m > 12) return "";
+  return `${d} de ${MESES[m - 1]} de ${y}`;
+};
+
+export const tituloRelevamiento = (inicio: string, fin: string) => {
+  const a = fechaLarga(inicio);
+  const b = fechaLarga(fin);
+  if (!a || !b) return "";
+  return `Estadísticas del período ${a} - ${b}`;
+};
 
 const nombreArchivo = (nombre: string) =>
   nombre.replace(/[\\/:*?"<>|]/g, "").trim().replace(/\s+/g, "_").slice(0, 80) || "relevamiento";
 
-export async function exportarRelevamientoExcel({ nombre, encabezado, finales, bases, resolPorTipo }: ExportarRelevamientoOptions) {
+export async function exportarRelevamientoExcel({ nombre, encabezado, finales, bases, resolPorTipo, periodo }: ExportarRelevamientoOptions) {
   const res = await fetch(PLANTILLA_URL);
   if (!res.ok) throw new Error("No se encontró la planilla oficial.");
   const wb = new ExcelJS.Workbook();
@@ -35,6 +51,11 @@ export async function exportarRelevamientoExcel({ nombre, encabezado, finales, b
     c.numFmt = "@";
     c.value = (v ?? "").trim();
   };
+
+  const titulo = tituloRelevamiento(periodo.inicio, periodo.fin);
+  if (titulo) ws.getCell(CELDA_TITULO).value = titulo;
+
+
 
   texto("I5", encabezado.juzgado);
   texto("I6", encabezado.fiscalia);

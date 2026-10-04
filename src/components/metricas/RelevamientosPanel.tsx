@@ -231,6 +231,7 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
       const cerradoSinCambios = cerrado && rel.config.modos?.resoluciones === "manual";
       await exportarRelevamientoExcel({
         nombre: rel.nombre, encabezado: rel.config.encabezado ?? {}, finales, bases,
+        periodo: { inicio: rel.periodo_inicio, fin: rel.periodo_fin },
         resolPorTipo: causas && !cerradoSinCambios ? resolucionesPorTipo(causas, rel.periodo_inicio, rel.periodo_fin) : null,
       });
       toast.success("Planilla oficial exportada.");
