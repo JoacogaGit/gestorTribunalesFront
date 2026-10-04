@@ -216,7 +216,7 @@ async function demoAnotaciones() {
     crearEjemplo("Llamar a la fiscalía", "Pendiente sin fecha", false, 420),
   );
   await esperar(700);
-  if (signal.aborted) limpiarDemos();
+  if (signal.aborted) return;
 }
 
 async function demoFichaConAnotaciones() {
@@ -775,6 +775,9 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       if (paso.view) onNavigate(paso.view);
       if (isMobile) onOpenSidebar?.(!!paso.abrirSidebar);
       await esperar(paso.view || paso.abrirSidebar ? 500 : 180);
+      if (paso.target?.startsWith('[data-tour="form') && !document.querySelector(paso.target)) {
+        await demoAbrirFormulario();
+      }
       // Algunas vistas administrativas terminan de montar después de navegar.
       if (paso.target) {
         for (let intento = 0; intento < 12 && !document.querySelector(paso.target); intento += 1) {
