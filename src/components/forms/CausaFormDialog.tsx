@@ -28,7 +28,8 @@ import {
   labelEstadoCausa, labelSituacionLibertad, labelTipoRecurso,
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
-import AnotacionesSection from "./AnotacionesSection";
+import AnotacionesSection, { type AnotacionBorrador } from "./AnotacionesSection";
+import { useEventoMutations } from "@/hooks/useEventoMutations";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 import { resolverNombreUsuario } from "@/lib/nombresUsuarios";
 import { useAuth } from "@/context/AuthContext";
@@ -242,6 +243,11 @@ export default function CausaFormDialog({
     if (open) setVistaResumen(esEstudio && mode === "editar");
   }, [open, esEstudio, mode]);
   const [confirmDiscardEmpty, setConfirmDiscardEmpty] = useState(false);
+  /** Anotaciones cargadas mientras se crea la causa (se guardan al crearla). */
+  const [anotBorradores, setAnotBorradores] = useState<AnotacionBorrador[]>([]);
+  const eventoMuts = useEventoMutations();
+  useEffect(() => { if (open) setAnotBorradores([]); }, [open]);
+  const conPanelAnot = mode === "crear" || !!causaId;
   /** Panel lateral de anotaciones: visible u oculto, guardado por usuario. */
   const { user } = useAuth();
   const panelKey = `iustrack_panel_anotaciones_${user?.email ?? "anon"}`;
@@ -601,6 +607,13 @@ export default function CausaFormDialog({
         }));
         if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
       }
+      for (const b of anotBorradores) {
+        const { _id, _creado, ...input } = b;
+        void _id; void _creado;
+        const r = await eventoMuts.crearEvento(res.id, input);
+        if (r.ok !== true) toast.error(`No se pudo guardar la anotación "${b.titulo}"`);
+      }
+      setAnotBorradores([]);
       toast.success("Causa creada");
       fireVocaliaResync();
       clearDraft(draftKey);
@@ -1203,10 +1216,10 @@ export default function CausaFormDialog({
               </Collapsible>
 
 
-              {mode === "editar" && causaId && (
+              {conPanelAnot && (
                 <div className="xl:hidden space-y-4">
                   <Separator />
-                  <AnotacionesSection causaId={causaId} />
+                  <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} />
                 </div>
               )}
 
@@ -1246,7 +1259,7 @@ export default function CausaFormDialog({
           )}
           </div>
           </div>
-          {mode === "editar" && causaId && !panelAnotaciones && (
+          {conPanelAnot && !panelAnotaciones && (
             <button
               type="button"
               onClick={mostrarPanel}
@@ -1258,7 +1271,7 @@ export default function CausaFormDialog({
             </button>
           )}
 
-          {mode === "editar" && causaId && panelAnotaciones && (
+          {conPanelAnot && panelAnotaciones && (
             <aside className="relative z-30 isolate hidden xl:flex h-[92vh] max-h-[92vh] w-[38vw] min-w-[380px] max-w-[760px] shrink-0 -ml-4 pointer-events-auto flex-col rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-8 pr-4 py-4">
               <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3">
                 <h2 className="text-sm font-semibold text-foreground">Anotaciones de la causa</h2>
@@ -1272,7 +1285,7 @@ export default function CausaFormDialog({
                 </button>
               </div>
               <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1">
-                <AnotacionesSection causaId={causaId} variante="panel" />
+                <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} variante="panel" />
               </div>
             </aside>
           )}
