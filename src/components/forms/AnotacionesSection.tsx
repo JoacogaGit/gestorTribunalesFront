@@ -255,22 +255,22 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
         </div>
       ) : (
         <div className={cn("grid gap-5", enPanel ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 gap-4")}>
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="anotaciones-con-fecha">
             <h4 className={cn(subtitulo, "font-semibold uppercase tracking-wider text-muted-foreground/80")}>
               Eventos con fecha
             </h4>
             {conFecha.length === 0 ? (
-              <p className="text-xs text-muted-foreground/60 italic">Sin eventos con fecha</p>
+              <p data-tour-empty="anotaciones-con-fecha" className="text-xs text-muted-foreground/60 italic">Sin eventos con fecha</p>
             ) : (
               <div className="space-y-2">{conFecha.map((e) => renderItem(e, true))}</div>
             )}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2" data-tour="anotaciones-sin-fecha">
             <h4 className={cn(subtitulo, "font-semibold uppercase tracking-wider text-muted-foreground/80")}>
               Anotaciones sin fecha
             </h4>
             {sinFecha.length === 0 ? (
-              <p className="text-xs text-muted-foreground/60 italic">Sin anotaciones sueltas</p>
+              <p data-tour-empty="anotaciones-sin-fecha" className="text-xs text-muted-foreground/60 italic">Sin anotaciones sueltas</p>
             ) : (
               <div className="space-y-2">{sinFecha.map((e) => renderItem(e, false))}</div>
             )}

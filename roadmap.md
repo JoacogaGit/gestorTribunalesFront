@@ -19,3 +19,4 @@
 - [x] Mostrar cuatro anotaciones ficticias, con y sin fecha, antes del calendario
 - [x] Ubicar arriba a la derecha la tarjeta del paso de miembros
 - [ ] Validar visualmente ficha, relevamientos y tutorial (requiere una sesión disponible)
+- [x] Dejar libre la ficha durante su explicación y mostrar las anotaciones ficticias dentro del panel real
