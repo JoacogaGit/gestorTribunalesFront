@@ -918,16 +918,36 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return (
       <div className="max-w-2xl mx-auto">
         <Card className="p-8 text-center">
-          <div className="w-14 h-14 mx-auto rounded-full bg-alert-ok/15 flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-7 h-7 text-alert-ok" />
+          <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4 ${fallidosAlCargar.length > 0 ? "bg-alert-warning/15" : "bg-alert-ok/15"}`}>
+            {fallidosAlCargar.length > 0
+              ? <AlertTriangle className="w-7 h-7 text-alert-warning" />
+              : <CheckCircle2 className="w-7 h-7 text-alert-ok" />}
           </div>
-          <h2 className="text-2xl font-display font-bold mb-2">¡Migración completada!</h2>
+          <h2 className="text-2xl font-display font-bold mb-2">
+            {fallidosAlCargar.length > 0 ? "Migración completada con lotes fallidos" : "¡Migración completada!"}
+          </h2>
           <p className="text-muted-foreground mb-6">
             Se cargaron <strong>{exito.causas} causas nuevas</strong>, <strong>{exito.sujetos} sujetos</strong> y <strong>{exito.eventos} eventos</strong> en {vocaliaNombre}.
             {omitidas.length > 0 && (
               <> {" "}<span className="text-amber-600 dark:text-amber-400">Se omitieron <strong>{omitidas.length}</strong> causa{omitidas.length === 1 ? "" : "s"} duplicada{omitidas.length === 1 ? "" : "s"}.</span></>
             )}
           </p>
+          {fallidosAlCargar.length > 0 && (
+            <Alert className="mb-6 text-left border-alert-urgent/40 bg-alert-urgent/5">
+              <AlertTriangle className="w-4 h-4 text-alert-urgent" />
+              <AlertTitle className="text-alert-urgent">
+                {fallidosAlCargar.length} lote{fallidosAlCargar.length === 1 ? "" : "s"} no se procesaron ({fallidosAlCargar.reduce((a, l) => a + l.filas, 0)} filas sin cargar)
+              </AlertTitle>
+              <AlertDescription className="text-xs space-y-2">
+                <ul className="space-y-0.5">
+                  {fallidosAlCargar.map((l, i) => (
+                    <li key={i}>• <strong>{l.pestana}</strong> — lote {l.nro_lote}/{l.total_lotes} ({l.filas} filas): {l.motivo}</li>
+                  ))}
+                </ul>
+                <p>Esas filas quedaron en <strong>"Pendientes de revisión manual"</strong> (más abajo), con el lote del que vienen, para que las cargues a mano o las vuelvas a migrar.</p>
+              </AlertDescription>
+            </Alert>
+          )}
           <Alert className="mb-6 text-left border-accent/40 bg-accent/5">
             <CheckCircle2 className="w-4 h-4 text-accent" />
             <AlertTitle>¡Listo!</AlertTitle>
@@ -1003,6 +1023,25 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           <Alert variant="destructive" className="mb-4">
             <AlertTitle>Algo falló</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {lotesFallidos.length > 0 && (
+          <Alert className="mb-4 border-alert-urgent/40 bg-alert-urgent/5">
+            <AlertTriangle className="w-4 h-4 text-alert-urgent" />
+            <AlertTitle className="text-alert-urgent">
+              {lotesFallidos.length} lote{lotesFallidos.length === 1 ? "" : "s"} fallaron: {filasFallidas} fila{filasFallidas === 1 ? "" : "s"} NO están en esta revisión
+            </AlertTitle>
+            <AlertDescription className="text-xs space-y-2">
+              <ul className="space-y-0.5">
+                {lotesFallidos.map((l) => (
+                  <li key={l.id}>• <strong>{l.pestana}</strong> — lote {l.nro_lote}/{l.total_lotes} ({l.filas} filas): {labelError(l.errorCode)}</li>
+                ))}
+              </ul>
+              <p>Podés reintentarlos ahora (se pierden las ediciones de esta revisión), o seguir: al confirmar, esas filas quedan guardadas en <strong>"Pendientes de revisión manual"</strong> para cargarlas a mano.</p>
+              {!USE_SERVER_SIDE_JOB && (
+                <Button size="sm" variant="outline" onClick={handleReintentarDesdeRevision}>Reintentar lotes fallidos</Button>
+              )}
+            </AlertDescription>
           </Alert>
         )}
         <p className="text-sm text-muted-foreground mb-4">
