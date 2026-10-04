@@ -95,6 +95,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   // Confirmación previa al inicio (aviso obligatorio).
   const [confirmacionPendiente, setConfirmacionPendiente] = useState<{ archivo: ArchivoParseado; lotes: LoteTrabajo[] } | null>(null);
   const [confirmacionOk, setConfirmacionOk] = useState(false);
+  const [fallidosAlCargar, setFallidosAlCargar] = useState<{ pestana: string; nro_lote: number; total_lotes: number; filas: number; motivo: string }[]>([]);
   // Resume desde localStorage
   const [pendingResume, setPendingResume] = useState<{ filename: string; timestamp: number; resultadosOk: { pestana: string; resultado: ResultadoIADirecto }[] } | null>(null);
   const cancelarRef = useRef(false);
@@ -254,6 +255,15 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     if (typeof p.contenido === "string") return p.contenido.split("\n").filter((l) => l.trim()).length;
     return p.contenido.filter((r) => r.some((c) => (c ?? "").toString().trim() !== "")).length;
   };
+
+  const filasDeLote = (l: LoteTrabajo): string[] => {
+    if (typeof l.contenido === "string") return l.contenido.split("\n").map((x) => x.trim()).filter(Boolean);
+    return l.contenido
+      .filter((r) => r.some((c) => (c ?? "").toString().trim() !== ""))
+      .map((r) => r.map((c) => (c ?? "").toString().trim()).join(" | "));
+  };
+  const lotesFallidos = lotes.filter((l) => l.estado === "error");
+  const filasFallidas = lotesFallidos.reduce((a, l) => a + l.filas, 0);
 
   const handleFile = async (file: File) => {
     setFilename(file.name);
@@ -540,7 +550,15 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   const handleContinuarConOk = () => {
     if (resultadosOk.length === 0) return;
+    const nFall = lotes.filter((l) => l.estado === "error").length;
+    if (nFall > 0) toast.warning(`Ojo: ${nFall} lote(s) fallaron y sus filas NO están en la revisión. Se guardarán en "Pendientes de revisión manual".`);
     finalizarConResultados(resultadosOk);
+  };
+
+  // Desde la revisión: volver a la pantalla de lotes y reintentar los fallidos.
+  const handleReintentarDesdeRevision = async () => {
+    setResultado(null); setEditable([]); setIncluir({});
+    await handleReintentarFallidos();
   };
 
   const handleRetomar = () => {
@@ -631,6 +649,23 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
         await (await import("@/integrations/supabase/client")).supabase.from("migracion_pendientes").insert(payload as any);
       }
     } catch { /* noop: la carga principal ya fue exitosa */ }
+    // Filas de lotes que fallaron: nunca se pierden, quedan en pendientes de revisión manual.
+    try {
+      const payloadFallidos = lotesFallidos.flatMap((l) =>
+        filasDeLote(l).map((fila) => ({
+          vocalia_id: vocaliaId,
+          datos_crudos: fila,
+          razon: `Lote ${l.nro_lote}/${l.total_lotes} de "${l.pestana}" falló: ${labelError(l.errorCode)}`,
+          archivo_origen: filename || null,
+        })),
+      );
+      if (payloadFallidos.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: errP } = await supabase.from("migracion_pendientes").insert(payloadFallidos as any);
+        if (errP) toast.error("No se pudieron guardar las filas de los lotes fallidos en pendientes. Anotalas antes de salir.");
+      }
+    } catch { toast.error("No se pudieron guardar las filas de los lotes fallidos en pendientes."); }
+    setFallidosAlCargar(lotesFallidos.map((l) => ({ pestana: l.pestana, nro_lote: l.nro_lote, total_lotes: l.total_lotes, filas: l.filas, motivo: labelError(l.errorCode) })));
     setExito(r.inserted);
     setOmitidas(r.omitidas || []);
     limpiarLS();
@@ -688,11 +723,23 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Podés <strong>seguir usando la app en otras pestañas</strong>. La migración corre en esta.</span></li>
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Si <strong>cambiás de pestaña por mucho tiempo</strong>, el navegador puede ralentizar el proceso.</span></li>
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Las causas <strong>ya existentes en {vocaliaNombre} serán omitidas</strong> automáticamente para evitar duplicados.</span></li>
-              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Es posible que <strong>algunos lotes no se procesen y muestren error</strong>. No te preocupes: esos lotes quedan separados y podés volver a migrarlos con el botón de <strong>reintentar</strong>. El resto se procesa normalmente.</span></li>
             </ul>
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 space-y-2">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" /> Puede haber errores
+              </p>
+              <p className="text-sm text-foreground/90">
+                La lectura la hace una IA y <strong>algunos lotes pueden fallar</strong>. Si pasa, siempre te vamos a avisar cuáles fallaron y qué filas no entraron. Vas a tener tres opciones:
+              </p>
+              <ol className="text-sm space-y-1.5 list-decimal pl-5">
+                <li><strong>Reintentar</strong> los lotes que fallaron.</li>
+                <li><strong>Cargarlos después de la revisión</strong>: las filas que no entraron quedan guardadas en "Pendientes de revisión manual" para verlas y cargarlas.</li>
+                <li><strong>Cargar las causas directamente a mano</strong>.</li>
+              </ol>
+            </div>
             <label className="flex items-start gap-2.5 pt-2 cursor-pointer">
               <Checkbox checked={confirmacionOk} onCheckedChange={(v) => setConfirmacionOk(!!v)} className="mt-0.5" />
-              <span className="text-sm">Entendido. Voy a dejar esta pestaña abierta hasta que termine.</span>
+              <span className="text-sm">Entendido. Sé que puede haber lotes con error y conozco mis opciones. Voy a dejar esta pestaña abierta hasta que termine.</span>
             </label>
           </Card>
           <div className="mt-4 flex justify-end gap-2">
@@ -871,16 +918,36 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     return (
       <div className="max-w-2xl mx-auto">
         <Card className="p-8 text-center">
-          <div className="w-14 h-14 mx-auto rounded-full bg-alert-ok/15 flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-7 h-7 text-alert-ok" />
+          <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4 ${fallidosAlCargar.length > 0 ? "bg-alert-warning/15" : "bg-alert-ok/15"}`}>
+            {fallidosAlCargar.length > 0
+              ? <AlertTriangle className="w-7 h-7 text-alert-warning" />
+              : <CheckCircle2 className="w-7 h-7 text-alert-ok" />}
           </div>
-          <h2 className="text-2xl font-display font-bold mb-2">¡Migración completada!</h2>
+          <h2 className="text-2xl font-display font-bold mb-2">
+            {fallidosAlCargar.length > 0 ? "Migración completada con lotes fallidos" : "¡Migración completada!"}
+          </h2>
           <p className="text-muted-foreground mb-6">
             Se cargaron <strong>{exito.causas} causas nuevas</strong>, <strong>{exito.sujetos} sujetos</strong> y <strong>{exito.eventos} eventos</strong> en {vocaliaNombre}.
             {omitidas.length > 0 && (
               <> {" "}<span className="text-amber-600 dark:text-amber-400">Se omitieron <strong>{omitidas.length}</strong> causa{omitidas.length === 1 ? "" : "s"} duplicada{omitidas.length === 1 ? "" : "s"}.</span></>
             )}
           </p>
+          {fallidosAlCargar.length > 0 && (
+            <Alert className="mb-6 text-left border-alert-urgent/40 bg-alert-urgent/5">
+              <AlertTriangle className="w-4 h-4 text-alert-urgent" />
+              <AlertTitle className="text-alert-urgent">
+                {fallidosAlCargar.length} lote{fallidosAlCargar.length === 1 ? "" : "s"} no se procesaron ({fallidosAlCargar.reduce((a, l) => a + l.filas, 0)} filas sin cargar)
+              </AlertTitle>
+              <AlertDescription className="text-xs space-y-2">
+                <ul className="space-y-0.5">
+                  {fallidosAlCargar.map((l, i) => (
+                    <li key={i}>• <strong>{l.pestana}</strong> — lote {l.nro_lote}/{l.total_lotes} ({l.filas} filas): {l.motivo}</li>
+                  ))}
+                </ul>
+                <p>Esas filas quedaron en <strong>"Pendientes de revisión manual"</strong> (más abajo), con el lote del que vienen, para que las cargues a mano o las vuelvas a migrar.</p>
+              </AlertDescription>
+            </Alert>
+          )}
           <Alert className="mb-6 text-left border-accent/40 bg-accent/5">
             <CheckCircle2 className="w-4 h-4 text-accent" />
             <AlertTitle>¡Listo!</AlertTitle>
@@ -956,6 +1023,25 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
           <Alert variant="destructive" className="mb-4">
             <AlertTitle>Algo falló</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {lotesFallidos.length > 0 && (
+          <Alert className="mb-4 border-alert-urgent/40 bg-alert-urgent/5">
+            <AlertTriangle className="w-4 h-4 text-alert-urgent" />
+            <AlertTitle className="text-alert-urgent">
+              {lotesFallidos.length} lote{lotesFallidos.length === 1 ? "" : "s"} fallaron: {filasFallidas} fila{filasFallidas === 1 ? "" : "s"} NO están en esta revisión
+            </AlertTitle>
+            <AlertDescription className="text-xs space-y-2">
+              <ul className="space-y-0.5">
+                {lotesFallidos.map((l) => (
+                  <li key={l.id}>• <strong>{l.pestana}</strong> — lote {l.nro_lote}/{l.total_lotes} ({l.filas} filas): {labelError(l.errorCode)}</li>
+                ))}
+              </ul>
+              <p>Podés reintentarlos ahora (se pierden las ediciones de esta revisión), o seguir: al confirmar, esas filas quedan guardadas en <strong>"Pendientes de revisión manual"</strong> para cargarlas a mano.</p>
+              {!USE_SERVER_SIDE_JOB && (
+                <Button size="sm" variant="outline" onClick={handleReintentarDesdeRevision}>Reintentar lotes fallidos</Button>
+              )}
+            </AlertDescription>
           </Alert>
         )}
         <p className="text-sm text-muted-foreground mb-4">

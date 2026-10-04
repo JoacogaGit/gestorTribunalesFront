@@ -64,7 +64,7 @@ export default function ProgresoLotes({
   const pct = total > 0 ? Math.round((procesados / total) * 100) : 0;
   const enCurso = lotes.find((l) => l.estado === "procesando");
   const terminado = !procesando;
-  const todoOk = terminado && fallidos === 0 && completos > 0;
+  const todoOk = terminado && fallidos === 0 && completos > 0 && completos === total;
 
   // Tiempo transcurrido
   const [tInicio] = useState(() => Date.now());
@@ -248,7 +248,7 @@ export default function ProgresoLotes({
             )}
             {completos > 0 && (
               <Button onClick={onContinuar}>
-                Continuar a revisión <ArrowRight className="w-4 h-4 ml-1.5" />
+                {fallidos > 0 ? "Continuar sin los fallidos" : "Continuar a revisión"} <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
             )}
           </div>
