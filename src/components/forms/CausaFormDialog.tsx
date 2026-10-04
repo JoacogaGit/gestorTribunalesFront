@@ -1272,7 +1272,7 @@ export default function CausaFormDialog({
           )}
 
           {conPanelAnot && panelAnotaciones && (
-            <aside className="relative z-30 isolate hidden xl:flex h-[92vh] max-h-[92vh] w-[38vw] min-w-[380px] max-w-[760px] shrink-0 -ml-4 pointer-events-auto flex-col rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-8 pr-4 py-4">
+            <aside data-tour="panel-anotaciones-causa" className="relative z-30 isolate hidden xl:flex h-[92vh] max-h-[92vh] w-[38vw] min-w-[380px] max-w-[760px] shrink-0 -ml-4 pointer-events-auto flex-col rounded-r-lg border border-l-0 border-border bg-card shadow-lg pl-8 pr-4 py-4">
               <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3">
                 <h2 className="text-sm font-semibold text-foreground">Anotaciones de la causa</h2>
                 <button
