@@ -95,6 +95,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
   // Confirmación previa al inicio (aviso obligatorio).
   const [confirmacionPendiente, setConfirmacionPendiente] = useState<{ archivo: ArchivoParseado; lotes: LoteTrabajo[] } | null>(null);
   const [confirmacionOk, setConfirmacionOk] = useState(false);
+  const [fallidosAlCargar, setFallidosAlCargar] = useState<{ pestana: string; nro_lote: number; total_lotes: number; filas: number; motivo: string }[]>([]);
   // Resume desde localStorage
   const [pendingResume, setPendingResume] = useState<{ filename: string; timestamp: number; resultadosOk: { pestana: string; resultado: ResultadoIADirecto }[] } | null>(null);
   const cancelarRef = useRef(false);
@@ -254,6 +255,15 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
     if (typeof p.contenido === "string") return p.contenido.split("\n").filter((l) => l.trim()).length;
     return p.contenido.filter((r) => r.some((c) => (c ?? "").toString().trim() !== "")).length;
   };
+
+  const filasDeLote = (l: LoteTrabajo): string[] => {
+    if (typeof l.contenido === "string") return l.contenido.split("\n").map((x) => x.trim()).filter(Boolean);
+    return l.contenido
+      .filter((r) => r.some((c) => (c ?? "").toString().trim() !== ""))
+      .map((r) => r.map((c) => (c ?? "").toString().trim()).join(" | "));
+  };
+  const lotesFallidos = lotes.filter((l) => l.estado === "error");
+  const filasFallidas = lotesFallidos.reduce((a, l) => a + l.filas, 0);
 
   const handleFile = async (file: File) => {
     setFilename(file.name);
@@ -540,7 +550,15 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
 
   const handleContinuarConOk = () => {
     if (resultadosOk.length === 0) return;
+    const nFall = lotes.filter((l) => l.estado === "error").length;
+    if (nFall > 0) toast.warning(`Ojo: ${nFall} lote(s) fallaron y sus filas NO están en la revisión. Se guardarán en "Pendientes de revisión manual".`);
     finalizarConResultados(resultadosOk);
+  };
+
+  // Desde la revisión: volver a la pantalla de lotes y reintentar los fallidos.
+  const handleReintentarDesdeRevision = async () => {
+    setResultado(null); setEditable([]); setIncluir({});
+    await handleReintentarFallidos();
   };
 
   const handleRetomar = () => {
@@ -631,6 +649,23 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
         await (await import("@/integrations/supabase/client")).supabase.from("migracion_pendientes").insert(payload as any);
       }
     } catch { /* noop: la carga principal ya fue exitosa */ }
+    // Filas de lotes que fallaron: nunca se pierden, quedan en pendientes de revisión manual.
+    try {
+      const payloadFallidos = lotesFallidos.flatMap((l) =>
+        filasDeLote(l).map((fila) => ({
+          vocalia_id: vocaliaId,
+          datos_crudos: fila,
+          razon: `Lote ${l.nro_lote}/${l.total_lotes} de "${l.pestana}" falló: ${labelError(l.errorCode)}`,
+          archivo_origen: filename || null,
+        })),
+      );
+      if (payloadFallidos.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: errP } = await supabase.from("migracion_pendientes").insert(payloadFallidos as any);
+        if (errP) toast.error("No se pudieron guardar las filas de los lotes fallidos en pendientes. Anotalas antes de salir.");
+      }
+    } catch { toast.error("No se pudieron guardar las filas de los lotes fallidos en pendientes."); }
+    setFallidosAlCargar(lotesFallidos.map((l) => ({ pestana: l.pestana, nro_lote: l.nro_lote, total_lotes: l.total_lotes, filas: l.filas, motivo: labelError(l.errorCode) })));
     setExito(r.inserted);
     setOmitidas(r.omitidas || []);
     limpiarLS();
