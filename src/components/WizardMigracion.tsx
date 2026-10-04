@@ -688,11 +688,23 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Podés <strong>seguir usando la app en otras pestañas</strong>. La migración corre en esta.</span></li>
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Si <strong>cambiás de pestaña por mucho tiempo</strong>, el navegador puede ralentizar el proceso.</span></li>
               <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Las causas <strong>ya existentes en {vocaliaNombre} serán omitidas</strong> automáticamente para evitar duplicados.</span></li>
-              <li className="flex gap-2.5"><span className="text-accent shrink-0">•</span><span>Es posible que <strong>algunos lotes no se procesen y muestren error</strong>. No te preocupes: esos lotes quedan separados y podés volver a migrarlos con el botón de <strong>reintentar</strong>. El resto se procesa normalmente.</span></li>
             </ul>
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 space-y-2">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" /> Puede haber errores
+              </p>
+              <p className="text-sm text-foreground/90">
+                La lectura la hace una IA y <strong>algunos lotes pueden fallar</strong>. Si pasa, siempre te vamos a avisar cuáles fallaron y qué filas no entraron. Vas a tener tres opciones:
+              </p>
+              <ol className="text-sm space-y-1.5 list-decimal pl-5">
+                <li><strong>Reintentar</strong> los lotes que fallaron.</li>
+                <li><strong>Cargarlos después de la revisión</strong>: las filas que no entraron quedan guardadas en "Pendientes de revisión manual" para verlas y cargarlas.</li>
+                <li><strong>Cargar las causas directamente a mano</strong>.</li>
+              </ol>
+            </div>
             <label className="flex items-start gap-2.5 pt-2 cursor-pointer">
               <Checkbox checked={confirmacionOk} onCheckedChange={(v) => setConfirmacionOk(!!v)} className="mt-0.5" />
-              <span className="text-sm">Entendido. Voy a dejar esta pestaña abierta hasta que termine.</span>
+              <span className="text-sm">Entendido. Sé que puede haber lotes con error y conozco mis opciones. Voy a dejar esta pestaña abierta hasta que termine.</span>
             </label>
           </Card>
           <div className="mt-4 flex justify-end gap-2">
