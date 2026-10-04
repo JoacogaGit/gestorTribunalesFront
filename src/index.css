@@ -199,6 +199,32 @@
     letter-spacing: 0;
   }
 
+  /* El módulo de Estadísticas/Relevamientos fuerza siempre su tema oscuro
+     violeta/dorado, sin importar el modo claro/oscuro general de la app. */
+  .metrics-section {
+    --background: 248 46% 13%;
+    --foreground: 252 100% 98%;
+    --card: 249 44% 22%;
+    --card-foreground: 252 100% 98%;
+    --popover: 249 44% 18%;
+    --popover-foreground: 252 100% 98%;
+    --primary: 35 76% 52%;
+    --primary-foreground: 248 46% 11%;
+    --secondary: 245 39% 30%;
+    --secondary-foreground: 252 80% 92%;
+    --muted: 245 35% 26%;
+    --muted-foreground: 247 60% 79%;
+    --accent: 245 39% 47%;
+    --accent-foreground: 252 100% 98%;
+    --destructive: 1 76% 68%;
+    --destructive-foreground: 248 46% 11%;
+    --border: 245 39% 47%;
+    --input: 245 39% 40%;
+    --ring: 35 76% 52%;
+    background-color: hsl(var(--metrics-background));
+    color: hsl(var(--metrics-foreground));
+  }
+
   /* Refined scrollbars */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
