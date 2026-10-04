@@ -179,12 +179,11 @@ async function demoMoverCategoria() {
 /** Carga cuatro anotaciones ficticias en paralelo, sin guardar datos. */
 async function demoAnotaciones() {
   const signal = demoAbort.signal;
-  const target = document.querySelector<HTMLElement>('[data-tour="main"]')
-    ?? document.querySelector<HTMLElement>('[data-tour="anotaciones"]');
-  if (!target) return;
+  const aside = document.querySelector<HTMLElement>('[data-tour="panel-anotaciones-causa"]');
+  const visible = aside && aside.getBoundingClientRect().width > 0;
   const panel = document.createElement("div");
   panel.id = "iustrack-tour-notes-demo";
-  panel.className = "iustrack-tour-notes-demo";
+  panel.className = visible ? "iustrack-tour-notes-demo en-panel" : "iustrack-tour-notes-demo";
   panel.innerHTML = `
     <div class="iustrack-tour-notes-heading"><strong>Anotaciones de ejemplo</strong><span>Se cargan en paralelo</span></div>
     <div class="iustrack-tour-notes-grid">
@@ -194,7 +193,12 @@ async function demoAnotaciones() {
       <article style="--note-delay:420ms"><strong>Vence traslado</strong><span class="con-fecha">Con fecha · 18 oct.</span></article>
     </div>
     <p>Las que tienen fecha aparecen en el calendario en tiempo real.</p>`;
-  document.body.appendChild(panel);
+  if (visible) {
+    const titulo = aside!.firstElementChild;
+    if (titulo) titulo.after(panel); else aside!.prepend(panel);
+  } else {
+    document.body.appendChild(panel);
+  }
   await esperar(2600);
   if (signal.aborted) panel.remove();
 }
@@ -536,6 +540,20 @@ function construirPasos(props: Props): Paso[] {
       ],
     },
     {
+      target: '[data-tour="panel-anotaciones-causa"]',
+      side: "left" as const,
+      efecto: "marco" as Efecto,
+      fondoClaro: true,
+      titulo: "Anotaciones de la causa",
+      texto:
+        `<p class="iustrack-tour-lead">A la derecha de la ficha cargás eventos y notas, incluso mientras creás la causa.</p>
+         ${bullets([
+           ["Con fecha", "se convierten en eventos y aparecen en tiempo real en el calendario (el paso siguiente)."],
+           ["Sin fecha", "quedan como notas o pendientes de la causa."],
+         ])}`,
+      demo: demoAnotaciones,
+    },
+    {
       ...fichaBase,
       fondoClaro: true,
       titulo: "Marcas y datos secundarios",
@@ -549,23 +567,6 @@ function construirPasos(props: Props): Paso[] {
       ],
     },
   );
-
-  // 8 — Anotaciones
-  pasos.push({
-    view: tableroView ?? "dashboard",
-    target: tableroView ? '[data-tour="main"]' : '[data-tour="anotaciones"]',
-    efecto: "brillo",
-    side: tableroView ? "left" : "right",
-    titulo: "Anotaciones: tus pendientes en columnas",
-    texto:
-      `<p class="iustrack-tour-lead">Las anotaciones pueden tener fecha o quedar como pendientes sin fecha.</p>
-       ${bullets([
-         ["Con fecha", "se convierten en eventos y aparecen en tiempo real en el calendario del paso siguiente."],
-         ["Sin fecha", "quedan como notas o pendientes dentro del tablero."],
-       ])}`,
-    abrirSidebar: !tableroView,
-    demo: demoAnotaciones,
-  });
 
   // 9 — Calendario (diferencial)
   pasos.push(
