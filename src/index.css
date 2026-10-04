@@ -697,12 +697,12 @@ body.iustrack-tour-clear-background .driver-overlay path {
 }
 .driver-popover.iustrack-tour.iustrack-tour-top .driver-popover-arrow { display: none; }
 
-/* En la ficha, el cartel ocupa la esquina del panel derecho y no tapa los campos. */
+/* En la ficha, el cartel ocupa la esquina inferior del panel derecho y no tapa los campos ni los ejemplos superiores. */
 .driver-popover.iustrack-tour.iustrack-tour-form-corner {
   position: fixed !important;
-  top: 1rem !important;
+  top: auto !important;
   right: 1rem !important;
-  bottom: auto !important;
+  bottom: 1rem !important;
   left: auto !important;
   width: min(22rem, calc(100vw - 2rem)) !important;
   transform: none !important;
