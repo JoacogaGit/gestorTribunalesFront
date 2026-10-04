@@ -14,5 +14,8 @@
 - [ ] Permitir arrastrar y soltar la carátula PDF en la creación de causa
 - [ ] Mover violencia de género de la causa a cada imputado y actualizar listados
 - [ ] Contar causas con imputados VG en el relevamiento, agrupadas sin duplicar cada causa por tipo
-- [ ] Corregir movimiento de categorías y aclarar ficha y miembros en el tutorial
+- [x] Corregir movimiento de categorías y aclarar ficha y miembros en el tutorial
+- [x] Limpiar el buscador al mover categorías y alinear la demostración con los encabezados reales
+- [x] Mostrar cuatro anotaciones ficticias, con y sin fecha, antes del calendario
+- [x] Ubicar arriba a la derecha la tarjeta del paso de miembros
 - [ ] Validar ficha, relevamientos y tutorial sin modificar funciones externas
