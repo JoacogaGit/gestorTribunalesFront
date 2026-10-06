@@ -32,6 +32,13 @@ export function useResponsableFilter(vocaliaId: string | null, esEstudio: boolea
   const label = esEstudio ? "Empleado a cargo" : "Despachante";
   const [rows, setRows] = useState<Row[]>([]);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
+  const [demoActiva, setDemoActiva] = useState(false);
+
+  useEffect(() => {
+    const demo = (event: Event) => setDemoActiva((event as CustomEvent<boolean>).detail === true);
+    window.addEventListener("iustrack:tutorial-filtro-responsable", demo);
+    return () => window.removeEventListener("iustrack:tutorial-filtro-responsable", demo);
+  }, []);
 
   const fetchRows = useCallback(async () => {
     if (!vocaliaId) { setRows([]); return; }
@@ -58,13 +65,14 @@ export function useResponsableFilter(vocaliaId: string | null, esEstudio: boolea
     return [...set].sort((a, b) => a.localeCompare(b, "es"));
   }, [rows, valorDe]);
 
+  const seleccionVisible = demoActiva && opciones.length > 0 ? [opciones[0]] : seleccionados;
   const causaIdsPermitidos = useMemo(() => {
-    if (seleccionados.length === 0) return null;
-    const sel = new Set(seleccionados.map((s) => s.toLowerCase()));
+    if (seleccionVisible.length === 0) return null;
+    const sel = new Set(seleccionVisible.map((s) => s.toLowerCase()));
     const ids = new Set<string>();
     rows.forEach((r) => { if (sel.has(valorDe(r).toLowerCase())) ids.add(r.id); });
     return ids;
-  }, [rows, seleccionados, valorDe]);
+  }, [rows, seleccionVisible, valorDe]);
 
   const toggle = useCallback((valor: string) => {
     setSeleccionados((prev) => prev.includes(valor) ? prev.filter((v) => v !== valor) : [...prev, valor]);
@@ -79,8 +87,8 @@ export function useResponsableFilter(vocaliaId: string | null, esEstudio: boolea
   );
 
   return {
-    campo, label, opciones, seleccionados,
-    activo: seleccionados.length > 0,
+    campo, label, opciones, seleccionados: seleccionVisible,
+    activo: seleccionVisible.length > 0,
     toggle, limpiar, causaIdsPermitidos, filtrar,
     refetch: fetchRows,
   };
