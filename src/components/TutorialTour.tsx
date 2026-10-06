@@ -565,6 +565,19 @@ function construirPasos(props: Props): Paso[] {
     {
       ...fichaBase,
       fondoClaro: true,
+      titulo: "Marcas y datos secundarios",
+      texto: `<p class="iustrack-tour-lead">Las marcas agregan la causa a su propia lista con un solo toque.</p>`,
+      campos: [
+        { target: '[data-tour-field="marca-flagrancia"]', titulo: "Flagrancia", texto: "La causa aparece en la lista Flagrancia.", lado: "right" },
+        { target: '[data-tour-field="marca-delegada"]', titulo: "Delegada", texto: "Pasa a Delegadas y sale de Trámite.", lado: "left" },
+        { target: '[data-tour-field="marca-196bis"]', titulo: "196bis / NN", texto: "Pasa a su lista 196bis/NN y sale de Trámite.", lado: "right" },
+        { target: '[data-tour-field="fecha-ingreso"]', titulo: "Fecha de ingreso", texto: "Cuándo entró la causa.", lado: "left" },
+        ...(esEstudio ? [] : [{ target: '[data-tour-field="datos-judiciales"]', titulo: "Datos judiciales", texto: "Firmante, modo de inicio, fiscalía y último movimiento.", lado: "right" as const }]),
+      ],
+    },
+    {
+      ...fichaBase,
+      fondoClaro: true,
       titulo: "La ficha del imputado",
       texto: `<p class="iustrack-tour-lead">Cada persona tiene su propio bloque, con color diferenciado.</p>`,
       campos: [
@@ -575,17 +588,19 @@ function construirPasos(props: Props): Paso[] {
       ],
     },
     {
-      ...fichaBase,
+      requiereFicha: true,
+      target: window.innerWidth >= 1280 ? '[data-tour="panel-anotaciones-causa"]' : '[data-tour="form-anotaciones-causa"]',
+      side: "left",
+      efecto: "marco",
       fondoClaro: true,
-      titulo: "Marcas y datos secundarios",
-      texto: `<p class="iustrack-tour-lead">Las marcas agregan la causa a su propia lista con un solo toque.</p>`,
-      campos: [
-        { target: '[data-tour-field="marca-flagrancia"]', titulo: "Flagrancia", texto: "La causa aparece en la lista Flagrancia.", lado: "right" },
-        { target: '[data-tour-field="marca-delegada"]', titulo: "Delegada", texto: "Pasa a Delegadas y sale de Trámite.", lado: "left" },
-        { target: '[data-tour-field="marca-196bis"]', titulo: "196bis / NN", texto: "Pasa a su lista 196bis/NN y sale de Trámite.", lado: "right" },
-        { target: '[data-tour-field="fecha-ingreso"]', titulo: "Fecha de ingreso", texto: "Cuándo entró la causa.", lado: "left" },
-        ...(esEstudio ? [] : [{ target: '[data-tour-field="datos-judiciales"]', titulo: "Datos judiciales", texto: "Firmante, modo de inicio, fiscalía y último movimiento.", lado: "right" as const }]),
-      ],
+      titulo: "Anotaciones de la causa",
+      texto: `<p class="iustrack-tour-lead">En el panel real se cargan cuatro anotaciones de ejemplo.</p>
+        ${bullets([
+          ["Con fecha", "impactan en tiempo real en el calendario, que vas a ver en el paso siguiente."],
+          ["Sin fecha", "quedan como notas o pendientes de la causa."],
+        ])}
+        <p class="iustrack-tour-hint">Son ejemplos: no se guardan y desaparecen al salir del tutorial.</p>`,
+      demo: demoAnotaciones,
     },
   );
 
