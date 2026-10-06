@@ -291,7 +291,7 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button data-tour="relevamientos-graficos" variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={() => setGraficos(true)}><BarChart3 className="mr-1.5 h-4 w-4" /> Ver gráficos</Button>
+          <Button data-tour="relevamientos-graficos" variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={() => tutorial ? document.querySelector('[data-tour="relevamientos-graficos-vista"]')?.scrollIntoView({ block: "nearest" }) : setGraficos(true)}><BarChart3 className="mr-1.5 h-4 w-4" /> Ver gráficos</Button>
           <Button data-tour="relevamientos-excel" variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={tutorial ? () => toast.info("Ejemplo del tutorial: exportá tu relevamiento real al finalizar.") : exportar}><Download className="mr-1.5 h-4 w-4" /> Exportar a Excel</Button>
           {cerrado
             ? <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={reabrir}><LockOpen className="mr-1 h-4 w-4" /> Reabrir a borrador</Button>
