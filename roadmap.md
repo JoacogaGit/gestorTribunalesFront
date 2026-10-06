@@ -20,3 +20,6 @@
 - [x] Ubicar arriba a la derecha la tarjeta del paso de miembros
 - [ ] Validar visualmente ficha, relevamientos y tutorial (requiere una sesión disponible)
 - [x] Dejar libre la ficha durante su explicación y mostrar las anotaciones ficticias dentro del panel real
+- [ ] Reemplazar el filtro por carátula por una demostración estable con otro campo
+- [ ] Mostrar varios movimientos reversibles de distintas categorías
+- [ ] Separar anotaciones como último paso de ficha, después del imputado y antes del calendario
