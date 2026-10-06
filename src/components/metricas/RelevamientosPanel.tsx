@@ -14,6 +14,7 @@ import { hoyArgentina } from "@/lib/terminacion";
 import { exportarRelevamientoExcel, type EncabezadoRelevamiento } from "@/lib/exportRelevamientoExcel";
 import { resolucionesPorTipo } from "@/lib/relevamientos";
 import RelevamientoGraficos3D from "@/components/metricas/RelevamientoGraficos3D";
+import { EVENTO_TUTORIAL_RELEVAMIENTO, vistaTutorialRelevamiento, type VistaTutorialRelevamiento } from "@/lib/tutorialRelevamientos";
 
 interface Props { vocaliaId: string; tribunalId: string | null; vocaliasTribunal: VocaliaRow[] }
 
@@ -30,7 +31,26 @@ interface Relevamiento {
 }
 
 const fmt = (s: string) => s.split("-").reverse().join("/");
+function ejemploRelevamiento(vocaliaId: string, tribunalId: string | null): Relevamiento {
+  const year = hoyArgentina().slice(0, 4);
+  return {
+    id: "tutorial-relevamiento", nombre: "Semestre de ejemplo", periodo_inicio: `${year}-01-01`, periodo_fin: `${year}-06-30`,
+    estado: "borrador", alcance: "vocalia", vocalia_id: vocaliaId, tribunal_id: tribunalId, cerrado_at: null,
+    config: {}, datos: { manual: { habeas: { "ingresados|cant": 8, "rechazados|cant": 3, "proc_con_aud|cant": 5 }, audiencias: { "virtuales|cant": 12, "presenciales|cant": 18 } } },
+  };
+}
 export default function RelevamientosPanel({ vocaliaId, tribunalId, vocaliasTribunal }: Props) {
+  const [tutorial, setTutorial] = useState(vistaTutorialRelevamiento);
+  const [ejemplo, setEjemplo] = useState(() => ejemploRelevamiento(vocaliaId, tribunalId));
+  useEffect(() => {
+    const cambiar = () => {
+      setTutorial(vistaTutorialRelevamiento());
+      setEjemplo(ejemploRelevamiento(vocaliaId, tribunalId));
+      setNuevo(false);
+    };
+    window.addEventListener(EVENTO_TUTORIAL_RELEVAMIENTO, cambiar);
+    return () => window.removeEventListener(EVENTO_TUTORIAL_RELEVAMIENTO, cambiar);
+  }, [vocaliaId, tribunalId]);
   const [lista, setLista] = useState<Relevamiento[]>([]);
   const [cargando, setCargando] = useState(true);
   const [abierto, setAbierto] = useState<string | null>(null);
@@ -59,9 +79,9 @@ export default function RelevamientosPanel({ vocaliaId, tribunalId, vocaliasTrib
   };
 
   return (
-    <div className="metrics-section h-full min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+    <div data-tour="relevamientos-panel" className="metrics-section h-full min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="mx-auto max-w-3xl text-center">
+        <header data-tour="relevamientos-titulo" className="mx-auto max-w-3xl text-center">
           <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-md border border-metrics-gold/40 bg-metrics-gold/10 text-metrics-gold"><Activity className="h-5 w-5" /></div>
           <h1 className="text-3xl font-semibold text-metrics-foreground sm:text-4xl">Estadísticas y relevamientos</h1>
           <p className="mt-2 text-sm text-metrics-muted sm:text-base">Armá relevamientos por período, calculados desde tus causas o cargados a mano.</p>
@@ -81,13 +101,24 @@ export default function RelevamientosPanel({ vocaliaId, tribunalId, vocaliasTrib
           </section>
         )}
 
-        {actual ? (
+        {tutorial ? (
+          <section className="space-y-4">
+            <p className="text-center text-xs text-metrics-gold">Ejemplo del tutorial · no se guarda</p>
+            <div className="flex justify-end"><Button data-tour="relevamientos-nuevo" className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={() => setTutorial("crear")}><Plus className="mr-1 h-4 w-4" /> Nuevo relevamiento</Button></div>
+            {tutorial === "crear" ? <div data-tour="relevamientos-crear" className="space-y-3 border-y border-metrics-border py-4">
+              <div><Label>Nombre</Label><Input value={ejemplo.nombre} onChange={(e) => setEjemplo((r) => ({ ...r, nombre: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-3"><div><Label>Desde</Label><Input type="date" value={ejemplo.periodo_inicio} onChange={(e) => setEjemplo((r) => ({ ...r, periodo_inicio: e.target.value }))} /></div><div><Label>Hasta</Label><Input type="date" value={ejemplo.periodo_fin} onChange={(e) => setEjemplo((r) => ({ ...r, periodo_fin: e.target.value }))} /></div></div>
+              <div><Label>Alcance</Label><Select value={ejemplo.alcance} onValueChange={(alcance) => setEjemplo((r) => ({ ...r, alcance }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent className="metrics-section"><SelectItem value="vocalia">Este espacio</SelectItem><SelectItem value="oficina">Toda la oficina</SelectItem></SelectContent></Select></div>
+            </div> : tutorial === "carpetas" ? <div data-tour="relevamientos-carpetas" className="grid gap-3 sm:grid-cols-2">{["borrador", "cerrado"].map((estado) => <article key={estado} className="rounded-md border border-metrics-border bg-metrics-card p-5"><FolderOpen className="mb-2 h-6 w-6 text-metrics-gold" /><h3 className="font-semibold text-metrics-foreground">Semestre de ejemplo</h3><p className="mt-2 text-sm text-metrics-muted">{fmt(ejemplo.periodo_inicio)} — {fmt(ejemplo.periodo_fin)}</p><p className="mt-3 text-sm text-metrics-gold">{estado === "cerrado" ? "Cerrado · datos congelados" : "Borrador · recalcula en vivo"}</p></article>)}</div>
+              : !["inicio", "logica", "cierre"].includes(tutorial) && <DetalleRelevamiento key={tutorial} rel={ejemplo} vocaliaId={vocaliaId} vocaliasTribunal={vocaliasTribunal} onVolver={() => setTutorial("carpetas")} onCambio={setEjemplo} tutorial={tutorial} />}
+          </section>
+        ) : actual ? (
           <DetalleRelevamiento rel={actual} vocaliaId={vocaliaId} vocaliasTribunal={vocaliasTribunal} onVolver={() => setAbierto(null)} onCambio={actualizarLocal} />
         ) : (
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-metrics-foreground">Relevamientos guardados</h2>
-              <Button className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={() => setNuevo(true)}><Plus className="mr-1 h-4 w-4" /> Nuevo relevamiento</Button>
+               <Button data-tour="relevamientos-nuevo" className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={() => setNuevo(true)}><Plus className="mr-1 h-4 w-4" /> Nuevo relevamiento</Button>
             </div>
             {cargando ? <div className="flex justify-center py-10 text-metrics-muted"><Loader2 className="h-5 w-5 animate-spin" /></div>
               : lista.length === 0 ? <div className="rounded-md border border-dashed border-metrics-border px-5 py-10 text-center text-sm text-metrics-muted">Todavía no hay relevamientos. Creá el primero.</div>
@@ -175,8 +206,9 @@ async function traerCausas(vocaliaIds: string[]): Promise<CausaRel[]> {
   return out;
 }
 
-function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCambio }: {
+function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCambio, tutorial }: {
   rel: Relevamiento; vocaliaId: string; vocaliasTribunal: VocaliaRow[]; onVolver: () => void; onCambio: (r: Relevamiento) => void;
+  tutorial?: VistaTutorialRelevamiento;
 }) {
   const cerrado = rel.estado === "cerrado";
   const [causas, setCausas] = useState<CausaRel[] | null>(null);
@@ -185,16 +217,22 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
 
   const ids = useMemo(() => (rel.alcance === "oficina" && vocaliasTribunal.length ? vocaliasTribunal.map((v) => v.id) : [rel.vocalia_id ?? vocaliaId]), [rel.alcance, rel.vocalia_id, vocaliaId, vocaliasTribunal]);
   useEffect(() => {
+    if (tutorial) {
+      const persona = { situacion_libertad: "detenido", violencia_genero: true, tipo_violencia_genero: "Lesiones", borrado_en: null };
+      setCausas(Array.from({ length: 12 }, (_, i) => ({ id: `ejemplo-${i}`, estado_causa: i < 3 ? "terminada" : "tramite", flagrancia: i % 3 === 0, delegada: i % 3 === 1, art196bis: false, fecha_ingreso: rel.periodo_inicio, created_at: null, fecha_terminacion: i < 3 ? rel.periodo_fin : null, modo_terminacion: i < 3 ? "Elevación a juicio" : null, sujetos: [{ ...persona, situacion_libertad: i % 2 ? "libre" : "detenido" }] })));
+      return;
+    }
     if (cerrado) return;
     setCausas(null); setError(false);
     traerCausas(ids).then(setCausas).catch(() => setError(true));
-  }, [ids, cerrado]);
+  }, [ids, cerrado, tutorial, rel.periodo_inicio, rel.periodo_fin]);
 
   const auto = useMemo(() => (causas ? calcularAuto(causas, rel.periodo_inicio, rel.periodo_fin) : null), [causas, rel.periodo_inicio, rel.periodo_fin]);
 
   const guardar = async (patch: Partial<Relevamiento>) => {
     const nuevo = { ...rel, ...patch };
     onCambio(nuevo);
+    if (tutorial) return;
     const { error: e } = await supabase.from("relevamientos").update(patch as never).eq("id", rel.id);
     if (e) toast.error("No se pudo guardar el cambio.");
   };
@@ -243,7 +281,7 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
   const guardarEnc = () => guardar({ config: { ...rel.config, encabezado: enc } });
 
   return (
-    <section className="space-y-4">
+    <section data-tour="relevamientos-detalle" className="space-y-4">
       <div className="flex flex-col gap-3 rounded-md border border-metrics-border bg-metrics-card/70 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button size="icon" variant="ghost" aria-label="Volver" className="text-metrics-muted hover:bg-metrics-card hover:text-metrics-foreground" onClick={onVolver}><ArrowLeft className="h-4 w-4" /></Button>
@@ -253,8 +291,8 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={() => setGraficos(true)}><BarChart3 className="mr-1.5 h-4 w-4" /> Ver gráficos</Button>
-          <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={exportar}><Download className="mr-1.5 h-4 w-4" /> Exportar a Excel</Button>
+          <Button data-tour="relevamientos-graficos" variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={() => tutorial ? document.querySelector('[data-tour="relevamientos-graficos-vista"]')?.scrollIntoView({ block: "nearest" }) : setGraficos(true)}><BarChart3 className="mr-1.5 h-4 w-4" /> Ver gráficos</Button>
+          <Button data-tour="relevamientos-excel" variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={tutorial ? () => toast.info("Ejemplo del tutorial: exportá tu relevamiento real al finalizar.") : exportar}><Download className="mr-1.5 h-4 w-4" /> Exportar a Excel</Button>
           {cerrado
             ? <Button variant="outline" className="border-metrics-border bg-transparent text-metrics-foreground hover:bg-metrics-card" onClick={reabrir}><LockOpen className="mr-1 h-4 w-4" /> Reabrir a borrador</Button>
             : <Button className="bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" onClick={cerrar}><Lock className="mr-1 h-4 w-4" /> Cerrar relevamiento</Button>}
@@ -268,12 +306,15 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
       </div>
       {error && <p className="text-sm text-metrics-negative">No se pudieron leer las causas para el cálculo automático.</p>}
 
-      {BLOQUES.map((b) => (
+      {tutorial === "graficos" && <RelevamientoGraficos3D open onOpenChange={() => {}} nombre={rel.nombre} valores={finales} inline />}
+      <div data-tour="relevamientos-bloques" className="space-y-4">
+      {BLOQUES.filter((b) => !tutorial || (tutorial === "manuales" ? b.modoDefault === "manual" : tutorial === "automaticos" ? b.modoDefault === "auto" : tutorial === "ajustes" ? b.id === "causas" : false)).map((b) => (
         <BloqueTabla key={b.id} def={b} modo={modo(b)} cerrado={cerrado} base={baseDe(b)} ajustes={ajusteDe(b)} valores={finalesDe(b)}
           onModo={(m) => guardar({ config: { ...rel.config, modos: { ...rel.config.modos, [b.id]: m } } })}
           onValor={(k, v) => guardar({ datos: { ...rel.datos, manual: { ...rel.datos.manual, [b.id]: { ...(rel.datos.manual?.[b.id] ?? {}), [k]: v } } } })}
           onAjuste={(k, v) => guardar({ datos: { ...rel.datos, ajustes: { ...rel.datos.ajustes, [b.id]: { ...(rel.datos.ajustes?.[b.id] ?? {}), [k]: v } } } })} />
       ))}
+      </div>
       <RelevamientoGraficos3D open={graficos} onOpenChange={setGraficos} nombre={rel.nombre} valores={finales} />
     </section>
   );
@@ -306,13 +347,13 @@ function BloqueTabla({ def, modo, cerrado, base, ajustes, valores, onModo, onVal
   const celda = "px-3 py-2 text-right tabular-nums";
 
   return (
-    <article className="overflow-hidden rounded-md border border-metrics-border bg-metrics-card">
+    <article data-tour={`relevamientos-bloque-${def.id}`} className="overflow-hidden rounded-md border border-metrics-border bg-metrics-card">
       <div className="grid gap-3 border-b border-metrics-border px-4 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
         <div className="hidden sm:block" />
         <div className="text-center"><h3 className="font-sans text-lg font-semibold text-metrics-foreground">{def.titulo}</h3>{def.subtitulo && <p className="text-xs text-metrics-muted">{def.subtitulo}</p>}</div>
         <label className="flex items-center justify-center gap-2 text-xs text-metrics-muted sm:justify-self-end">
           <span className={modo === "manual" ? "text-metrics-foreground" : ""}>Manual</span>
-          <Switch checked={modo === "auto"} disabled={cerrado} onCheckedChange={(on) => onModo(on ? "auto" : "manual")} aria-label="Automático" />
+          <Switch data-tour={`relevamientos-modo-${def.id}`} checked={modo === "auto"} disabled={cerrado} onCheckedChange={(on) => onModo(on ? "auto" : "manual")} aria-label="Automático" />
           <span className={modo === "auto" ? "text-metrics-gold" : ""}>Automático</span>
         </label>
       </div>

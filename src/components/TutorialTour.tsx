@@ -7,6 +7,7 @@ import { Scale, PartyPopper, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { mostrarTutorialRelevamiento, type VistaTutorialRelevamiento } from "@/lib/tutorialRelevamientos";
 
 export const TUTORIAL_EVENT = "iustrack:tutorial";
 
@@ -55,6 +56,7 @@ interface Paso {
   fondoClaro?: boolean;
   /** Conserva abierta la ficha aunque el objetivo sea su panel lateral. */
   requiereFicha?: boolean;
+  relevamiento?: VistaTutorialRelevamiento;
 }
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -637,6 +639,21 @@ function construirPasos(props: Props): Paso[] {
   );
 
   // 10 — Filtro por responsable
+  const pasosRelevamiento: { vista: VistaTutorialRelevamiento; target: string; titulo: string; texto: string }[] = [
+    { vista: "inicio", target: "relevamientos-titulo", titulo: "El relevamiento que pide la Cámara", texto: `<p class="iustrack-tour-lead">Cada semestre, la Cámara les pide a los juzgados un relevamiento estadístico.</p><p>Antes era contar causas a mano y llenar planillas durante horas. IusTrack automatiza ese trabajo.</p>` },
+    { vista: "logica", target: "relevamientos-titulo", titulo: "Cargás bien una vez, y el relevamiento sale solo", texto: `${bullets([["Datos completos", "tipo de causa, detenidos, fechas, modo de terminación y violencia de género."], ["Cálculo automático", "las estadísticas salen de las causas del período."], ["Siempre flexible", "también podés cargar o ajustar los números a mano."]])}` },
+    { vista: "crear", target: "relevamientos-crear", titulo: "Creá un relevamiento", texto: `${bullets([["Nuevo relevamiento", "abre la carga de una nueva carpeta."], ["Nombre y período", "poné un nombre y elegí las fechas desde y hasta."], ["Alcance", "este espacio o toda la oficina."]])}<p class="iustrack-tour-hint">Los campos que ves son de ejemplo y no se guardan.</p>` },
+    { vista: "carpetas", target: "relevamientos-carpetas", titulo: "Cada semestre, en su carpeta", texto: `${bullets([["Borrador", "recalcula los números automáticos con los datos actuales de tus causas."], ["Cerrado", "congela una copia de los resultados: ya no cambia aunque modifiques las causas."], ["Reabrir", "podés volver a borrador si necesitás corregirlo."]])}` },
+    { vista: "automaticos", target: "relevamientos-bloques", titulo: "Tres bloques que se calculan solos", texto: `${bullets([["Causas", "por tipo y con o sin detenido, según las fechas del período."], ["Resoluciones", "causas terminadas dentro del período, por modo de terminación."], ["Violencia de género", "causas del período, según el tipo registrado en los imputados."]])}` },
+    { vista: "ajustes", target: "relevamientos-bloque-causas", titulo: "Automático, manual y ajustes +/−", texto: `${bullets([["Interruptor", "cada bloque puede pasar de automático a carga manual."], ["Ajuste forzado", "incluso en automático, sumá o restá con los controles +/−."], ["Queda registrado", "el valor final es calculado + ajuste, con ambos números visibles."]])}<p class="iustrack-tour-hint">Podés probar los controles en este ejemplo sin cambiar tus datos.</p>` },
+    { vista: "manuales", target: "relevamientos-bloques", titulo: "Los bloques que cargás a mano", texto: `${bullets([["Hábeas corpus", "ingresados y resultados: rechazados, incompetencias, desistidos y procedentes."], ["Audiencias de flagrancia", "cantidad de audiencias virtuales y presenciales."]])}<p class="iustrack-tour-lead">Estos datos no surgen de las causas: se cargan manualmente.</p>` },
+    { vista: "graficos", target: "relevamientos-graficos", titulo: "Un gráfico por cada bloque", texto: `<p class="iustrack-tour-lead">Tocá “Ver gráficos” en tu relevamiento y recorré los cinco gráficos en 3D.</p>${bullets([["Cinco vistas", "Causas, Resoluciones, Hábeas corpus, Flagrancia y Violencia de género."], ["Tus resultados", "cada gráfico refleja los valores finales, incluidos los ajustes."]])}` },
+    { vista: "exportar", target: "relevamientos-excel", titulo: "La planilla oficial, lista para presentar", texto: `<p class="iustrack-tour-lead">“Exportar a Excel” completa el formato exacto de la planilla oficial de la Cámara.</p><p>Conserva encabezados, fórmulas, estilos y celdas combinadas. Tus datos van a las celdas correspondientes.</p><p class="iustrack-tour-hint">Completá juzgado, fiscalía, defensorías y distritos antes de exportar tu relevamiento real.</p>` },
+    { vista: "cierre", target: "relevamientos-titulo", titulo: "Convertí horas de trabajo manual en minutos", texto: `<p class="iustrack-tour-lead">Cargá bien tus causas una vez. Elegí el semestre, revisá los resultados y descargá la planilla.</p><p class="iustrack-tour-emph">Menos conteo manual. Más tiempo para el trabajo de tu oficina.</p>` },
+  ];
+  pasos.push(...pasosRelevamiento.map((p): Paso => ({ view: "metricas", relevamiento: p.vista, target: `[data-tour="${p.target}"]`, titulo: p.titulo, texto: p.texto, efecto: "marco", side: "bottom" })));
+
+  // 10 — Filtro por responsable
   pasos.push({
     view: vistaLista,
     target: '[data-tour="filtro-responsable"]',
@@ -804,6 +821,8 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
         await demoAbrirFormulario();
       }
        if (paso.demo === demoAnotaciones) await mostrarAnotacionesDemo();
+       mostrarTutorialRelevamiento(paso.relevamiento ?? null);
+       await esperar(180);
       // Algunas vistas administrativas terminan de montar después de navegar.
       if (paso.target) {
         for (let intento = 0; intento < 12 && !document.querySelector(paso.target); intento += 1) {
@@ -818,6 +837,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
     (celebrar: boolean) => {
       limpiarGuias();
       limpiarDemos();
+      mostrarTutorialRelevamiento(null);
       document.body.classList.remove("iustrack-tour-supabase-active");
       document.body.classList.remove("iustrack-tour-clear-background");
       delete document.body.dataset.tourFx;
@@ -860,7 +880,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       steps: pasos.map((p, i) => ({
         element: p.target,
         popover: {
-          popoverClass: `iustrack-tour${p.supabase ? " iustrack-tour-supabase" : ""}${p.campos ? " iustrack-tour-fields" : ""}${p.destacado ? " iustrack-tour-destacado" : ""}${p.popoverArriba ? " iustrack-tour-top" : ""}${p.popoverFicha ? " iustrack-tour-form-corner" : ""}`,
+          popoverClass: `iustrack-tour${p.relevamiento ? " iustrack-tour-metrics" : ""}${p.supabase ? " iustrack-tour-supabase" : ""}${p.campos ? " iustrack-tour-fields" : ""}${p.destacado ? " iustrack-tour-destacado" : ""}${p.popoverArriba ? " iustrack-tour-top" : ""}${p.popoverFicha ? " iustrack-tour-form-corner" : ""}`,
           title: p.titulo,
           description: `${p.texto}<div class="iustrack-tour-progress"><span style="width:${
             ((i + 2) / TOTAL) * 100
@@ -875,6 +895,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
         limpiarDemos();
         document.body.classList.toggle("iustrack-tour-supabase-active", !!paso?.supabase);
         document.body.classList.toggle("iustrack-tour-clear-background", !!paso?.fondoClaro);
+        document.body.classList.toggle("iustrack-tour-metrics-active", !!paso?.relevamiento);
         document.body.dataset.tourFx = paso?.efecto ?? "marco";
         void (async () => {
           if (paso?.demo) await paso.demo();
@@ -898,6 +919,8 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       onDestroyed: () => {
         limpiarGuias();
         limpiarDemos();
+        mostrarTutorialRelevamiento(null);
+        document.body.classList.remove("iustrack-tour-metrics-active");
         document.body.classList.remove("iustrack-tour-supabase-active");
         document.body.classList.remove("iustrack-tour-clear-background");
         delete document.body.dataset.tourFx;

@@ -457,6 +457,34 @@
   color: hsl(var(--muted-foreground));
 }
 /* ===== Paso especial: Seguridad / Supabase ===== */
+/* Las ayudas de relevamientos comparten los tokens violeta/dorados del módulo. */
+.driver-popover.iustrack-tour.iustrack-tour-metrics {
+  --background: var(--metrics-background);
+  --foreground: var(--metrics-foreground);
+  --muted: var(--metrics-card);
+  --muted-foreground: var(--metrics-muted);
+  --border: var(--metrics-border);
+  --primary: var(--metrics-gold);
+  --accent: var(--metrics-gold);
+  background: hsl(var(--metrics-card));
+  color: hsl(var(--metrics-foreground));
+  border: 1px solid hsl(var(--metrics-gold) / 0.7);
+  box-shadow: var(--shadow-metrics-glow);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  font-family: Arial, sans-serif;
+}
+.driver-popover.iustrack-tour.iustrack-tour-metrics .driver-popover-title { color: hsl(var(--metrics-gold)); }
+.driver-popover.iustrack-tour.iustrack-tour-metrics .driver-popover-description { color: hsl(var(--metrics-foreground)); }
+.driver-popover.iustrack-tour.iustrack-tour-metrics button { background: hsl(var(--metrics-background)); color: hsl(var(--metrics-foreground)); border-color: hsl(var(--metrics-border)); text-shadow: none; }
+.driver-popover.iustrack-tour.iustrack-tour-metrics button.driver-popover-next-btn { background: hsl(var(--metrics-gold)); color: hsl(var(--metrics-gold-foreground)); }
+.driver-popover.iustrack-tour.iustrack-tour-metrics .driver-popover-close-btn { color: hsl(var(--metrics-muted)); }
+.driver-popover.iustrack-tour.iustrack-tour-metrics .driver-popover-arrow-side-bottom { border-bottom-color: hsl(var(--metrics-card)); }
+.driver-popover.iustrack-tour.iustrack-tour-metrics .driver-popover-arrow-side-top { border-top-color: hsl(var(--metrics-card)); }
+.driver-popover.iustrack-tour.iustrack-tour-metrics .driver-popover-arrow-side-left { border-left-color: hsl(var(--metrics-card)); }
+.driver-popover.iustrack-tour.iustrack-tour-metrics .driver-popover-arrow-side-right { border-right-color: hsl(var(--metrics-card)); }
+body.iustrack-tour-metrics-active .driver-active-element { outline-color: hsl(var(--metrics-gold)); }
+
 body.iustrack-tour-supabase-active #root {
   filter: blur(5px);
 }

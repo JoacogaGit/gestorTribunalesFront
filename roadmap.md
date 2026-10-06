@@ -23,3 +23,6 @@
 - [x] Reemplazar el filtro por carátula por una demostración estable con otro campo
 - [x] Mostrar varios movimientos reversibles de distintas categorías
 - [x] Separar anotaciones como último paso de ficha, después del imputado y antes del calendario
+- [x] Agregar diez pasos de Estadísticas después del Calendario con estética violeta/dorada
+- [x] Mostrar carpetas, creación, bloques, ajustes, gráficos y Excel con ejemplos que no se guardan
+- [x] Verificar estados hacia adelante/atrás y limpieza en pruebas; panel y gráfico visibles sin errores; recorrido dentro de oficina pendiente de sesión

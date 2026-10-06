@@ -11,6 +11,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   nombre: string;
   valores: Partial<Record<BloqueId, Valores>>;
+  inline?: boolean;
 }
 
 interface Palette {
@@ -119,7 +120,7 @@ function Escena({ def, datos, palette, movimiento }: { def: BloqueDef; datos: Da
   );
 }
 
-export default function RelevamientoGraficos3D({ open, onOpenChange, nombre, valores }: Props) {
+export default function RelevamientoGraficos3D({ open, onOpenChange, nombre, valores, inline = false }: Props) {
   const [activo, setActivo] = useState<BloqueId>("causas");
   const [movimiento, setMovimiento] = useState(true);
   const palette = usePalette();
@@ -130,10 +131,8 @@ export default function RelevamientoGraficos3D({ open, onOpenChange, nombre, val
   const datos = useMemo(() => datosDe(def, valores[def.id] ?? {}), [def, valores]);
   const total = datos.reduce((s, d) => s + d.value, 0);
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="metrics-section max-w-6xl border-metrics-border bg-metrics-background text-metrics-foreground">
-        <DialogHeader><DialogTitle className="flex items-center gap-2 font-sans text-xl"><BarChart3 className="h-5 w-5 text-metrics-gold" /> Gráficos · {nombre}</DialogTitle></DialogHeader>
+  const contenido = <>
+        <h2 className="flex items-center gap-2 font-sans text-xl"><BarChart3 className="h-5 w-5 text-metrics-gold" /> Gráficos · {nombre}</h2>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {BLOQUES.map((b) => <Button key={b.id} size="sm" variant={activo === b.id ? "default" : "outline"} onClick={() => setActivo(b.id)} className={activo === b.id ? "bg-metrics-gold text-metrics-gold-foreground hover:bg-metrics-gold/90" : "border-metrics-border bg-transparent text-metrics-muted hover:bg-metrics-card hover:text-metrics-foreground"}>{b.titulo}</Button>)}
         </div>
@@ -148,7 +147,7 @@ export default function RelevamientoGraficos3D({ open, onOpenChange, nombre, val
           </aside>
         </div>
         <p className="text-center text-xs text-metrics-muted">Arrastrá para rotar · Usá la rueda para acercar</p>
-      </DialogContent>
-    </Dialog>
-  );
+      </>;
+  if (inline) return <section data-tour="relevamientos-graficos-vista" className="metrics-section space-y-4 py-4">{contenido}</section>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="metrics-section max-w-6xl border-metrics-border bg-metrics-background text-metrics-foreground"><DialogHeader className="sr-only"><DialogTitle>Gráficos · {nombre}</DialogTitle></DialogHeader>{contenido}</DialogContent></Dialog>;
 }
