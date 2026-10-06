@@ -65,7 +65,10 @@ export function useResponsableFilter(vocaliaId: string | null, esEstudio: boolea
     return [...set].sort((a, b) => a.localeCompare(b, "es"));
   }, [rows, valorDe]);
 
-  const seleccionVisible = demoActiva && opciones.length > 0 ? [opciones[0]] : seleccionados;
+  const seleccionVisible = useMemo(
+    () => demoActiva && opciones.length > 0 ? [opciones[0]] : seleccionados,
+    [demoActiva, opciones, seleccionados],
+  );
   const causaIdsPermitidos = useMemo(() => {
     if (seleccionVisible.length === 0) return null;
     const sel = new Set(seleccionVisible.map((s) => s.toLowerCase()));
