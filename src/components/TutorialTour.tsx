@@ -53,6 +53,8 @@ interface Paso {
   popoverFicha?: boolean;
   /** Mantiene visible y sin oscurecer el contenido de fondo. */
   fondoClaro?: boolean;
+  /** Conserva abierta la ficha aunque el objetivo sea su panel lateral. */
+  requiereFicha?: boolean;
 }
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -90,6 +92,7 @@ let demoAbort = new AbortController();
 function limpiarDemos() {
   demoAbort.abort();
   demoAbort = new AbortController();
+  window.dispatchEvent(new CustomEvent("iustrack:tutorial-filtro-responsable", { detail: false }));
   document.querySelectorAll(".iustrack-tour-list-focus, .iustrack-tour-filter-focus, .iustrack-tour-drag-target").forEach((el) => {
     el.classList.remove("iustrack-tour-list-focus", "iustrack-tour-filter-focus", "iustrack-tour-drag-target");
   });
@@ -126,70 +129,86 @@ async function demoListasPredeterminadas() {
   crear?.classList.add("iustrack-tour-list-focus");
 }
 
-/** Filtra por un dato de carátula y deja visible qué columna se está usando. */
-async function demoFiltroCaratula() {
+/** Usa el filtro real con un responsable existente, sin alterar la selección del usuario. */
+async function demoFiltroResponsable() {
   const signal = demoAbort.signal;
-  const header = document.querySelector<HTMLElement>('[data-tour-column="caratula"]');
   const input = document.querySelector<HTMLInputElement>('[data-tour="buscador"]');
-  if (!header || !input) return;
-  header.classList.add("iustrack-tour-filter-focus");
+  if (input) setDemoInputValue(input, "");
+  document.querySelector<HTMLElement>('[data-tour="filtro-responsable"]')?.classList.add("iustrack-tour-filter-focus");
   await esperar(350);
-  for (const [i] of Array.from("Gómez").entries()) {
-    if (signal.aborted) return;
-    setDemoInputValue(input, `Gómez`.slice(0, i + 1));
-    await esperar(150);
-  }
+  if (signal.aborted) return;
+  window.dispatchEvent(new CustomEvent("iustrack:tutorial-filtro-responsable", { detail: true }));
 }
 
-/** Cursor ficticio que arrastra Carátula hacia otra posición y la devuelve. */
+/** Muestra movimientos de distintas cabeceras sin modificar el orden guardado. */
 async function demoMoverCategoria() {
   const signal = demoAbort.signal;
   const buscador = document.querySelector<HTMLInputElement>('[data-tour="buscador"]');
-  if (buscador) setInputValue(buscador, "");
-  const origen = document.querySelector<HTMLElement>('[data-tour-column="caratula"]');
-  const destino = document.querySelector<HTMLElement>('[data-tour-column="delito"]')
-    ?? document.querySelector<HTMLElement>('[data-tour-column="libertad"]');
-  if (!origen || !destino) return;
-  origen.classList.add("iustrack-tour-drag-target");
-  destino.classList.add("iustrack-tour-drag-target");
-  origen.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
-  await esperar(250);
-  if (signal.aborted) return;
-  const a = origen.getBoundingClientRect();
-  const b = destino.getBoundingClientRect();
+  if (buscador) setDemoInputValue(buscador, "");
+  const headers = Array.from(document.querySelectorAll<HTMLElement>('[data-tour="column-headers"] [data-tour-column]'))
+    .filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.left >= 0 && rect.right <= window.innerWidth;
+    }).slice(0, 4);
+  if (headers.length < 2) return;
   const layer = document.createElement("div");
   layer.id = "iustrack-tour-drag-demo";
   layer.className = "iustrack-tour-drag-demo";
-  layer.innerHTML = `<span class="iustrack-tour-drag-label">${origen.textContent?.trim() || "Carátula"}</span><span class="iustrack-tour-cursor">↖</span>`;
+  const label = document.createElement("span");
+  label.className = "iustrack-tour-drag-label";
+  const cursor = document.createElement("span");
+  cursor.className = "iustrack-tour-cursor";
+  cursor.textContent = "↖";
+  layer.append(label, cursor);
   document.body.appendChild(layer);
-  layer.style.width = `${a.width}px`;
-  layer.style.height = `${a.height}px`;
   const mover = (x: number, y: number, duracion: number) => {
     layer.style.transitionDuration = `${duracion}ms`;
     layer.style.left = `${x}px`;
     layer.style.top = `${y}px`;
   };
-  mover(a.left, a.top, 0);
-  await esperar(450);
-  if (signal.aborted) return;
-  layer.classList.add("is-grabbing");
-  mover(b.left, a.top, 850);
-  await esperar(1050);
-  if (signal.aborted) return;
-  mover(a.left, a.top, 850);
-  await esperar(1050);
-  layer.classList.remove("is-grabbing");
+  for (let i = 0; i < 3; i++) {
+    if (signal.aborted) return;
+    const origen = headers[i % headers.length];
+    const destino = headers[(i + 1) % headers.length];
+    const a = origen.getBoundingClientRect();
+    const b = destino.getBoundingClientRect();
+    origen.classList.add("iustrack-tour-drag-target");
+    destino.classList.add("iustrack-tour-drag-target");
+    label.textContent = origen.textContent?.trim() || "Categoría";
+    layer.style.width = `${a.width}px`;
+    layer.style.height = `${a.height}px`;
+    mover(a.left, a.top, 0);
+    await esperar(350);
+    if (signal.aborted) return;
+    layer.classList.add("is-grabbing");
+    mover(b.left, b.top, 700);
+    await esperar(850);
+    if (signal.aborted) return;
+    const actual = origen.getBoundingClientRect();
+    mover(actual.left, actual.top, 700);
+    await esperar(850);
+    if (signal.aborted) return;
+    layer.classList.remove("is-grabbing");
+    origen.classList.remove("iustrack-tour-drag-target");
+    destino.classList.remove("iustrack-tour-drag-target");
+  }
+  layer.remove();
+}
+
+async function mostrarAnotacionesDemo() {
+  if (window.innerWidth < 1280) return;
+  if (!document.querySelector('[data-tour="panel-anotaciones-causa"]')) {
+    document.querySelector<HTMLButtonElement>('[data-tour="mostrar-panel-anotaciones"]')?.click();
+    await esperar(180);
+  }
 }
 
 /** Carga cuatro anotaciones ficticias dentro de las listas reales, sin tocar el estado ni guardar datos. */
 async function demoAnotaciones() {
   const signal = demoAbort.signal;
-  let aside = document.querySelector<HTMLElement>('[data-tour="panel-anotaciones-causa"]');
-  if (!aside || aside.getBoundingClientRect().width === 0) {
-    document.querySelector<HTMLButtonElement>('[data-tour="mostrar-panel-anotaciones"]')?.click();
-    await esperar(180);
-    aside = document.querySelector<HTMLElement>('[data-tour="panel-anotaciones-causa"]');
-  }
+  await mostrarAnotacionesDemo();
+  const aside = document.querySelector<HTMLElement>(window.innerWidth >= 1280
+    ? '[data-tour="panel-anotaciones-causa"]' : '[data-tour="form-anotaciones-causa"]');
   if (!aside || signal.aborted) return;
 
   const conFecha = aside.querySelector<HTMLElement>('[data-tour="anotaciones-con-fecha"]');
@@ -217,11 +236,6 @@ async function demoAnotaciones() {
   );
   await esperar(700);
   if (signal.aborted) return;
-}
-
-async function demoFichaConAnotaciones() {
-  await demoAbrirFormulario();
-  await demoAnotaciones();
 }
 
 interface Props {
@@ -482,16 +496,16 @@ function construirPasos(props: Props): Paso[] {
     },
     {
       view: vistaLista,
-      target: '[data-tour-column="caratula"]',
+       target: '[data-tour="filtro-responsable"]',
       efecto: "pulso",
-      titulo: "Filtrá por cada columna",
+       titulo: `Filtrá por ${responsable}`,
       texto:
         `${bullets([
-          ["Carátula", "escribí un dato de esa columna para quedarte solo con las filas que coinciden."],
+           [esEstudio ? "Empleado a cargo" : "Despachante", "mirá cómo la lista muestra solo las causas de un responsable cargado."],
           ["Otros filtros", "también podés filtrar por subestado, situación o categoría."],
         ])}
         <p class="iustrack-tour-hint">Tu acomodo queda guardado para la próxima vez.</p>`,
-      demo: demoFiltroCaratula,
+       demo: demoFiltroResponsable,
     },
     {
       view: vistaLista,
@@ -531,18 +545,14 @@ function construirPasos(props: Props): Paso[] {
   });
 
   // 7 — Ficha de causa: sombreado progresivo
-  const fichaBase = { target: '[data-tour="form-causa"]', side: "left" as const, efecto: "marco" as Efecto, popoverFicha: true };
+   const fichaBase = { target: '[data-tour="form-causa"]', side: "left" as const, efecto: "marco" as Efecto, popoverFicha: true, requiereFicha: true };
   pasos.push(
     {
       ...fichaBase,
       fondoClaro: true,
-      demo: demoFichaConAnotaciones,
+       demo: demoAbrirFormulario,
       titulo: "La ficha de la causa",
-      texto: `<p class="iustrack-tour-lead">Mirá cómo se ilumina cada campo, uno por uno. En el panel derecho aparecen cuatro anotaciones de ejemplo integradas a la ficha.</p>
-        ${bullets([
-          ["Con fecha", "impactan en tiempo real en el calendario, que vas a ver a continuación."],
-          ["Sin fecha", "quedan como notas o pendientes de la causa."],
-        ])}`,
+       texto: `<p class="iustrack-tour-lead">Mirá cómo se ilumina y se completa cada campo, uno por uno.</p>`,
       campos: [
         { target: '[data-tour-field="expediente"]', titulo: "Expediente", texto: "El número único que identifica la causa.", lado: "left", ejemplo: "12345/2026" },
         { target: '[data-tour-field="caratula"]', titulo: "Carátula", texto: "El nombre con el que la vas a reconocer.", lado: "right", ejemplo: "PÉREZ, JUAN s/ ROBO" },
@@ -550,6 +560,19 @@ function construirPasos(props: Props): Paso[] {
         { target: '[data-tour-field="estado"]', titulo: "Estado", texto: "Define en qué lista aparece la causa.", lado: "right", ejemplo: esEstudio ? "En instrucción" : "En trámite" },
         ...(esEstudio ? [] : [{ target: '[data-tour-field="caratula-pdf"]', titulo: "Carátula en PDF", texto: "Subí la carátula de Lex100 y los campos se completan solos. Revisás antes de guardar.", lado: "right" as const }]),
         { target: '[data-tour-field="acciones"]', titulo: "Guardar o eliminar", texto: "Al editar una causa aparece “Borrar causa”: va a la Papelera y se puede recuperar.", lado: "left" },
+      ],
+    },
+    {
+      ...fichaBase,
+      fondoClaro: true,
+      titulo: "Marcas y datos secundarios",
+      texto: `<p class="iustrack-tour-lead">Las marcas agregan la causa a su propia lista con un solo toque.</p>`,
+      campos: [
+        { target: '[data-tour-field="marca-flagrancia"]', titulo: "Flagrancia", texto: "La causa aparece en la lista Flagrancia.", lado: "right" },
+        { target: '[data-tour-field="marca-delegada"]', titulo: "Delegada", texto: "Pasa a Delegadas y sale de Trámite.", lado: "left" },
+        { target: '[data-tour-field="marca-196bis"]', titulo: "196bis / NN", texto: "Pasa a su lista 196bis/NN y sale de Trámite.", lado: "right" },
+        { target: '[data-tour-field="fecha-ingreso"]', titulo: "Fecha de ingreso", texto: "Cuándo entró la causa.", lado: "left" },
+        ...(esEstudio ? [] : [{ target: '[data-tour-field="datos-judiciales"]', titulo: "Datos judiciales", texto: "Firmante, modo de inicio, fiscalía y último movimiento.", lado: "right" as const }]),
       ],
     },
     {
@@ -565,17 +588,19 @@ function construirPasos(props: Props): Paso[] {
       ],
     },
     {
-      ...fichaBase,
+      requiereFicha: true,
+      target: window.innerWidth >= 1280 ? '[data-tour="panel-anotaciones-causa"]' : '[data-tour="form-anotaciones-causa"]',
+      side: "left",
+      efecto: "marco",
       fondoClaro: true,
-      titulo: "Marcas y datos secundarios",
-      texto: `<p class="iustrack-tour-lead">Las marcas agregan la causa a su propia lista con un solo toque.</p>`,
-      campos: [
-        { target: '[data-tour-field="marca-flagrancia"]', titulo: "Flagrancia", texto: "La causa aparece en la lista Flagrancia.", lado: "right" },
-        { target: '[data-tour-field="marca-delegada"]', titulo: "Delegada", texto: "Pasa a Delegadas y sale de Trámite.", lado: "left" },
-        { target: '[data-tour-field="marca-196bis"]', titulo: "196bis / NN", texto: "Pasa a su lista 196bis/NN y sale de Trámite.", lado: "right" },
-        { target: '[data-tour-field="fecha-ingreso"]', titulo: "Fecha de ingreso", texto: "Cuándo entró la causa.", lado: "left" },
-        ...(esEstudio ? [] : [{ target: '[data-tour-field="datos-judiciales"]', titulo: "Datos judiciales", texto: "Firmante, modo de inicio, fiscalía y último movimiento.", lado: "right" as const }]),
-      ],
+      titulo: "Anotaciones de la causa",
+      texto: `<p class="iustrack-tour-lead">En el panel real se cargan cuatro anotaciones de ejemplo.</p>
+        ${bullets([
+          ["Con fecha", "impactan en tiempo real en el calendario, que vas a ver en el paso siguiente."],
+          ["Sin fecha", "quedan como notas o pendientes de la causa."],
+        ])}
+        <p class="iustrack-tour-hint">Son ejemplos: no se guardan y desaparecen al salir del tutorial.</p>`,
+      demo: demoAnotaciones,
     },
   );
 
@@ -768,16 +793,17 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       // Cierra el formulario de causa si el paso ya no lo necesita.
       limpiarGuias();
       limpiarDemos();
-      if (!paso.target?.startsWith('[data-tour="form')) {
+       if (!paso.requiereFicha) {
         cerrarFormulario();
         await esperar(150);
       }
       if (paso.view) onNavigate(paso.view);
       if (isMobile) onOpenSidebar?.(!!paso.abrirSidebar);
       await esperar(paso.view || paso.abrirSidebar ? 500 : 180);
-      if (paso.target?.startsWith('[data-tour="form') && !document.querySelector(paso.target)) {
+       if (paso.requiereFicha && !document.querySelector('[data-tour="form-causa"]')) {
         await demoAbrirFormulario();
       }
+       if (paso.demo === demoAnotaciones) await mostrarAnotacionesDemo();
       // Algunas vistas administrativas terminan de montar después de navegar.
       if (paso.target) {
         for (let intento = 0; intento < 12 && !document.querySelector(paso.target); intento += 1) {

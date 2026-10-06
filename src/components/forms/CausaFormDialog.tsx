@@ -1217,7 +1217,7 @@ export default function CausaFormDialog({
 
 
               {conPanelAnot && (
-                <div className="xl:hidden space-y-4">
+                <div data-tour="form-anotaciones-causa" className="xl:hidden space-y-4">
                   <Separator />
                   <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} />
                 </div>
