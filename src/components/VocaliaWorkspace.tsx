@@ -474,6 +474,21 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     onChangeEstado: remoteNoop,
     esAdmin,
     onToggleSecreta: handleToggleSecreta,
+    listasParaAsignar: listasHook.listas
+      .filter((l) => l.seleccionable_click_derecho)
+      .map((l) => ({ id: l.id, nombre: l.nombre })),
+    onAsignarALista: async (c: Causa, listaId: string) => {
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("listas_personalizadas_causas")
+        .insert({ lista_id: listaId, causa_id: c.id, agregado_por: u.user?.id ?? null } as never);
+      if (error) {
+        toast.error(error.message.includes("duplicate") ? "La causa ya está en esa lista" : error.message);
+        return;
+      }
+      toast.success("Causa agregada a la lista");
+      listasHook.refetch();
+    },
   };
 
   const handleNavigate = (v: string) => { setView(v); setSidebarOpen(false); };
