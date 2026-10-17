@@ -310,24 +310,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       return next;
     });
   };
-  const [ocultarFlagDash, setOcultarFlagDash] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("iustrack_ocultar_flagrancia_dashboard") === "1";
-  });
-  const [ocultarFlagTramite, setOcultarFlagTramite] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("iustrack_ocultar_flagrancia_tramite") === "1";
-  });
-  const toggleFlag = (donde: "dashboard" | "tramite") => {
-    const key = donde === "dashboard" ? "iustrack_ocultar_flagrancia_dashboard" : "iustrack_ocultar_flagrancia_tramite";
-    const setter = donde === "dashboard" ? setOcultarFlagDash : setOcultarFlagTramite;
-    setter((prev) => {
-      const next = !prev;
-      try { localStorage.setItem(key, next ? "1" : "0"); } catch { /* ignore */ }
-      return next;
-    });
-  };
-  const sinFlagrancia = (list: Causa[], ocultar: boolean) => (ocultar ? list.filter((c) => !c.flagrancia) : list);
   /** Las causas marcadas como Delegada o 196bis/NN salen del dashboard y del listado de trámite. */
   const sinMarcas = (list: Causa[]) => list.filter((c) => !c.delegada && !c.art196bis);
   const [subestadosDash, setSubestadosDash] = useState<string[]>([]);
@@ -677,10 +659,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <div className="flex justify-end gap-1">
                   <Button data-tour="nueva-estadistica" size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
                     <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => toggleFlag("dashboard")} className="text-xs text-muted-foreground">
-                    <Zap className="w-3.5 h-3.5 mr-1.5" />
-                    {ocultarFlagDash ? "Mostrar flagrancias" : "Ocultar flagrancias"}
                   </Button>
                   <Button data-tour="toggle-kpis" size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
