@@ -808,12 +808,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               const listaTramite = sinMarcas(responsableFiltro.filtrar(tramiteRemote.causas));
               return (
               <div className="flex flex-col flex-1 min-h-0">
-                <div className="flex justify-end mb-2">
-                  <Button size="sm" variant="ghost" onClick={() => toggleFlag("tramite")} className="text-xs text-muted-foreground">
-                    <Zap className="w-3.5 h-3.5 mr-1.5" />
-                    {ocultarFlagTramite ? "Mostrar flagrancias" : "Ocultar flagrancias"}
-                  </Button>
-                </div>
                 <RemoteListSection
                   loading={tramiteRemote.loading}
                   error={tramiteRemote.error}
