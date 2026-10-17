@@ -194,9 +194,9 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     if (vocalias.length !== 1) return;
     const v = vocalias[0];
     if (v.tribunal_modo !== "lista_unica") return;
-    onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
+    handleSelect(v);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, error, vocalias]);
+  }, [loading, error, vocalias, conPassword]);
 
   const handleCrear = async () => {
     if (!createOpen) return;
@@ -321,11 +321,25 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
                   className={`glass-card rounded-xl p-8 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 group focus:outline-none focus:ring-2 focus:ring-primary/40 w-full md:w-[calc((100%-3rem)/3)] shrink-0 ${isEditing ? "cursor-default" : "cursor-pointer"}`}
                 >
                   <div className="flex items-start justify-between mb-5">
-                    <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors relative">
                       <Scale className="w-7 h-7 text-primary" />
+                      {conPassword.has(v.id) && (
+                        <span className="absolute -right-1.5 -top-1.5 rounded-full bg-muted p-1 border border-border" title="Espacio con contraseña">
+                          <Lock className="w-3 h-3 text-muted-foreground" />
+                        </span>
+                      )}
                     </div>
-                    {!isEditing && (canEdit || canDelete) && (
+                    {!isEditing && (canEdit || canDelete || adminTribunalIds.has(v.tribunal_id)) && (
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {adminTribunalIds.has(v.tribunal_id) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setPassAdminValue(""); setPassAdminTarget(v); }}
+                            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                            title={conPassword.has(v.id) ? "Cambiar o quitar contraseña" : "Definir contraseña"}
+                          >
+                            <KeyRound className="w-4 h-4" />
+                          </button>
+                        )}
                         {canEdit && (
                           <button
                             onClick={(e) => { e.stopPropagation(); startEdit(v); }}
