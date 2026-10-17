@@ -487,6 +487,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         return;
       }
       toast.success("Causa agregada a la lista");
+      fireCausaResync(c.id);
       listasHook.refetch();
     },
   };
