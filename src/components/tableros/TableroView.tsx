@@ -459,17 +459,28 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
   );
 }
 
-export default function TableroView({ tablero, vocaliaId, soloLectura = false }: Props) {
-  const { listas, loading, crearLista, renombrarLista, borrarLista, cambiarColorLista } = useTableroListas(tablero.id);
+export default function TableroView({ tablero, vocaliaId, soloLectura = false, esAdmin = false, tribunalId = null }: Props) {
+  const { user } = useAuth();
+  const { listas, loading, crearLista, renombrarLista, borrarLista, cambiarColorLista, actualizarEditores } = useTableroListas(tablero.id);
   const [listaActiva, setListaActiva] = useState<string | null>(null);
   const [showCrear, setShowCrear] = useState(false);
   const [renombrando, setRenombrando] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [permisosDe, setPermisosDe] = useState<TableroLista | null>(null);
 
   const lista = listas.find((l) => l.id === listaActiva) ?? null;
 
+  /** Permisos de edición por lista: vacío = todos; si hay usuarios, solo ellos o un admin. */
+  const puedeEditarLista = (l: TableroLista) => {
+    if (l.ambito === "personal") return !soloLectura || l.usuario_id === user?.id;
+    if (soloLectura) return false;
+    if (esAdmin) return true;
+    if (l.editores.length === 0) return true;
+    return l.usuario_id === user?.id || l.editores.includes(user?.id ?? "");
+  };
+
   if (lista) {
-    const puedeEditar = !soloLectura || lista.ambito === "personal";
+    const puedeEditar = puedeEditarLista(lista);
     return (
       <div className="flex flex-1 min-h-0 flex-col gap-3">
         <div className="flex items-center gap-2">
