@@ -46,6 +46,7 @@ export function useCausasDeLista(listaId: string | null) {
       .from("listas_personalizadas_causas")
       .insert({ lista_id: listaId, causa_id: causaId, agregado_por: userData.user?.id ?? null });
     if (error) throw error;
+    fireCausaResync(causaId);
     await fetchData();
   }, [listaId, fetchData]);
 
@@ -57,6 +58,7 @@ export function useCausasDeLista(listaId: string | null) {
       .eq("lista_id", listaId)
       .eq("causa_id", causaId);
     if (error) throw error;
+    fireCausaResync(causaId);
     await fetchData();
   }, [listaId, fetchData]);
 
