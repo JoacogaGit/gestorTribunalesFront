@@ -132,6 +132,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
       };
       const ppEventos: CalendarEvento[] = [];
       for (const row of (ppRes.data ?? []) as unknown as PpRow[]) {
+        if (!visibleEnCalendario(row.causa_id)) continue;
         const ef = calcularPpEfectivo(row);
         if (!ef.fecha) continue;
         const mapped = mapSujetoFechaToCalendar(
@@ -148,13 +149,19 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .filter((r) => visibleEnCalendario(r.causa_id))
           .map(mapDbEventoToCalendar),
         ...ppEventos,
-        ...((penaRes.data ?? []) as unknown as DbSujetoFechaRow[]).map((r) =>
-          mapSujetoFechaToCalendar(r, "vencimiento_pena", "vencimiento_pena", "Vence Pena")),
-        ...((prescRes.data ?? []) as unknown as DbSujetoFechaRow[]).map((r) =>
-          mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
-        ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[]).map(mapPrescripcionToCalendar),
+        ...((penaRes.data ?? []) as unknown as DbSujetoFechaRow[])
+          .filter((r) => visibleEnCalendario(r.causa_id))
+          .map((r) => mapSujetoFechaToCalendar(r, "vencimiento_pena", "vencimiento_pena", "Vence Pena")),
+        ...((prescRes.data ?? []) as unknown as DbSujetoFechaRow[])
+          .filter((r) => visibleEnCalendario(r.causa_id))
+          .map((r) => mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
+        ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[])
+          .filter((r) => visibleEnCalendario(r.sujetos?.causa_id))
+          .map(mapPrescripcionToCalendar),
         // Tarjetas de tableros con fecha
-        ...((tarjetasRes.data ?? []) as unknown as TarjetaCalRow[]).map((t): CalendarEvento => ({
+        ...((tarjetasRes.data ?? []) as unknown as TarjetaCalRow[])
+          .filter((t) => visibleEnCalendario(t.causa_id))
+          .map((t): CalendarEvento => ({
           id: `tarjeta-${t.id}`,
           fecha: t.fecha_hora as string,
           hora: toARTimeString(t.fecha_hora as string) || undefined,
