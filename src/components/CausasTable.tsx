@@ -5,7 +5,7 @@ import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
 import { useSoloLectura } from "@/hooks/useSoloLectura";
 import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter, Zap } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter, Zap, Lock, LockOpen } from "lucide-react";
 import { useCategoriasVocalia, useCausasConCategoria } from "@/hooks/useCategoriasVocalia";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import {
@@ -1115,6 +1115,13 @@ export default function CausasTable({
                     {!soloLectura && (
                       <ContextMenuItem onSelect={() => setDuplicarDe(c)} className="text-xs">
                         <Copy className="w-3.5 h-3.5 mr-2" /> Duplicar causa
+                      </ContextMenuItem>
+                    )}
+                    {esAdmin && onToggleSecreta && (
+                      <ContextMenuItem onSelect={() => onToggleSecreta(c)} className="text-xs">
+                        {c.secreta
+                          ? <><LockOpen className="w-3.5 h-3.5 mr-2" /> Quitar secreto</>
+                          : <><Lock className="w-3.5 h-3.5 mr-2" /> Marcar como secreta</>}
                       </ContextMenuItem>
                     )}
                     {!soloLectura && (onChangeEstado || onUpdateCausa) && (
