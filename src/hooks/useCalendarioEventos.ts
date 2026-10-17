@@ -13,7 +13,7 @@ import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 import { useEventosChanged } from "@/lib/eventosBus";
 import { parseLocalTime, toARTimeString } from "@/lib/parseDate";
 
-const ACTIVOS = ["tramite", "recurso"] as const;
+const ACTIVOS = ["tramite", "recurso", "para_sentencia", "para_comunicar"] as const;
 const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa,vocalia_id";
 
 interface TarjetaCalRow {
@@ -54,7 +54,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
     setLoading(true);
     setError(null);
     try {
-      const [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes] = await Promise.all([
+      const [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes, listasSinCalRes] = await Promise.all([
         supabase
           .from("eventos")
           .select(`id,titulo,descripcion,fecha_hora,fecha_hora_fin,tipo_evento,causa_id,sujeto_id, causas!inner(${CAUSA_COLS},borrado_en)`)
@@ -100,10 +100,24 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .select("id,titulo,descripcion,fecha_hora,causa_id, causa:causas(id,caratula,expediente_nro), columna:tablero_columnas!inner(id,nombre, lista:tablero_listas(id,nombre), tablero:tableros!inner(id,nombre,vocalia_id))")
           .not("fecha_hora", "is", null)
           .eq("columna.tablero.vocalia_id", vocaliaId),
+        // Listas personalizadas con calendario apagado: sus causas no muestran eventos.
+        supabase
+          .from("listas_personalizadas")
+          .select("id, listas_personalizadas_causas(causa_id)")
+          .eq("vocalia_id", vocaliaId)
+          .eq("mostrar_en_calendario", false),
       ]);
 
-      const firstErr = [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes].find((r) => r.error)?.error;
+      const firstErr = [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes, listasSinCalRes].find((r) => r.error)?.error;
       if (firstErr) throw new Error(firstErr.message);
+
+      const causasSinCalendario = new Set<string>();
+      for (const l of (listasSinCalRes.data ?? []) as unknown as { listas_personalizadas_causas: { causa_id: string }[] }[]) {
+        for (const lc of l.listas_personalizadas_causas ?? []) causasSinCalendario.add(lc.causa_id);
+      }
+      const visibleEnCalendario = (causaId: string | null | undefined) =>
+        !causaId || !causasSinCalendario.has(causaId);
+
 
 
       // Para cada sujeto, calcular el PP efectivo y armar la row de calendario manualmente.
@@ -118,6 +132,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
       };
       const ppEventos: CalendarEvento[] = [];
       for (const row of (ppRes.data ?? []) as unknown as PpRow[]) {
+        if (!visibleEnCalendario(row.causa_id)) continue;
         const ef = calcularPpEfectivo(row);
         if (!ef.fecha) continue;
         const mapped = mapSujetoFechaToCalendar(
@@ -130,15 +145,23 @@ export function useCalendarioEventos(vocaliaId: string | null) {
       }
 
       const merged: CalendarEvento[] = [
-        ...((evtRes.data ?? []) as unknown as DbEventoRow[]).map(mapDbEventoToCalendar),
+        ...((evtRes.data ?? []) as unknown as DbEventoRow[])
+          .filter((r) => visibleEnCalendario(r.causa_id))
+          .map(mapDbEventoToCalendar),
         ...ppEventos,
-        ...((penaRes.data ?? []) as unknown as DbSujetoFechaRow[]).map((r) =>
-          mapSujetoFechaToCalendar(r, "vencimiento_pena", "vencimiento_pena", "Vence Pena")),
-        ...((prescRes.data ?? []) as unknown as DbSujetoFechaRow[]).map((r) =>
-          mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
-        ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[]).map(mapPrescripcionToCalendar),
+        ...((penaRes.data ?? []) as unknown as DbSujetoFechaRow[])
+          .filter((r) => visibleEnCalendario(r.causa_id))
+          .map((r) => mapSujetoFechaToCalendar(r, "vencimiento_pena", "vencimiento_pena", "Vence Pena")),
+        ...((prescRes.data ?? []) as unknown as DbSujetoFechaRow[])
+          .filter((r) => visibleEnCalendario(r.causa_id))
+          .map((r) => mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
+        ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[])
+          .filter((r) => visibleEnCalendario(r.sujetos?.causa_id))
+          .map(mapPrescripcionToCalendar),
         // Tarjetas de tableros con fecha
-        ...((tarjetasRes.data ?? []) as unknown as TarjetaCalRow[]).map((t): CalendarEvento => ({
+        ...((tarjetasRes.data ?? []) as unknown as TarjetaCalRow[])
+          .filter((t) => visibleEnCalendario(t.causa_id))
+          .map((t): CalendarEvento => ({
           id: `tarjeta-${t.id}`,
           fecha: t.fecha_hora as string,
           hora: toARTimeString(t.fecha_hora as string) || undefined,

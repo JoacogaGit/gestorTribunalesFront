@@ -51,6 +51,8 @@ export interface Causa {
   despachante?: string | null;
   /** Causa tramitada bajo el régimen de flagrancia. */
   flagrancia?: boolean;
+  /** Causa secreta: solo la ve el administrador de la oficina. */
+  secreta?: boolean;
   /** Marca: causa delegada (independiente del estado). */
   delegada?: boolean;
   /** Marca: causa 196bis / NN. */

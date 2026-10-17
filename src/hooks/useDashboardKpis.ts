@@ -12,7 +12,7 @@ export interface DashboardKpis {
   totalCausas: number;
 }
 
-const ACTIVOS = ["tramite", "recurso"] as const;
+const ACTIVOS = ["tramite", "recurso", "para_sentencia", "para_comunicar"] as const;
 
 function rangoMesActual() {
   const now = new Date();

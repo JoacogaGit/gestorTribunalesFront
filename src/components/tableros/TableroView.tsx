@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor,
   closestCorners, useSensor, useSensors,
@@ -8,7 +8,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
-import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil, ArrowLeft, Lock, Users, ListChecks } from "lucide-react";
+import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil, ArrowLeft, Lock, Users, ListChecks, UserCog } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -23,14 +23,19 @@ import { useTableroListas, type TableroLista } from "@/hooks/useTableroListas";
 import CrearListaTableroDialog from "./CrearListaTableroDialog";
 import TarjetaFormDialog from "./TarjetaFormDialog";
 import ColorPicker from "./ColorPicker";
+import PermisosListaTableroDialog from "./PermisosListaTableroDialog";
 import { colorSoftBg, colorBorde } from "@/lib/tableroColores";
 import { formatLocalDate, toARTimeString } from "@/lib/parseDate";
 import { isAllDayISO } from "@/lib/eventoMapper";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
   tablero: Tablero;
   vocaliaId: string | null;
   soloLectura?: boolean;
+  esAdmin?: boolean;
+  tribunalId?: string | null;
 }
 
 function TarjetaCard({ tarjeta, onEdit, onDelete }: { tarjeta: TableroTarjeta; onEdit: () => void; onDelete?: () => void }) {
@@ -218,13 +223,35 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   );
 
+  // Filtro por despachante: se toma de la causa vinculada a cada tarjeta.
+  const [despPorCausa, setDespPorCausa] = useState<Record<string, string>>({});
+  const [despachanteFiltro, setDespachanteFiltro] = useState<string | null>(null);
+  useEffect(() => {
+    const ids = [...new Set(tarjetas.map((t) => t.causa_id).filter(Boolean))] as string[];
+    if (ids.length === 0) { setDespPorCausa({}); return; }
+    let vivo = true;
+    supabase.from("causas").select("id,despachante").in("id", ids).then(({ data }) => {
+      if (!vivo) return;
+      const m: Record<string, string> = {};
+      for (const r of data ?? []) if (r.despachante) m[r.id] = r.despachante;
+      setDespPorCausa(m);
+    });
+    return () => { vivo = false; };
+  }, [tarjetas]);
+  const despachantes = useMemo(() => [...new Set(Object.values(despPorCausa))].sort((a, b) => a.localeCompare(b)), [despPorCausa]);
+
+  const tarjetasVisibles = useMemo(() => {
+    if (!despachanteFiltro) return tarjetas;
+    return tarjetas.filter((t) => t.causa_id != null && despPorCausa[t.causa_id] === despachanteFiltro);
+  }, [tarjetas, despachanteFiltro, despPorCausa]);
+
   const porColumna = useMemo(() => {
     const map: Record<string, TableroTarjeta[]> = {};
     for (const c of columnas) map[c.id] = [];
-    for (const t of tarjetas) (map[t.columna_id] ??= []).push(t);
+    for (const t of tarjetasVisibles) (map[t.columna_id] ??= []).push(t);
     for (const k of Object.keys(map)) map[k].sort((a, b) => a.orden - b.orden);
     return map;
-  }, [columnas, tarjetas]);
+  }, [columnas, tarjetasVisibles]);
 
   const activeTarjeta = tarjetas.find((t) => t.id === activeId) ?? null;
 
@@ -295,6 +322,26 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
+      {despachantes.length > 0 && (
+        <div className="flex items-center gap-2 pb-2">
+          <Select value={despachanteFiltro ?? "todos"} onValueChange={(v) => setDespachanteFiltro(v === "todos" ? null : v)}>
+            <SelectTrigger className="h-8 w-60 text-xs">
+              <SelectValue placeholder="Filtrar por despachante" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los despachantes</SelectItem>
+              {despachantes.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {despachanteFiltro && (
+            <span className="text-[11px] text-muted-foreground">
+              Mostrando solo tarjetas de causas a cargo de {despachanteFiltro}
+            </span>
+          )}
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div
           ref={scrollerRef}
@@ -412,17 +459,28 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
   );
 }
 
-export default function TableroView({ tablero, vocaliaId, soloLectura = false }: Props) {
-  const { listas, loading, crearLista, renombrarLista, borrarLista, cambiarColorLista } = useTableroListas(tablero.id);
+export default function TableroView({ tablero, vocaliaId, soloLectura = false, esAdmin = false, tribunalId = null }: Props) {
+  const { user } = useAuth();
+  const { listas, loading, crearLista, renombrarLista, borrarLista, cambiarColorLista, actualizarEditores } = useTableroListas(tablero.id);
   const [listaActiva, setListaActiva] = useState<string | null>(null);
   const [showCrear, setShowCrear] = useState(false);
   const [renombrando, setRenombrando] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [permisosDe, setPermisosDe] = useState<TableroLista | null>(null);
 
   const lista = listas.find((l) => l.id === listaActiva) ?? null;
 
+  /** Permisos de edición por lista: vacío = todos; si hay usuarios, solo ellos o un admin. */
+  const puedeEditarLista = (l: TableroLista) => {
+    if (l.ambito === "personal") return !soloLectura || l.usuario_id === user?.id;
+    if (soloLectura) return false;
+    if (esAdmin) return true;
+    if (l.editores.length === 0) return true;
+    return l.usuario_id === user?.id || l.editores.includes(user?.id ?? "");
+  };
+
   if (lista) {
-    const puedeEditar = !soloLectura || lista.ambito === "personal";
+    const puedeEditar = puedeEditarLista(lista);
     return (
       <div className="flex flex-1 min-h-0 flex-col gap-3">
         <div className="flex items-center gap-2">
@@ -489,6 +547,11 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false }:
                       <DropdownMenuItem className="text-xs gap-2" onSelect={() => { setDraft(l.nombre); setRenombrando(l.id); }}>
                         <Pencil className="h-3.5 w-3.5" /> Renombrar
                       </DropdownMenuItem>
+                      {esAdmin && l.ambito !== "personal" && tribunalId && (
+                        <DropdownMenuItem className="text-xs gap-2" onSelect={() => setPermisosDe(l)}>
+                          <UserCog className="h-3.5 w-3.5" /> Quién puede editar
+                        </DropdownMenuItem>
+                      )}
                       <ColorPicker value={l.color} onChange={(color) => cambiarColorLista(l.id, color)} />
                       <DropdownMenuItem className="text-xs gap-2 text-alert-urgent focus:text-alert-urgent" onSelect={() => borrarLista(l.id)}>
                         <Trash2 className="h-3.5 w-3.5" /> Borrar lista
@@ -524,6 +587,15 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false }:
           if (id) setListaActiva(id);
         }}
       />
+      {permisosDe && tribunalId && (
+        <PermisosListaTableroDialog
+          open={!!permisosDe}
+          onOpenChange={(v) => { if (!v) setPermisosDe(null); }}
+          lista={permisosDe}
+          tribunalId={tribunalId}
+          onGuardar={async (editores) => { await actualizarEditores(permisosDe.id, editores); }}
+        />
+      )}
     </div>
   );
 }

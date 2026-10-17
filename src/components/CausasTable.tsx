@@ -5,7 +5,7 @@ import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
 import { useSoloLectura } from "@/hooks/useSoloLectura";
 import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
-import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter, Zap } from "lucide-react";
+import { Pencil, Check, Search, Copy, Plus, X, ExternalLink, ChevronDown, MoveRight, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Paperclip, Loader2, Palette, Eraser, Filter, Zap, Lock, LockOpen } from "lucide-react";
 import { useCategoriasVocalia, useCausasConCategoria } from "@/hooks/useCategoriasVocalia";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import {
@@ -104,7 +104,7 @@ function truncarTexto(texto: string | null | undefined, max: number): string {
   return `${base.trimEnd()}…`;
 }
 
-const estadosCausa: EstadoCausa[] = ["En trámite", "Delegada", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ"];
+const estadosCausa: EstadoCausa[] = ["En trámite", "Delegada", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ", "Para sacar sentencia", "Para comunicar"];
 
 interface ColDef {
   key: string;
@@ -142,6 +142,14 @@ interface Props {
   onOpenedCausa?: () => void;
   /** Acción extra opcional que se agrega al menú contextual de cada fila. */
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
+  /** Si el usuario es admin de la oficina: habilita marcar/desmarcar causa secreta. */
+  esAdmin?: boolean;
+  /** Marcar/desmarcar una causa como secreta (solo admin). */
+  onToggleSecreta?: (causa: Causa) => void;
+  /** Listas personalizadas a las que se puede agregar la causa desde el menú contextual. */
+  listasParaAsignar?: { id: string; nombre: string }[];
+  /** Agregar la causa a una lista personalizada. */
+  onAsignarALista?: (causa: Causa, listaId: string) => void;
   /** Clave de columna que se mueve temporalmente al 3er lugar (después de N° y Carátula). */
   priorityColumnKey?: string | null;
   /** Modo compacto: más filas visibles, menos alto por fila. */
@@ -180,6 +188,7 @@ export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
   onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction, priorityColumnKey,
+  esAdmin = false, onToggleSecreta, listasParaAsignar, onAsignarALista,
   compact = false,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
@@ -292,6 +301,11 @@ export default function CausasTable({
             {c.art196bis && (
               <span title="196bis / NN" className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-400">
                 196BIS
+              </span>
+            )}
+            {c.secreta && (
+              <span title="Causa secreta: solo la ve el administrador" className="inline-flex items-center gap-0.5 rounded-full bg-slate-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                <Lock className="w-2.5 h-2.5" /> SECRETA
               </span>
             )}
             {hasConexa && (
@@ -1106,6 +1120,27 @@ export default function CausasTable({
                       <ContextMenuItem onSelect={() => setDuplicarDe(c)} className="text-xs">
                         <Copy className="w-3.5 h-3.5 mr-2" /> Duplicar causa
                       </ContextMenuItem>
+                    )}
+                    {esAdmin && onToggleSecreta && (
+                      <ContextMenuItem onSelect={() => onToggleSecreta(c)} className="text-xs">
+                        {c.secreta
+                          ? <><LockOpen className="w-3.5 h-3.5 mr-2" /> Quitar secreto</>
+                          : <><Lock className="w-3.5 h-3.5 mr-2" /> Marcar como secreta</>}
+                      </ContextMenuItem>
+                    )}
+                    {!soloLectura && listasParaAsignar && listasParaAsignar.length > 0 && onAsignarALista && (
+                      <ContextMenuSub>
+                        <ContextMenuSubTrigger className="text-xs">
+                          Agregar a lista
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent>
+                          {listasParaAsignar.map((l) => (
+                            <ContextMenuItem key={l.id} onSelect={() => onAsignarALista(c, l.id)} className="text-xs">
+                              {l.nombre}
+                            </ContextMenuItem>
+                          ))}
+                        </ContextMenuSubContent>
+                      </ContextMenuSub>
                     )}
                     {!soloLectura && (onChangeEstado || onUpdateCausa) && (
                       <ContextMenuSub>

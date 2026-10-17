@@ -84,6 +84,7 @@ export type DbCausa = {
   estado_procesal?: string | null;
   rol_estudio?: string | null;
   flagrancia?: boolean | null;
+  secreta?: boolean | null;
   delegada?: boolean | null;
   art196bis?: boolean | null;
   subestados?: string[] | null;
@@ -185,6 +186,7 @@ export function dbCausaToUI(row: DbCausa): Causa {
     numeroInterno: row.numero_interno ?? null,
     despachante: row.despachante ?? null,
     flagrancia: !!row.flagrancia,
+    secreta: !!row.secreta,
     delegada: !!row.delegada || row.estado_causa === "delegada",
     art196bis: !!row.art196bis,
     caratulaOverride: row.caratula ?? undefined,

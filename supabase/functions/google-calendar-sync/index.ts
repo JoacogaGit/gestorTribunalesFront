@@ -80,6 +80,12 @@ Deno.serve(async (req) => {
       return await syncTarjeta(admin, action, tarjeta_id, userId);
     }
 
+    // ========== RESYNC DE CAUSA (entró/salió de una lista sin calendario) ==========
+    if (action === "causa_resync") {
+      if (!causa_id) return json({ error: "Falta causa_id" }, 400);
+      return await resyncCausa(admin, causa_id);
+    }
+
     // ========== SYNC PUNTUAL DE EVENTO MANUAL ==========
     if (!evento_id) return json({ error: "Falta evento_id" }, 400);
 

@@ -94,6 +94,7 @@ export type Database = {
           otros_intervinientes: string | null
           querella: string | null
           rol_estudio: string | null
+          secreta: boolean
           subestado_tramite_id: string | null
           subestados: string[]
           tipo_proceso: Database["public"]["Enums"]["tipo_proceso_enum"] | null
@@ -143,6 +144,7 @@ export type Database = {
           otros_intervinientes?: string | null
           querella?: string | null
           rol_estudio?: string | null
+          secreta?: boolean
           subestado_tramite_id?: string | null
           subestados?: string[]
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
@@ -192,6 +194,7 @@ export type Database = {
           otros_intervinientes?: string | null
           querella?: string | null
           rol_estudio?: string | null
+          secreta?: boolean
           subestado_tramite_id?: string | null
           subestados?: string[]
           tipo_proceso?: Database["public"]["Enums"]["tipo_proceso_enum"] | null
@@ -496,24 +499,33 @@ export type Database = {
           creado_por: string | null
           created_at: string
           id: string
+          mostrar_en_calendario: boolean
           nombre: string
           oculta_de: string[]
+          seleccionable_click_derecho: boolean
+          solo_admin: boolean
           vocalia_id: string
         }
         Insert: {
           creado_por?: string | null
           created_at?: string
           id?: string
+          mostrar_en_calendario?: boolean
           nombre: string
           oculta_de?: string[]
+          seleccionable_click_derecho?: boolean
+          solo_admin?: boolean
           vocalia_id: string
         }
         Update: {
           creado_por?: string | null
           created_at?: string
           id?: string
+          mostrar_en_calendario?: boolean
           nombre?: string
           oculta_de?: string[]
+          seleccionable_click_derecho?: boolean
+          solo_admin?: boolean
           vocalia_id?: string
         }
         Relationships: [
@@ -1180,6 +1192,7 @@ export type Database = {
           ambito: string
           color: string | null
           created_at: string
+          editores: string[]
           id: string
           nombre: string
           orden: number
@@ -1190,6 +1203,7 @@ export type Database = {
           ambito?: string
           color?: string | null
           created_at?: string
+          editores?: string[]
           id?: string
           nombre: string
           orden?: number
@@ -1200,6 +1214,7 @@ export type Database = {
           ambito?: string
           color?: string | null
           created_at?: string
+          editores?: string[]
           id?: string
           nombre?: string
           orden?: number
@@ -1344,6 +1359,35 @@ export type Database = {
         }
         Relationships: []
       }
+      vocalia_passwords: {
+        Row: {
+          created_at: string
+          password_hash: string
+          updated_at: string
+          vocalia_id: string
+        }
+        Insert: {
+          created_at?: string
+          password_hash: string
+          updated_at?: string
+          vocalia_id: string
+        }
+        Update: {
+          created_at?: string
+          password_hash?: string
+          updated_at?: string
+          vocalia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocalia_passwords_vocalia_id_fkey"
+            columns: ["vocalia_id"]
+            isOneToOne: true
+            referencedRelation: "vocalias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vocalias: {
         Row: {
           created_at: string | null
@@ -1412,11 +1456,16 @@ export type Database = {
         Args: { p_tribunal_id: string }
         Returns: number
       }
+      definir_password_vocalia: {
+        Args: { p_password: string; p_vocalia_id: string }
+        Returns: undefined
+      }
       eliminar_tribunal_definitivo: {
         Args: { p_tribunal_id: string }
         Returns: undefined
       }
       eliminar_vocalia: { Args: { p_vocalia_id: string }; Returns: undefined }
+      es_admin_de_vocalia: { Args: { p_vocalia_id: string }; Returns: boolean }
       es_admin_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_lector_tribunal: { Args: { p_tribunal_id: string }; Returns: boolean }
       es_miembro_de_vocalia: {
@@ -1463,6 +1512,14 @@ export type Database = {
       }
       restaurar_vocalia: { Args: { p_vocalia_id: string }; Returns: undefined }
       unirse_por_codigo: { Args: { p_codigo: string }; Returns: string }
+      verificar_password_vocalia: {
+        Args: { p_password: string; p_vocalia_id: string }
+        Returns: boolean
+      }
+      vocalia_tiene_password: {
+        Args: { p_vocalia_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       estado_causa_enum:

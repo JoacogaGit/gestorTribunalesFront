@@ -17,7 +17,7 @@ import CausaFormDialog from "@/components/forms/CausaFormDialog";
 
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff, Plus, Zap } from "lucide-react";
+import { Filter, X, Scale, RefreshCw, CheckCircle2, HelpCircle, Eye, EyeOff, Plus } from "lucide-react";
 import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasFlagrancia } from "@/hooks/useCausasFlagrancia";
 import { useCausasPorMarca } from "@/hooks/useCausasPorMarca";
@@ -310,24 +310,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       return next;
     });
   };
-  const [ocultarFlagDash, setOcultarFlagDash] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("iustrack_ocultar_flagrancia_dashboard") === "1";
-  });
-  const [ocultarFlagTramite, setOcultarFlagTramite] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("iustrack_ocultar_flagrancia_tramite") === "1";
-  });
-  const toggleFlag = (donde: "dashboard" | "tramite") => {
-    const key = donde === "dashboard" ? "iustrack_ocultar_flagrancia_dashboard" : "iustrack_ocultar_flagrancia_tramite";
-    const setter = donde === "dashboard" ? setOcultarFlagDash : setOcultarFlagTramite;
-    setter((prev) => {
-      const next = !prev;
-      try { localStorage.setItem(key, next ? "1" : "0"); } catch { /* ignore */ }
-      return next;
-    });
-  };
-  const sinFlagrancia = (list: Causa[], ocultar: boolean) => (ocultar ? list.filter((c) => !c.flagrancia) : list);
   /** Las causas marcadas como Delegada o 196bis/NN salen del dashboard y del listado de trámite. */
   const sinMarcas = (list: Causa[]) => list.filter((c) => !c.delegada && !c.art196bis);
   const [subestadosDash, setSubestadosDash] = useState<string[]>([]);
@@ -346,7 +328,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
   const dashCausas = (() => {
-    let all = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(dashCausasRemote.causas), ocultarFlagDash));
+    let all = sinMarcas(responsableFiltro.filtrar(dashCausasRemote.causas));
     if (subestadosDash.length > 0) {
       all = all.filter((c) => (c.subestados ?? []).some((s) => subestadosDash.includes(s)));
     }
@@ -466,11 +448,47 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     || customBoards.find((b) => b.id === view)?.label
     || "Anotación";
 
+  const handleToggleSecreta = async (c: Causa) => {
+    const nuevo = !c.secreta;
+    const { error } = await supabase.from("causas").update({ secreta: nuevo } as never).eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(nuevo ? "Causa marcada como secreta: solo la ve el administrador" : "La causa ya no es secreta");
+    dashCausasRemote.refetch();
+    tramiteRemote.refetch();
+    recursosRemote.refetch();
+    terminadasRemote.refetch();
+    paraSentenciaRemote.refetch();
+    paraComunicarRemote.refetch();
+    delegadasRemote.refetch();
+    art196bisRemote.refetch();
+    rebeldesRemote.refetch();
+    sjpRemote.refetch();
+    detenidosRemote.refetch();
+    flagranciaRemote.refetch();
+  };
+
   const remoteTableCommon = {
     onUpdateCausa: remoteNoop,
     onDeleteCausa: remoteNoop,
     onCreateCausa: remoteNoop,
     onChangeEstado: remoteNoop,
+    esAdmin,
+    onToggleSecreta: handleToggleSecreta,
+    listasParaAsignar: listasHook.listas
+      .filter((l) => l.seleccionable_click_derecho)
+      .map((l) => ({ id: l.id, nombre: l.nombre })),
+    onAsignarALista: async (c: Causa, listaId: string) => {
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("listas_personalizadas_causas")
+        .insert({ lista_id: listaId, causa_id: c.id, agregado_por: u.user?.id ?? null } as never);
+      if (error) {
+        toast.error(error.message.includes("duplicate") ? "La causa ya está en esa lista" : error.message);
+        return;
+      }
+      toast.success("Causa agregada a la lista");
+      listasHook.refetch();
+    },
   };
 
   const handleNavigate = (v: string) => { setView(v); setSidebarOpen(false); };
@@ -678,10 +696,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   <Button data-tour="nueva-estadistica" size="sm" variant="ghost" onClick={() => setShowNuevaEstadistica(true)} className="text-xs text-muted-foreground">
                     <Plus className="w-3.5 h-3.5 mr-1.5" /> Nueva estadística
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => toggleFlag("dashboard")} className="text-xs text-muted-foreground">
-                    <Zap className="w-3.5 h-3.5 mr-1.5" />
-                    {ocultarFlagDash ? "Mostrar flagrancias" : "Ocultar flagrancias"}
-                  </Button>
                   <Button data-tour="toggle-kpis" size="sm" variant="ghost" onClick={toggleKpis} className="text-xs text-muted-foreground">
                     {mostrarKpis ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
                     {mostrarKpis ? "Ocultar estadísticas" : "Mostrar estadísticas"}
@@ -827,15 +841,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
             {view === "tramite" && (() => {
-              const listaTramite = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(tramiteRemote.causas), ocultarFlagTramite));
+              const listaTramite = sinMarcas(responsableFiltro.filtrar(tramiteRemote.causas));
               return (
               <div className="flex flex-col flex-1 min-h-0">
-                <div className="flex justify-end mb-2">
-                  <Button size="sm" variant="ghost" onClick={() => toggleFlag("tramite")} className="text-xs text-muted-foreground">
-                    <Zap className="w-3.5 h-3.5 mr-1.5" />
-                    {ocultarFlagTramite ? "Mostrar flagrancias" : "Ocultar flagrancias"}
-                  </Button>
-                </div>
                 <RemoteListSection
                   loading={tramiteRemote.loading}
                   error={tramiteRemote.error}
@@ -1191,7 +1199,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               />
             )}
             {tableroActivo && (
-              <TableroView key={tableroActivo.id} tablero={tableroActivo} vocaliaId={vocaliaId} />
+              <TableroView key={tableroActivo.id} tablero={tableroActivo} vocaliaId={vocaliaId} esAdmin={esAdmin} tribunalId={tribunalId} />
             )}
 
           </motion.div>
@@ -1266,8 +1274,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       <CrearListaDialog
         open={showCreateLista}
         onOpenChange={setShowCreateLista}
-        onCrear={async (nombre, ocultaDe) => {
-          const id = await listasHook.crearLista(nombre, ocultaDe);
+        onCrear={async (nombre, ocultaDe, opciones) => {
+          const id = await listasHook.crearLista(nombre, ocultaDe, opciones);
           if (id) setView(`lista-${id}`);
         }}
       />

@@ -7,11 +7,12 @@ import { Switch } from "@/components/ui/switch";
 import OcultaDeSelector from "@/components/listas/OcultaDeSelector";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { OpcionesLista, OPCIONES_LISTA_DEFAULT } from "@/hooks/useListasPersonalizadas";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onCrear: (nombre: string, ocultaDe: string[]) => Promise<void>;
+  onCrear: (nombre: string, ocultaDe: string[], opciones: OpcionesLista) => Promise<void>;
 }
 
 export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props) {
@@ -19,6 +20,9 @@ export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props)
   const [saving, setSaving] = useState(false);
   const [ocultar, setOcultar] = useState(false);
   const [ocultaDe, setOcultaDe] = useState<string[]>([]);
+  const [opciones, setOpciones] = useState<OpcionesLista>(OPCIONES_LISTA_DEFAULT);
+
+  const setOpt = (k: keyof OpcionesLista, v: boolean) => setOpciones((o) => ({ ...o, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +30,12 @@ export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props)
     if (!n) return;
     setSaving(true);
     try {
-      await onCrear(n, ocultar ? ocultaDe : []);
+      await onCrear(n, ocultar ? ocultaDe : [], opciones);
       toast.success("Lista creada");
       setNombre("");
       setOcultar(false);
       setOcultaDe([]);
+      setOpciones(OPCIONES_LISTA_DEFAULT);
       onOpenChange(false);
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,7 +47,7 @@ export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props)
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!saving) onOpenChange(v); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Nueva lista personalizada</DialogTitle>
@@ -72,6 +77,36 @@ export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props)
               <Switch id="ocultar-lista" checked={ocultar} onCheckedChange={setOcultar} disabled={saving} />
             </div>
             {ocultar && <OcultaDeSelector value={ocultaDe} onChange={setOcultaDe} disabled={saving} />}
+
+            <div className="flex items-start justify-between gap-4 border-t border-border/60 pt-3">
+              <div>
+                <Label htmlFor="opt-click-derecho">Seleccionable con click derecho</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Si está apagado, esta lista no aparece en el menú de click derecho de las causas.
+                </p>
+              </div>
+              <Switch id="opt-click-derecho" checked={opciones.seleccionable_click_derecho} onCheckedChange={(v) => setOpt("seleccionable_click_derecho", v)} disabled={saving} />
+            </div>
+
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label htmlFor="opt-calendario">Mostrar sus eventos en el calendario</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Si está apagado, los eventos con fecha de las causas de esta lista no aparecen en el calendario.
+                </p>
+              </div>
+              <Switch id="opt-calendario" checked={opciones.mostrar_en_calendario} onCheckedChange={(v) => setOpt("mostrar_en_calendario", v)} disabled={saving} />
+            </div>
+
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label htmlFor="opt-solo-admin">Visible solo para administradores</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Si está prendido, el resto de los roles no ve esta lista ni su contenido.
+                </p>
+              </div>
+              <Switch id="opt-solo-admin" checked={opciones.solo_admin} onCheckedChange={(v) => setOpt("solo_admin", v)} disabled={saving} />
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

@@ -23,3 +23,18 @@
 - [x] Reemplazar el filtro por carátula por una demostración estable con otro campo
 - [x] Mostrar varios movimientos reversibles de distintas categorías
 - [x] Separar anotaciones como último paso de ficha, después del imputado y antes del calendario
+
+## Varios cambios modo judicial (2026-10-17)
+- [x] Migración: causa secreta, contraseña de espacio, permisos por lista, opciones de listas
+- [ ] Filtro por despachante en tablero de anotaciones
+- [ ] Causa secreta: marcar/desmarcar (menú causa, solo admin) + indicador
+- [ ] Contraseña de espacio: definir (admin) + candado al entrar
+- [ ] Permisos de edición por lista de tablero (UI admin)
+- [ ] Click derecho: Para sacar sentencia / Para comunicar
+- [ ] Calendario: incluir eventos de causas en sentencia/comunicar; excluir listas sin calendario
+- [ ] Crear lista: opciones click derecho / calendario / solo admin
+- [ ] Sync Google Calendar: borrar eventos al eliminar o mover a lista sin calendario
+- [ ] Buscador móvil: barra abajo sobre teclado, resultados arriba
+- [ ] Dashboard: incluir Para sacar sentencia y Para comunicar
+- [ ] Quitar botón "Ocultar flagrancia"
+- [ ] Verificar: tsgo, eslint, build
