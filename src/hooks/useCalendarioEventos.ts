@@ -100,10 +100,24 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .select("id,titulo,descripcion,fecha_hora,causa_id, causa:causas(id,caratula,expediente_nro), columna:tablero_columnas!inner(id,nombre, lista:tablero_listas(id,nombre), tablero:tableros!inner(id,nombre,vocalia_id))")
           .not("fecha_hora", "is", null)
           .eq("columna.tablero.vocalia_id", vocaliaId),
+        // Listas personalizadas con calendario apagado: sus causas no muestran eventos.
+        supabase
+          .from("listas_personalizadas")
+          .select("id, listas_personalizadas_causas(causa_id)")
+          .eq("vocalia_id", vocaliaId)
+          .eq("mostrar_en_calendario", false),
       ]);
 
-      const firstErr = [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes].find((r) => r.error)?.error;
+      const firstErr = [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes, listasSinCalRes].find((r) => r.error)?.error;
       if (firstErr) throw new Error(firstErr.message);
+
+      const causasSinCalendario = new Set<string>();
+      for (const l of (listasSinCalRes.data ?? []) as unknown as { listas_personalizadas_causas: { causa_id: string }[] }[]) {
+        for (const lc of l.listas_personalizadas_causas ?? []) causasSinCalendario.add(lc.causa_id);
+      }
+      const visibleEnCalendario = (causaId: string | null | undefined) =>
+        !causaId || !causasSinCalendario.has(causaId);
+
 
 
       // Para cada sujeto, calcular el PP efectivo y armar la row de calendario manualmente.
