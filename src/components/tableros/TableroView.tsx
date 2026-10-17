@@ -223,13 +223,35 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   );
 
+  // Filtro por despachante: se toma de la causa vinculada a cada tarjeta.
+  const [despPorCausa, setDespPorCausa] = useState<Record<string, string>>({});
+  const [despachanteFiltro, setDespachanteFiltro] = useState<string | null>(null);
+  useEffect(() => {
+    const ids = [...new Set(tarjetas.map((t) => t.causa_id).filter(Boolean))] as string[];
+    if (ids.length === 0) { setDespPorCausa({}); return; }
+    let vivo = true;
+    supabase.from("causas").select("id,despachante").in("id", ids).then(({ data }) => {
+      if (!vivo) return;
+      const m: Record<string, string> = {};
+      for (const r of data ?? []) if (r.despachante) m[r.id] = r.despachante;
+      setDespPorCausa(m);
+    });
+    return () => { vivo = false; };
+  }, [tarjetas]);
+  const despachantes = useMemo(() => [...new Set(Object.values(despPorCausa))].sort((a, b) => a.localeCompare(b)), [despPorCausa]);
+
+  const tarjetasVisibles = useMemo(() => {
+    if (!despachanteFiltro) return tarjetas;
+    return tarjetas.filter((t) => t.causa_id != null && despPorCausa[t.causa_id] === despachanteFiltro);
+  }, [tarjetas, despachanteFiltro, despPorCausa]);
+
   const porColumna = useMemo(() => {
     const map: Record<string, TableroTarjeta[]> = {};
     for (const c of columnas) map[c.id] = [];
-    for (const t of tarjetas) (map[t.columna_id] ??= []).push(t);
+    for (const t of tarjetasVisibles) (map[t.columna_id] ??= []).push(t);
     for (const k of Object.keys(map)) map[k].sort((a, b) => a.orden - b.orden);
     return map;
-  }, [columnas, tarjetas]);
+  }, [columnas, tarjetasVisibles]);
 
   const activeTarjeta = tarjetas.find((t) => t.id === activeId) ?? null;
 
