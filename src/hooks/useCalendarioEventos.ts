@@ -13,7 +13,7 @@ import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 import { useEventosChanged } from "@/lib/eventosBus";
 import { parseLocalTime, toARTimeString } from "@/lib/parseDate";
 
-const ACTIVOS = ["tramite", "recurso"] as const;
+const ACTIVOS = ["tramite", "recurso", "para_sentencia", "para_comunicar"] as const;
 const CAUSA_COLS = "id,expediente_nro,caratula,estado_causa,vocalia_id";
 
 interface TarjetaCalRow {
