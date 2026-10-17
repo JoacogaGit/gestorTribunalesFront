@@ -156,7 +156,10 @@ export function useCalendarioEventos(vocaliaId: string | null) {
           .filter((r) => visibleEnCalendario(r.causa_id))
           .map((r) => mapSujetoFechaToCalendar(r, "prescripcion_fecha", "prescripcion", "Prescripción")),
         ...((prescMultiRes.data ?? []) as unknown as DbPrescripcionRow[])
-          .filter((r) => visibleEnCalendario(r.sujetos?.causa_id))
+          .filter((r) => {
+            const sj = Array.isArray(r.sujetos) ? r.sujetos[0] : r.sujetos;
+            return visibleEnCalendario(sj?.causa_id ?? null);
+          })
           .map(mapPrescripcionToCalendar),
         // Tarjetas de tableros con fecha
         ...((tarjetasRes.data ?? []) as unknown as TarjetaCalRow[])
