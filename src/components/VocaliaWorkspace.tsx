@@ -33,6 +33,7 @@ import { useVocalias } from "@/hooks/useVocalias";
 import { useTribunal } from "@/hooks/useTribunal";
 import { useTipoOficina } from "@/hooks/useTipoOficina";
 import { supabase } from "@/integrations/supabase/client";
+import { fireCausaResync } from "@/lib/gcalSync";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
 import MiembrosTribunal from "@/components/MiembrosTribunal";
 import AbandonarTribunal, { AbandonarTribunalHandle } from "@/components/AbandonarTribunal";
