@@ -328,7 +328,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
   const dashCausas = (() => {
-    let all = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(dashCausasRemote.causas), ocultarFlagDash));
+    let all = sinMarcas(responsableFiltro.filtrar(dashCausasRemote.causas));
     if (subestadosDash.length > 0) {
       all = all.filter((c) => (c.subestados ?? []).some((s) => subestadosDash.includes(s)));
     }
@@ -805,7 +805,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
             {view === "tramite" && (() => {
-              const listaTramite = sinMarcas(sinFlagrancia(responsableFiltro.filtrar(tramiteRemote.causas), ocultarFlagTramite));
+              const listaTramite = sinMarcas(responsableFiltro.filtrar(tramiteRemote.causas));
               return (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="flex justify-end mb-2">
