@@ -146,6 +146,10 @@ interface Props {
   esAdmin?: boolean;
   /** Marcar/desmarcar una causa como secreta (solo admin). */
   onToggleSecreta?: (causa: Causa) => void;
+  /** Listas personalizadas a las que se puede agregar la causa desde el menú contextual. */
+  listasParaAsignar?: { id: string; nombre: string }[];
+  /** Agregar la causa a una lista personalizada. */
+  onAsignarALista?: (causa: Causa, listaId: string) => void;
   /** Clave de columna que se mueve temporalmente al 3er lugar (después de N° y Carátula). */
   priorityColumnKey?: string | null;
   /** Modo compacto: más filas visibles, menos alto por fila. */
@@ -184,7 +188,7 @@ export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
   onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction, priorityColumnKey,
-  esAdmin = false, onToggleSecreta,
+  esAdmin = false, onToggleSecreta, listasParaAsignar, onAsignarALista,
   compact = false,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
