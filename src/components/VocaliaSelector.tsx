@@ -123,8 +123,69 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
     setEditingId(null);
   };
 
+  // Cuáles espacios tienen contraseña (para mostrar el candado).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (vocalias.length === 0) { setConPassword(new Set()); return; }
+      const checks = await Promise.all(
+        vocalias.map(async (v) => {
+          const { data } = await supabase.rpc("vocalia_tiene_password", { p_vocalia_id: v.id });
+          return { id: v.id, tiene: data === true };
+        }),
+      );
+      if (cancelled) return;
+      setConPassword(new Set(checks.filter((c) => c.tiene).map((c) => c.id)));
+    })();
+    return () => { cancelled = true; };
+  }, [vocalias]);
+
+  const entrar = (v: VocaliaRow) => onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
+
   const handleSelect = (v: VocaliaRow) => {
-    onSelect({ id: v.id, nombre: v.nombre, tribunalId: v.tribunal_id });
+    const esAdmin = adminTribunalIds.has(v.tribunal_id);
+    if (conPassword.has(v.id) && !esAdmin && !estaDesbloqueada(v.id)) {
+      setPassValue("");
+      setPassTarget(v);
+      return;
+    }
+    entrar(v);
+  };
+
+  const handleVerificarPassword = async () => {
+    if (!passTarget) return;
+    setPassChecking(true);
+    const { data, error } = await supabase.rpc("verificar_password_vocalia", {
+      p_vocalia_id: passTarget.id,
+      p_password: passValue,
+    });
+    setPassChecking(false);
+    if (error) { toast.error(error.message); return; }
+    if (data !== true) { toast.error("Contraseña incorrecta"); return; }
+    try { sessionStorage.setItem(unlockKey(passTarget.id), "1"); } catch { /* ignore */ }
+    const v = passTarget;
+    setPassTarget(null);
+    entrar(v);
+  };
+
+  const handleDefinirPassword = async (quitar: boolean) => {
+    if (!passAdminTarget) return;
+    if (!quitar && !passAdminValue.trim()) { toast.error("Ingresá una contraseña"); return; }
+    setPassAdminSaving(true);
+    const { error } = await supabase.rpc("definir_password_vocalia", {
+      p_vocalia_id: passAdminTarget.id,
+      p_password: quitar ? "" : passAdminValue.trim(),
+    });
+    setPassAdminSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(quitar ? "Contraseña quitada" : "Contraseña guardada");
+    setConPassword((prev) => {
+      const next = new Set(prev);
+      if (quitar) next.delete(passAdminTarget.id); else next.add(passAdminTarget.id);
+      return next;
+    });
+    setPassAdminTarget(null);
+    setPassAdminValue("");
   };
 
   // Oficina de espacio único: entrar directo, sin pasar por el selector.
