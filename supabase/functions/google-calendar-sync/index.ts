@@ -290,6 +290,75 @@ async function syncOneEvento(admin: any, action: string, evento: any, vocaliaId:
 }
 
 // ============================================================
+// RESYNC DE CAUSA: si está en una lista con mostrar_en_calendario=false,
+// sus eventos se borran de Google; si no, se vuelven a crear/actualizar.
+// ============================================================
+async function resyncCausa(admin: any, causaId: string) {
+  const { data: causa } = await admin
+    .from("causas")
+    .select("id, vocalia_id, expediente_nro, caratula")
+    .eq("id", causaId)
+    .maybeSingle();
+  if (!causa) return json({ ok: true, skipped: "no-causa" });
+
+  const { data: membresias } = await admin
+    .from("listas_personalizadas_causas")
+    .select("lista_id, lista:listas_personalizadas!inner(mostrar_en_calendario)")
+    .eq("causa_id", causaId);
+  const ocultaDelCalendario = (membresias ?? []).some((r: any) => {
+    const l = Array.isArray(r.lista) ? r.lista[0] : r.lista;
+    return l?.mostrar_en_calendario === false;
+  });
+
+  const { data: syncs } = await admin
+    .from("google_calendar_sync")
+    .select("id,user_id,vocalia_id,access_token,refresh_token,token_expires_at,google_calendar_id,activo")
+    .eq("vocalia_id", causa.vocalia_id)
+    .eq("activo", true);
+  if (!syncs || syncs.length === 0) return json({ ok: true, skipped: "no-sync" });
+
+  const { data: eventos } = await admin
+    .from("eventos")
+    .select("id, titulo, fecha_hora, fecha_hora_fin, google_event_id")
+    .eq("causa_id", causaId)
+    .is("borrado_en", null)
+    .not("fecha_hora", "is", null);
+
+  const results: any[] = [];
+  for (const s of syncs) {
+    try {
+      const accessToken = await ensureValidToken(admin, s);
+      const calId = encodeURIComponent(s.google_calendar_id);
+      for (const ev of eventos ?? []) {
+        if (ocultaDelCalendario) {
+          if (ev.google_event_id) {
+            await gcalDelete(calId, ev.google_event_id, accessToken);
+            await admin.from("eventos").update({ google_event_id: null }).eq("id", ev.id);
+          }
+          continue;
+        }
+        const title = formatEventoTitle(ev.titulo, causa.caratula ?? null, causa.expediente_nro ?? "");
+        const body = buildEventBody(title, ev.fecha_hora, ev.fecha_hora_fin ?? null);
+        if (ev.google_event_id) {
+          await gcalPatch(calId, ev.google_event_id, body, accessToken);
+        } else {
+          const r = await gcalInsert(calId, body, accessToken);
+          const created = await r.json();
+          if (r.ok && created.id) {
+            await admin.from("eventos").update({ google_event_id: created.id }).eq("id", ev.id);
+          }
+        }
+      }
+      results.push({ user: s.user_id, ok: true, oculta: ocultaDelCalendario });
+    } catch (err) {
+      console.error("resyncCausa per-sync error", s.user_id, err);
+      results.push({ user: s.user_id, ok: false, error: (err as Error).message });
+    }
+  }
+  return json({ ok: true, results });
+}
+
+// ============================================================
 // SYNC DE TARJETA DE TABLERO PERSONAL
 // ============================================================
 async function syncTarjeta(admin: any, action: string, tarjetaId: string, userId: string) {
