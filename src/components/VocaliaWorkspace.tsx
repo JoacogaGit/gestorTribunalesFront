@@ -1266,8 +1266,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       <CrearListaDialog
         open={showCreateLista}
         onOpenChange={setShowCreateLista}
-        onCrear={async (nombre, ocultaDe) => {
-          const id = await listasHook.crearLista(nombre, ocultaDe);
+        onCrear={async (nombre, ocultaDe, opciones) => {
+          const id = await listasHook.crearLista(nombre, ocultaDe, opciones);
           if (id) setView(`lista-${id}`);
         }}
       />
