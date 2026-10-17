@@ -13,6 +13,8 @@ export interface TableroLista {
   orden: number;
   color: string | null;
   created_at: string;
+  /** Si tiene usuarios, solo ellos (y admins) pueden editar la lista. Vacío = todos. */
+  editores: string[];
 }
 
 export function useTableroListas(tableroId: string | null) {
@@ -26,12 +28,12 @@ export function useTableroListas(tableroId: string | null) {
     setError(null);
     const { data, error } = await supabase
       .from("tablero_listas")
-      .select("id, tablero_id, usuario_id, nombre, ambito, orden, color, created_at")
+      .select("id, tablero_id, usuario_id, nombre, ambito, orden, color, created_at, editores")
       .eq("tablero_id", tableroId)
       .order("orden", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) { setError(error.message); setListas([]); }
-    else setListas((data ?? []) as TableroLista[]);
+    else setListas(((data ?? []) as unknown as (Omit<TableroLista, "editores"> & { editores?: string[] })[]).map((l) => ({ ...l, editores: Array.isArray(l.editores) ? l.editores : [] })));
     setLoading(false);
   }, [tableroId]);
 
@@ -88,5 +90,11 @@ export function useTableroListas(tableroId: string | null) {
     await fetchData();
   }, [fetchData]);
 
-  return { listas, loading, error, refetch: fetchData, crearLista, renombrarLista, borrarLista, cambiarColorLista };
+  const actualizarEditores = useCallback(async (id: string, editores: string[]) => {
+    const { error } = await supabase.from("tablero_listas").update({ editores } as never).eq("id", id);
+    if (error) { toast.error(error.message); throw error; }
+    await fetchData();
+  }, [fetchData]);
+
+  return { listas, loading, error, refetch: fetchData, crearLista, renombrarLista, borrarLista, cambiarColorLista, actualizarEditores };
 }
