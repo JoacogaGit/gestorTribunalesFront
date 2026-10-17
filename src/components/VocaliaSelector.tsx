@@ -459,6 +459,69 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!passTarget} onOpenChange={(o) => { if (!o && !passChecking) setPassTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Lock className="w-4 h-4" /> Espacio con contraseña</DialogTitle>
+            <DialogDescription>
+              “{passTarget?.nombre}” está protegido. Ingresá la contraseña para entrar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="pass-vocalia">Contraseña</Label>
+            <Input
+              id="pass-vocalia"
+              type="password"
+              value={passValue}
+              onChange={(e) => setPassValue(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") handleVerificarPassword(); }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPassTarget(null)} disabled={passChecking}>Cancelar</Button>
+            <Button onClick={handleVerificarPassword} disabled={passChecking || !passValue.trim()}>
+              {passChecking && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Entrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!passAdminTarget} onOpenChange={(o) => { if (!o && !passAdminSaving) setPassAdminTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound className="w-4 h-4" /> Contraseña de “{passAdminTarget?.nombre}”</DialogTitle>
+            <DialogDescription>
+              Quien no sea administrador va a necesitar esta contraseña para entrar al espacio.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="pass-admin-vocalia">Nueva contraseña</Label>
+            <Input
+              id="pass-admin-vocalia"
+              type="password"
+              value={passAdminValue}
+              onChange={(e) => setPassAdminValue(e.target.value)}
+              autoFocus
+              placeholder={conPassword.has(passAdminTarget?.id ?? "") ? "Dejá igual o escribí una nueva" : "Escribí la contraseña"}
+              onKeyDown={(e) => { if (e.key === "Enter") handleDefinirPassword(false); }}
+            />
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            {conPassword.has(passAdminTarget?.id ?? "") && (
+              <Button variant="outline" onClick={() => handleDefinirPassword(true)} disabled={passAdminSaving}>
+                Quitar contraseña
+              </Button>
+            )}
+            <Button onClick={() => handleDefinirPassword(false)} disabled={passAdminSaving || !passAdminValue.trim()}>
+              {passAdminSaving && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
