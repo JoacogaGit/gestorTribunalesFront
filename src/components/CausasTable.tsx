@@ -1128,6 +1128,20 @@ export default function CausasTable({
                           : <><Lock className="w-3.5 h-3.5 mr-2" /> Marcar como secreta</>}
                       </ContextMenuItem>
                     )}
+                    {!soloLectura && listasParaAsignar && listasParaAsignar.length > 0 && onAsignarALista && (
+                      <ContextMenuSub>
+                        <ContextMenuSubTrigger className="text-xs">
+                          Agregar a lista
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent>
+                          {listasParaAsignar.map((l) => (
+                            <ContextMenuItem key={l.id} onSelect={() => onAsignarALista(c, l.id)} className="text-xs">
+                              {l.nombre}
+                            </ContextMenuItem>
+                          ))}
+                        </ContextMenuSubContent>
+                      </ContextMenuSub>
+                    )}
                     {!soloLectura && (onChangeEstado || onUpdateCausa) && (
                       <ContextMenuSub>
                         <ContextMenuSubTrigger className="text-xs">
