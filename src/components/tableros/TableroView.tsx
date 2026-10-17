@@ -587,6 +587,15 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false, e
           if (id) setListaActiva(id);
         }}
       />
+      {permisosDe && tribunalId && (
+        <PermisosListaTableroDialog
+          open={!!permisosDe}
+          onOpenChange={(v) => { if (!v) setPermisosDe(null); }}
+          lista={permisosDe}
+          tribunalId={tribunalId}
+          onGuardar={async (editores) => { await actualizarEditores(permisosDe.id, editores); }}
+        />
+      )}
     </div>
   );
 }

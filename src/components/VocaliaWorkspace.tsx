@@ -1184,7 +1184,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               />
             )}
             {tableroActivo && (
-              <TableroView key={tableroActivo.id} tablero={tableroActivo} vocaliaId={vocaliaId} />
+              <TableroView key={tableroActivo.id} tablero={tableroActivo} vocaliaId={vocaliaId} esAdmin={esAdmin} tribunalId={tribunalId} />
             )}
 
           </motion.div>
