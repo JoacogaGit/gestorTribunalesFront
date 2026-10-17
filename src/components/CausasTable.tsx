@@ -104,7 +104,7 @@ function truncarTexto(texto: string | null | undefined, max: number): string {
   return `${base.trimEnd()}…`;
 }
 
-const estadosCausa: EstadoCausa[] = ["En trámite", "Delegada", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ"];
+const estadosCausa: EstadoCausa[] = ["En trámite", "Delegada", "En juicio", "Terminada", "Queja en Corte", "Casación", "REX", "Apelación", "TSJ", "Para sacar sentencia", "Para comunicar"];
 
 interface ColDef {
   key: string;
