@@ -448,11 +448,32 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     || customBoards.find((b) => b.id === view)?.label
     || "Anotación";
 
+  const handleToggleSecreta = async (c: Causa) => {
+    const nuevo = !c.secreta;
+    const { error } = await supabase.from("causas").update({ secreta: nuevo } as never).eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(nuevo ? "Causa marcada como secreta: solo la ve el administrador" : "La causa ya no es secreta");
+    dashCausasRemote.refetch();
+    tramiteRemote.refetch();
+    recursosRemote.refetch();
+    terminadasRemote.refetch();
+    paraSentenciaRemote.refetch();
+    paraComunicarRemote.refetch();
+    delegadasRemote.refetch();
+    art196bisRemote.refetch();
+    rebeldesRemote.refetch();
+    sjpRemote.refetch();
+    detenidosRemote.refetch();
+    flagranciaRemote.refetch();
+  };
+
   const remoteTableCommon = {
     onUpdateCausa: remoteNoop,
     onDeleteCausa: remoteNoop,
     onCreateCausa: remoteNoop,
     onChangeEstado: remoteNoop,
+    esAdmin,
+    onToggleSecreta: handleToggleSecreta,
   };
 
   const handleNavigate = (v: string) => { setView(v); setSidebarOpen(false); };
