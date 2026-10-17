@@ -144,7 +144,9 @@ export function useCalendarioEventos(vocaliaId: string | null) {
       }
 
       const merged: CalendarEvento[] = [
-        ...((evtRes.data ?? []) as unknown as DbEventoRow[]).map(mapDbEventoToCalendar),
+        ...((evtRes.data ?? []) as unknown as DbEventoRow[])
+          .filter((r) => visibleEnCalendario(r.causa_id))
+          .map(mapDbEventoToCalendar),
         ...ppEventos,
         ...((penaRes.data ?? []) as unknown as DbSujetoFechaRow[]).map((r) =>
           mapSujetoFechaToCalendar(r, "vencimiento_pena", "vencimiento_pena", "Vence Pena")),
