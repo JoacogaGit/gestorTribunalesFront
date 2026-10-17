@@ -196,6 +196,7 @@ export default function CausasTable({
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
   const [search, setSearch] = useState("");
+  const [searchFocus, setSearchFocus] = useState(false);
   const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
@@ -961,15 +962,36 @@ export default function CausasTable({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div
+            className={
+              isMobile && searchFocus
+                ? "fixed inset-x-0 bottom-0 z-50 flex items-center gap-2 border-t border-border bg-background p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-elevated"
+                : "relative"
+            }
+          >
+            {!isMobile && <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />}
+            {isMobile && searchFocus && <Search className="w-4 h-4 text-muted-foreground shrink-0" />}
             <input
               data-tour="buscador"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => setSearchFocus(true)}
+              onBlur={() => setSearchFocus(false)}
               placeholder="Buscar..."
-              className="pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"
+              className={isMobile && searchFocus
+                ? "flex-1 px-3 py-2 text-base bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                : "pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"}
             />
+            {isMobile && searchFocus && (
+              <button
+                type="button"
+                aria-label="Cerrar búsqueda"
+                onPointerDown={(e) => { e.preventDefault(); setSearch(""); (document.activeElement as HTMLElement | null)?.blur(); }}
+                className="p-2 text-muted-foreground hover:text-foreground shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
