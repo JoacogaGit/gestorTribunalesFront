@@ -142,6 +142,10 @@ interface Props {
   onOpenedCausa?: () => void;
   /** Acción extra opcional que se agrega al menú contextual de cada fila. */
   extraRowAction?: { label: string; onClick: (causa: Causa) => void; destructive?: boolean };
+  /** Si el usuario es admin de la oficina: habilita marcar/desmarcar causa secreta. */
+  esAdmin?: boolean;
+  /** Marcar/desmarcar una causa como secreta (solo admin). */
+  onToggleSecreta?: (causa: Causa) => void;
   /** Clave de columna que se mueve temporalmente al 3er lugar (después de N° y Carátula). */
   priorityColumnKey?: string | null;
   /** Modo compacto: más filas visibles, menos alto por fila. */
