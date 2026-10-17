@@ -28,7 +28,7 @@ interface Props {
 export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrada, onNavigateToConexa, filtrarCausas }: Props) {
   const { causas: causasRaw, loading, error, refetch, agregarCausa, sacarCausa } = useCausasDeLista(lista.id);
   const causas = useMemo(() => filtrarCausas ? filtrarCausas(causasRaw) : causasRaw, [causasRaw, filtrarCausas]);
-  const { borrarLista, actualizarOcultaDe, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
+  const { borrarLista, actualizarOcultaDe, actualizarOpciones, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
   const [showAdd, setShowAdd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemoveCausa, setConfirmRemoveCausa] = useState<Causa | null>(null);
@@ -37,10 +37,16 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
   const [savingConfig, setSavingConfig] = useState(false);
   const [ocultar, setOcultar] = useState((lista.oculta_de ?? []).length > 0);
   const [ocultaDe, setOcultaDe] = useState<string[]>(lista.oculta_de ?? []);
+  const [optClickDerecho, setOptClickDerecho] = useState(lista.seleccionable_click_derecho !== false);
+  const [optCalendario, setOptCalendario] = useState(lista.mostrar_en_calendario !== false);
+  const [optSoloAdmin, setOptSoloAdmin] = useState(lista.solo_admin === true);
 
   const abrirConfig = () => {
     setOcultaDe(lista.oculta_de ?? []);
     setOcultar((lista.oculta_de ?? []).length > 0);
+    setOptClickDerecho(lista.seleccionable_click_derecho !== false);
+    setOptCalendario(lista.mostrar_en_calendario !== false);
+    setOptSoloAdmin(lista.solo_admin === true);
     setShowConfig(true);
   };
 
@@ -48,6 +54,11 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
     setSavingConfig(true);
     try {
       await actualizarOcultaDe(lista.id, ocultar ? ocultaDe : []);
+      await actualizarOpciones(lista.id, {
+        seleccionable_click_derecho: optClickDerecho,
+        mostrar_en_calendario: optCalendario,
+        solo_admin: optSoloAdmin,
+      });
       toast.success("Configuración guardada");
       setShowConfig(false);
     } catch (e) {
@@ -163,6 +174,27 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
               <Switch id="ocultar-config" checked={ocultar} onCheckedChange={setOcultar} disabled={savingConfig} />
             </div>
             {ocultar && <OcultaDeSelector value={ocultaDe} onChange={setOcultaDe} disabled={savingConfig} />}
+            <div className="flex items-start justify-between gap-4 border-t border-border/60 pt-3">
+              <div>
+                <Label htmlFor="cfg-click-derecho">Seleccionable con click derecho</Label>
+                <p className="text-xs text-muted-foreground mt-1">Si está apagado, esta lista no aparece en el menú de click derecho de las causas.</p>
+              </div>
+              <Switch id="cfg-click-derecho" checked={optClickDerecho} onCheckedChange={setOptClickDerecho} disabled={savingConfig} />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label htmlFor="cfg-calendario">Mostrar sus eventos en el calendario</Label>
+                <p className="text-xs text-muted-foreground mt-1">Si está apagado, los eventos con fecha de estas causas no aparecen en el calendario ni en Google Calendar.</p>
+              </div>
+              <Switch id="cfg-calendario" checked={optCalendario} onCheckedChange={setOptCalendario} disabled={savingConfig} />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label htmlFor="cfg-solo-admin">Visible solo para administradores</Label>
+                <p className="text-xs text-muted-foreground mt-1">Si está prendido, el resto de los roles no ve esta lista ni su contenido.</p>
+              </div>
+              <Switch id="cfg-solo-admin" checked={optSoloAdmin} onCheckedChange={setOptSoloAdmin} disabled={savingConfig} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfig(false)} disabled={savingConfig}>Cancelar</Button>

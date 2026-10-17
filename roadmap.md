@@ -26,15 +26,15 @@
 
 ## Varios cambios modo judicial (2026-10-17)
 - [x] Migración: causa secreta, contraseña de espacio, permisos por lista, opciones de listas
-- [ ] Filtro por despachante en tablero de anotaciones
-- [ ] Causa secreta: marcar/desmarcar (menú causa, solo admin) + indicador
-- [ ] Contraseña de espacio: definir (admin) + candado al entrar
-- [ ] Permisos de edición por lista de tablero (UI admin)
-- [ ] Click derecho: Para sacar sentencia / Para comunicar
-- [ ] Calendario: incluir eventos de causas en sentencia/comunicar; excluir listas sin calendario
-- [ ] Crear lista: opciones click derecho / calendario / solo admin
-- [ ] Sync Google Calendar: borrar eventos al eliminar o mover a lista sin calendario
-- [ ] Buscador móvil: barra abajo sobre teclado, resultados arriba
-- [ ] Dashboard: incluir Para sacar sentencia y Para comunicar
-- [ ] Quitar botón "Ocultar flagrancia"
-- [ ] Verificar: tsgo, eslint, build
+- [x] Filtro por despachante en tablero de anotaciones
+- [x] Causa secreta: marcar/desmarcar (menú causa, solo admin) + indicador
+- [x] Contraseña de espacio: definir (admin) + candado al entrar
+- [x] Permisos de edición por lista de tablero (UI admin)
+- [x] Click derecho: Para sacar sentencia / Para comunicar
+- [x] Calendario: incluir eventos de causas en sentencia/comunicar; excluir listas sin calendario
+- [x] Crear lista: opciones click derecho / calendario / solo admin
+- [x] Sync Google Calendar: borrar eventos al eliminar o mover a lista sin calendario
+- [x] Buscador móvil: barra abajo sobre teclado, resultados arriba
+- [x] Dashboard: incluir Para sacar sentencia y Para comunicar
+- [x] Quitar botón "Ocultar flagrancia"
+- [x] Verificar: tsgo, eslint, build

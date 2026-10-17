@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fireCausaResync } from "@/lib/gcalSync";
 
 export interface OpcionesLista {
   seleccionable_click_derecho: boolean;
@@ -106,6 +107,12 @@ export function useListasPersonalizadas(vocaliaId: string | null) {
       } as never)
       .eq("id", listaId);
     if (error) throw error;
+    // Si cambió la visibilidad en el calendario, re-sincronizar las causas de la lista con Google.
+    const { data: asocs } = await supabase
+      .from("listas_personalizadas_causas")
+      .select("causa_id")
+      .eq("lista_id", listaId);
+    for (const a of asocs ?? []) fireCausaResync(a.causa_id);
     await fetchData();
   }, [fetchData]);
 
