@@ -54,7 +54,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
     setLoading(true);
     setError(null);
     try {
-      const [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes] = await Promise.all([
+      const [evtRes, ppRes, penaRes, prescRes, prescMultiRes, tarjetasRes, listasSinCalRes] = await Promise.all([
         supabase
           .from("eventos")
           .select(`id,titulo,descripcion,fecha_hora,fecha_hora_fin,tipo_evento,causa_id,sujeto_id, causas!inner(${CAUSA_COLS},borrado_en)`)
