@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox, Plus, Loader2, Trash2 } from "lucide-react";
+import { Scale, LogOut, Pencil, Check, X, RefreshCw, Inbox, Plus, Loader2, Trash2, Lock, KeyRound } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useVocalias, VocaliaRow } from "@/hooks/useVocalias";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +38,19 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [borrarTarget, setBorrarTarget] = useState<VocaliaRow | null>(null);
   const [borrando, setBorrando] = useState(false);
   const [menuInicial, setMenuInicial] = useState(false);
+  // Contraseña de espacio: candado al entrar + definición por el admin.
+  const [conPassword, setConPassword] = useState<Set<string>>(new Set());
+  const [passTarget, setPassTarget] = useState<VocaliaRow | null>(null);
+  const [passValue, setPassValue] = useState("");
+  const [passChecking, setPassChecking] = useState(false);
+  const [passAdminTarget, setPassAdminTarget] = useState<VocaliaRow | null>(null);
+  const [passAdminValue, setPassAdminValue] = useState("");
+  const [passAdminSaving, setPassAdminSaving] = useState(false);
+
+  const unlockKey = (id: string) => `iustrack_vocalia_unlock_${id}`;
+  const estaDesbloqueada = (id: string) => {
+    try { return sessionStorage.getItem(unlockKey(id)) === "1"; } catch { return false; }
+  };
 
   const volverAlMenuInicial = () => {
     setMenuInicial(false);
