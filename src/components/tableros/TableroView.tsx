@@ -547,6 +547,11 @@ export default function TableroView({ tablero, vocaliaId, soloLectura = false, e
                       <DropdownMenuItem className="text-xs gap-2" onSelect={() => { setDraft(l.nombre); setRenombrando(l.id); }}>
                         <Pencil className="h-3.5 w-3.5" /> Renombrar
                       </DropdownMenuItem>
+                      {esAdmin && l.ambito !== "personal" && tribunalId && (
+                        <DropdownMenuItem className="text-xs gap-2" onSelect={() => setPermisosDe(l)}>
+                          <UserCog className="h-3.5 w-3.5" /> Quién puede editar
+                        </DropdownMenuItem>
+                      )}
                       <ColorPicker value={l.color} onChange={(color) => cambiarColorLista(l.id, color)} />
                       <DropdownMenuItem className="text-xs gap-2 text-alert-urgent focus:text-alert-urgent" onSelect={() => borrarLista(l.id)}>
                         <Trash2 className="h-3.5 w-3.5" /> Borrar lista
