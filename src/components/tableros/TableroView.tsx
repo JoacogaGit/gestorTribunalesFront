@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor,
   closestCorners, useSensor, useSensors,
@@ -8,7 +8,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
-import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil, ArrowLeft, Lock, Users, ListChecks } from "lucide-react";
+import { Plus, MoreHorizontal, GripVertical, CalendarClock, Scale, Trash2, Pencil, ArrowLeft, Lock, Users, ListChecks, UserCog } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -23,14 +23,19 @@ import { useTableroListas, type TableroLista } from "@/hooks/useTableroListas";
 import CrearListaTableroDialog from "./CrearListaTableroDialog";
 import TarjetaFormDialog from "./TarjetaFormDialog";
 import ColorPicker from "./ColorPicker";
+import PermisosListaTableroDialog from "./PermisosListaTableroDialog";
 import { colorSoftBg, colorBorde } from "@/lib/tableroColores";
 import { formatLocalDate, toARTimeString } from "@/lib/parseDate";
 import { isAllDayISO } from "@/lib/eventoMapper";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
   tablero: Tablero;
   vocaliaId: string | null;
   soloLectura?: boolean;
+  esAdmin?: boolean;
+  tribunalId?: string | null;
 }
 
 function TarjetaCard({ tarjeta, onEdit, onDelete }: { tarjeta: TableroTarjeta; onEdit: () => void; onDelete?: () => void }) {
