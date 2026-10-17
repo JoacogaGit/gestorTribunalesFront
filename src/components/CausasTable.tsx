@@ -184,6 +184,7 @@ export default function CausasTable({
   causas, allCausas, title, listKey, vocalia = 1,
   onUpdateCausa, onDeleteCausa, onCreateCausa, onImportCausa, onChangeEstado, onMutated,
   onNavigateToConexa, openCausaId, onOpenedCausa, extraRowAction, priorityColumnKey,
+  esAdmin = false, onToggleSecreta,
   compact = false,
 }: Props) {
   const [selected, setSelected] = useState<Causa | null>(null);
@@ -296,6 +297,11 @@ export default function CausasTable({
             {c.art196bis && (
               <span title="196bis / NN" className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-400">
                 196BIS
+              </span>
+            )}
+            {c.secreta && (
+              <span title="Causa secreta: solo la ve el administrador" className="inline-flex items-center gap-0.5 rounded-full bg-slate-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                <Lock className="w-2.5 h-2.5" /> SECRETA
               </span>
             )}
             {hasConexa && (
