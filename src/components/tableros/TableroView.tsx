@@ -322,6 +322,26 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
+      {despachantes.length > 0 && (
+        <div className="flex items-center gap-2 pb-2">
+          <Select value={despachanteFiltro ?? "todos"} onValueChange={(v) => setDespachanteFiltro(v === "todos" ? null : v)}>
+            <SelectTrigger className="h-8 w-60 text-xs">
+              <SelectValue placeholder="Filtrar por despachante" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los despachantes</SelectItem>
+              {despachantes.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {despachanteFiltro && (
+            <span className="text-[11px] text-muted-foreground">
+              Mostrando solo tarjetas de causas a cargo de {despachanteFiltro}
+            </span>
+          )}
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div
           ref={scrollerRef}
