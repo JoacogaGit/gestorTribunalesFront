@@ -38,3 +38,12 @@
 - [x] Dashboard: incluir Para sacar sentencia y Para comunicar
 - [x] Quitar botón "Ocultar flagrancia"
 - [x] Verificar: tsgo, eslint, build
+
+## Correcciones modo judicial (2026-10-19)
+- [x] Tutorial automático al crear oficina y filtro sin paso duplicado
+- [x] Filtro por despachante visible en anotaciones
+- [x] Centrar búsqueda móvil
+- [x] Rayas grises y control de causa secreta en ficha para admin
+- [x] Contraseña opcional al crear espacios, conservando edición posterior
+- [x] Diez pruebas y carga pública sin errores
+- [ ] Verificar los seis cambios dentro de una oficina (bloqueado: sin sesión en Supabase externo)

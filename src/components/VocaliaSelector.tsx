@@ -14,6 +14,8 @@ import RefreshButton from "@/components/RefreshButton";
 import SuperadminLink from "@/components/SuperadminLink";
 import WelcomeNoTribunal from "@/components/WelcomeNoTribunal";
 import { supabase } from "@/integrations/supabase/client";
+import PasswordEspacioFields from "@/components/forms/PasswordEspacioFields";
+import { useCrearEspacio } from "@/hooks/useCrearEspacio";
 import { useAuth } from "@/context/AuthContext";
 
 interface Props {
@@ -35,6 +37,9 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   const [createOpen, setCreateOpen] = useState<CreatableTribunal | null>(null);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [creating, setCreating] = useState(false);
+  const espacioMuts = useCrearEspacio();
+  const [createPassword, setCreatePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
   const [borrarTarget, setBorrarTarget] = useState<VocaliaRow | null>(null);
   const [borrando, setBorrando] = useState(false);
   const [menuInicial, setMenuInicial] = useState(false);
@@ -199,22 +204,18 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
   }, [loading, error, vocalias, conPassword]);
 
   const handleCrear = async () => {
-    if (!createOpen) return;
-    const limpio = nuevoNombre.trim();
-    if (!limpio) { toast.error("Ingresá un nombre"); return; }
+    if (!createOpen || !adminTribunalIds.has(createOpen.id) || creating) return;
     setCreating(true);
-    const { data, error: e } = await supabase
-      .from("vocalias")
-      .insert({ tribunal_id: createOpen.id, nombre: limpio })
-      .select("id, nombre, tribunal_id")
-      .single();
-    setCreating(false);
-    if (e || !data) { toast.error(e?.message || "No se pudo crear el espacio"); return; }
-    toast.success("Espacio creada");
-    setCreateOpen(null);
-    setNuevoNombre("");
-    await refetch();
-    onSelect({ id: data.id, nombre: data.nombre, tribunalId: data.tribunal_id });
+    try {
+      const data = await espacioMuts.crear(createOpen.id, nuevoNombre, createPassword ? newPassword : null);
+      toast.success("Espacio creado");
+      setCreateOpen(null);
+      setNuevoNombre("");
+      await refetch();
+      onSelect({ id: data.id, nombre: data.nombre, tribunalId: data.tribunal_id });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo crear el espacio");
+    } finally { setCreating(false); }
   };
 
   if (menuInicial) {
@@ -287,7 +288,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
               <button
                 key={`crear-${t.id}`}
                 type="button"
-                onClick={() => { setCreateOpen(t); setNuevoNombre(""); }}
+                onClick={() => { espacioMuts.reset(); setCreatePassword(false); setNewPassword(""); setCreateOpen(t); setNuevoNombre(""); }}
                 className="rounded-xl border-2 border-dashed border-border hover:border-primary/60 bg-card/30 hover:bg-card/60 p-8 text-center transition-all group focus:outline-none focus:ring-2 focus:ring-primary/40 w-full md:w-[calc((100%-3rem)/3)] shrink-0 flex flex-col items-center justify-center min-h-[260px]"
               >
                 <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
@@ -411,7 +412,7 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
         )}
       </div>
 
-      <Dialog open={!!createOpen} onOpenChange={(o) => { if (!o) { setCreateOpen(null); setNuevoNombre(""); } }}>
+      <Dialog open={!!createOpen} onOpenChange={(o) => { if (!o && !creating) { espacioMuts.reset(); setCreateOpen(null); setNuevoNombre(""); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Crear espacio u oficina</DialogTitle>
@@ -430,11 +431,12 @@ export default function VocaliaSelector({ onSelect, onLogout }: Props) {
               onKeyDown={(e) => { if (e.key === "Enter") handleCrear(); }}
             />
           </div>
+          <PasswordEspacioFields enabled={createPassword} password={newPassword} onEnabledChange={setCreatePassword} onPasswordChange={setNewPassword} disabled={creating} />
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreateOpen(null); setNuevoNombre(""); }} disabled={creating}>
+            <Button variant="outline" onClick={() => { espacioMuts.reset(); setCreateOpen(null); setNuevoNombre(""); }} disabled={creating}>
               Cancelar
             </Button>
-            <Button onClick={handleCrear} disabled={creating || !nuevoNombre.trim()}>
+            <Button onClick={handleCrear} disabled={creating || !nuevoNombre.trim() || (createPassword && !newPassword.trim())}>
               {creating && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
               Crear
             </Button>

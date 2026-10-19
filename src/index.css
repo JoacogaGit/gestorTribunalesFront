@@ -38,6 +38,8 @@
     --input: 220 18% 90%;
     --ring: 222 60% 30%;
 
+    --secret-stripe: 0 0% 50%;
+    --gradient-secret-row: repeating-linear-gradient(135deg, hsl(var(--secret-stripe) / 0.17) 0px, hsl(var(--secret-stripe) / 0.17) 6px, transparent 6px, transparent 12px);
     --radius: 0.625rem;
 
     --alert-urgent: 0 70% 48%;
@@ -773,3 +775,5 @@ body[data-tour-fx="marco"] [data-tour="form-causa"].driver-active-element { outl
   .iustrack-tour-drag-demo { transition-duration: 0ms !important; }
   .iustrack-tour-note-example { animation: none !important; }
 }
+
+.causa-secreta-row { background-image: var(--gradient-secret-row); }

@@ -32,6 +32,8 @@ import AnotacionesSection, { type AnotacionBorrador } from "./AnotacionesSection
 import { useEventoMutations } from "@/hooks/useEventoMutations";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 import { resolverNombreUsuario } from "@/lib/nombresUsuarios";
+import { useRolTribunal } from "@/hooks/useRolTribunal";
+import { payloadSecreto } from "@/lib/causaSecreta";
 import { useAuth } from "@/context/AuthContext";
 
 /** "25/09 14:30" en hora de Argentina. */
@@ -45,7 +47,7 @@ function formatoCorta(iso: string): string {
 }
 
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,secreta,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -89,6 +91,7 @@ function emptyCausa(): CausaInput {
     tipo_recurso: null,
     tipo_proceso: null,
     flagrancia: false,
+    secreta: false,
     delegada: false,
     art196bis: false,
     fecha_ingreso: null,
@@ -183,6 +186,7 @@ export default function CausaFormDialog({
 }: Props) {
   const muts = useCausaMutations();
   const { vocalia } = useVocaliaActual();
+  const { esAdmin } = useRolTribunal(vocalia?.tribunalId);
   const { subestados } = useSubestadosTramite(vocalia?.id ?? null);
   const { esEstudio } = useTipoOficina(vocalia?.tribunalId ?? null);
   const [modosPropios, setModosPropios] = useState<string[]>(() => leerModosPropios(vocalia?.id));
@@ -350,6 +354,7 @@ export default function CausaFormDialog({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             despachante: (data as any).despachante ?? null,
             caratula: data.caratula ?? "",
+            secreta: !!data.secreta,
 
             // "Delegada" dejó de ser un estado: pasa a ser una marca.
             estado_causa: (data.estado_causa === "delegada" ? "tramite" : data.estado_causa) as DbEstadoCausa,
@@ -588,7 +593,7 @@ export default function CausaFormDialog({
       } as unknown as Record<string, unknown>) as unknown as SujetoInput;
       return cleaned;
     });
-    return { causa: causaPayload, sujetos: sujetosPayload };
+    return { causa: payloadSecreto(causaPayload, esAdmin), sujetos: sujetosPayload };
   };
 
   const doSubmit = async () => {
@@ -768,6 +773,10 @@ export default function CausaFormDialog({
               {/* Datos generales */}
               <section data-tour="form-datos" className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Datos generales</h3>
+                {!esEstudio && esAdmin && <Label className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 p-3">
+                  <span>Causa secreta <span className="block text-xs font-normal text-muted-foreground">Solo los administradores pueden verla.</span></span>
+                  <Switch checked={!!causa.secreta} onCheckedChange={(secreta) => updateCausa({ secreta })} />
+                </Label>}
                 {mode === "crear" && !esEstudio && (
                   <label
                     data-tour-field="caratula-pdf"

@@ -1,4 +1,5 @@
 import { forwardRef, memo, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
@@ -171,7 +172,7 @@ const CausaRow = memo(forwardRef<HTMLTableRowElement, CausaRowProps & React.HTML
     <TableRow
       ref={ref}
       {...rest}
-      className="cursor-pointer hover:bg-primary/5 transition-colors"
+      className={`cursor-pointer hover:bg-primary/5 transition-colors ${causa.secreta ? "causa-secreta-row" : ""}`}
       style={rowColor ? { backgroundColor: rowColor, color: "#111827" } : undefined}
       onClick={(e) => { rest.onClick?.(e); onOpen(causa); }}
     >
@@ -962,7 +963,9 @@ export default function CausasTable({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <div
+          {(() => {
+            const bar = (
+              <div
             className={
               isMobile && searchFocus
                 ? "fixed inset-x-0 bottom-0 z-50 flex items-center gap-2 border-t border-border bg-background p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-elevated"
@@ -972,6 +975,7 @@ export default function CausasTable({
             {!isMobile && <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />}
             {isMobile && searchFocus && <Search className="w-4 h-4 text-muted-foreground shrink-0" />}
             <input
+              autoFocus={isMobile && searchFocus}
               data-tour="buscador"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -979,7 +983,7 @@ export default function CausasTable({
               onBlur={() => setSearchFocus(false)}
               placeholder="Buscar..."
               className={isMobile && searchFocus
-                ? "flex-1 px-3 py-2 text-base bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                ? "min-w-0 w-full flex-1 px-3 py-2 text-base bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
                 : "pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary w-48"}
             />
             {isMobile && searchFocus && (
@@ -993,6 +997,9 @@ export default function CausasTable({
               </button>
             )}
           </div>
+            );
+            return isMobile && searchFocus ? createPortal(bar, document.body) : bar;
+          })()}
         </div>
       </div>
 
@@ -1005,7 +1012,7 @@ export default function CausasTable({
             return (
               <div
                 key={rk}
-                className="elevated-card rounded-xl p-3 border-l-4"
+                className={`elevated-card rounded-xl p-3 border-l-4 ${c.secreta ? "causa-secreta-row" : ""}`}
                 style={{ borderLeftColor: rowColor || "hsl(var(--border))" }}
               >
                 <button
