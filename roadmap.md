@@ -47,3 +47,4 @@
 - [x] Contraseña opcional al crear espacios, conservando edición posterior
 - [x] Diez pruebas y carga pública sin errores
 - [ ] Verificar los seis cambios dentro de una oficina (bloqueado: sin sesión en Supabase externo)
+- [x] Opción de lista: "De qué otra(s) lista(s) desaparece la causa" (pestañas + otras listas personalizadas)
