@@ -9,6 +9,8 @@ const PESTANA_POR_ESTADO: Record<string, PestanaOcultable | undefined> = {
   recurso: "recursos",
   terminada: "terminadas",
   delegada: "delegadas",
+  para_sentencia: "para_sentencia",
+  para_comunicar: "para_comunicar",
 };
 
 interface Options {

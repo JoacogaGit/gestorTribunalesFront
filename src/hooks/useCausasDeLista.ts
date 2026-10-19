@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Causa } from "@/data/mockCausas";
 import { dbCausaToUI } from "@/lib/causaMapper";
 import { fireCausaResync } from "@/lib/gcalSync";
+import { claveLista, fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 const CAUSAS_LISTA_SELECT = "causa_id, causas!inner(id,expediente_nro,numero_interno,despachante,flagrancia,caratula,estado_causa,subestado_tramite_id,subestados_tramite(nombre),delegada,art196bis,subestados,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,borrado_en,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en))";
 
-export function useCausasDeLista(listaId: string | null) {
+export function useCausasDeLista(listaId: string | null, vocaliaId?: string | null) {
   const [causas, setCausas] = useState<Causa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +24,14 @@ export function useCausasDeLista(listaId: string | null) {
       setError(error.message);
       setCausas([]);
     } else {
+      // Ocultar causas que están en otras listas configuradas para desaparecer de esta.
+      const ocultas = vocaliaId
+        ? await fetchCausasOcultasDe(vocaliaId, claveLista(listaId), listaId)
+        : new Set<string>();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = ((data ?? []) as any[])
         .map((r) => r.causas)
-        .filter((c) => c && c.borrado_en == null)
+        .filter((c) => c && c.borrado_en == null && !ocultas.has(c.id))
         .map((c) => ({
           ...c,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,7 +40,7 @@ export function useCausasDeLista(listaId: string | null) {
       setCausas(rows.map(dbCausaToUI));
     }
     setLoading(false);
-  }, [listaId]);
+  }, [listaId, vocaliaId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
