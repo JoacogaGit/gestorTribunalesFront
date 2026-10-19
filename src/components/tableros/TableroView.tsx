@@ -227,17 +227,16 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
   const [despPorCausa, setDespPorCausa] = useState<Record<string, string>>({});
   const [despachanteFiltro, setDespachanteFiltro] = useState<string | null>(null);
   useEffect(() => {
-    const ids = [...new Set(tarjetas.map((t) => t.causa_id).filter(Boolean))] as string[];
-    if (ids.length === 0) { setDespPorCausa({}); return; }
+    if (!vocaliaId) { setDespPorCausa({}); return; }
     let vivo = true;
-    supabase.from("causas").select("id,despachante").in("id", ids).then(({ data }) => {
+    supabase.from("causas").select("id,despachante").eq("vocalia_id", vocaliaId).is("borrado_en", null).then(({ data }) => {
       if (!vivo) return;
       const m: Record<string, string> = {};
-      for (const r of data ?? []) if (r.despachante) m[r.id] = r.despachante;
+      for (const r of data ?? []) if (r.despachante?.trim()) m[r.id] = r.despachante.trim();
       setDespPorCausa(m);
     });
     return () => { vivo = false; };
-  }, [tarjetas]);
+  }, [tarjetas, vocaliaId]);
   const despachantes = useMemo(() => [...new Set(Object.values(despPorCausa))].sort((a, b) => a.localeCompare(b)), [despPorCausa]);
 
   const tarjetasVisibles = useMemo(() => {
@@ -322,10 +321,10 @@ function KanbanLista({ lista, tableroId, vocaliaId, soloLectura }: {
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
-      {despachantes.length > 0 && (
-        <div className="flex items-center gap-2 pb-2">
+      {(
+        <div className="flex flex-wrap items-center gap-2 pb-2">
           <Select value={despachanteFiltro ?? "todos"} onValueChange={(v) => setDespachanteFiltro(v === "todos" ? null : v)}>
-            <SelectTrigger className="h-8 w-60 text-xs">
+            <SelectTrigger aria-label="Filtrar por despachante" className="h-9 w-full sm:w-60 text-sm">
               <SelectValue placeholder="Filtrar por despachante" />
             </SelectTrigger>
             <SelectContent>

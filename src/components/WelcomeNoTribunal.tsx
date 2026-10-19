@@ -7,6 +7,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import BienvenidaTribunal from "@/components/BienvenidaTribunal";
+import { programarTutorialOficina } from "@/lib/tutorialInicio";
+import PasswordEspacioFields from "@/components/forms/PasswordEspacioFields";
+import { useCrearEspacio } from "@/hooks/useCrearEspacio";
 import SubtleBackground from "@/components/SubtleBackground";
 
 interface Props {
@@ -17,7 +20,10 @@ type ModoTribunal = "lista_unica" | "vocalias_separadas";
 type Mode = "menu" | "crear" | "modo" | "codigo" | "token" | "vocalia" | "bienvenida";
 
 export default function WelcomeNoTribunal({ onCreated }: Props) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const espacioMuts = useCrearEspacio();
+  const [conPassword, setConPassword] = useState(false);
+  const [password, setPassword] = useState("");
   const [mode, setMode] = useState<Mode>("menu");
   const [loading, setLoading] = useState(false);
 
@@ -60,6 +66,7 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     }
 
     setTribunalId(newTribunalId);
+    if (user) programarTutorialOficina(user.id, newTribunalId);
 
     if (modoElegido === "lista_unica") {
       // Crear espacio "General" oculta y saltar el paso de vocalía
@@ -81,13 +88,13 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
     e.preventDefault();
     if (!tribunalId || !vocaliaNombre.trim()) return;
     setLoading(true);
-    const { error } = await supabase
-      .from("vocalias")
-      .insert({ tribunal_id: tribunalId, nombre: vocaliaNombre.trim() });
-    setLoading(false);
-    if (error) { toast.error("No se pudo crear el espacio."); return; }
-    toast.success("Espacio creada");
-    setMode("bienvenida");
+    try {
+      await espacioMuts.crear(tribunalId, vocaliaNombre, conPassword ? password : null);
+      toast.success("Espacio creado");
+      setMode("bienvenida");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo crear el espacio");
+    } finally { setLoading(false); }
   };
 
   const handleUnirseCodigo = async (e: React.FormEvent) => {
@@ -280,7 +287,8 @@ export default function WelcomeNoTribunal({ onCreated }: Props) {
                 <Input id="vnombre" value={vocaliaNombre} onChange={(e) => setVocaliaNombre(e.target.value)}
                   className="h-11" placeholder="Espacio 1" required />
               </div>
-              <Button type="submit" disabled={loading} className="w-full">
+              <PasswordEspacioFields enabled={conPassword} password={password} onEnabledChange={setConPassword} onPasswordChange={setPassword} disabled={loading} />
+              <Button type="submit" disabled={loading || (conPassword && !password.trim())} className="w-full">
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Crear espacio
               </Button>

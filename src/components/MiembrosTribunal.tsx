@@ -24,6 +24,8 @@ import { useAuth } from "@/context/AuthContext";
 import RefreshButton from "@/components/RefreshButton";
 import InvitarMiembroDialog from "@/components/forms/InvitarMiembroDialog";
 
+import PasswordEspacioFields from "@/components/forms/PasswordEspacioFields";
+import { useCrearEspacio } from "@/hooks/useCrearEspacio";
 import AbandonarTribunal from "@/components/AbandonarTribunal";
 
 interface Props {
@@ -85,18 +87,22 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
 
   const [nuevoEspacio, setNuevoEspacio] = useState("");
   const [creandoEspacio, setCreandoEspacio] = useState(false);
+  const espacioMuts = useCrearEspacio();
+  const [conPassword, setConPassword] = useState(false);
+  const [password, setPassword] = useState("");
 
   const handleCrearEspacio = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nombre = nuevoEspacio.trim();
-    if (!nombre) return;
+    if (!soyAdmin || creandoEspacio) return;
     setCreandoEspacio(true);
-    const { error } = await supabase.from("vocalias").insert({ tribunal_id: tribunalId, nombre });
-    setCreandoEspacio(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Espacio "${nombre}" creado`);
-    setNuevoEspacio("");
-    refetchVocalias();
+    try {
+      await espacioMuts.crear(tribunalId, nuevoEspacio, conPassword ? password : null);
+      toast.success(`Espacio "${nuevoEspacio.trim()}" creado`);
+      setNuevoEspacio(""); setConPassword(false); setPassword("");
+      refetchVocalias();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo crear el espacio");
+    } finally { setCreandoEspacio(false); }
   };
 
   const handleEliminarVocalia = async () => {
@@ -278,14 +284,15 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
           )}
         </div>
         {soyAdmin && (
-          <form onSubmit={handleCrearEspacio} className="flex items-center gap-2">
+          <form onSubmit={handleCrearEspacio} className="space-y-3 max-w-lg">
             <Input
               value={nuevoEspacio}
               onChange={(e) => setNuevoEspacio(e.target.value)}
               placeholder="Nombre del nuevo espacio"
               className="h-9 max-w-xs"
             />
-            <Button type="submit" size="sm" disabled={creandoEspacio || !nuevoEspacio.trim()}>
+            <PasswordEspacioFields enabled={conPassword} password={password} onEnabledChange={setConPassword} onPasswordChange={setPassword} disabled={creandoEspacio} />
+            <Button type="submit" size="sm" disabled={creandoEspacio || !nuevoEspacio.trim() || (conPassword && !password.trim())}>
               {creandoEspacio ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1.5" />}
               Crear espacio
             </Button>

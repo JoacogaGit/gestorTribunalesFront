@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Scale, PartyPopper, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { consumirTutorialOficina } from "@/lib/tutorialInicio";
+import { useVocaliaActual } from "@/context/VocaliaContext";
 import { toast } from "sonner";
 
 export const TUTORIAL_EVENT = "iustrack:tutorial";
@@ -404,7 +406,7 @@ function construirPasos(props: Props): Paso[] {
   const { esEstudio, esAdmin, multiVocalia, tableroView } = props;
   const vistaLista = esEstudio ? "dashboard" : "tramite";
   const responsable = esEstudio ? "empleado a cargo" : "despachante";
-  const responsables = esEstudio ? "empleados a cargo" : "despachantes o sumariantes";
+
 
   const pasos: Paso[] = [];
 
@@ -636,15 +638,6 @@ function construirPasos(props: Props): Paso[] {
     },
   );
 
-  // 10 — Filtro por responsable
-  pasos.push({
-    view: vistaLista,
-    target: '[data-tour="filtro-responsable"]',
-    efecto: "marco",
-    titulo: `Filtrá por ${responsable}`,
-    texto: `Elegí uno o varios ${responsables} y tanto la lista de causas como el calendario muestran solo lo suyo.`,
-  });
-
   // 11 — Migración
   pasos.push({
     view: "migrar",
@@ -732,6 +725,8 @@ function construirPasos(props: Props): Paso[] {
 
 export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, multiVocalia, esAdmin, tableroView, esEstudio }: Props) {
   const { user } = useAuth();
+  const { vocalia } = useVocaliaActual();
+  const oficinaId = vocalia?.tribunalId;
   const [fase, setFase] = useState<"idle" | "bienvenida" | "recorrido" | "final">("idle");
   const driverRef = useRef<Driver | null>(null);
   const idxRef = useRef(0);
@@ -757,6 +752,11 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
   // Auto-arranque la primera vez (incluye la primera entrada a una oficina recién creada).
   useEffect(() => {
     if (!user || !claveLocal) return;
+    if (oficinaId && consumirTutorialOficina(user.id, oficinaId)) {
+      onNavigate("dashboard");
+      setFase("bienvenida");
+      return;
+    }
     let cancelled = false;
     (async () => {
       let visto = false;
@@ -776,7 +776,7 @@ export default function TutorialTour({ onNavigate, onOpenSidebar, isMobile, mult
       setFase((f) => (f === "idle" ? "bienvenida" : f));
     })();
     return () => { cancelled = true; };
-  }, [user, claveLocal]);
+  }, [user, claveLocal, oficinaId, onNavigate]);
 
   // Disparo manual
   useEffect(() => {
