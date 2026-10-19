@@ -160,19 +160,21 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
       />
 
       <Dialog open={showConfig} onOpenChange={(v) => !savingConfig && setShowConfig(v)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurar "{lista.nombre}"</DialogTitle>
             <DialogDescription>
-              Elegí de qué pestañas se ocultan las causas agregadas a esta lista.
+              Opciones de esta lista dentro del espacio.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <div className="flex items-start justify-between gap-4">
-              <Label htmlFor="ocultar-config">¿Las causas de esta lista deben ocultarse de otras pestañas?</Label>
-              <Switch id="ocultar-config" checked={ocultar} onCheckedChange={setOcultar} disabled={savingConfig} />
+            <div>
+              <Label>¿De qué otra(s) lista(s) desaparece la causa?</Label>
+              <p className="text-xs text-muted-foreground mt-1 mb-2">
+                Al agregar una causa a esta lista, deja de verse en las listas que marques. Dentro de esta lista se sigue viendo.
+              </p>
+              <OcultaDeSelector value={ocultaDe} onChange={setOcultaDe} disabled={savingConfig} otrasListas={otrasListas} />
             </div>
-            {ocultar && <OcultaDeSelector value={ocultaDe} onChange={setOcultaDe} disabled={savingConfig} />}
             <div className="flex items-start justify-between gap-4 border-t border-border/60 pt-3">
               <div>
                 <Label htmlFor="cfg-click-derecho">Seleccionable con click derecho</Label>
