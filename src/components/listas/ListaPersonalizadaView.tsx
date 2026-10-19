@@ -26,16 +26,16 @@ interface Props {
 }
 
 export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrada, onNavigateToConexa, filtrarCausas }: Props) {
-  const { causas: causasRaw, loading, error, refetch, agregarCausa, sacarCausa } = useCausasDeLista(lista.id);
+  const { causas: causasRaw, loading, error, refetch, agregarCausa, sacarCausa } = useCausasDeLista(lista.id, vocaliaId);
   const causas = useMemo(() => filtrarCausas ? filtrarCausas(causasRaw) : causasRaw, [causasRaw, filtrarCausas]);
-  const { borrarLista, actualizarOcultaDe, actualizarOpciones, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
+  const { listas: todasLasListas, borrarLista, actualizarOcultaDe, actualizarOpciones, refetch: refetchListas } = useListasPersonalizadas(vocaliaId);
+  const otrasListas = useMemo(() => todasLasListas.filter((l) => l.id !== lista.id), [todasLasListas, lista.id]);
   const [showAdd, setShowAdd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemoveCausa, setConfirmRemoveCausa] = useState<Causa | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
-  const [ocultar, setOcultar] = useState((lista.oculta_de ?? []).length > 0);
   const [ocultaDe, setOcultaDe] = useState<string[]>(lista.oculta_de ?? []);
   const [optClickDerecho, setOptClickDerecho] = useState(lista.seleccionable_click_derecho !== false);
   const [optCalendario, setOptCalendario] = useState(lista.mostrar_en_calendario !== false);
@@ -43,7 +43,6 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
 
   const abrirConfig = () => {
     setOcultaDe(lista.oculta_de ?? []);
-    setOcultar((lista.oculta_de ?? []).length > 0);
     setOptClickDerecho(lista.seleccionable_click_derecho !== false);
     setOptCalendario(lista.mostrar_en_calendario !== false);
     setOptSoloAdmin(lista.solo_admin === true);
@@ -53,7 +52,7 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
   const guardarConfig = async () => {
     setSavingConfig(true);
     try {
-      await actualizarOcultaDe(lista.id, ocultar ? ocultaDe : []);
+      await actualizarOcultaDe(lista.id, ocultaDe);
       await actualizarOpciones(lista.id, {
         seleccionable_click_derecho: optClickDerecho,
         mostrar_en_calendario: optCalendario,
