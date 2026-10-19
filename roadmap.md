@@ -38,3 +38,11 @@
 - [x] Dashboard: incluir Para sacar sentencia y Para comunicar
 - [x] Quitar botón "Ocultar flagrancia"
 - [x] Verificar: tsgo, eslint, build
+
+## Correcciones modo judicial (2026-10-19)
+- [ ] Tutorial automático al crear oficina y filtro sin paso duplicado
+- [ ] Filtro por despachante visible en anotaciones
+- [ ] Centrar búsqueda móvil
+- [ ] Rayas grises y control de causa secreta en ficha para admin
+- [ ] Contraseña opcional al crear espacios, conservando edición posterior
+- [ ] Pruebas y verificación disponible sin sesión
