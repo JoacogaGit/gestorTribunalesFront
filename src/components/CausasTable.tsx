@@ -842,38 +842,38 @@ export default function CausasTable({
             const bar = (
               <div
             className={
-              isMobile && searchFocus
+              false
                 ? "fixed inset-x-0 bottom-0 z-50 flex items-center gap-2 border-t border-border bg-background p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-elevated"
                 : isMobile ? "relative w-full basis-full" : "relative md:order-last"
             }
           >
-            {!(isMobile && searchFocus) && <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />}
-            {isMobile && searchFocus && <Search className="w-4 h-4 text-muted-foreground shrink-0" />}
+            {<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />}
+            
             <input
-              autoFocus={isMobile && searchFocus}
+              
               data-tour="buscador"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setSearchFocus(true)}
               onBlur={() => setSearchFocus(false)}
               placeholder="Buscar..."
-              className={isMobile && searchFocus
+              className={false
                 ? "min-w-0 w-full flex-1 px-3 py-2 text-base bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
-                : "pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary " + (isMobile ? "w-full" : "w-48")}
+                : "pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary " + (isMobile ? "w-full text-base" : "w-48")}
             />
-            {isMobile && searchFocus && (
+            {isMobile && search && (
               <button
                 type="button"
                 aria-label="Cerrar búsqueda"
                 onPointerDown={(e) => { e.preventDefault(); setSearch(""); (document.activeElement as HTMLElement | null)?.blur(); }}
-                className="p-2 text-muted-foreground hover:text-foreground shrink-0"
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
           </div>
             );
-            return isMobile && searchFocus ? createPortal(bar, document.body) : bar;
+            return bar;
           })()}
           {sortBy && (
             <button
