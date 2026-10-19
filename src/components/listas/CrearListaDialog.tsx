@@ -13,12 +13,13 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCrear: (nombre: string, ocultaDe: string[], opciones: OpcionesLista) => Promise<void>;
+  /** Listas personalizadas que ya existen en el espacio. */
+  listasExistentes?: { id: string; nombre: string }[];
 }
 
-export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props) {
+export default function CrearListaDialog({ open, onOpenChange, onCrear, listasExistentes = [] }: Props) {
   const [nombre, setNombre] = useState("");
   const [saving, setSaving] = useState(false);
-  const [ocultar, setOcultar] = useState(false);
   const [ocultaDe, setOcultaDe] = useState<string[]>([]);
   const [opciones, setOpciones] = useState<OpcionesLista>(OPCIONES_LISTA_DEFAULT);
 
@@ -30,10 +31,9 @@ export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props)
     if (!n) return;
     setSaving(true);
     try {
-      await onCrear(n, ocultar ? ocultaDe : [], opciones);
+      await onCrear(n, ocultaDe, opciones);
       toast.success("Lista creada");
       setNombre("");
-      setOcultar(false);
       setOcultaDe([]);
       setOpciones(OPCIONES_LISTA_DEFAULT);
       onOpenChange(false);
@@ -67,16 +67,13 @@ export default function CrearListaDialog({ open, onOpenChange, onCrear }: Props)
             />
           </div>
           <div className="space-y-3 pb-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <Label htmlFor="ocultar-lista">¿Las causas de esta lista deben ocultarse de otras pestañas?</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Las causas seguirán visibles dentro de esta lista.
-                </p>
-              </div>
-              <Switch id="ocultar-lista" checked={ocultar} onCheckedChange={setOcultar} disabled={saving} />
+            <div>
+              <Label>¿De qué otra(s) lista(s) desaparece la causa?</Label>
+              <p className="text-xs text-muted-foreground mt-1 mb-2">
+                Al agregar una causa a esta lista, deja de verse en las listas que marques. Dentro de esta lista se sigue viendo.
+              </p>
+              <OcultaDeSelector value={ocultaDe} onChange={setOcultaDe} disabled={saving} otrasListas={listasExistentes} />
             </div>
-            {ocultar && <OcultaDeSelector value={ocultaDe} onChange={setOcultaDe} disabled={saving} />}
 
             <div className="flex items-start justify-between gap-4 border-t border-border/60 pt-3">
               <div>
