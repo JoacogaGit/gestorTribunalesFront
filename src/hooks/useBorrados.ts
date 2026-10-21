@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { emitCausasChanged } from "@/lib/causasBus";
+import { emitEventosChanged } from "@/lib/eventosBus";
 
 export interface BorradoBase {
   id: string;
@@ -121,5 +123,9 @@ export async function restaurar(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const patch = { borrado_en: null, borrado_por: null } as never;
   const { error } = await supabase.from(tabla).update(patch).eq("id", id);
+  if (!error) {
+    emitCausasChanged();
+    emitEventosChanged();
+  }
   return error ? { ok: false, error: error.message } : { ok: true };
 }
