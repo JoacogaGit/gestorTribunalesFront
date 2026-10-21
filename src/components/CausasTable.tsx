@@ -1,4 +1,8 @@
-import { forwardRef, memo, useEffect, useMemo, useState } from "react";
+import { forwardRef, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { emitCausasChanged } from "@/lib/causasBus";
+import { patchEstadoDesdeMenu } from "@/lib/reglasListas";
+import { hoyArgentina } from "@/lib/terminacion";
+import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
@@ -33,6 +37,7 @@ import { getSemaforoText } from "@/lib/eventoMapper";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fireCausaResync } from "@/lib/gcalSync";
 import {
   DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent,
 } from "@dnd-kit/core";
@@ -192,19 +197,22 @@ export default function CausasTable({
   esAdmin = false, onToggleSecreta, listasParaAsignar, onAsignarALista,
   compact = false,
 }: Props) {
+  const { vocalia: vocaliaActual } = useVocaliaActual();
+  // Memoria de la vista (búsqueda, filtros, orden, página, scroll) por espacio + lista.
+  const memoriaKey = listKey ? `${vocaliaActual?.id ?? "-"}:${listKey}` : null;
+  const memoriaInicial = useMemo(() => leerMemoriaVista(memoriaKey), [memoriaKey]);
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(memoriaInicial.search ?? "");
   const [searchFocus, setSearchFocus] = useState(false);
-  const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(memoriaInicial.sortBy ?? null);
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
   const { user } = useAuth();
-  const { vocalia: vocaliaActual } = useVocaliaActual();
-  const [categoriaFiltroId, setCategoriaFiltroId] = useState<string | null>(null);
+  const [categoriaFiltroId, setCategoriaFiltroId] = useState<string | null>(memoriaInicial.categoriaFiltroId ?? null);
   const { categorias: categoriasVocalia } = useCategoriasVocalia(vocaliaActual?.id ?? null);
   const { ids: causasIdsConCategoria } = useCausasConCategoria(categoriaFiltroId);
   const categoriaFiltroNombre = categoriasVocalia.find((c) => c.id === categoriaFiltroId)?.nombre_categoria;
@@ -213,10 +221,13 @@ export default function CausasTable({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const soloLectura = useSoloLectura();
   const { subestados } = useSubestadosTramite(vocaliaActual?.id ?? null);
-  const [subestadosFiltro, setSubestadosFiltro] = useState<string[]>([]);
+  const [subestadosFiltro, setSubestadosFiltro] = useState<string[]>(memoriaInicial.subestadosFiltro ?? []);
   const toggleSubestadoFiltro = (nombre: string) =>
     setSubestadosFiltro((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
   const [duplicarDe, setDuplicarDe] = useState<Causa | null>(null);
+  useEffect(() => {
+    guardarMemoriaVista(memoriaKey, { search, sortBy, categoriaFiltroId, subestadosFiltro });
+  }, [memoriaKey, search, sortBy, categoriaFiltroId, subestadosFiltro]);
 
 
   // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
@@ -237,8 +248,28 @@ export default function CausasTable({
       toast.error(`No se pudo guardar el color: ${error.message}`);
       return;
     }
-    onUpdateCausa?.({ ...c, colorDestacado: nuevoColor });
+    emitCausasChanged();
   };
+
+  // Cambio de estado desde el click derecho: se guarda y todas las listas se refrescan al instante.
+  const handleCambiarEstado = async (c: Causa, nuevo: EstadoCausa) => {
+    const patch = patchEstadoDesdeMenu(nuevo);
+    if (!patch) return;
+    if (patch.estado_causa === "terminada" && !c.fechaTerminacion) patch.fecha_terminacion = hoyArgentina();
+    const { data: ses } = await supabase.auth.getSession();
+    const uid = ses.session?.user.id ?? null;
+    if (uid) patch.modificado_por = uid;
+    const { error } = await supabase.from("causas").update(patch as never).eq("id", c.id);
+    if (error) {
+      toast.error(`No se pudo cambiar el estado: ${error.message}`);
+      return;
+    }
+    toast.success(`Estado: ${nuevo}`);
+    fireCausaResync(c.id);
+    emitCausasChanged();
+    onMutated?.();
+  };
+
 
   // Sensor de drag (distance 5 permite que el click siga funcionando para ordenar).
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -780,17 +811,38 @@ export default function CausasTable({
     return arr;
   })();
 
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(memoriaInicial.page ?? 1);
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  // Volver a la página 1 solo cuando el usuario cambia búsqueda/filtros/orden,
+  // no cuando la lista se refresca sola (eso haría saltar la vista).
+  const primerRender = useRef(true);
   useEffect(() => {
+    if (primerRender.current) { primerRender.current = false; return; }
     setPage(1);
-  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir, causas.length]);
+  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir]);
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+    if (sorted.length > 0 && page > totalPages) setPage(totalPages);
+  }, [page, totalPages, sorted.length]);
+  useEffect(() => { guardarMemoriaVista(memoriaKey, { page }); }, [memoriaKey, page]);
   const shouldPaginate = sorted.length > PAGE_SIZE;
   const pageStart = shouldPaginate ? (page - 1) * PAGE_SIZE : 0;
   const visibleRows = shouldPaginate ? sorted.slice(pageStart, pageStart + PAGE_SIZE) : sorted;
+
+  // Posición de scroll: se guarda al desplazarse y se restaura al volver a la lista.
+  const scrollMovilRef = useRef<HTMLDivElement | null>(null);
+  const scrollTablaRef = useRef<HTMLDivElement | null>(null);
+  const scrollRestaurado = useRef(false);
+  const guardarScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    guardarMemoriaVista(memoriaKey, { scrollTop: e.currentTarget.scrollTop });
+  };
+  useLayoutEffect(() => {
+    if (scrollRestaurado.current || visibleRows.length === 0) return;
+    scrollRestaurado.current = true;
+    const top = memoriaInicial.scrollTop ?? 0;
+    if (top <= 0) return;
+    const el = isMobile ? scrollMovilRef.current : scrollTablaRef.current;
+    if (el) el.scrollTop = top;
+  }, [visibleRows.length, isMobile, memoriaInicial.scrollTop]);
 
   const handleCreate = () => {
     setShowCreate(true);
@@ -841,11 +893,7 @@ export default function CausasTable({
           {(() => {
             const bar = (
               <div
-            className={
-              false
-                ? "fixed inset-x-0 bottom-0 z-50 flex items-center gap-2 border-t border-border bg-background p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-elevated"
-                : isMobile ? "relative w-full basis-full" : "relative md:order-last"
-            }
+            className={isMobile ? "relative w-full basis-full" : "relative md:order-last"}
           >
             {<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />}
             
@@ -857,9 +905,7 @@ export default function CausasTable({
               onFocus={() => setSearchFocus(true)}
               onBlur={() => setSearchFocus(false)}
               placeholder="Buscar..."
-              className={false
-                ? "min-w-0 w-full flex-1 px-3 py-2 text-base bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
-                : "pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary " + (isMobile ? "w-full text-base" : "w-48")}
+              className={"pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary " + (isMobile ? "w-full text-base" : "w-48")}
             />
             {isMobile && search && (
               <button
@@ -1171,7 +1217,7 @@ export default function CausasTable({
                         </ContextMenuSubContent>
                       </ContextMenuSub>
                     )}
-                    {!soloLectura && (onChangeEstado || onUpdateCausa) && (
+                    {!soloLectura && (
                       <ContextMenuSub>
                         <ContextMenuSubTrigger className="text-xs">
                           Cambiar estado
@@ -1180,11 +1226,7 @@ export default function CausasTable({
                           {estadosCausa.map((e) => (
                             <ContextMenuItem
                               key={e}
-                              onSelect={() => {
-                                if (onChangeEstado) onChangeEstado(c, e);
-                                else onUpdateCausa?.({ ...c, estadoCausa: e });
-                                toast.success(`Estado: ${e}`);
-                              }}
+                              onSelect={() => { void handleCambiarEstado(c, e); }}
                               className={`text-xs ${c.estadoCausa === e ? "bg-primary/10 text-primary" : ""}`}
                             >
                               {e}

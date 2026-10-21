@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { emitCausasChanged } from "@/lib/causasBus";
+import { emitEventosChanged } from "@/lib/eventosBus";
 import { ArchivoParseado, PestanaParseada } from "@/lib/parseMigracionFile";
 import { normalizarCausa } from "@/lib/normalizarCausa";
 
@@ -319,6 +321,8 @@ export function useMigracion() {
           eventosCount += c.eventos.length;
         }
       }
+      emitCausasChanged();
+      emitEventosChanged();
       return { ok: true, inserted: { causas: insertedCausaIds.length, sujetos: sujetosCount, eventos: eventosCount }, omitidas };
     } catch (e) {
       if (insertedEventoIds.length) await supabase.from("eventos").delete().in("id", insertedEventoIds);

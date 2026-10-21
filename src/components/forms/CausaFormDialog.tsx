@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -28,8 +28,8 @@ import {
   labelEstadoCausa, labelSituacionLibertad, labelTipoRecurso,
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
-import AnotacionesSection, { type AnotacionBorrador } from "./AnotacionesSection";
-import { useEventoMutations } from "@/hooks/useEventoMutations";
+import AnotacionesSection, { type AnotacionBorrador, type AnotacionPendiente } from "./AnotacionesSection";
+import { useEventoMutations, type EventoInput } from "@/hooks/useEventoMutations";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 import { resolverNombreUsuario } from "@/lib/nombresUsuarios";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
@@ -47,7 +47,7 @@ function formatoCorta(iso: string): string {
 }
 
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,secreta,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,updated_at,expediente_nro,numero_interno,despachante,flagrancia,secreta,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -314,6 +314,16 @@ export default function CausaFormDialog({
   // Clave de borrador local (por modo + causa)
   const duplicando = mode === "crear" && !!duplicarDeId;
   const draftKey = `causa-form:${mode}:${causaId ?? (duplicarDeId ? `dup-${duplicarDeId}` : "new")}`;
+  /** Fecha de última modificación de la causa al abrir la ficha (para validar borradores). */
+  const baseUpdatedAtRef = useRef<string | null>(null);
+  /** Mientras se guarda no se escriben borradores (evita resucitar datos ya guardados). */
+  const guardandoRef = useRef(false);
+  /** Anotaciones abiertas (escritas pero sin tocar su botón propio): se guardan junto con la causa. */
+  const anotPendientesRef = useRef(new Map<string, () => AnotacionPendiente | null>());
+  const registrarAnotPendiente = useCallback((clave: string, leer: (() => AnotacionPendiente | null) | null) => {
+    if (leer) anotPendientesRef.current.set(clave, leer);
+    else anotPendientesRef.current.delete(clave);
+  }, []);
 
   // Cargar datos en modo editar
   useEffect(() => {
@@ -453,11 +463,18 @@ export default function CausaFormDialog({
               ? (prescByID[s.id] ?? []).map((pr) => ({ _key: `dup-${pr._key}`, fecha: pr.fecha, descripcion: pr.descripcion }))
               : (prescByID[s.id] ?? []),
           })));
-          // Si había un borrador local más reciente con cambios no guardados, restaurarlo encima.
-          const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
-          if (draft?.causa) {
+          // Restaurar un borrador local solo si la causa no cambió desde que se empezó:
+          // así un borrador viejo nunca pisa cambios ya guardados (p. ej. un estado
+          // cambiado desde la lista o desde otro teléfono).
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const actualizadaEn = ((data as any).updated_at as string | null) ?? null;
+          baseUpdatedAtRef.current = actualizadaEn;
+          const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[]; base?: string | null }>(draftKey);
+          if (draft?.causa && !duplicando && draft.base !== undefined && draft.base === actualizadaEn) {
             setCausa(draft.causa);
             if (draft.sujetos) setSujetos(draft.sujetos);
+          } else if (draft) {
+            clearDraft(draftKey);
           }
         }
         setLoading(false);
@@ -467,7 +484,11 @@ export default function CausaFormDialog({
   }, [open, mode, causaId, duplicarDeId, duplicando, initialSujetoSituacion, draftKey]);
 
   // Persistencia local con debounce mientras el modal está abierto y no está cargando.
-  useFormDraft(draftKey, { causa, sujetos }, open && !loading);
+  const draftValue = useMemo(
+    () => ({ causa, sujetos, base: mode === "editar" ? baseUpdatedAtRef.current : null }),
+    [causa, sujetos, mode],
+  );
+  useFormDraft(draftKey, draftValue, open && !loading && !guardandoRef.current);
 
 
   const visibleSujetos = useMemo(() => sujetos.filter((s) => !s._markedForDelete), [sujetos]);
@@ -597,8 +618,23 @@ export default function CausaFormDialog({
   };
 
   const doSubmit = async () => {
+    if (guardandoRef.current) return;
+    guardandoRef.current = true;
+    try {
+      await doSubmitInner();
+    } finally {
+      guardandoRef.current = false;
+    }
+  };
+
+  const doSubmitInner = async () => {
     setErrorMsg(null);
     const { causa: causaP, sujetos: sujetosP } = buildPayload();
+    // Anotaciones escritas en un formulario abierto sin tocar su propio botón:
+    // se guardan igual al tocar "Guardar" de la causa (antes se perdían).
+    const anotPendientes = Array.from(anotPendientesRef.current.values())
+      .map((leer) => leer())
+      .filter((p): p is AnotacionPendiente => !!p);
 
     if (mode === "crear") {
       const res = await muts.crearCausa(causaP, sujetosP);
@@ -612,11 +648,18 @@ export default function CausaFormDialog({
         }));
         if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
       }
-      for (const b of anotBorradores) {
-        const { _id, _creado, ...input } = b;
-        void _id; void _creado;
+      const editadosLocal = new Map(anotPendientes.filter((p) => p.editarId).map((p) => [p.editarId!, p.input]));
+      const aCrear: EventoInput[] = [
+        ...anotBorradores.map((b) => {
+          const { _id, _creado, ...input } = b;
+          void _creado;
+          return editadosLocal.has(_id) ? { ...input, ...editadosLocal.get(_id)! } : input;
+        }),
+        ...anotPendientes.filter((p) => !p.editarId).map((p) => p.input),
+      ];
+      for (const input of aCrear) {
         const r = await eventoMuts.crearEvento(res.id, input);
-        if (r.ok !== true) toast.error(`No se pudo guardar la anotación "${b.titulo}"`);
+        if (r.ok !== true) toast.error(`No se pudo guardar la anotación "${input.titulo}"`);
       }
       setAnotBorradores([]);
       toast.success("Causa creada");
@@ -668,6 +711,17 @@ export default function CausaFormDialog({
         if (psync.ok !== true) { setErrorMsg(`Error al guardar prescripciones: ${psync.error}`); return; }
       }
     }
+    for (const p of anotPendientes) {
+      const r = p.editarId
+        ? await eventoMuts.actualizarEvento(p.editarId, p.input)
+        : await eventoMuts.crearEvento(causaId, p.input);
+      if (r.ok !== true) {
+        const msg = `No se pudo guardar la anotación "${p.input.titulo}": ${r.error}`;
+        setErrorMsg(msg);
+        toast.error(msg);
+        return;
+      }
+    }
     toast.success("Cambios guardados");
     fireVocaliaResync();
     clearDraft(draftKey);
@@ -678,6 +732,17 @@ export default function CausaFormDialog({
   };
 
   const handleSubmit = async () => {
+    if (guardandoRef.current || muts.saving) return;
+    // En el teléfono, el último valor tocado (texto con teclado, selector) puede
+    // llegar un instante después del toque en "Guardar": cerramos el teclado y
+    // esperamos un cuadro para guardar siempre con los valores definitivos.
+    const activo = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+    if (activo && activo !== document.body && typeof activo.blur === "function") activo.blur();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    await submitActualRef.current();
+  };
+
+  const submitActual = async () => {
     setErrorMsg(null);
     const v = validate();
     if (v) { setErrorMsg(v); return; }
@@ -689,9 +754,13 @@ export default function CausaFormDialog({
     }
     await doSubmit();
   };
+  const submitActualRef = useRef(submitActual);
+  submitActualRef.current = submitActual;
 
   const handleDeleteCausa = async () => {
     if (!causaId) return;
+    const r = await muts.borrarCausa(causaId);
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Causa eliminada");
     clearDraft(draftKey);
     setConfirmDeleteCausa(false);
@@ -1228,7 +1297,7 @@ export default function CausaFormDialog({
               {conPanelAnot && (
                 <div data-tour="form-anotaciones-causa" className="xl:hidden space-y-4">
                   <Separator />
-                  <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} />
+                  <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} registrarPendiente={registrarAnotPendiente} clavePendientes="ficha" />
                 </div>
               )}
 
@@ -1295,7 +1364,7 @@ export default function CausaFormDialog({
                 </button>
               </div>
               <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1">
-                <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} variante="panel" />
+                <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} variante="panel" registrarPendiente={registrarAnotPendiente} clavePendientes="panel" />
               </div>
             </aside>
           )}

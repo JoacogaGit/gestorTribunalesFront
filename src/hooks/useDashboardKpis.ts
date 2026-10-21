@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { useCausasChanged } from "@/lib/causasBus";
 import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 export interface DashboardKpis {
@@ -39,13 +40,15 @@ export function useDashboardKpis(vocaliaId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const cargadoPara = useRef<string | null>(null);
   const fetchAll = useCallback(async () => {
     if (!vocaliaId) {
       setKpis({ detenidos: 0, juiciosEsteMes: 0, ppProximas: 0, rebeldes: 0, eventos30d: 0, totalCausas: 0 });
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // Refrescos posteriores son silenciosos: las tarjetas no parpadean.
+    if (cargadoPara.current !== vocaliaId) setLoading(true);
     setError(null);
     try {
       const { inicio: mesIni, fin: mesFin } = rangoMesActual();
@@ -143,6 +146,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
         resultado = await correr([]);
       }
       setKpis(resultado);
+      cargadoPara.current = vocaliaId;
 
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar KPIs");
@@ -153,6 +157,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEventosChanged(fetchAll);
+  useCausasChanged(fetchAll);
 
   return { kpis, loading, error, refetch: fetchAll };
 }

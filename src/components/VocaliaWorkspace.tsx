@@ -25,6 +25,8 @@ import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
 import { useDetenidos } from "@/hooks/useDetenidos";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useCausasDashboard } from "@/hooks/useCausasDashboard";
+import { emitCausasChanged } from "@/lib/causasBus";
+import { emitEventosChanged } from "@/lib/eventosBus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -454,25 +456,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     const { error } = await supabase.from("causas").update({ secreta: nuevo } as never).eq("id", c.id);
     if (error) { toast.error(error.message); return; }
     toast.success(nuevo ? "Causa marcada como secreta: solo la ve el administrador" : "La causa ya no es secreta");
-    dashCausasRemote.refetch();
-    tramiteRemote.refetch();
-    recursosRemote.refetch();
-    terminadasRemote.refetch();
-    paraSentenciaRemote.refetch();
-    paraComunicarRemote.refetch();
-    delegadasRemote.refetch();
-    art196bisRemote.refetch();
-    rebeldesRemote.refetch();
-    sjpRemote.refetch();
-    detenidosRemote.refetch();
-    flagranciaRemote.refetch();
+    emitCausasChanged();
   };
 
   const remoteTableCommon = {
     onUpdateCausa: remoteNoop,
     onDeleteCausa: remoteNoop,
     onCreateCausa: remoteNoop,
-    onChangeEstado: remoteNoop,
     esAdmin,
     onToggleSecreta: handleToggleSecreta,
     listasParaAsignar: listasHook.listas
@@ -490,10 +480,23 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       toast.success("Causa agregada a la lista");
       fireCausaResync(c.id);
       listasHook.refetch();
+      // La lista puede ocultar la causa de otras pestañas: refrescar todo.
+      emitCausasChanged();
     },
   };
 
   const handleNavigate = (v: string) => { setView(v); setSidebarOpen(false); };
+
+  /** Trae de nuevo todos los datos sin recargar la página (no se pierde nada de lo abierto). */
+  const refrescarDatos = async () => {
+    emitCausasChanged();
+    emitEventosChanged();
+    await Promise.all([
+      listasHook.refetch(),
+      dashboardKpis.refetch(),
+      dashCausasRemote.refetch(),
+    ]);
+  };
 
   const sidebar = (
     <AppSidebar
@@ -562,7 +565,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <Menu className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-1.5">
-                 <RefreshButton onRefresh={() => window.location.reload()} label="Recargar página" />
+                 <RefreshButton onRefresh={refrescarDatos} label="Actualizar datos" />
                 <button
                   type="button"
                   data-tour="ayuda"
@@ -635,7 +638,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
             {["tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "art196bis", "terminadas", "flagrancia", "para_sentencia", "para_comunicar", "instruccion", "elevadas", "recurridas"].includes(view) && <ZoomControl />}
-            <RefreshButton onRefresh={() => window.location.reload()} label="Recargar página" />
+            <RefreshButton onRefresh={refrescarDatos} label="Actualizar datos" />
             <button
               type="button"
               data-tour="ayuda"
@@ -685,10 +688,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
           <motion.div
             key={view}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            initial={{ opacity: 0.6 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.06 } }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
             data-tour="main"
              className={view === "migrar" ? "hidden" : "flex flex-1 min-h-0 flex-col overflow-hidden"}
           >
@@ -1248,21 +1251,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
         open={showCreateCausa}
         onOpenChange={setShowCreateCausa}
         mode="crear"
-        onMutated={() => {
-          dashCausasRemote.refetch();
-          tramiteRemote.refetch();
-          detenidosRemote.refetch();
-          rebeldesRemote.refetch();
-          sjpRemote.refetch();
-          recursosRemote.refetch();
-          terminadasRemote.refetch();
-          paraSentenciaRemote.refetch();
-          paraComunicarRemote.refetch();
-          delegadasRemote.refetch();
-          flagranciaRemote.refetch();
-          art196bisRemote.refetch();
-          dashboardKpis.refetch();
-        }}
+        onMutated={emitCausasChanged}
       />
       <NuevaEstadisticaDialog
         open={showNuevaEstadistica}
