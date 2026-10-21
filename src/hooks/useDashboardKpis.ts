@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { useCausasChanged } from "@/lib/causasBus";
 import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 export interface DashboardKpis {
@@ -145,6 +146,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
         resultado = await correr([]);
       }
       setKpis(resultado);
+      cargadoPara.current = vocaliaId;
 
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar KPIs");
@@ -155,6 +157,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEventosChanged(fetchAll);
+  useCausasChanged(fetchAll);
 
   return { kpis, loading, error, refetch: fetchAll };
 }
