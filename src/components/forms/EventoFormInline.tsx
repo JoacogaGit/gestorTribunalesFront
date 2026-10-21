@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,11 @@ interface Props {
   onCancel: () => void;
   /** Clave estable para persistencia local en sessionStorage (ej. "evento-form:new:causa-123"). */
   draftKey?: string;
+  /**
+   * Registra una función que devuelve lo escrito (o null si no hay nada válido
+   * para guardar), para que "Guardar" de la ficha no pierda este formulario abierto.
+   */
+  onRegistrarPendiente?: (leer: (() => EventoInput | null) | null) => void;
 }
 
 // All-day events: se guardan como UTC midnight ("YYYY-MM-DDT00:00:00.000Z").
@@ -52,7 +57,7 @@ function combineFinToISO(fecha: string, horaFin: string): string | null {
   return combineARToISO(fecha, horaFin);
 }
 
-export default function EventoFormInline({ mode, initialValue, saving, onSubmit, onCancel, draftKey }: Props) {
+export default function EventoFormInline({ mode, initialValue, saving, onSubmit, onCancel, draftKey, onRegistrarPendiente }: Props) {
   // Restaurar borrador local si existe (solo en modo crear, para evitar pisar datos cargados desde DB).
   const restored = mode === "crear" && draftKey ? loadDraft<EventoInput>(draftKey) : null;
 
@@ -74,6 +79,40 @@ export default function EventoFormInline({ mode, initialValue, saving, onSubmit,
   const [horaFin, setHoraFin] = useState(initHoraFin);
   const [descripcion, setDescripcion] = useState(restored?.descripcion ?? initialValue?.descripcion ?? "");
   const [err, setErr] = useState<string | null>(null);
+
+  // Lo escrito, siempre con los valores más recientes, para que la ficha lo guarde.
+  const inicial = useRef({
+    titulo: initialValue?.titulo ?? "", tipo: initialValue?.tipo_evento ?? "",
+    fecha: initFecha, hora: initHora, horaFin: initHoraFin, descripcion: initialValue?.descripcion ?? "",
+  });
+  const leerPendiente = (): EventoInput | null => {
+    if (!titulo.trim()) return null;
+    if (hora && !fecha) return null;
+    if (horaFin && (!hora || horaFin <= hora)) return null;
+    if (mode === "editar") {
+      const i = inicial.current;
+      const igual = i.titulo === titulo && (i.tipo ?? "") === (tipo ?? "") && i.fecha === fecha
+        && i.hora === hora && i.horaFin === horaFin && (i.descripcion ?? "") === (descripcion ?? "");
+      if (igual) return null;
+    }
+    return {
+      titulo: titulo.trim(),
+      tipo_evento: tipo?.trim() || null,
+      fecha: combineToISO(fecha, hora),
+      fechaFin: combineFinToISO(fecha, horaFin),
+      descripcion: descripcion?.trim() || null,
+    };
+  };
+  const leerRef = useRef(leerPendiente);
+  leerRef.current = leerPendiente;
+  const registrarRef = useRef(onRegistrarPendiente);
+  registrarRef.current = onRegistrarPendiente;
+  useEffect(() => {
+    const registrar = registrarRef.current;
+    if (!registrar) return;
+    registrar(() => leerRef.current());
+    return () => registrar(null);
+  }, []);
 
   // Persistencia con debounce solo si hay key y estamos creando.
   useFormDraft(
