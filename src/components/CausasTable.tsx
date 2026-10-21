@@ -37,6 +37,7 @@ import { getSemaforoText } from "@/lib/eventoMapper";
 import { useListZoom, zoomTableClass } from "@/hooks/useListZoom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fireCausaResync } from "@/lib/gcalSync";
 import {
   DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent,
 } from "@dnd-kit/core";
@@ -251,7 +252,6 @@ export default function CausasTable({
   };
 
   // Cambio de estado desde el click derecho: se guarda y todas las listas se refrescan al instante.
-  const [estadoOverride, setEstadoOverride] = useState<Record<string, EstadoCausa>>({});
   const handleCambiarEstado = async (c: Causa, nuevo: EstadoCausa) => {
     const patch = patchEstadoDesdeMenu(nuevo);
     if (!patch) return;
@@ -259,10 +259,8 @@ export default function CausasTable({
     const { data: ses } = await supabase.auth.getSession();
     const uid = ses.session?.user.id ?? null;
     if (uid) patch.modificado_por = uid;
-    setEstadoOverride((m) => ({ ...m, [c.id]: nuevo }));
     const { error } = await supabase.from("causas").update(patch as never).eq("id", c.id);
     if (error) {
-      setEstadoOverride((m) => { const n = { ...m }; delete n[c.id]; return n; });
       toast.error(`No se pudo cambiar el estado: ${error.message}`);
       return;
     }
@@ -271,8 +269,7 @@ export default function CausasTable({
     emitCausasChanged();
     onMutated?.();
   };
-  // Cuando llegan los datos nuevos, el override deja de hacer falta.
-  useEffect(() => { setEstadoOverride({}); }, [causas]);
+
 
   // Sensor de drag (distance 5 permite que el click siga funcionando para ordenar).
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -1205,7 +1202,7 @@ export default function CausasTable({
                         </ContextMenuSubContent>
                       </ContextMenuSub>
                     )}
-                    {!soloLectura && (onChangeEstado || onUpdateCausa) && (
+                    {!soloLectura && (
                       <ContextMenuSub>
                         <ContextMenuSubTrigger className="text-xs">
                           Cambiar estado
@@ -1214,11 +1211,7 @@ export default function CausasTable({
                           {estadosCausa.map((e) => (
                             <ContextMenuItem
                               key={e}
-                              onSelect={() => {
-                                if (onChangeEstado) onChangeEstado(c, e);
-                                else onUpdateCausa?.({ ...c, estadoCausa: e });
-                                toast.success(`Estado: ${e}`);
-                              }}
+                              onSelect={() => { void handleCambiarEstado(c, e); }}
                               className={`text-xs ${c.estadoCausa === e ? "bg-primary/10 text-primary" : ""}`}
                             >
                               {e}
