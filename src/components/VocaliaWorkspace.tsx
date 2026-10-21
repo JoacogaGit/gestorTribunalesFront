@@ -26,6 +26,7 @@ import { useDetenidos } from "@/hooks/useDetenidos";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useCausasDashboard } from "@/hooks/useCausasDashboard";
 import { emitCausasChanged } from "@/lib/causasBus";
+import { emitEventosChanged } from "@/lib/eventosBus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -486,6 +487,17 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
   const handleNavigate = (v: string) => { setView(v); setSidebarOpen(false); };
 
+  /** Trae de nuevo todos los datos sin recargar la página (no se pierde nada de lo abierto). */
+  const refrescarDatos = async () => {
+    emitCausasChanged();
+    emitEventosChanged();
+    await Promise.all([
+      listasHook.refetch(),
+      dashboardKpis.refetch(),
+      dashCausasRemote.refetch(),
+    ]);
+  };
+
   const sidebar = (
     <AppSidebar
       active={view}
@@ -553,7 +565,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                 <Menu className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-1.5">
-                 <RefreshButton onRefresh={() => window.location.reload()} label="Recargar página" />
+                 <RefreshButton onRefresh={refrescarDatos} label="Actualizar datos" />
                 <button
                   type="button"
                   data-tour="ayuda"
@@ -626,7 +638,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
             {["tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "art196bis", "terminadas", "flagrancia", "para_sentencia", "para_comunicar", "instruccion", "elevadas", "recurridas"].includes(view) && <ZoomControl />}
-            <RefreshButton onRefresh={() => window.location.reload()} label="Recargar página" />
+            <RefreshButton onRefresh={refrescarDatos} label="Actualizar datos" />
             <button
               type="button"
               data-tour="ayuda"
