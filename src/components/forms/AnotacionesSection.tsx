@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +19,9 @@ import EventoFormInline from "./EventoFormInline";
 /** Anotación cargada antes de crear la causa; se guarda al crearla. */
 export interface AnotacionBorrador extends EventoInput { _id: string; _creado: string }
 
+/** Anotación escrita en un formulario abierto, todavía sin guardar con su propio botón. */
+export interface AnotacionPendiente { input: EventoInput; editarId: string | null }
+
 interface Props {
   /** Sin causaId la sección trabaja en modo borrador (causa nueva). */
   causaId?: string | null;
@@ -27,6 +30,9 @@ interface Props {
   onMutated?: () => void;
   /** "panel" = columna lateral junto a la ficha: una sola columna y texto más grande. */
   variante?: "form" | "panel";
+  /** Permite que la ficha guarde formularios de anotación abiertos al tocar "Guardar". */
+  registrarPendiente?: (clave: string, leer: (() => AnotacionPendiente | null) | null) => void;
+  clavePendientes?: string;
 }
 
 function fmt(d: string) {
@@ -38,7 +44,7 @@ function fmtCreado(d: string | null) {
   return new Date(d).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 }
 
-export default function AnotacionesSection({ causaId, borradores = [], onBorradoresChange, variante = "form" }: Props) {
+export default function AnotacionesSection({ causaId, borradores = [], onBorradoresChange, variante = "form", registrarPendiente, clavePendientes = "anot" }: Props) {
   const enPanel = variante === "panel";
   const local = !causaId;
   const remoto = useEventosCausa(causaId);
@@ -63,6 +69,18 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
   const catNameById = new Map(categorias.map((c) => [c.id, c.nombre_categoria]));
 
   const afterMutation = async () => { await refetch(); };
+
+  /** Registra (o quita) un formulario abierto como pendiente de guardar con la ficha. */
+  const registrar = useCallback((editarId: string | null) => {
+    if (!registrarPendiente) return undefined;
+    const clave = `${clavePendientes}:${editarId ?? "nueva"}`;
+    return (leer: (() => EventoInput | null) | null) => {
+      registrarPendiente(clave, leer ? () => {
+        const input = leer();
+        return input ? { input, editarId } : null;
+      } : null);
+    };
+  }, [registrarPendiente, clavePendientes]);
 
   const handleCreate = async (v: EventoInput) => {
     if (local) {
@@ -136,6 +154,7 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
           }}
           onCancel={() => setEditingId(null)}
           onSubmit={(v) => handleUpdate(e.id, v)}
+          onRegistrarPendiente={registrar(e.id)}
         />
       );
     }
@@ -246,6 +265,7 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
           saving={muts.saving}
           onCancel={() => setAdding(false)}
           onSubmit={handleCreate}
+          onRegistrarPendiente={registrar(null)}
         />
       )}
 
