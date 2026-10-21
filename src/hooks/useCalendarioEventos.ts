@@ -11,6 +11,7 @@ import {
 } from "@/lib/eventoMapper";
 import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { useCausasChanged } from "@/lib/causasBus";
 import { parseLocalTime, toARTimeString } from "@/lib/parseDate";
 
 const ACTIVOS = ["tramite", "recurso", "para_sentencia", "para_comunicar"] as const;
@@ -190,6 +191,7 @@ export function useCalendarioEventos(vocaliaId: string | null) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEventosChanged(fetchAll);
+  useCausasChanged(fetchAll);
 
   return { eventos, loading, error, refetch: fetchAll };
 }

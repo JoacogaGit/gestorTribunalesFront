@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { useCausasChanged } from "@/lib/causasBus";
 
 /** Mapa causaId -> timestamps (ms) de eventos futuros (hasta 1 año), para estadísticas por plazo. */
 export function useEventosPorCausa(vocaliaId: string | null) {
@@ -35,6 +36,7 @@ export function useEventosPorCausa(vocaliaId: string | null) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEventosChanged(fetchAll);
+  useCausasChanged(fetchAll);
 
   return { eventosPorCausa, refetch: fetchAll };
 }

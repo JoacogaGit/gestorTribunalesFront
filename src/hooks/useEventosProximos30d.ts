@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventosChanged } from "@/lib/eventosBus";
+import { useCausasChanged } from "@/lib/causasBus";
 
 /** IDs de causas con al menos un evento (tabla eventos) dentro de los próximos 30 días. */
 export function useEventosProximos30d(vocaliaId: string | null) {
@@ -29,6 +30,7 @@ export function useEventosProximos30d(vocaliaId: string | null) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEventosChanged(fetchAll);
+  useCausasChanged(fetchAll);
 
   return { ids, loading, refetch: fetchAll };
 }
