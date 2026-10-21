@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -28,7 +28,7 @@ import {
   labelEstadoCausa, labelSituacionLibertad, labelTipoRecurso,
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
-import AnotacionesSection, { type AnotacionBorrador } from "./AnotacionesSection";
+import AnotacionesSection, { type AnotacionBorrador, type AnotacionPendiente } from "./AnotacionesSection";
 import { useEventoMutations } from "@/hooks/useEventoMutations";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 import { resolverNombreUsuario } from "@/lib/nombresUsuarios";
@@ -618,8 +618,23 @@ export default function CausaFormDialog({
   };
 
   const doSubmit = async () => {
+    if (guardandoRef.current) return;
+    guardandoRef.current = true;
+    try {
+      await doSubmitInner();
+    } finally {
+      guardandoRef.current = false;
+    }
+  };
+
+  const doSubmitInner = async () => {
     setErrorMsg(null);
     const { causa: causaP, sujetos: sujetosP } = buildPayload();
+    // Anotaciones escritas en un formulario abierto sin tocar su propio botón:
+    // se guardan igual al tocar "Guardar" de la causa (antes se perdían).
+    const anotPendientes = Array.from(anotPendientesRef.current.values())
+      .map((leer) => leer())
+      .filter((p): p is AnotacionPendiente => !!p);
 
     if (mode === "crear") {
       const res = await muts.crearCausa(causaP, sujetosP);
@@ -633,11 +648,18 @@ export default function CausaFormDialog({
         }));
         if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
       }
-      for (const b of anotBorradores) {
-        const { _id, _creado, ...input } = b;
-        void _id; void _creado;
+      const editadosLocal = new Map(anotPendientes.filter((p) => p.editarId).map((p) => [p.editarId!, p.input]));
+      const aCrear: EventoInput[] = [
+        ...anotBorradores.map((b) => {
+          const { _id, _creado, ...input } = b;
+          void _creado;
+          return editadosLocal.has(_id) ? { ...input, ...editadosLocal.get(_id)! } : input;
+        }),
+        ...anotPendientes.filter((p) => !p.editarId).map((p) => p.input),
+      ];
+      for (const input of aCrear) {
         const r = await eventoMuts.crearEvento(res.id, input);
-        if (r.ok !== true) toast.error(`No se pudo guardar la anotación "${b.titulo}"`);
+        if (r.ok !== true) toast.error(`No se pudo guardar la anotación "${input.titulo}"`);
       }
       setAnotBorradores([]);
       toast.success("Causa creada");
@@ -689,6 +711,17 @@ export default function CausaFormDialog({
         if (psync.ok !== true) { setErrorMsg(`Error al guardar prescripciones: ${psync.error}`); return; }
       }
     }
+    for (const p of anotPendientes) {
+      const r = p.editarId
+        ? await eventoMuts.actualizarEvento(p.editarId, p.input)
+        : await eventoMuts.crearEvento(causaId, p.input);
+      if (r.ok !== true) {
+        const msg = `No se pudo guardar la anotación "${p.input.titulo}": ${r.error}`;
+        setErrorMsg(msg);
+        toast.error(msg);
+        return;
+      }
+    }
     toast.success("Cambios guardados");
     fireVocaliaResync();
     clearDraft(draftKey);
@@ -699,6 +732,17 @@ export default function CausaFormDialog({
   };
 
   const handleSubmit = async () => {
+    if (guardandoRef.current || muts.saving) return;
+    // En el teléfono, el último valor tocado (texto con teclado, selector) puede
+    // llegar un instante después del toque en "Guardar": cerramos el teclado y
+    // esperamos un cuadro para guardar siempre con los valores definitivos.
+    const activo = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+    if (activo && activo !== document.body && typeof activo.blur === "function") activo.blur();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    await submitActualRef.current();
+  };
+
+  const submitActual = async () => {
     setErrorMsg(null);
     const v = validate();
     if (v) { setErrorMsg(v); return; }
@@ -710,6 +754,8 @@ export default function CausaFormDialog({
     }
     await doSubmit();
   };
+  const submitActualRef = useRef(submitActual);
+  submitActualRef.current = submitActual;
 
   const handleDeleteCausa = async () => {
     if (!causaId) return;
@@ -1251,7 +1297,7 @@ export default function CausaFormDialog({
               {conPanelAnot && (
                 <div data-tour="form-anotaciones-causa" className="xl:hidden space-y-4">
                   <Separator />
-                  <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} />
+                  <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} registrarPendiente={registrarAnotPendiente} clavePendientes="ficha" />
                 </div>
               )}
 
@@ -1318,7 +1364,7 @@ export default function CausaFormDialog({
                 </button>
               </div>
               <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1">
-                <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} variante="panel" />
+                <AnotacionesSection causaId={causaId} borradores={anotBorradores} onBorradoresChange={setAnotBorradores} variante="panel" registrarPendiente={registrarAnotPendiente} clavePendientes="panel" />
               </div>
             </aside>
           )}
