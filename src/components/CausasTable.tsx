@@ -893,11 +893,7 @@ export default function CausasTable({
           {(() => {
             const bar = (
               <div
-            className={
-              false
-                ? "fixed inset-x-0 bottom-0 z-50 flex items-center gap-2 border-t border-border bg-background p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-elevated"
-                : isMobile ? "relative w-full basis-full" : "relative md:order-last"
-            }
+            className={isMobile ? "relative w-full basis-full" : "relative md:order-last"}
           >
             {<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />}
             
@@ -909,9 +905,7 @@ export default function CausasTable({
               onFocus={() => setSearchFocus(true)}
               onBlur={() => setSearchFocus(false)}
               placeholder="Buscar..."
-              className={false
-                ? "min-w-0 w-full flex-1 px-3 py-2 text-base bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
-                : "pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary " + (isMobile ? "w-full text-base" : "w-48")}
+              className={"pl-9 pr-3 py-1.5 text-sm bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary " + (isMobile ? "w-full text-base" : "w-48")}
             />
             {isMobile && search && (
               <button
