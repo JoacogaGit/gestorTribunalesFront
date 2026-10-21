@@ -811,17 +811,38 @@ export default function CausasTable({
     return arr;
   })();
 
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(memoriaInicial.page ?? 1);
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  // Volver a la página 1 solo cuando el usuario cambia búsqueda/filtros/orden,
+  // no cuando la lista se refresca sola (eso haría saltar la vista).
+  const primerRender = useRef(true);
   useEffect(() => {
+    if (primerRender.current) { primerRender.current = false; return; }
     setPage(1);
-  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir, causas.length]);
+  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir]);
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+    if (sorted.length > 0 && page > totalPages) setPage(totalPages);
+  }, [page, totalPages, sorted.length]);
+  useEffect(() => { guardarMemoriaVista(memoriaKey, { page }); }, [memoriaKey, page]);
   const shouldPaginate = sorted.length > PAGE_SIZE;
   const pageStart = shouldPaginate ? (page - 1) * PAGE_SIZE : 0;
   const visibleRows = shouldPaginate ? sorted.slice(pageStart, pageStart + PAGE_SIZE) : sorted;
+
+  // Posición de scroll: se guarda al desplazarse y se restaura al volver a la lista.
+  const scrollMovilRef = useRef<HTMLDivElement | null>(null);
+  const scrollTablaRef = useRef<HTMLDivElement | null>(null);
+  const scrollRestaurado = useRef(false);
+  const guardarScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    guardarMemoriaVista(memoriaKey, { scrollTop: e.currentTarget.scrollTop });
+  };
+  useLayoutEffect(() => {
+    if (scrollRestaurado.current || visibleRows.length === 0) return;
+    scrollRestaurado.current = true;
+    const top = memoriaInicial.scrollTop ?? 0;
+    if (top <= 0) return;
+    const el = isMobile ? scrollMovilRef.current : scrollTablaRef.current;
+    if (el) el.scrollTop = top;
+  }, [visibleRows.length, isMobile, memoriaInicial.scrollTop]);
 
   const handleCreate = () => {
     setShowCreate(true);
