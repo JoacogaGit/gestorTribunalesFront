@@ -29,7 +29,7 @@ import {
 } from "@/lib/causaMapper";
 import CausaConexaInput from "./CausaConexaInput";
 import AnotacionesSection, { type AnotacionBorrador, type AnotacionPendiente } from "./AnotacionesSection";
-import { useEventoMutations } from "@/hooks/useEventoMutations";
+import { useEventoMutations, type EventoInput } from "@/hooks/useEventoMutations";
 import { useFormDraft, loadDraft, clearDraft } from "@/hooks/useFormDraft";
 import { resolverNombreUsuario } from "@/lib/nombresUsuarios";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
