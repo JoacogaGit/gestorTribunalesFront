@@ -39,13 +39,15 @@ export function useDashboardKpis(vocaliaId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const cargadoPara = useRef<string | null>(null);
   const fetchAll = useCallback(async () => {
     if (!vocaliaId) {
       setKpis({ detenidos: 0, juiciosEsteMes: 0, ppProximas: 0, rebeldes: 0, eventos30d: 0, totalCausas: 0 });
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // Refrescos posteriores son silenciosos: las tarjetas no parpadean.
+    if (cargadoPara.current !== vocaliaId) setLoading(true);
     setError(null);
     try {
       const { inicio: mesIni, fin: mesFin } = rangoMesActual();
