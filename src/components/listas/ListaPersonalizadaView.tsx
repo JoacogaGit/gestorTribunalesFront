@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import OcultaDeSelector from "@/components/listas/OcultaDeSelector";
 import { toast } from "sonner";
 import CausasTable from "@/components/CausasTable";
+import { emitCausasChanged } from "@/lib/causasBus";
 import EmptyState from "@/components/EmptyState";
 import { Causa } from "@/data/mockCausas";
 import { useCausasDeLista } from "@/hooks/useCausasDeLista";
@@ -60,6 +61,8 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
       });
       toast.success("Configuración guardada");
       setShowConfig(false);
+      // Cambia qué causas se ocultan de otras pestañas: refrescarlas.
+      emitCausasChanged();
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       toast.error((e as any)?.message ?? "No se pudo guardar la configuración");
@@ -75,6 +78,7 @@ export default function ListaPersonalizadaView({ lista, vocaliaId, onListaBorrad
     try {
       await borrarLista(lista.id);
       await refetchListas();
+      emitCausasChanged();
       toast.success("Lista eliminada");
       onListaBorrada();
     } catch (e) {
