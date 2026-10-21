@@ -196,19 +196,22 @@ export default function CausasTable({
   esAdmin = false, onToggleSecreta, listasParaAsignar, onAsignarALista,
   compact = false,
 }: Props) {
+  const { vocalia: vocaliaActual } = useVocaliaActual();
+  // Memoria de la vista (búsqueda, filtros, orden, página, scroll) por espacio + lista.
+  const memoriaKey = listKey ? `${vocaliaActual?.id ?? "-"}:${listKey}` : null;
+  const memoriaInicial = useMemo(() => leerMemoriaVista(memoriaKey), [memoriaKey]);
   const [selected, setSelected] = useState<Causa | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [customTitle, setCustomTitle] = useState(title || "");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(memoriaInicial.search ?? "");
   const [searchFocus, setSearchFocus] = useState(false);
-  const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [sortBy, setSortBy] = useState<{ key: string; dir: "asc" | "desc" } | null>(memoriaInicial.sortBy ?? null);
   const [confirmDelete, setConfirmDelete] = useState<Causa | null>(null);
   const muts = useCausaMutations();
   const { zoom } = useListZoom();
   const { user } = useAuth();
-  const { vocalia: vocaliaActual } = useVocaliaActual();
-  const [categoriaFiltroId, setCategoriaFiltroId] = useState<string | null>(null);
+  const [categoriaFiltroId, setCategoriaFiltroId] = useState<string | null>(memoriaInicial.categoriaFiltroId ?? null);
   const { categorias: categoriasVocalia } = useCategoriasVocalia(vocaliaActual?.id ?? null);
   const { ids: causasIdsConCategoria } = useCausasConCategoria(categoriaFiltroId);
   const categoriaFiltroNombre = categoriasVocalia.find((c) => c.id === categoriaFiltroId)?.nombre_categoria;
@@ -217,10 +220,13 @@ export default function CausasTable({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const soloLectura = useSoloLectura();
   const { subestados } = useSubestadosTramite(vocaliaActual?.id ?? null);
-  const [subestadosFiltro, setSubestadosFiltro] = useState<string[]>([]);
+  const [subestadosFiltro, setSubestadosFiltro] = useState<string[]>(memoriaInicial.subestadosFiltro ?? []);
   const toggleSubestadoFiltro = (nombre: string) =>
     setSubestadosFiltro((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
   const [duplicarDe, setDuplicarDe] = useState<Causa | null>(null);
+  useEffect(() => {
+    guardarMemoriaVista(memoriaKey, { search, sortBy, categoriaFiltroId, subestadosFiltro });
+  }, [memoriaKey, search, sortBy, categoriaFiltroId, subestadosFiltro]);
 
 
   // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
@@ -241,8 +247,32 @@ export default function CausasTable({
       toast.error(`No se pudo guardar el color: ${error.message}`);
       return;
     }
-    onUpdateCausa?.({ ...c, colorDestacado: nuevoColor });
+    emitCausasChanged();
   };
+
+  // Cambio de estado desde el click derecho: se guarda y todas las listas se refrescan al instante.
+  const [estadoOverride, setEstadoOverride] = useState<Record<string, EstadoCausa>>({});
+  const handleCambiarEstado = async (c: Causa, nuevo: EstadoCausa) => {
+    const patch = patchEstadoDesdeMenu(nuevo);
+    if (!patch) return;
+    if (patch.estado_causa === "terminada" && !c.fechaTerminacion) patch.fecha_terminacion = hoyArgentina();
+    const { data: ses } = await supabase.auth.getSession();
+    const uid = ses.session?.user.id ?? null;
+    if (uid) patch.modificado_por = uid;
+    setEstadoOverride((m) => ({ ...m, [c.id]: nuevo }));
+    const { error } = await supabase.from("causas").update(patch as never).eq("id", c.id);
+    if (error) {
+      setEstadoOverride((m) => { const n = { ...m }; delete n[c.id]; return n; });
+      toast.error(`No se pudo cambiar el estado: ${error.message}`);
+      return;
+    }
+    toast.success(`Estado: ${nuevo}`);
+    fireCausaResync(c.id);
+    emitCausasChanged();
+    onMutated?.();
+  };
+  // Cuando llegan los datos nuevos, el override deja de hacer falta.
+  useEffect(() => { setEstadoOverride({}); }, [causas]);
 
   // Sensor de drag (distance 5 permite que el click siga funcionando para ordenar).
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
