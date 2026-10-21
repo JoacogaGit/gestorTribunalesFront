@@ -48,3 +48,9 @@
 - [x] Diez pruebas y carga pública sin errores
 - [ ] Verificar los seis cambios dentro de una oficina (bloqueado: sin sesión en Supabase externo)
 - [x] Opción de lista: "De qué otra(s) lista(s) desaparece la causa" (pestañas + otras listas personalizadas)
+
+## Tres correcciones modo judicial (2026-10-21)
+- [ ] Click derecho: cambio de estado se refleja al instante en todas las vistas
+- [ ] Móvil: estados y anotaciones se guardan de verdad al tocar Guardar
+- [ ] Detenidos/Rebeldes/SJP no excluyen causas por estado (sentencia/comunicar)
+- [ ] Fluidez: refresco automático tras cambios, sin parpadeos ni pérdida de estado
