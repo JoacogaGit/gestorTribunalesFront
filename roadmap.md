@@ -50,7 +50,8 @@
 - [x] Opción de lista: "De qué otra(s) lista(s) desaparece la causa" (pestañas + otras listas personalizadas)
 
 ## Tres correcciones modo judicial (2026-10-21)
-- [ ] Click derecho: cambio de estado se refleja al instante en todas las vistas
-- [ ] Móvil: estados y anotaciones se guardan de verdad al tocar Guardar
-- [ ] Detenidos/Rebeldes/SJP no excluyen causas por estado (sentencia/comunicar)
-- [ ] Fluidez: refresco automático tras cambios, sin parpadeos ni pérdida de estado
+- [x] Click derecho: cambio de estado se refleja al instante en todas las vistas
+- [x] Móvil: estados y anotaciones se guardan de verdad al tocar Guardar
+- [x] Detenidos/Rebeldes/SJP no excluyen causas por estado (sentencia/comunicar)
+- [x] Fluidez: refresco automático tras cambios, sin parpadeos ni pérdida de estado
+- [ ] Probar en una oficina real desde el teléfono (bloqueado: sin sesión en Supabase externo)
