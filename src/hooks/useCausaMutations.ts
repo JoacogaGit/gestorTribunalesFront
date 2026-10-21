@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useVocaliaActual } from "@/context/VocaliaContext";
+import { emitCausasChanged } from "@/lib/causasBus";
 import {
   DbEstadoCausa, DbSituacionLibertad, DbTipoRecurso, DbTipoProceso,
 } from "@/lib/causaMapper";
@@ -102,6 +103,7 @@ export function useCausaMutations() {
         }
         sujetoIds = (sjRows ?? []).map((r) => r.id as string);
       }
+      emitCausasChanged();
       return { ok: true, id: causaId, sujetoIds };
     } finally {
       setSaving(false);
@@ -116,6 +118,7 @@ export function useCausaMutations() {
     try {
       const { error } = await supabase.from("causas").update(causa).eq("id", id);
       if (error) return { ok: false, error: error.message };
+      emitCausasChanged();
       return { ok: true };
     } finally {
       setSaving(false);
@@ -136,6 +139,7 @@ export function useCausaMutations() {
       if (suErr) return { ok: false, error: `Imputados: ${suErr.message}` };
       const { error: caErr } = await supabase.from("causas").update(patch).eq("id", id);
       if (caErr) return { ok: false, error: caErr.message };
+      emitCausasChanged();
       return { ok: true };
     } finally {
       setSaving(false);
@@ -145,12 +149,14 @@ export function useCausaMutations() {
   const crearSujeto = useCallback(async (causaId: string, sujeto: SujetoInput) => {
     const { id: _o, ...rest } = sujeto;
     const { data, error } = await supabase.from("sujetos").insert({ ...rest, causa_id: causaId }).select("id").single();
+    if (!error && data) emitCausasChanged();
     return error || !data ? { ok: false as const, error: error?.message || "Error" } : { ok: true as const, id: data.id as string };
   }, []);
 
   const actualizarSujeto = useCallback(async (id: string, sujeto: SujetoInput) => {
     const { id: _o, ...rest } = sujeto;
     const { error } = await supabase.from("sujetos").update(rest).eq("id", id);
+    if (!error) emitCausasChanged();
     return error ? { ok: false as const, error: error.message } : { ok: true as const };
   }, []);
 
@@ -158,6 +164,7 @@ export function useCausaMutations() {
     const { data: userRes } = await supabase.auth.getUser();
     const patch = { borrado_en: new Date().toISOString(), borrado_por: userRes.user?.id ?? null } as never;
     const { error } = await supabase.from("sujetos").update(patch).eq("id", id);
+    if (!error) emitCausasChanged();
     return error ? { ok: false as const, error: error.message } : { ok: true as const };
   }, []);
 
