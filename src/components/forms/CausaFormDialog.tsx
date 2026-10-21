@@ -47,7 +47,7 @@ function formatoCorta(iso: string): string {
 }
 
 
-const CAUSA_FORM_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,secreta,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,created_at,borrado_en)";
+const CAUSA_FORM_SELECT = "id,updated_at,expediente_nro,numero_interno,despachante,flagrancia,secreta,caratula,estado_causa,subestado_tramite_id,subestados,delegada,art196bis,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,fuero,rol_estudio,damnificado,empleado_a_cargo,juez,fiscal,fiscalia,tribunal_interviniente,tribunal_direccion,estado_procesal,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,lugar_alojamiento,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,created_at,borrado_en)";
 
 type Mode = "crear" | "editar";
 
@@ -314,6 +314,16 @@ export default function CausaFormDialog({
   // Clave de borrador local (por modo + causa)
   const duplicando = mode === "crear" && !!duplicarDeId;
   const draftKey = `causa-form:${mode}:${causaId ?? (duplicarDeId ? `dup-${duplicarDeId}` : "new")}`;
+  /** Fecha de última modificación de la causa al abrir la ficha (para validar borradores). */
+  const baseUpdatedAtRef = useRef<string | null>(null);
+  /** Mientras se guarda no se escriben borradores (evita resucitar datos ya guardados). */
+  const guardandoRef = useRef(false);
+  /** Anotaciones abiertas (escritas pero sin tocar su botón propio): se guardan junto con la causa. */
+  const anotPendientesRef = useRef(new Map<string, () => AnotacionPendiente | null>());
+  const registrarAnotPendiente = useCallback((clave: string, leer: (() => AnotacionPendiente | null) | null) => {
+    if (leer) anotPendientesRef.current.set(clave, leer);
+    else anotPendientesRef.current.delete(clave);
+  }, []);
 
   // Cargar datos en modo editar
   useEffect(() => {
@@ -453,11 +463,18 @@ export default function CausaFormDialog({
               ? (prescByID[s.id] ?? []).map((pr) => ({ _key: `dup-${pr._key}`, fecha: pr.fecha, descripcion: pr.descripcion }))
               : (prescByID[s.id] ?? []),
           })));
-          // Si había un borrador local más reciente con cambios no guardados, restaurarlo encima.
-          const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[] }>(draftKey);
-          if (draft?.causa) {
+          // Restaurar un borrador local solo si la causa no cambió desde que se empezó:
+          // así un borrador viejo nunca pisa cambios ya guardados (p. ej. un estado
+          // cambiado desde la lista o desde otro teléfono).
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const actualizadaEn = ((data as any).updated_at as string | null) ?? null;
+          baseUpdatedAtRef.current = actualizadaEn;
+          const draft = loadDraft<{ causa: CausaInput; sujetos: SujetoState[]; base?: string | null }>(draftKey);
+          if (draft?.causa && !duplicando && draft.base !== undefined && draft.base === actualizadaEn) {
             setCausa(draft.causa);
             if (draft.sujetos) setSujetos(draft.sujetos);
+          } else if (draft) {
+            clearDraft(draftKey);
           }
         }
         setLoading(false);
@@ -467,7 +484,11 @@ export default function CausaFormDialog({
   }, [open, mode, causaId, duplicarDeId, duplicando, initialSujetoSituacion, draftKey]);
 
   // Persistencia local con debounce mientras el modal está abierto y no está cargando.
-  useFormDraft(draftKey, { causa, sujetos }, open && !loading);
+  const draftValue = useMemo(
+    () => ({ causa, sujetos, base: mode === "editar" ? baseUpdatedAtRef.current : null }),
+    [causa, sujetos, mode],
+  );
+  useFormDraft(draftKey, draftValue, open && !loading && !guardandoRef.current);
 
 
   const visibleSujetos = useMemo(() => sujetos.filter((s) => !s._markedForDelete), [sujetos]);
@@ -692,6 +713,8 @@ export default function CausaFormDialog({
 
   const handleDeleteCausa = async () => {
     if (!causaId) return;
+    const r = await muts.borrarCausa(causaId);
+    if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Causa eliminada");
     clearDraft(draftKey);
     setConfirmDeleteCausa(false);
