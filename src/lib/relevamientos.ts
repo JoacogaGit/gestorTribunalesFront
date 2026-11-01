@@ -15,6 +15,7 @@ export interface CausaRel {
   created_at: string | null;
   fecha_terminacion: string | null;
   modo_terminacion: string | null;
+  modo_inicio?: string | null;
   sujetos: {
     situacion_libertad: string;
     violencia_genero: boolean | null;
@@ -43,16 +44,16 @@ export const TIPOS: { id: TipoCausa; label: string }[] = [
   { id: "flagrancia", label: "Flagrancia" },
 ];
 
+/** Categorías oficiales de modo de terminación (fijas). Cualquier otro modo cuenta como "Otras formas". */
 export const MODOS_RESOLUCION = [
-  { id: "elevacion", label: "Elevación a juicio", match: ["elevación a juicio"] },
-  { id: "desestimacion", label: "Desestimación", match: ["desestimación"] },
-  { id: "sobre_presc", label: "Sobreseimiento por prescripción", match: ["sobreseimiento por prescripción"] },
+  { id: "elevacion", label: "Elevación a juicio", match: ["elevacion a juicio"] },
+  { id: "desestimacion", label: "Desestimación", match: ["desestimacion"] },
+  { id: "sobre_presc", label: "Sobreseimiento por prescripción", match: ["sobreseimiento por prescripcion"] },
   { id: "sobre_otras", label: "Sobreseimiento otras causales", match: ["sobreseimiento otras causales"] },
   { id: "incompetencia", label: "Incompetencia", match: ["incompetencia"] },
-  { id: "susp_juicio", label: "Susp. juicio a prueba", match: ["suspensión de juicio a prueba", "susp. juicio"] },
-  { id: "abreviado", label: "Juicio abreviado", match: ["juicio abreviado"] },
+  { id: "susp_juicio", label: "Susp. juicio a prueba", match: ["suspension de juicio a prueba", "susp. juicio a prueba", "susp. juicio"] },
   { id: "archivo", label: "Archivo", match: ["archivo"] },
-  { id: "otras", label: "Otras", match: [] as string[] },
+  { id: "otras", label: "Otras formas", match: ["otras formas"] as string[] },
 ];
 
 export const TIPOS_VG = [
@@ -118,9 +119,30 @@ const fechaIngreso = (c: CausaRel) => (c.fecha_ingreso || (c.created_at ? c.crea
 const fechaFin = (c: CausaRel) =>
   c.estado_causa === "terminada" ? (c.fecha_terminacion || "0000-01-01") : (c.fecha_terminacion || null);
 
-function modoResolucion(modo: string | null): string {
-  const m = (modo || "").trim().toLowerCase();
+const normalizar = (t: string | null | undefined) =>
+  (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Categoría oficial del modo de terminación; lo que no está en la lista oficial va a "otras" (Otras formas). */
+export function modoResolucion(modo: string | null): string {
+  const m = normalizar(modo);
   return MODOS_RESOLUCION.find((r) => r.match.includes(m))?.id ?? "otras";
+}
+
+/** Causas NN (modo de inicio "NN"): siguen en las listas pero no cuentan en ninguna estadística. */
+export function esCausaNN(c: Pick<CausaRel, "modo_inicio">): boolean {
+  return normalizar(c.modo_inicio) === "nn";
+}
+
+/** Valores guardados con categorías que ya no son oficiales (p. ej. juicio abreviado) se suman en "Otras formas". */
+export function fusionarResolucionesLegacy(v: Valores): Valores {
+  const validos = new Set(MODOS_RESOLUCION.map((m) => m.id));
+  const out: Valores = {};
+  for (const [k, n] of Object.entries(v)) {
+    const [fila, col] = k.split("|");
+    const destino = validos.has(fila) ? k : `otras|${col}`;
+    out[destino] = (out[destino] ?? 0) + n;
+  }
+  return out;
 }
 
 export function calcularAuto(causas: CausaRel[], inicio: string, fin: string): Record<BloqueId, Valores> {
@@ -130,6 +152,7 @@ export function calcularAuto(causas: CausaRel[], inicio: string, fin: string): R
   const add = (o: Valores, k: string) => { o[k] = (o[k] ?? 0) + 1; };
 
   for (const c of causas) {
+    if (esCausaNN(c)) continue;
     const fila = `${tipoDeCausa(c)}_${conDetenido(c) ? "con" : "sin"}`;
     const ing = fechaIngreso(c);
     const ff = fechaFin(c);
@@ -158,6 +181,7 @@ export function calcularAuto(causas: CausaRel[], inicio: string, fin: string): R
 export function resolucionesPorTipo(causas: CausaRel[], inicio: string, fin: string): Valores {
   const out: Valores = {};
   for (const c of causas) {
+    if (esCausaNN(c)) continue;
     if (c.estado_causa === "terminada" && c.fecha_terminacion && c.fecha_terminacion >= inicio && c.fecha_terminacion <= fin) {
       const k = `${tipoDeCausa(c)}_${modoResolucion(c.modo_terminacion)}|${conDetenido(c) ? "con" : "sin"}`;
       out[k] = (out[k] ?? 0) + 1;

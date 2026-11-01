@@ -12,7 +12,7 @@ import type { VocaliaRow } from "@/hooks/useVocalias";
 import { BLOQUES, BloqueDef, BloqueId, CausaRel, ModoBloque, Valores, calcularAuto } from "@/lib/relevamientos";
 import { hoyArgentina } from "@/lib/terminacion";
 import { exportarRelevamientoExcel, type EncabezadoRelevamiento } from "@/lib/exportRelevamientoExcel";
-import { resolucionesPorTipo } from "@/lib/relevamientos";
+import { fusionarResolucionesLegacy, resolucionesPorTipo } from "@/lib/relevamientos";
 import RelevamientoGraficos3D from "@/components/metricas/RelevamientoGraficos3D";
 
 interface Props { vocaliaId: string; tribunalId: string | null; vocaliasTribunal: VocaliaRow[] }
@@ -166,7 +166,7 @@ async function traerCausas(vocaliaIds: string[]): Promise<CausaRel[]> {
   const paso = 1000;
   for (let desde = 0; ; desde += paso) {
     const { data, error } = await supabase.from("causas")
-      .select("id,estado_causa,flagrancia,delegada,art196bis,fecha_ingreso,created_at,fecha_terminacion,modo_terminacion,sujetos(situacion_libertad,violencia_genero,tipo_violencia_genero,borrado_en)")
+      .select("id,estado_causa,flagrancia,delegada,art196bis,fecha_ingreso,created_at,fecha_terminacion,modo_terminacion,modo_inicio,sujetos(situacion_libertad,violencia_genero,tipo_violencia_genero,borrado_en)")
       .in("vocalia_id", vocaliaIds).is("borrado_en", null).order("id").range(desde, desde + paso - 1);
     if (error) throw error;
     out.push(...((data ?? []) as unknown as CausaRel[]));
@@ -200,14 +200,17 @@ function DetalleRelevamiento({ rel, vocaliaId, vocaliasTribunal, onVolver, onCam
   };
 
   const modo = (b: BloqueDef): ModoBloque => rel.config.modos?.[b.id] ?? b.modoDefault;
+  // Valores guardados con categorías de terminación que ya no son oficiales se suman en "Otras formas".
+  const leer = (b: BloqueDef, v: Valores | undefined): Valores | undefined =>
+    v && b.id === "resoluciones" ? fusionarResolucionesLegacy(v) : v;
   const baseDe = (b: BloqueDef): Valores | null => {
-    if (cerrado) return rel.datos.snapshotBase?.[b.id] ?? rel.datos.snapshot?.[b.id] ?? {};
-    if (modo(b) === "manual") return rel.datos.manual?.[b.id] ?? {};
+    if (cerrado) return leer(b, rel.datos.snapshotBase?.[b.id] ?? rel.datos.snapshot?.[b.id]) ?? {};
+    if (modo(b) === "manual") return leer(b, rel.datos.manual?.[b.id]) ?? {};
     return auto ? auto[b.id] : null;
   };
-  const ajusteDe = (b: BloqueDef): Valores => modo(b) === "auto" ? (rel.datos.ajustes?.[b.id] ?? {}) : {};
+  const ajusteDe = (b: BloqueDef): Valores => modo(b) === "auto" ? (leer(b, rel.datos.ajustes?.[b.id]) ?? {}) : {};
   const finalesDe = (b: BloqueDef): Valores | null => {
-    if (cerrado) return rel.datos.snapshot?.[b.id] ?? {};
+    if (cerrado) return leer(b, rel.datos.snapshot?.[b.id]) ?? {};
     const base = baseDe(b);
     if (!base) return null;
     if (modo(b) === "manual") return base;

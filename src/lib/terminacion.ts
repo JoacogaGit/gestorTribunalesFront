@@ -8,6 +8,9 @@ export const MODOS_TERMINACION_BASE = [
   "Juicio abreviado",
   "Archivo",
   "Otras formas",
+  "Condena",
+  "Acumulación",
+  "Pasa a NN",
 ];
 
 export const TIPOS_VIOLENCIA_GENERO = [
