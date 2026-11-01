@@ -28,7 +28,7 @@ export const labelTipoRecurso: Record<Exclude<DbTipoRecurso, null>, string> = {
 };
 
 export const labelSituacionLibertad: Record<DbSituacionLibertad, string> = {
-  libre: "Libre",
+  libre: "En libertad",
   detenido: "Detenido",
   rebelde: "Rebelde",
   probation: "Probation",

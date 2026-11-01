@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { etiquetaEstadoLibertad } from "@/data/mockCausas";
 import { cumpleFiltroEstadoSubestado, opcionesEstadoFiltro, opcionesSubestadoFiltro } from "@/lib/filtrosEstado";
 import { buscarCriterio, etiquetaValor } from "@/lib/estadisticasCustom";
+import { labelSituacionLibertad, SITUACIONES_LIBERTAD } from "@/lib/causaMapper";
 
 describe("Excarcelado se muestra como En libertad", () => {
   it("cambia solo el texto visible", () => {
@@ -11,6 +12,10 @@ describe("Excarcelado se muestra como En libertad", () => {
   it("las estadísticas guardan Excarcelado pero muestran En libertad", () => {
     const criterio = buscarCriterio(false, "situacion_libertad");
     expect(etiquetaValor(criterio, "Excarcelado")).toBe("En libertad");
+  });
+  it("el valor interno 'libre' se muestra como En libertad en ficha y menú del imputado", () => {
+    expect(labelSituacionLibertad.libre).toBe("En libertad");
+    expect(SITUACIONES_LIBERTAD).toContain("libre");
   });
 });
 
