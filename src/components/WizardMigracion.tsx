@@ -18,6 +18,7 @@ import { colorParaCausa } from "@/lib/coloresFilaOrigen";
 import { dividirPestanaEnLotes, dividirLoteEnMitades, MIN_FILAS_LOTE } from "@/lib/dividirEnLotes";
 import ProgresoLotes from "@/components/migracion/ProgresoLotes";
 import { supabase } from "@/integrations/supabase/client";
+import { labelSituacionLibertad } from "@/lib/causaMapper";
 
 type EstadoLote = "pendiente" | "procesando" | "ok" | "error";
 interface LoteTrabajo {
@@ -1143,7 +1144,7 @@ export default function WizardMigracion({ vocaliaId, vocaliaNombre, onDone, onSt
                         <p className="text-xs font-semibold text-muted-foreground">Sujetos</p>
                         {c.sujetos.map((s, si) => (
                           <div key={si} className="text-xs p-2 rounded bg-muted/40">
-                            <strong>{s.nombre_completo}</strong> — {s.situacion_libertad}
+                            <strong>{s.nombre_completo}</strong> — {labelSituacionLibertad[s.situacion_libertad] ?? s.situacion_libertad}
                             {s.delito && <span className="text-muted-foreground"> · {s.delito}</span>}
                           </div>
                         ))}
