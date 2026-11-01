@@ -2,6 +2,13 @@ import { isFechaPasadaAR, parseLocalTime } from "@/lib/parseDate";
 
 
 export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
+
+/** Texto visible de la situación de libertad (el valor interno no cambia). */
+const ETIQUETA_LIBERTAD: Record<string, string> = { Excarcelado: "En libertad" };
+export function etiquetaEstadoLibertad(estado: string | null | undefined): string {
+  if (!estado) return "";
+  return ETIQUETA_LIBERTAD[estado] ?? estado;
+}
 export type EstadoCausa = "En trámite" | "Delegada" | "En juicio" | "Terminada" | "Queja en Corte" | "Casación" | "REX" | "Apelación" | "TSJ" | "Para sacar sentencia" | "Para comunicar";
 
 export interface Audiencia {

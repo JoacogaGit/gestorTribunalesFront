@@ -5,7 +5,7 @@ import { hoyArgentina } from "@/lib/terminacion";
 import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
+import { Causa, getCaratula, getProximityColor, EstadoCausa, etiquetaEstadoLibertad } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
 import { useSoloLectura } from "@/hooks/useSoloLectura";
@@ -421,14 +421,14 @@ export default function CausasTable({
     {
       key: "libertad", label: "Libertad",
       cellClass: "max-w-[180px] align-top",
-      sortValue: (c) => (c.imputados ?? [])[0]?.estadoLibertad,
+      sortValue: (c) => etiquetaEstadoLibertad((c.imputados ?? [])[0]?.estadoLibertad),
       render: (c) => {
         const imputados = c.imputados ?? [];
         if (imputados.length === 0) return <span className="text-muted-foreground/60">—</span>;
         return (
           <div className="flex flex-wrap gap-1">
             {imputados.map((imp, i) => (
-              <span key={i} title={imp.nombre || undefined} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${libertadBadge[imp.estadoLibertad] ?? "bg-muted text-muted-foreground"}`}>{imp.estadoLibertad}</span>
+              <span key={i} title={imp.nombre || undefined} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${libertadBadge[imp.estadoLibertad] ?? "bg-muted text-muted-foreground"}`}>{etiquetaEstadoLibertad(imp.estadoLibertad)}</span>
             ))}
           </div>
         );

@@ -82,6 +82,7 @@ const criterioLibertad: CriterioEstadistica = {
   tipoValor: "opciones",
   columna: "libertad",
   opciones: () => SITUACIONES_LIBERTAD,
+  etiquetaValor: (v) => etiquetaEstadoLibertad(v),
   cumple: (c, valor) => c.imputados.some((i) => norm(i.estadoLibertad || "") === norm(valor)),
 };
 
