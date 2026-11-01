@@ -832,7 +832,7 @@ export default function CausasTable({
   useEffect(() => {
     if (primerRender.current) { primerRender.current = false; return; }
     setPage(1);
-  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir]);
+  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir, estadosFiltro, subestadosFiltro]);
   useEffect(() => {
     if (sorted.length > 0 && page > totalPages) setPage(totalPages);
   }, [page, totalPages, sorted.length]);
