@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Causa } from "@/data/mockCausas";
-import { criteriosDisponibles, opcionesCriterio } from "@/lib/estadisticasCustom";
+import { criteriosDisponibles, etiquetaValor, opcionesCriterio } from "@/lib/estadisticasCustom";
 import { COLORES_TABLERO } from "@/lib/tableroColores";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
@@ -124,7 +124,7 @@ export default function NuevaEstadisticaDialog({
                   <SelectValue placeholder={!criterio ? "Elegí primero un criterio" : opciones.length ? "Elegí un valor" : "Sin valores cargados"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {opciones.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  {opciones.map((v) => <SelectItem key={v} value={v}>{etiquetaValor(criterio, v)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

@@ -3,9 +3,10 @@ import { emitCausasChanged } from "@/lib/causasBus";
 import { patchEstadoDesdeMenu } from "@/lib/reglasListas";
 import { hoyArgentina } from "@/lib/terminacion";
 import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
+import { cumpleFiltroEstadoSubestado, opcionesEstadoFiltro, opcionesSubestadoFiltro } from "@/lib/filtrosEstado";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Causa, getCaratula, getProximityColor, EstadoCausa } from "@/data/mockCausas";
+import { Causa, getCaratula, getProximityColor, EstadoCausa, etiquetaEstadoLibertad } from "@/data/mockCausas";
 import CausaDetail from "./CausaDetail";
 import CausaFormDialog from "./forms/CausaFormDialog";
 import { useSoloLectura } from "@/hooks/useSoloLectura";
@@ -224,10 +225,22 @@ export default function CausasTable({
   const [subestadosFiltro, setSubestadosFiltro] = useState<string[]>(memoriaInicial.subestadosFiltro ?? []);
   const toggleSubestadoFiltro = (nombre: string) =>
     setSubestadosFiltro((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
+  const [estadosFiltro, setEstadosFiltro] = useState<string[]>(memoriaInicial.estadosFiltro ?? []);
+  const toggleEstadoFiltro = (nombre: string) =>
+    setEstadosFiltro((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
+  const opcionesEstado = useMemo(() => {
+    const base = opcionesEstadoFiltro(causas);
+    // Mantener visibles los estados ya elegidos aunque hoy no haya causas con ellos.
+    return [...base, ...estadosFiltro.filter((e) => !base.includes(e))];
+  }, [causas, estadosFiltro]);
+  const opcionesSubestado = useMemo(() => {
+    const base = opcionesSubestadoFiltro(subestados.map((s) => s.nombre), causas);
+    return [...base, ...subestadosFiltro.filter((e) => !base.includes(e))];
+  }, [subestados, causas, subestadosFiltro]);
   const [duplicarDe, setDuplicarDe] = useState<Causa | null>(null);
   useEffect(() => {
-    guardarMemoriaVista(memoriaKey, { search, sortBy, categoriaFiltroId, subestadosFiltro });
-  }, [memoriaKey, search, sortBy, categoriaFiltroId, subestadosFiltro]);
+    guardarMemoriaVista(memoriaKey, { search, sortBy, categoriaFiltroId, subestadosFiltro, estadosFiltro });
+  }, [memoriaKey, search, sortBy, categoriaFiltroId, subestadosFiltro, estadosFiltro]);
 
 
   // Override local de colores (optimistic). Sobreescribe c.colorDestacado.
@@ -421,14 +434,14 @@ export default function CausasTable({
     {
       key: "libertad", label: "Libertad",
       cellClass: "max-w-[180px] align-top",
-      sortValue: (c) => (c.imputados ?? [])[0]?.estadoLibertad,
+      sortValue: (c) => etiquetaEstadoLibertad((c.imputados ?? [])[0]?.estadoLibertad),
       render: (c) => {
         const imputados = c.imputados ?? [];
         if (imputados.length === 0) return <span className="text-muted-foreground/60">—</span>;
         return (
           <div className="flex flex-wrap gap-1">
             {imputados.map((imp, i) => (
-              <span key={i} title={imp.nombre || undefined} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${libertadBadge[imp.estadoLibertad] ?? "bg-muted text-muted-foreground"}`}>{imp.estadoLibertad}</span>
+              <span key={i} title={imp.nombre || undefined} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${libertadBadge[imp.estadoLibertad] ?? "bg-muted text-muted-foreground"}`}>{etiquetaEstadoLibertad(imp.estadoLibertad)}</span>
             ))}
           </div>
         );
@@ -783,7 +796,7 @@ export default function CausasTable({
 
   const filtered = causas.filter((c) => {
     if (categoriaFiltroId && !causasIdsConCategoria.has(c.id)) return false;
-    if (subestadosFiltro.length > 0 && !(c.subestados ?? []).some((s) => subestadosFiltro.includes(s))) return false;
+    if (!cumpleFiltroEstadoSubestado(c, estadosFiltro, subestadosFiltro)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -819,7 +832,7 @@ export default function CausasTable({
   useEffect(() => {
     if (primerRender.current) { primerRender.current = false; return; }
     setPage(1);
-  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir]);
+  }, [search, categoriaFiltroId, sortBy?.key, sortBy?.dir, estadosFiltro, subestadosFiltro]);
   useEffect(() => {
     if (sorted.length > 0 && page > totalPages) setPage(totalPages);
   }, [page, totalPages, sorted.length]);
@@ -930,7 +943,38 @@ export default function CausasTable({
               <X className="w-3 h-3" /> Orden: {fullColumns.find((c) => c.key === sortBy.key)?.label} ({sortBy.dir})
             </button>
           )}
-          {subestados.length > 0 && (
+          {opcionesEstado.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                data-tour="filtro-estado"
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                  estadosFiltro.length > 0 ? "bg-primary/15 text-primary hover:bg-primary/20" : "text-muted-foreground hover:text-foreground bg-muted/40"
+                }`}
+                title="Filtrar por estado de la causa"
+              >
+                <Filter className="w-3 h-3" />
+                {estadosFiltro.length > 0
+                  ? `Estado: ${estadosFiltro.length === 1 ? estadosFiltro[0] : estadosFiltro.length}`
+                  : "Estado"}
+                <ChevronDown className="w-3 h-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" collisionPadding={12} className="w-56 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain">
+                <DropdownMenuLabel className="text-xs">Estado de la causa</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setEstadosFiltro([]); }} className="text-xs flex items-center gap-2">
+                  <input type="checkbox" readOnly checked={estadosFiltro.length === 0} className="accent-primary" />
+                  Todos
+                </DropdownMenuItem>
+                {opcionesEstado.map((est) => (
+                  <DropdownMenuItem key={est} onSelect={(e) => { e.preventDefault(); toggleEstadoFiltro(est); }} className="text-xs flex items-center gap-2">
+                    <input type="checkbox" readOnly checked={estadosFiltro.includes(est)} className="accent-primary" />
+                    <span className="truncate">{est}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {opcionesSubestado.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger
                 data-tour="filtro-subestado"
@@ -952,10 +996,10 @@ export default function CausasTable({
                   <input type="checkbox" readOnly checked={subestadosFiltro.length === 0} className="accent-primary" />
                   Todos
                 </DropdownMenuItem>
-                {subestados.map((se) => (
-                  <DropdownMenuItem key={se.id} onSelect={(e) => { e.preventDefault(); toggleSubestadoFiltro(se.nombre); }} className="text-xs flex items-center gap-2">
-                    <input type="checkbox" readOnly checked={subestadosFiltro.includes(se.nombre)} className="accent-primary" />
-                    <span className="truncate">{se.nombre}</span>
+                {opcionesSubestado.map((nombre) => (
+                  <DropdownMenuItem key={nombre} onSelect={(e) => { e.preventDefault(); toggleSubestadoFiltro(nombre); }} className="text-xs flex items-center gap-2">
+                    <input type="checkbox" readOnly checked={subestadosFiltro.includes(nombre)} className="accent-primary" />
+                    <span className="truncate">{nombre}</span>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
