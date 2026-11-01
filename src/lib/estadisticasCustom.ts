@@ -1,4 +1,4 @@
-import { Causa } from "@/data/mockCausas";
+import { Causa, etiquetaEstadoLibertad } from "@/data/mockCausas";
 import { parseLocalTime } from "@/lib/parseDate";
 
 /** Contexto opcional para evaluar criterios que dependen de datos externos. */
