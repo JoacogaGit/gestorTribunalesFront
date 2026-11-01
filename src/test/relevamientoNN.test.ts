@@ -28,20 +28,21 @@ describe("modos no oficiales van a Otras formas", () => {
     expect(modoResolucion("Archivo")).toBe("archivo");
     expect(modoResolucion("Desestimación")).toBe("desestimacion");
     expect(modoResolucion("Suspensión de juicio a prueba")).toBe("susp_juicio");
+    expect(modoResolucion("Juicio abreviado")).toBe("abreviado");
   });
-  it("Condena, Acumulación, Pasa a NN y Juicio abreviado cuentan como Otras formas", () => {
-    for (const m of ["Condena", "Acumulación", "Pasa a NN", "Juicio abreviado", "Un modo propio"]) {
+  it("Condena, Acumulación y Pasa a NN cuentan como Otras formas", () => {
+    for (const m of ["Condena", "Acumulación", "Pasa a NN", "Un modo propio"]) {
       expect(modoResolucion(m)).toBe("otras");
     }
   });
-  it("valores guardados de juicio abreviado se suman en Otras formas", () => {
+  it("los relevamientos guardados conservan el juicio abreviado en su propia columna", () => {
     expect(fusionarResolucionesLegacy({ "abreviado|con": 2, "otras|con": 1, "archivo|sin": 3 }))
-      .toEqual({ "otras|con": 3, "archivo|sin": 3 });
+      .toEqual({ "abreviado|con": 2, "otras|con": 1, "archivo|sin": 3 });
   });
 });
 
 describe("opciones del desplegable de terminación", () => {
-  it("incluye Condena, Acumulación y Pasa a NN", () => {
-    expect(MODOS_TERMINACION_BASE).toEqual(expect.arrayContaining(["Condena", "Acumulación", "Pasa a NN"]));
+  it("incluye Juicio abreviado, Condena, Acumulación y Pasa a NN", () => {
+    expect(MODOS_TERMINACION_BASE).toEqual(expect.arrayContaining(["Juicio abreviado", "Condena", "Acumulación", "Pasa a NN"]));
   });
 });
