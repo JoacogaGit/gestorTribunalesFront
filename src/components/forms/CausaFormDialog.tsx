@@ -1137,7 +1137,7 @@ export default function CausaFormDialog({
                         <SelectTrigger><SelectValue placeholder="Seleccionar…" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">—</SelectItem>
-                          {['Denuncia', 'Prevención', 'OVD', 'Oficio', 'Testimonio'].map((modoInicio) => (
+                          {Array.from(new Set(['Denuncia', 'Prevención', 'OVD', 'Oficio', 'Testimonio', 'NN', ...(causa.modo_inicio ? [causa.modo_inicio] : [])])).map((modoInicio) => (
                             <SelectItem key={modoInicio} value={modoInicio}>{modoInicio}</SelectItem>
                           ))}
                         </SelectContent>
