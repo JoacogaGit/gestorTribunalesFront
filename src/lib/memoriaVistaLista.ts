@@ -8,6 +8,7 @@ export interface MemoriaVistaLista {
   sortBy: { key: string; dir: "asc" | "desc" } | null;
   categoriaFiltroId: string | null;
   subestadosFiltro: string[];
+  estadosFiltro: string[];
   page: number;
   scrollTop: number;
 }
