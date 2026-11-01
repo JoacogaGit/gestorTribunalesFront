@@ -52,6 +52,7 @@ export const MODOS_RESOLUCION = [
   { id: "sobre_otras", label: "Sobreseimiento otras causales", match: ["sobreseimiento otras causales"] },
   { id: "incompetencia", label: "Incompetencia", match: ["incompetencia"] },
   { id: "susp_juicio", label: "Susp. juicio a prueba", match: ["suspension de juicio a prueba", "susp. juicio a prueba", "susp. juicio"] },
+  { id: "abreviado", label: "Juicio abreviado", match: ["juicio abreviado", "j. abrev.", "j. abreviado"] },
   { id: "archivo", label: "Archivo", match: ["archivo"] },
   { id: "otras", label: "Otras formas", match: ["otras formas"] as string[] },
 ];
@@ -133,7 +134,7 @@ export function esCausaNN(c: Pick<CausaRel, "modo_inicio">): boolean {
   return normalizar(c.modo_inicio) === "nn";
 }
 
-/** Valores guardados con categorías que ya no son oficiales (p. ej. juicio abreviado) se suman en "Otras formas". */
+/** Valores guardados con categorías que no son oficiales se suman en "Otras formas". */
 export function fusionarResolucionesLegacy(v: Valores): Valores {
   const validos = new Set(MODOS_RESOLUCION.map((m) => m.id));
   const out: Valores = {};

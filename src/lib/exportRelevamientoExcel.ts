@@ -18,10 +18,10 @@ interface ExportarRelevamientoOptions {
 }
 
 const PLANTILLA_URL = "/planilla_estadisticas.xlsx";
-/** Columna "C/det." de cada categoría en la planilla oficial (la siguiente es "s/det."). "J. abrev." (O/P) queda en 0. */
+/** Columnas "C/det." y "s/det." de cada categoría en la planilla oficial. */
 const COL_RESOLUCION: Record<string, [string, string]> = {
   elevacion: ["C", "D"], desestimacion: ["E", "F"], sobre_presc: ["G", "H"], sobre_otras: ["I", "J"],
-  incompetencia: ["K", "L"], susp_juicio: ["M", "N"], archivo: ["Q", "R"], otras: ["S", "T"],
+  incompetencia: ["K", "L"], susp_juicio: ["M", "N"], abreviado: ["O", "P"], archivo: ["Q", "R"], otras: ["S", "T"],
 };
 const CELDA_TITULO = "B2";
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -80,8 +80,6 @@ export async function exportarRelevamientoExcel({ nombre, encabezado, finales, b
   const baseRes = bases.resoluciones ?? {};
   TIPOS.forEach((t, i) => {
     const fila = 26 + i;
-    num(`O${fila}`, 0);
-    num(`P${fila}`, 0);
     MODOS_RESOLUCION.forEach((m) => {
       ["con", "sin"].forEach((d, k) => {
         const clave = `${m.id}|${d}`;
