@@ -824,6 +824,16 @@ export default function CausasTable({
     return arr;
   })();
 
+  // Publica las filas visibles (filtros y orden aplicados) para "Excel → Solo esta lista".
+  const exportOwner = useRef(Symbol("causas-table"));
+  useEffect(() => {
+    publicarVista(exportOwner.current, { titulo: customTitle || title || "Lista", listKey, filas: sorted });
+  });
+  useEffect(() => {
+    const owner = exportOwner.current;
+    return () => retirarVista(owner);
+  }, []);
+
   const [page, setPage] = useState(memoriaInicial.page ?? 1);
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   // Volver a la página 1 solo cuando el usuario cambia búsqueda/filtros/orden,
