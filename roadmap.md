@@ -55,3 +55,7 @@
 - [x] Detenidos/Rebeldes/SJP no excluyen causas por estado (sentencia/comunicar)
 - [x] Fluidez: refresco automático tras cambios, sin parpadeos ni pérdida de estado
 - [ ] Probar en una oficina real desde el teléfono (bloqueado: sin sesión en Supabase externo)
+
+## Excel de listas (2026-11-02)
+- [x] Elegir alcance al descargar: "Solo esta lista" o "Toda la oficina"
+- [x] Detenidos: lugar y fecha de detención, prescripción, vto. de pena, vto. PP y anotaciones de la causa
