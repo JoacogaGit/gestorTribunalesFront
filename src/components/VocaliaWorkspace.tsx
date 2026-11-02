@@ -603,7 +603,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
                 <div className="mt-2 flex items-center gap-2">
                   <ResponsableFilterButton filtro={responsableFiltro} />
-                  <ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} />
+                  <ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} tituloVista={title} />
                 </div>
               )}
             </div>
@@ -633,7 +633,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             {(VISTAS_CON_FILTRO.includes(view) || view.startsWith("lista-")) && (
               <>
                 <span data-tour="filtro-responsable"><ResponsableFilterButton filtro={responsableFiltro} /></span>
-                <span data-tour="exportar-excel"><ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} /></span>
+                <span data-tour="exportar-excel"><ExportarListasButton vocaliaId={vocaliaId} nombreOficina={sidebarLabel} esEstudio={esEstudio} tituloVista={title} /></span>
               </>
             )}
 
