@@ -3,6 +3,7 @@ import { emitCausasChanged } from "@/lib/causasBus";
 import { patchEstadoDesdeMenu } from "@/lib/reglasListas";
 import { hoyArgentina } from "@/lib/terminacion";
 import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
+import { publicarVista, retirarVista } from "@/lib/vistaExportable";
 import { cumpleFiltroEstadoSubestado, opcionesEstadoFiltro, opcionesSubestadoFiltro } from "@/lib/filtrosEstado";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -827,7 +828,7 @@ export default function CausasTable({
   // Publica las filas visibles (filtros y orden aplicados) para "Excel → Solo esta lista".
   const exportOwner = useRef(Symbol("causas-table"));
   useEffect(() => {
-    publicarVista(exportOwner.current, { titulo: customTitle || title || "Lista", listKey, filas: sorted });
+    publicarVista(exportOwner.current, { titulo: customTitle || title || "", listKey, filas: sorted });
   });
   useEffect(() => {
     const owner = exportOwner.current;
