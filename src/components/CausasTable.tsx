@@ -5,6 +5,7 @@ import { hoyArgentina } from "@/lib/terminacion";
 import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
 import { publicarVista, retirarVista } from "@/lib/vistaExportable";
 import { cumpleFiltroEstadoSubestado, opcionesEstadoFiltro, opcionesSubestadoFiltro } from "@/lib/filtrosEstado";
+import { ESTADOS_CON_SUBESTADOS, TIPOS_RECURSO_MENU, estadoPrincipalDb, patchSubestado } from "@/lib/subestadosPorEstado";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Causa, getCaratula, getProximityColor, EstadoCausa, etiquetaEstadoLibertad } from "@/data/mockCausas";
@@ -285,6 +286,35 @@ export default function CausasTable({
     onMutated?.();
   };
 
+
+  /** Guarda un cambio hecho desde el click derecho y refresca todas las listas. */
+  const guardarPatchMenu = async (c: Causa, patch: Record<string, unknown>, mensaje: string) => {
+    const { data: ses } = await supabase.auth.getSession();
+    const uid = ses.session?.user.id ?? null;
+    if (uid) patch.modificado_por = uid;
+    const { error } = await supabase.from("causas").update(patch as never).eq("id", c.id);
+    if (error) { toast.error(`No se pudo guardar: ${error.message}`); return; }
+    toast.success(mensaje);
+    fireCausaResync(c.id);
+    emitCausasChanged();
+    onMutated?.();
+  };
+
+  const handleEditarSubestado = (c: Causa, estadoDestino: string, nombre: string) => {
+    const patch = patchSubestado(c, estadoDestino, nombre, subestados);
+    const etiquetaEstado = ESTADOS_CON_SUBESTADOS.find((e) => e.value === estadoDestino)?.label ?? estadoDestino;
+    const quitado = !patch.estado_causa && !patch.subestados.includes(nombre);
+    void guardarPatchMenu(c, { ...patch }, quitado ? `Subestado quitado: ${nombre}` : `${etiquetaEstado} · ${nombre}`);
+  };
+
+  const handleTipoRecurso = (c: Causa, tipo: string, etiqueta: string) => {
+    const patch: Record<string, unknown> = { estado_causa: "recurso", tipo_recurso: tipo };
+    if (estadoPrincipalDb(c.estadoCausa) !== "recurso") {
+      const deRecurso = new Set(subestados.filter((s) => s.estado_causa === "recurso").map((s) => s.nombre));
+      patch.subestados = (c.subestados ?? []).filter((s) => deRecurso.has(s));
+    }
+    void guardarPatchMenu(c, patch, `Recurso · ${etiqueta}`);
+  };
 
   // Sensor de drag (distance 5 permite que el click siga funcionando para ordenar).
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -1288,6 +1318,62 @@ export default function CausasTable({
                               {e}
                             </ContextMenuItem>
                           ))}
+                        </ContextMenuSubContent>
+                      </ContextMenuSub>
+                    )}
+                    {!soloLectura && (
+                      <ContextMenuSub>
+                        <ContextMenuSubTrigger className="text-xs">
+                          <Filter className="w-3.5 h-3.5 mr-2" /> Editar subestados
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent className="w-52">
+                          {ESTADOS_CON_SUBESTADOS.map((estado) => {
+                            const propios = subestados.filter((se) => se.estado_causa === estado.value);
+                            const esActual = estadoPrincipalDb(c.estadoCausa) === estado.value;
+                            return (
+                              <ContextMenuSub key={estado.value}>
+                                <ContextMenuSubTrigger className={`text-xs ${esActual ? "font-semibold text-primary" : ""}`}>
+                                  {estado.label}
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent className="w-56 max-h-[min(70vh,420px)] overflow-y-auto">
+                                  {estado.value === "recurso" && (
+                                    <>
+                                      <ContextMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">Tipo de recurso</ContextMenuLabel>
+                                      {TIPOS_RECURSO_MENU.map((t) => (
+                                        <ContextMenuItem
+                                          key={t.value}
+                                          onSelect={() => handleTipoRecurso(c, t.value, t.label)}
+                                          className={`text-xs ${c.estadoCausa === t.label ? "bg-primary/10 text-primary" : ""}`}
+                                        >
+                                          {c.estadoCausa === t.label ? <Check className="w-3.5 h-3.5 mr-2" /> : <span className="w-3.5 mr-2" />}
+                                          {t.label}
+                                        </ContextMenuItem>
+                                      ))}
+                                      {propios.length > 0 && <ContextMenuSeparator />}
+                                    </>
+                                  )}
+                                  {propios.map((se) => {
+                                    const marcado = esActual && (c.subestados ?? []).includes(se.nombre);
+                                    return (
+                                      <ContextMenuItem
+                                        key={se.id}
+                                        onSelect={() => handleEditarSubestado(c, estado.value, se.nombre)}
+                                        className={`text-xs ${marcado ? "bg-primary/10 text-primary" : ""}`}
+                                      >
+                                        {marcado ? <Check className="w-3.5 h-3.5 mr-2" /> : <span className="w-3.5 mr-2" />}
+                                        <span className="truncate">{se.nombre}</span>
+                                      </ContextMenuItem>
+                                    );
+                                  })}
+                                  {propios.length === 0 && estado.value !== "recurso" && (
+                                    <ContextMenuItem disabled className="text-xs text-muted-foreground">
+                                      Sin subestados. Crealos en Categorías.
+                                    </ContextMenuItem>
+                                  )}
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                            );
+                          })}
                         </ContextMenuSubContent>
                       </ContextMenuSub>
                     )}
