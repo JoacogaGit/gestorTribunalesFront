@@ -59,3 +59,14 @@
 ## Excel de listas (2026-11-02)
 - [x] Elegir alcance al descargar: "Solo esta lista" o "Toda la oficina"
 - [x] Detenidos: lugar y fecha de detención, prescripción, vto. de pena, vto. PP y anotaciones de la causa
+
+## Varias mejoras modo judicial (2026-11-03)
+- [ ] Superadmin: panel para asignar/cambiar roles de usuarios
+- [ ] Click derecho: "Editar subestados" con submenú por estado (incluye subestados de la oficina)
+- [ ] Renombrar oficina desde gestión de oficina
+- [ ] Renombrar listas del panel izquierdo (incluidas predeterminadas), guardado por oficina
+- [ ] Delegada que termina: sale de Delegadas, conserva delegada=true, cuenta como "delegada que terminó"
+- [ ] Estado procesal "Falta de mérito" + lista propia
+- [ ] Dashboard con todas las causas + botón central de filtros mostrar/ocultar
+- [ ] Situación "Paradero" (equivale a Rebeldía) + lista "Rebeldías y paraderos"
+- [ ] Eventos de la causa: más reciente arriba
