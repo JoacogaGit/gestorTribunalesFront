@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export const EVENTO_TRIBUNAL_CAMBIADO = "iustrack:tribunal-cambiado";
+export function avisarTribunalCambiado() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENTO_TRIBUNAL_CAMBIADO));
+}
+
 export type ModoTribunal = "lista_unica" | "vocalias_separadas";
 
 export interface TribunalRow {
@@ -29,6 +34,12 @@ export function useTribunal(tribunalId: string | null | undefined) {
   }, [tribunalId]);
 
   useEffect(() => { refetch(); }, [refetch]);
+  // Si se renombra la oficina en otra pantalla, todas las vistas se actualizan.
+  useEffect(() => {
+    const h = () => { refetch(); };
+    window.addEventListener(EVENTO_TRIBUNAL_CAMBIADO, h);
+    return () => window.removeEventListener(EVENTO_TRIBUNAL_CAMBIADO, h);
+  }, [refetch]);
 
   return { tribunal, loading, error, refetch };
 }
