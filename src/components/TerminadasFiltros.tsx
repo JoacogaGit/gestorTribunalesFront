@@ -11,15 +11,18 @@ export interface FiltroTerminadas {
   modos: string[];
   desde: string;
   hasta: string;
+  /** Solo las causas que fueron delegadas y terminaron. */
+  soloDelegadas?: boolean;
 }
 
-export const FILTRO_TERMINADAS_VACIO: FiltroTerminadas = { modos: [], desde: "", hasta: "" };
+export const FILTRO_TERMINADAS_VACIO: FiltroTerminadas = { modos: [], desde: "", hasta: "", soloDelegadas: false };
 
 const SIN_MODO = "(Sin modo cargado)";
 
 export function aplicarFiltroTerminadas(causas: Causa[], f: FiltroTerminadas): Causa[] {
-  if (!f.modos.length && !f.desde && !f.hasta) return causas;
+  if (!f.modos.length && !f.desde && !f.hasta && !f.soloDelegadas) return causas;
   return causas.filter((c) => {
+    if (f.soloDelegadas && !c.delegada) return false;
     if (f.modos.length) {
       const m = c.modoTerminacion || SIN_MODO;
       if (!f.modos.includes(m)) return false;
@@ -46,7 +49,8 @@ export default function TerminadasFiltros({ causas, value, onChange, total }: Pr
     const usados = causas.map((c) => c.modoTerminacion).filter(Boolean) as string[];
     return [...Array.from(new Set([...MODOS_TERMINACION_BASE, ...usados])), SIN_MODO];
   }, [causas]);
-  const activo = value.modos.length > 0 || !!value.desde || !!value.hasta;
+  const activo = value.modos.length > 0 || !!value.desde || !!value.hasta || !!value.soloDelegadas;
+  const delegadasTerminadas = causas.filter((c) => c.delegada).length;
   const toggle = (m: string) =>
     onChange({ ...value, modos: value.modos.includes(m) ? value.modos.filter((x) => x !== m) : [...value.modos, m] });
 
@@ -69,6 +73,13 @@ export default function TerminadasFiltros({ causas, value, onChange, total }: Pr
           ))}
         </PopoverContent>
       </Popover>
+      <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 h-8">
+        <Checkbox
+          checked={!!value.soloDelegadas}
+          onCheckedChange={(v) => onChange({ ...value, soloDelegadas: v === true })}
+        />
+        Delegadas que terminaron ({delegadasTerminadas})
+      </label>
       <span className="text-muted-foreground">Terminadas desde</span>
       <Input type="date" className="h-8 w-[150px] text-xs" value={value.desde} onChange={(e) => onChange({ ...value, desde: e.target.value })} />
       <span className="text-muted-foreground">hasta</span>

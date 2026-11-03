@@ -342,8 +342,8 @@ export default function CausasTable({
               <span title={`Violencia de género (Ley 26.485)${c.tiposViolenciaGenero?.length ? " · " + c.tiposViolenciaGenero.join(", ") : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
             )}
             {c.delegada && (
-              <span title="Causa delegada" className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
-                DELEG
+              <span title={c.estadoCausa === "Terminada" ? "Delegada que terminó" : "Causa delegada"} className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                {c.estadoCausa === "Terminada" ? "DELEG · TERMINÓ" : "DELEG"}
               </span>
             )}
             {c.art196bis && (
@@ -1135,7 +1135,7 @@ export default function CausasTable({
                   <span title={`Violencia de género (Ley 26.485)${c.tiposViolenciaGenero?.length ? " · " + c.tiposViolenciaGenero.join(", ") : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
                 )}
                         {c.delegada && (
-                          <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">DELEG</span>
+                          <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">{c.estadoCausa === "Terminada" ? "DELEG · TERMINÓ" : "DELEG"}</span>
                         )}
                         {c.art196bis && (
                           <span className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-violet-600 dark:text-violet-400">196BIS</span>
