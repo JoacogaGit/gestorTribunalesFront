@@ -1,0 +1,1 @@
+ALTER FUNCTION public.superadmin_cambiar_rol_global(uuid, public.rol_global_enum) SECURITY INVOKER;
