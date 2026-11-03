@@ -15,6 +15,13 @@ export interface EventoCausa {
   categoria_personalizada_id: string | null;
 }
 
+/** Anotaciones con fecha de una causa, la más reciente arriba. */
+export function ordenarAnotacionesConFecha<T extends { fecha_hora: string | null }>(eventos: T[]): T[] {
+  return eventos
+    .filter((e) => !!e.fecha_hora)
+    .sort((a, b) => parseLocalTime(b.fecha_hora!) - parseLocalTime(a.fecha_hora!));
+}
+
 export function useEventosCausa(causaId: string | null | undefined) {
   const [eventos, setEventos] = useState<EventoCausa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,9 +47,7 @@ export function useEventosCausa(causaId: string | null | undefined) {
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEventosChanged(fetchAll);
 
-  const conFecha = eventos
-    .filter((e) => !!e.fecha_hora)
-    .sort((a, b) => parseLocalTime(a.fecha_hora!) - parseLocalTime(b.fecha_hora!));
+  const conFecha = ordenarAnotacionesConFecha(eventos);
   const sinFecha = eventos
     .filter((e) => !e.fecha_hora)
     .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());

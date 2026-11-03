@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2, List, Building2, Plus } from "lucide-react";
+import { Copy, Check, UserPlus, Trash2, Shield, ShieldOff, Loader2, Mail, Link2, List, Building2, Plus, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEsSuperadmin } from "@/hooks/useEsSuperadmin";
@@ -16,7 +16,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useTribunal } from "@/hooks/useTribunal";
+import { useTribunal, avisarTribunalCambiado } from "@/hooks/useTribunal";
 import { useVocalias } from "@/hooks/useVocalias";
 import { useMiembrosTribunal, MiembroRow, RolMiembro } from "@/hooks/useMiembrosTribunal";
 import { useInvitaciones, InvitacionRow } from "@/hooks/useInvitaciones";
@@ -71,6 +71,31 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
     toast.success(nuevoModo === "lista_unica" ? "Ahora la oficina trabaja como lista única." : "Ahora la oficina trabaja con espacios separados.");
     refetchTribunal();
     refetchVocalias();
+  };
+
+  const [editandoNombre, setEditandoNombre] = useState(false);
+  const [nombreDraft, setNombreDraft] = useState("");
+  const [guardandoNombre, setGuardandoNombre] = useState(false);
+  const guardarNombreOficina = async () => {
+    if (!tribunal) return;
+    const nombre = nombreDraft.trim();
+    if (!nombre) { toast.error("El nombre no puede quedar vacío."); return; }
+    if (nombre === tribunal.nombre) { setEditandoNombre(false); return; }
+    setGuardandoNombre(true);
+    const { data, error } = await supabase
+      .from("tribunales")
+      .update({ nombre: nombre.slice(0, 120) })
+      .eq("id", tribunal.id)
+      .select("id");
+    setGuardandoNombre(false);
+    if (error || !data || data.length === 0) {
+      toast.error(error?.message ?? "Solo un administrador puede cambiar el nombre de la oficina.");
+      return;
+    }
+    toast.success(`La oficina ahora se llama "${nombre}"`);
+    setEditandoNombre(false);
+    refetchTribunal();
+    avisarTribunalCambiado();
   };
 
   const [copiedCode, setCopiedCode] = useState(false);
@@ -186,7 +211,44 @@ export default function MiembrosTribunal({ tribunalId, onAbandoned }: Props) {
             {tLoading ? (
               <Skeleton className="h-7 w-48 mt-1" />
             ) : (
-              <h3 className="text-2xl font-display font-bold text-foreground">{tribunal?.nombre ?? "—"}</h3>
+              editandoNombre ? (
+                <form
+                  className="mt-1 flex items-center gap-2"
+                  onSubmit={(e) => { e.preventDefault(); void guardarNombreOficina(); }}
+                >
+                  <Input
+                    autoFocus
+                    value={nombreDraft}
+                    onChange={(e) => setNombreDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Escape") setEditandoNombre(false); }}
+                    maxLength={120}
+                    aria-label="Nombre de la oficina"
+                    className="h-10 w-[min(70vw,360px)] text-lg font-display font-semibold"
+                  />
+                  <Button type="submit" size="sm" disabled={guardandoNombre || !nombreDraft.trim()}>
+                    {guardandoNombre ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    <span className="ml-1">Guardar</span>
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditandoNombre(false)} aria-label="Cancelar">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </form>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-display font-bold text-foreground">{tribunal?.nombre ?? "—"}</h3>
+                  {soyAdmin && tribunal && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 text-xs text-muted-foreground"
+                      onClick={() => { setNombreDraft(tribunal.nombre); setEditandoNombre(true); }}
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> Cambiar nombre
+                    </Button>
+                  )}
+                </div>
+              )
             )}
           </div>
           <div className="flex items-center gap-2">

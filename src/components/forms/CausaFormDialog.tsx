@@ -366,8 +366,8 @@ export default function CausaFormDialog({
             caratula: data.caratula ?? "",
             secreta: !!data.secreta,
 
-            // "Delegada" dejó de ser un estado: pasa a ser una marca.
-            estado_causa: (data.estado_causa === "delegada" ? "tramite" : data.estado_causa) as DbEstadoCausa,
+            // "Delegada" es un estado (manda la lista) y además una marca que se conserva al terminar.
+            estado_causa: data.estado_causa as DbEstadoCausa,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             subestado_tramite_id: (data as any).subestado_tramite_id ?? null,
             tipo_recurso: (data.tipo_recurso as DbTipoRecurso) ?? null,
@@ -595,7 +595,7 @@ export default function CausaFormDialog({
       expediente_nro: causa.expediente_nro.trim(),
       estado_causa: causa.estado_causa,
       subestado_tramite_id: causa.estado_causa === "tramite" ? (causa.subestado_tramite_id ?? null) : null,
-      subestados: causa.estado_causa === "tramite" ? (causa.subestados ?? []) : [],
+      subestados: causa.estado_causa !== "terminada" ? (causa.subestados ?? []) : [],
       delegada: !!causa.delegada,
       art196bis: !!causa.art196bis,
       tipo_recurso: causa.estado_causa === "recurso" ? causa.tipo_recurso : null,
@@ -913,12 +913,19 @@ export default function CausaFormDialog({
                       onValueChange={(v) => updateCausa({
                         estado_causa: v as DbEstadoCausa,
                         tipo_recurso: v === "recurso" ? causa.tipo_recurso : null,
+                        // Al pasar a "Delegada" queda marcada para siempre (aunque después termine).
+                        ...(v === "delegada" ? { delegada: true } : {}),
+                        // Los subestados dependen del estado principal elegido.
+                        subestados: (causa.subestados ?? []).filter((n) => {
+                          const se = subestados.find((x) => x.nombre === n);
+                          return !se || se.estado_causa === v;
+                        }),
                         ...(v === "terminada" && !causa.fecha_terminacion ? { fecha_terminacion: hoyArgentina() } : {}),
                       })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {ESTADOS_CAUSA_DB.filter((e) => e !== "delegada").map((e) => (
+                        {ESTADOS_CAUSA_DB.map((e) => (
                           <SelectItem key={e} value={e}>{labelEstadoCausa[e]}</SelectItem>
                         ))}
                       </SelectContent>
@@ -975,11 +982,11 @@ export default function CausaFormDialog({
                       </div>
                     </div>
                   )}
-                  {(mode === "crear" || causa.estado_causa === "tramite") && subestados.length > 0 && (
+                  {causa.estado_causa !== "terminada" && subestados.some((se) => se.estado_causa === causa.estado_causa) && (
                     <div className="space-y-1.5 sm:col-span-2">
-                      <Label className="text-xs">Subestados de trámite (podés elegir varios)</Label>
+                      <Label className="text-xs">Subestados de {labelEstadoCausa[causa.estado_causa].toLowerCase()} (podés elegir varios)</Label>
                       <div className="flex flex-wrap gap-1.5">
-                        {subestados.map((se) => {
+                        {subestados.filter((se) => se.estado_causa === causa.estado_causa).map((se) => {
                           const activo = (causa.subestados ?? []).includes(se.nombre);
                           return (
                             <button
@@ -1054,10 +1061,16 @@ export default function CausaFormDialog({
                     <div className="flex items-center gap-2 h-10">
                       <Switch
                         checked={!!causa.delegada}
-                        onCheckedChange={(v) => updateCausa({ delegada: v })}
+                        onCheckedChange={(v) => updateCausa(
+                          v
+                            ? { delegada: true, ...(causa.estado_causa !== "terminada" ? { estado_causa: "delegada" as DbEstadoCausa, tipo_recurso: null } : {}) }
+                            : { delegada: false, ...(causa.estado_causa === "delegada" ? { estado_causa: "tramite" as DbEstadoCausa } : {}) },
+                        )}
                       />
                       <span className="text-xs text-muted-foreground">
-                        {causa.delegada ? "Sí (sale del listado de trámite)" : "No"}
+                        {causa.delegada
+                          ? causa.estado_causa === "terminada" ? "Sí (delegada que terminó)" : "Sí (va a la lista Delegadas)"
+                          : "No"}
                       </span>
                     </div>
                   </div>
@@ -1149,6 +1162,18 @@ export default function CausaFormDialog({
                         value={causa.fiscalia_interviniente ?? ""}
                         onChange={(e) => updateCausa({ fiscalia_interviniente: e.target.value })}
                       />
+                    </div>
+                    <div className="space-y-1.5" data-tour-field="estado-procesal">
+                      <Label className="text-xs">Estado procesal</Label>
+                      <Input
+                        list="estados-procesales-judicial"
+                        value={causa.estado_procesal ?? ""}
+                        onChange={(e) => updateCausa({ estado_procesal: e.target.value })}
+                        placeholder="Ej.: Falta de mérito"
+                      />
+                      <datalist id="estados-procesales-judicial">
+                        {opcionesEstadoProcesal.map((v) => <option key={v} value={v} />)}
+                      </datalist>
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Último movimiento</Label>

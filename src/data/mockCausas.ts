@@ -1,7 +1,11 @@
 import { isFechaPasadaAR, parseLocalTime } from "@/lib/parseDate";
 
 
-export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "SJP";
+export type EstadoLibertad = "Detenido" | "Excarcelado" | "Rebelde" | "Paradero" | "SJP";
+/** "Paradero" equivale a "Rebeldía" a efectos registrales (listas, estadísticas y conteos). */
+export function esRebeldia(estado: string | null | undefined): boolean {
+  return estado === "Rebelde" || estado === "Paradero";
+}
 
 /** Texto visible de la situación de libertad (el valor interno no cambia). */
 const ETIQUETA_LIBERTAD: Record<string, string> = { Excarcelado: "En libertad" };

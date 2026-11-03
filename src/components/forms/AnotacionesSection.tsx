@@ -54,7 +54,7 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
     categoria_personalizada_id: b.categoria_personalizada_id ?? null,
   }));
   const conFecha = local
-    ? borradoresComoEventos.filter((e) => !!e.fecha_hora).sort((a, b) => (a.fecha_hora! < b.fecha_hora! ? -1 : 1))
+    ? borradoresComoEventos.filter((e) => !!e.fecha_hora).sort((a, b) => (a.fecha_hora! < b.fecha_hora! ? 1 : -1))
     : remoto.conFecha;
   const sinFecha = local ? borradoresComoEventos.filter((e) => !e.fecha_hora) : remoto.sinFecha;
   const loading = local ? false : remoto.loading;

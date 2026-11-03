@@ -6,6 +6,8 @@ export interface SubestadoTramite {
   vocalia_id: string;
   nombre: string;
   orden: number;
+  /** Estado principal al que pertenece el subestado (por defecto, trámite). */
+  estado_causa: string;
 }
 
 export function useSubestadosTramite(vocaliaId: string | null | undefined) {
@@ -19,21 +21,21 @@ export function useSubestadosTramite(vocaliaId: string | null | undefined) {
     setError(null);
     const { data, error } = await supabase
       .from("subestados_tramite")
-      .select("id, vocalia_id, nombre, orden")
+      .select("id, vocalia_id, nombre, orden, estado_causa")
       .eq("vocalia_id", vocaliaId)
       .order("orden", { ascending: true });
     if (error) { setError(error.message); setSubestados([]); }
-    else setSubestados((data ?? []) as SubestadoTramite[]);
+    else setSubestados(((data ?? []) as SubestadoTramite[]).map((s) => ({ ...s, estado_causa: s.estado_causa || "tramite" })));
     setLoading(false);
   }, [vocaliaId]);
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  const crear = useCallback(async (nombre: string) => {
+  const crear = useCallback(async (nombre: string, estadoCausa: string = "tramite") => {
     if (!vocaliaId || !nombre.trim()) return;
     const { error } = await supabase
       .from("subestados_tramite")
-      .insert({ vocalia_id: vocaliaId, nombre: nombre.trim(), orden: subestados.length });
+      .insert({ vocalia_id: vocaliaId, nombre: nombre.trim(), orden: subestados.length, estado_causa: estadoCausa } as never);
     if (error) { setError(error.message); return; }
     await refetch();
   }, [vocaliaId, subestados.length, refetch]);

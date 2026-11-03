@@ -10,13 +10,15 @@ const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,s
  * Causas con al menos un sujeto en la situación dada (Rebeldes / SJP),
  * cualquiera sea el estado de la causa salvo "terminada".
  */
-export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: string | null) {
-  return useRemoteCausas(vocaliaId ? `sujeto|${situacion}|${vocaliaId}` : null, async () => {
+export function useCausasConSujetoEn(situacion: DbSituacionLibertad | DbSituacionLibertad[], vocaliaId: string | null) {
+  const situaciones = Array.isArray(situacion) ? situacion : [situacion];
+  const clave = situaciones.slice().sort().join(",");
+  return useRemoteCausas(vocaliaId ? `sujeto|${clave}|${vocaliaId}` : null, async () => {
     // Paso 1: ids de causas (de esta vocalía) con al menos un sujeto en esa situación.
     const { data: matches, error: e1 } = await supabase
       .from("sujetos")
       .select("causa_id, causas!inner(vocalia_id,borrado_en,estado_causa)")
-      .eq("situacion_libertad", situacion)
+      .in("situacion_libertad", situaciones)
       .eq("causas.vocalia_id", vocaliaId!)
       .neq("causas.estado_causa", "terminada")
       .is("borrado_en", null)
@@ -36,15 +38,15 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad, vocaliaId: 
       .order("created_at", { ascending: false });
     if (e2) throw new Error(e2.message);
 
-    const ocultas = await fetchCausasOcultasDe(vocaliaId!, situacion === "rebelde" ? "rebeldes" : "sjp");
+    const ocultas = await fetchCausasOcultasDe(vocaliaId!, situaciones.includes("rebelde") ? "rebeldes" : "sjp");
     /* eslint-disable @typescript-eslint/no-explicit-any */
     return ((data ?? []) as any[])
-      .filter((r) => !ocultas.has(r.id) && apareceEnListaPorSituacion(r.estado_causa, r.sujetos, situacion))
+      .filter((r) => !ocultas.has(r.id) && apareceEnListaPorSituacion(r.estado_causa, r.sujetos, situaciones))
       // Conservar SOLO los sujetos en la situación pedida, para destacarlos.
       .map((r) => ({
         ...r,
         sujetos: ((r.sujetos as any[]) || []).filter(
-          (s) => s.borrado_en == null && s.situacion_libertad === situacion,
+          (s) => s.borrado_en == null && situaciones.includes(s.situacion_libertad),
         ),
       }))
       .map(dbCausaToUI);

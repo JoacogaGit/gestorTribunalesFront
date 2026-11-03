@@ -5,7 +5,7 @@ type SitLib = SujetoIA["situacion_libertad"];
 type Confianza = CausaIA["confianza"];
 
 const ESTADO_RANK: Record<EstadoCausa, number> = { tramite: 1, recurso: 2, terminada: 3 };
-const SIT_RANK: Record<SitLib, number> = { libre: 1, probation: 2, rebelde: 3, detenido: 4, condenado: 5 };
+const SIT_RANK: Record<SitLib, number> = { libre: 1, probation: 2, rebelde: 3, paradero: 3, detenido: 4, condenado: 5 };
 const CONF_RANK: Record<Confianza, number> = { verde: 1, amarillo: 2, rojo: 3 };
 
 function normExp(s: string | null | undefined): string {

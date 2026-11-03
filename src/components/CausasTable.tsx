@@ -5,6 +5,7 @@ import { hoyArgentina } from "@/lib/terminacion";
 import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
 import { publicarVista, retirarVista } from "@/lib/vistaExportable";
 import { cumpleFiltroEstadoSubestado, opcionesEstadoFiltro, opcionesSubestadoFiltro } from "@/lib/filtrosEstado";
+import { ESTADOS_CON_SUBESTADOS, TIPOS_RECURSO_MENU, estadoPrincipalDb, patchSubestado } from "@/lib/subestadosPorEstado";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Causa, getCaratula, getProximityColor, EstadoCausa, etiquetaEstadoLibertad } from "@/data/mockCausas";
@@ -97,6 +98,7 @@ const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
   Excarcelado: "bg-alert-ok/15 text-alert-ok",
   Rebelde: "bg-alert-warning/15 text-alert-warning",
+  Paradero: "bg-alert-warning/15 text-alert-warning",
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
@@ -285,6 +287,35 @@ export default function CausasTable({
   };
 
 
+  /** Guarda un cambio hecho desde el click derecho y refresca todas las listas. */
+  const guardarPatchMenu = async (c: Causa, patch: Record<string, unknown>, mensaje: string) => {
+    const { data: ses } = await supabase.auth.getSession();
+    const uid = ses.session?.user.id ?? null;
+    if (uid) patch.modificado_por = uid;
+    const { error } = await supabase.from("causas").update(patch as never).eq("id", c.id);
+    if (error) { toast.error(`No se pudo guardar: ${error.message}`); return; }
+    toast.success(mensaje);
+    fireCausaResync(c.id);
+    emitCausasChanged();
+    onMutated?.();
+  };
+
+  const handleEditarSubestado = (c: Causa, estadoDestino: string, nombre: string) => {
+    const patch = patchSubestado(c, estadoDestino, nombre, subestados);
+    const etiquetaEstado = ESTADOS_CON_SUBESTADOS.find((e) => e.value === estadoDestino)?.label ?? estadoDestino;
+    const quitado = !patch.estado_causa && !patch.subestados.includes(nombre);
+    void guardarPatchMenu(c, { ...patch }, quitado ? `Subestado quitado: ${nombre}` : `${etiquetaEstado} · ${nombre}`);
+  };
+
+  const handleTipoRecurso = (c: Causa, tipo: string, etiqueta: string) => {
+    const patch: Record<string, unknown> = { estado_causa: "recurso", tipo_recurso: tipo };
+    if (estadoPrincipalDb(c.estadoCausa) !== "recurso") {
+      const deRecurso = new Set(subestados.filter((s) => s.estado_causa === "recurso").map((s) => s.nombre));
+      patch.subestados = (c.subestados ?? []).filter((s) => deRecurso.has(s));
+    }
+    void guardarPatchMenu(c, patch, `Recurso · ${etiqueta}`);
+  };
+
   // Sensor de drag (distance 5 permite que el click siga funcionando para ordenar).
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -341,8 +372,8 @@ export default function CausasTable({
               <span title={`Violencia de género (Ley 26.485)${c.tiposViolenciaGenero?.length ? " · " + c.tiposViolenciaGenero.join(", ") : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
             )}
             {c.delegada && (
-              <span title="Causa delegada" className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
-                DELEG
+              <span title={c.estadoCausa === "Terminada" ? "Delegada que terminó" : "Causa delegada"} className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                {c.estadoCausa === "Terminada" ? "DELEG · TERMINÓ" : "DELEG"}
               </span>
             )}
             {c.art196bis && (
@@ -1134,7 +1165,7 @@ export default function CausasTable({
                   <span title={`Violencia de género (Ley 26.485)${c.tiposViolenciaGenero?.length ? " · " + c.tiposViolenciaGenero.join(", ") : ""}`} className="inline-flex items-center rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-400">VG</span>
                 )}
                         {c.delegada && (
-                          <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">DELEG</span>
+                          <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-sky-600 dark:text-sky-400">{c.estadoCausa === "Terminada" ? "DELEG · TERMINÓ" : "DELEG"}</span>
                         )}
                         {c.art196bis && (
                           <span className="inline-flex items-center rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-violet-600 dark:text-violet-400">196BIS</span>
@@ -1287,6 +1318,62 @@ export default function CausasTable({
                               {e}
                             </ContextMenuItem>
                           ))}
+                        </ContextMenuSubContent>
+                      </ContextMenuSub>
+                    )}
+                    {!soloLectura && (
+                      <ContextMenuSub>
+                        <ContextMenuSubTrigger className="text-xs">
+                          <Filter className="w-3.5 h-3.5 mr-2" /> Editar subestados
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent className="w-52">
+                          {ESTADOS_CON_SUBESTADOS.map((estado) => {
+                            const propios = subestados.filter((se) => se.estado_causa === estado.value);
+                            const esActual = estadoPrincipalDb(c.estadoCausa) === estado.value;
+                            return (
+                              <ContextMenuSub key={estado.value}>
+                                <ContextMenuSubTrigger className={`text-xs ${esActual ? "font-semibold text-primary" : ""}`}>
+                                  {estado.label}
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent className="w-56 max-h-[min(70vh,420px)] overflow-y-auto">
+                                  {estado.value === "recurso" && (
+                                    <>
+                                      <ContextMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">Tipo de recurso</ContextMenuLabel>
+                                      {TIPOS_RECURSO_MENU.map((t) => (
+                                        <ContextMenuItem
+                                          key={t.value}
+                                          onSelect={() => handleTipoRecurso(c, t.value, t.label)}
+                                          className={`text-xs ${c.estadoCausa === t.label ? "bg-primary/10 text-primary" : ""}`}
+                                        >
+                                          {c.estadoCausa === t.label ? <Check className="w-3.5 h-3.5 mr-2" /> : <span className="w-3.5 mr-2" />}
+                                          {t.label}
+                                        </ContextMenuItem>
+                                      ))}
+                                      {propios.length > 0 && <ContextMenuSeparator />}
+                                    </>
+                                  )}
+                                  {propios.map((se) => {
+                                    const marcado = esActual && (c.subestados ?? []).includes(se.nombre);
+                                    return (
+                                      <ContextMenuItem
+                                        key={se.id}
+                                        onSelect={() => handleEditarSubestado(c, estado.value, se.nombre)}
+                                        className={`text-xs ${marcado ? "bg-primary/10 text-primary" : ""}`}
+                                      >
+                                        {marcado ? <Check className="w-3.5 h-3.5 mr-2" /> : <span className="w-3.5 mr-2" />}
+                                        <span className="truncate">{se.nombre}</span>
+                                      </ContextMenuItem>
+                                    );
+                                  })}
+                                  {propios.length === 0 && estado.value !== "recurso" && (
+                                    <ContextMenuItem disabled className="text-xs text-muted-foreground">
+                                      Sin subestados. Crealos en Categorías.
+                                    </ContextMenuItem>
+                                  )}
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                            );
+                          })}
                         </ContextMenuSubContent>
                       </ContextMenuSub>
                     )}

@@ -108,7 +108,7 @@ export function useDashboardKpis(vocaliaId: string | null) {
             .is("causas.borrado_en", null), "causas.id"),
           excluirCausas(supabase.from("sujetos")
             .select("id, causas!inner(estado_causa,vocalia_id,borrado_en)", { count: "exact", head: true })
-            .eq("situacion_libertad", "rebelde")
+            .in("situacion_libertad", ["rebelde", "paradero"])
             .in("causas.estado_causa", ACTIVOS)
             .eq("causas.vocalia_id", vocaliaId)
             .is("borrado_en", null)

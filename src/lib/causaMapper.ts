@@ -2,11 +2,13 @@ import { Causa, EstadoCausa, EstadoLibertad, Imputado, OtroInterviniente } from 
 import { calcularPpEfectivo } from "@/lib/vencimientoPp";
 import { parseLocalTime } from "@/lib/parseDate";
 
-export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "probation" | "condenado";
+export type DbSituacionLibertad = "libre" | "detenido" | "rebelde" | "paradero" | "probation" | "condenado";
 export type DbEstadoCausa = "tramite" | "recurso" | "terminada" | "delegada" | "para_sentencia" | "para_comunicar";
 export type DbTipoRecurso = "casacion" | "rex" | "queja_corte" | "apelacion" | "tsj" | null;
 
-export const SITUACIONES_LIBERTAD: DbSituacionLibertad[] = ["libre", "detenido", "rebelde", "probation", "condenado"];
+export const SITUACIONES_LIBERTAD: DbSituacionLibertad[] = ["libre", "detenido", "rebelde", "paradero", "probation", "condenado"];
+/** A efectos registrales, "Paradero" equivale a "Rebeldía". */
+export const SITUACIONES_REBELDIA: DbSituacionLibertad[] = ["rebelde", "paradero"];
 export const ESTADOS_CAUSA_DB: DbEstadoCausa[] = ["tramite", "recurso", "para_sentencia", "para_comunicar", "terminada", "delegada"];
 export const TIPOS_RECURSO: Exclude<DbTipoRecurso, null>[] = ["casacion", "rex", "queja_corte", "apelacion", "tsj"];
 
@@ -31,6 +33,7 @@ export const labelSituacionLibertad: Record<DbSituacionLibertad, string> = {
   libre: "En libertad",
   detenido: "Detenido",
   rebelde: "Rebelde",
+  paradero: "Paradero",
   probation: "Probation",
   condenado: "Condenado",
 };
@@ -104,6 +107,7 @@ const libertadMap: Record<DbSituacionLibertad, EstadoLibertad> = {
   detenido: "Detenido",
   libre: "Excarcelado",
   rebelde: "Rebelde",
+  paradero: "Paradero",
   probation: "SJP",
   condenado: "Excarcelado",
 };

@@ -40,7 +40,7 @@ function normalizarPrescripcion(p: unknown): PrescripcionIA {
 function normalizarSujeto(s: unknown): SujetoIA {
   const src = (s ?? {}) as Record<string, unknown>;
   const sitRaw = toStringOrNull(src.situacion_libertad) ?? "libre";
-  const sit = (["libre", "detenido", "rebelde", "probation", "condenado"].includes(sitRaw)
+  const sit = (["libre", "detenido", "rebelde", "paradero", "probation", "condenado"].includes(sitRaw)
     ? sitRaw
     : "libre") as SujetoIA["situacion_libertad"];
   const prescRaw = Array.isArray(src.prescripciones) ? src.prescripciones : [];

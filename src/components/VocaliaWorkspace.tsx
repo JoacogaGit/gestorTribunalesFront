@@ -22,6 +22,12 @@ import { useCausasPorEstado } from "@/hooks/useCausasPorEstado";
 import { useCausasFlagrancia } from "@/hooks/useCausasFlagrancia";
 import { useCausasPorMarca } from "@/hooks/useCausasPorMarca";
 import { useCausasConSujetoEn } from "@/hooks/useCausasConSujetoEn";
+import { useCausasFaltaMerito } from "@/hooks/useCausasFaltaMerito";
+import { useNombresListas, nombreListaVisible } from "@/hooks/useNombresListas";
+import DashboardVisibilidad from "@/components/DashboardVisibilidad";
+import { claveVisibilidad, esVisibleEnDashboard, guardarOcultos, leerOcultos } from "@/lib/visibilidadDashboard";
+import { SITUACIONES_REBELDIA } from "@/lib/causaMapper";
+import { esRebeldia } from "@/data/mockCausas";
 import { useDetenidos } from "@/hooks/useDetenidos";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useCausasDashboard } from "@/hooks/useCausasDashboard";
@@ -135,7 +141,7 @@ type View = string;
 
 /** Vistas donde aplica el filtro por responsable. */
 const VISTAS_CON_FILTRO: string[] = [
-  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "terminadas", "flagrancia", "para_sentencia", "para_comunicar",
+  "dashboard", "tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "terminadas", "flagrancia", "para_sentencia", "para_comunicar", "falta_merito",
   "calendario", "fueros", "delitos", "instruccion", "elevadas", "recurridas",
 ];
 
@@ -151,10 +157,10 @@ type DashboardBaseFilter = "all" | "tramite" | "detenidos" | "rebeldes" | "sjp" 
 type DashboardFilter = DashboardBaseFilter | string;
 
 const dashFilterLabels: Record<DashboardBaseFilter, string> = {
-  all: "Todas (trámite + recurso)",
+  all: "Todas las causas",
   tramite: "En trámite",
   detenidos: "Con detenidos",
-  rebeldes: "Rebeldes",
+  rebeldes: "Rebeldías y paraderos",
   sjp: "SJP / Probation",
   recursos: "Recursos",
   instruccion: "En instrucción",
@@ -283,14 +289,16 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   // En modo lista_unica mostramos el nombre del tribunal en el sidebar en lugar de la vocalía oculta "General".
   const sidebarLabel = isListaUnica ? (tribunal?.nombre ?? vocaliaNombre) : vocaliaNombre;
 
-  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "probation"] });
+  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "paradero", "probation"] });
   const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
   const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
   const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId);
   const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId);
-  const delegadasRemote = useCausasPorMarca("delegada", vocaliaId);
+  // Delegadas: solo las causas en estado "delegada"; al terminar salen solas (la marca se conserva).
+  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId);
+  const faltaMeritoRemote = useCausasFaltaMerito(vocaliaId);
   const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId);
-  const rebeldesRemote = useCausasConSujetoEn("rebelde", vocaliaId);
+  const rebeldesRemote = useCausasConSujetoEn(SITUACIONES_REBELDIA, vocaliaId);
   const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
   const detenidosRemote = useDetenidos(vocaliaId);
   const flagranciaRemote = useCausasFlagrancia(vocaliaId);
@@ -300,7 +308,12 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const terminadasBase = responsableFiltro.filtrar(terminadasRemote.causas);
   const terminadasFiltradas = aplicarFiltroTerminadas(terminadasBase, filtroTerm);
   const dashboardKpis = useDashboardKpis(vocaliaId);
-  const dashCausasRemote = useCausasDashboard(vocaliaId, esEstudio);
+  // El dashboard muestra todas las causas de la oficina, incluidas las terminadas.
+  const dashCausasRemote = useCausasDashboard(vocaliaId, true);
+  const claveOcultosDash = claveVisibilidad(user.email, vocaliaId);
+  const [ocultosDash, setOcultosDashState] = useState<Set<string>>(() => leerOcultos(claveOcultosDash));
+  useEffect(() => { setOcultosDashState(leerOcultos(claveOcultosDash)); }, [claveOcultosDash]);
+  const setOcultosDash = (next: Set<string>) => { setOcultosDashState(next); guardarOcultos(claveOcultosDash, next); };
   const eventos30d = useEventosProximos30d(vocaliaId);
   const [mostrarKpis, setMostrarKpis] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -313,8 +326,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       return next;
     });
   };
-  /** Las causas marcadas como Delegada o 196bis/NN salen del dashboard y del listado de trámite. */
-  const sinMarcas = (list: Causa[]) => list.filter((c) => !c.delegada && !c.art196bis);
+  /** Las causas 196bis/NN salen del listado de trámite (las delegadas ya salen por su estado). */
+  const sinMarcas = (list: Causa[]) => list.filter((c) => !c.art196bis);
   const [subestadosDash, setSubestadosDash] = useState<string[]>([]);
   const toggleSubestadoDash = (nombre: string) =>
     setSubestadosDash((prev) => prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]);
@@ -331,7 +344,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
   const dashCausas = (() => {
-    let all = sinMarcas(responsableFiltro.filtrar(dashCausasRemote.causas));
+    let all = responsableFiltro.filtrar(dashCausasRemote.causas).filter((c) => esVisibleEnDashboard(c, ocultosDash));
     if (subestadosDash.length > 0) {
       all = all.filter((c) => (c.subestados ?? []).some((s) => subestadosDash.includes(s)));
     }
@@ -339,9 +352,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     switch (dashFilter) {
       case "tramite": return all.filter((c) =>
         (c.estadoCausa === "En trámite" || c.estadoCausa === "En juicio") &&
-        !c.imputados.some((i) => i.estadoLibertad === "Rebelde" || i.estadoLibertad === "SJP"));
+        !c.imputados.some((i) => esRebeldia(i.estadoLibertad) || i.estadoLibertad === "SJP"));
       case "detenidos": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Detenido"));
-      case "rebeldes": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "Rebelde"));
+      case "rebeldes": return all.filter((c) => c.imputados.some((i) => esRebeldia(i.estadoLibertad)));
       case "sjp": return all.filter((c) => c.imputados.some((i) => i.estadoLibertad === "SJP"));
       case "recursos": return all.filter((c) => ["Casación", "Queja en Corte", "REX", "Apelación", "TSJ"].includes(c.estadoCausa));
       case "instruccion": return all.filter((c) => EP_INSTRUCCION.includes((c.estadoProcesal || "").trim()));
@@ -418,7 +431,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     dashboard: `Panel General — ${vocaliaNombre}`,
     tramite: "Causas en Trámite",
     detenidos: "Detenidos",
-    rebeldes: "Rebeldes / Paraderos",
+    rebeldes: "Rebeldías y paraderos",
     sjp: "SJP en Trámite",
     recursos: "Recursos (Casación / Queja / REX / Apelación / TSJ)",
     delegadas: "Causas Delegadas",
@@ -426,6 +439,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     para_sentencia: "Para sacar sentencia",
     para_comunicar: "Para comunicar",
     flagrancia: "Causas en Flagrancia",
+    falta_merito: "Falta de mérito",
     calendario: "Calendario y Alertas",
     categorias: "Categorías personalizadas",
     miembros: "Miembros de la oficina",
@@ -445,7 +459,10 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   const tableroActivo = view.startsWith("tablero-")
     ? tablerosHook.tableros.find((t) => `tablero-${t.id}` === view) ?? null
     : null;
-  const title = defaultTitles[view]
+  const nombresListasHook = useNombresListas(tribunalId);
+  const tituloPropio = nombresListasHook.nombres[view];
+  const title = (tituloPropio ? nombreListaVisible(nombresListasHook.nombres, view, defaultTitles[view] ?? view) : null)
+    || defaultTitles[view]
     || (listaActiva ? `Lista: ${listaActiva.nombre}` : null)
     || (tableroActivo ? tableroActivo.nombre : null)
     || customBoards.find((b) => b.id === view)?.label
@@ -530,6 +547,20 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       }}
       esEstudio={esEstudio}
       userStorageKey={user.email}
+      nombresListas={nombresListasHook.nombres}
+      onRenombrarLista={esAdmin ? async (id, nombre) => {
+        const r = await nombresListasHook.renombrar(id, nombre);
+        if (r.ok !== true) { toast.error(r.error); return; }
+        toast.success(nombre ? `Lista renombrada a "${nombre}"` : "La lista volvió a su nombre original");
+      } : undefined}
+      onRenombrarListaPersonalizada={esAdmin ? async (listaId, nombre) => {
+        try {
+          await listasHook.renombrarLista(listaId, nombre);
+          toast.success(`Lista renombrada a "${nombre}"`);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "No se pudo renombrar la lista");
+        }
+      } : undefined}
     />
   );
 
@@ -637,7 +668,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               </>
             )}
 
-            {["tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "art196bis", "terminadas", "flagrancia", "para_sentencia", "para_comunicar", "instruccion", "elevadas", "recurridas"].includes(view) && <ZoomControl />}
+            {["tramite", "detenidos", "rebeldes", "sjp", "recursos", "delegadas", "art196bis", "terminadas", "flagrancia", "para_sentencia", "para_comunicar", "falta_merito", "instruccion", "elevadas", "recurridas"].includes(view) && <ZoomControl />}
             <RefreshButton onRefresh={refrescarDatos} label="Actualizar datos" />
             <button
               type="button"
@@ -733,7 +764,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                           />}
                       <KpiCardsCustom
                         estadisticas={estadisticasCustom.estadisticas}
-                        causas={responsableFiltro.filtrar(dashCausasRemote.causas)}
+                        causas={responsableFiltro.filtrar(dashCausasRemote.causas).filter((c) => esVisibleEnDashboard(c, ocultosDash))}
                         esEstudio={esEstudio}
                         ctx={estadisticaCtx}
                         activeFilter={dashFilter}
@@ -743,6 +774,9 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                     </motion.div>
                   )}
                 </AnimatePresence>
+                <div className="flex justify-center py-1">
+                  <DashboardVisibilidad ocultos={ocultosDash} onChange={setOcultosDash} />
+                </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-card/80 border border-border/60 rounded-full shadow-soft transition-colors">
@@ -1028,6 +1062,28 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                   listKey="art196bis"
                   allCausas={responsableFiltro.filtrar(art196bisRemote.causas)}
                   onMutated={art196bisRemote.refetch}
+                  onNavigateToConexa={navigateToCausa}
+                  openCausaId={pendingOpenCausaId}
+                  onOpenedCausa={consumePending}
+                  {...remoteTableCommon}
+                />
+              </RemoteListSection>
+            )}
+            {view === "falta_merito" && (
+              <RemoteListSection
+                loading={faltaMeritoRemote.loading}
+                error={faltaMeritoRemote.error}
+                isEmpty={responsableFiltro.filtrar(faltaMeritoRemote.causas).length === 0}
+                emptyTitle="Todavía no hay causas con falta de mérito"
+                emptyMessage="Elegí “Falta de mérito” como estado procesal en la ficha de una causa para verla acá."
+                onRetry={faltaMeritoRemote.refetch}
+              >
+                <CausasTable
+                  causas={responsableFiltro.filtrar(faltaMeritoRemote.causas)}
+                  title="Falta de mérito"
+                  listKey="falta_merito"
+                  allCausas={responsableFiltro.filtrar(faltaMeritoRemote.causas)}
+                  onMutated={faltaMeritoRemote.refetch}
                   onNavigateToConexa={navigateToCausa}
                   openCausaId={pendingOpenCausaId}
                   onOpenedCausa={consumePending}

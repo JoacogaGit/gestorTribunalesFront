@@ -1006,6 +1006,7 @@ export type Database = {
       subestados_tramite: {
         Row: {
           created_at: string
+          estado_causa: Database["public"]["Enums"]["estado_causa_enum"]
           id: string
           nombre: string
           orden: number
@@ -1013,6 +1014,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           id?: string
           nombre: string
           orden?: number
@@ -1020,6 +1022,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          estado_causa?: Database["public"]["Enums"]["estado_causa_enum"]
           id?: string
           nombre?: string
           orden?: number
@@ -1332,6 +1335,7 @@ export type Database = {
           id: string
           modo: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
+          nombres_listas: Json
           tipo_oficina: string
           updated_at: string | null
         }
@@ -1343,6 +1347,7 @@ export type Database = {
           id?: string
           modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre: string
+          nombres_listas?: Json
           tipo_oficina: string
           updated_at?: string | null
         }
@@ -1354,6 +1359,7 @@ export type Database = {
           id?: string
           modo?: Database["public"]["Enums"]["modo_tribunal_enum"]
           nombre?: string
+          nombres_listas?: Json
           tipo_oficina?: string
           updated_at?: string | null
         }
@@ -1511,6 +1517,13 @@ export type Database = {
         Returns: undefined
       }
       restaurar_vocalia: { Args: { p_vocalia_id: string }; Returns: undefined }
+      superadmin_cambiar_rol_global: {
+        Args: {
+          p_rol: Database["public"]["Enums"]["rol_global_enum"]
+          p_usuario_id: string
+        }
+        Returns: undefined
+      }
       unirse_por_codigo: { Args: { p_codigo: string }; Returns: string }
       verificar_password_vocalia: {
         Args: { p_password: string; p_vocalia_id: string }
@@ -1538,6 +1551,7 @@ export type Database = {
         | "rebelde"
         | "probation"
         | "condenado"
+        | "paradero"
       tipo_proceso_enum: "unipersonal" | "colegiado"
       tipo_recurso_enum:
         | "casacion"
@@ -1689,6 +1703,7 @@ export const Constants = {
         "rebelde",
         "probation",
         "condenado",
+        "paradero",
       ],
       tipo_proceso_enum: ["unipersonal", "colegiado"],
       tipo_recurso_enum: ["casacion", "rex", "queja_corte", "apelacion", "tsj"],
