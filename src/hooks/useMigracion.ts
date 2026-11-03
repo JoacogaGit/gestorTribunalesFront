@@ -51,7 +51,7 @@ export interface PrescripcionIA {
 export interface SujetoIA {
   nombre_completo: string;
   delito: string | null;
-  situacion_libertad: "libre" | "detenido" | "rebelde" | "probation" | "condenado";
+  situacion_libertad: "libre" | "detenido" | "rebelde" | "paradero" | "probation" | "condenado";
   defensor: string | null;
   lugar_alojamiento: string | null;
   fecha_detencion: string | null;

@@ -180,8 +180,11 @@ export async function exportarCausasXlsx({ vocaliaId, nombreOficina, esEstudio }
   const toRow = makeToRow(esEstudio);
 
   const tiene = (c: CausaRow, sit: string) => c.sujetos.some((s) => s.situacion_libertad === sit);
+  // "Paradero" equivale a "Rebeldía" a efectos registrales.
+  const tieneRebeldia = (c: CausaRow) => tiene(c, "rebelde") || tiene(c, "paradero");
   const ep = (c: CausaRow) => (c.estado_procesal ?? "").trim();
-  const esDelegada = (c: CausaRow) => !!c.delegada || c.estado_causa === "delegada";
+  // La lista Delegadas sigue al estado; la marca se conserva aunque la causa termine.
+  const esDelegada = (c: CausaRow) => c.estado_causa === "delegada";
 
   // Detenidos: una fila por imputado detenido, con sus datos y las anotaciones de su causa.
   const conDetenidos = causas.filter((c) => tiene(c, "detenido"));
@@ -210,10 +213,10 @@ export async function exportarCausasXlsx({ vocaliaId, nombreOficina, esEstudio }
     sheets.push(hojaDetenidos);
     sheets.push({ name: "SJP", rows: causas.filter((c) => tiene(c, "probation")).map((c) => toRow(c)) });
   } else {
-    sheets.push({ name: "Trámite", rows: causas.filter((c) => c.estado_causa === "tramite" && !esDelegada(c) && !c.art196bis && !tiene(c, "rebelde") && !tiene(c, "probation")).map((c) => toRow(c)) });
+    sheets.push({ name: "Trámite", rows: causas.filter((c) => c.estado_causa === "tramite" && !c.art196bis && !tieneRebeldia(c) && !tiene(c, "probation")).map((c) => toRow(c)) });
     sheets.push(hojaDetenidos);
     sheets.push({ name: "SJP", rows: causas.filter((c) => tiene(c, "probation")).map((c) => toRow(c)) });
-    sheets.push({ name: "Rebeldes", rows: causas.filter((c) => tiene(c, "rebelde")).map((c) => toRow(c)) });
+    sheets.push({ name: "Rebeldías y paraderos", rows: causas.filter((c) => c.estado_causa !== "terminada" && tieneRebeldia(c)).map((c) => toRow(c)) });
     sheets.push({ name: "Recursos", rows: causas.filter((c) => c.estado_causa === "recurso").map((c) => toRow(c)) });
     sheets.push({ name: "Delegadas", rows: causas.filter(esDelegada).map((c) => toRow(c)) });
     sheets.push({ name: "196bis/NN", rows: causas.filter((c) => c.art196bis).map((c) => toRow(c)) });

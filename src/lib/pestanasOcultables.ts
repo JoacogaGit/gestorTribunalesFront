@@ -35,7 +35,7 @@ export const PESTANAS_OCULTABLES: { value: PestanaOcultable; label: string }[] =
   { value: "para_sentencia", label: "Para sacar sentencia" },
   { value: "para_comunicar", label: "Para comunicar" },
   { value: "detenidos", label: "Detenidos" },
-  { value: "rebeldes", label: "Rebeldes" },
+  { value: "rebeldes", label: "Rebeldías y paraderos" },
   { value: "sjp", label: "SJP" },
   { value: "flagrancia", label: "Flagrancia" },
   { value: "art196bis", label: "196bis/NN" },

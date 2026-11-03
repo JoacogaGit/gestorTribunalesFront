@@ -19,7 +19,7 @@ interface KpiDef {
 const KPI_DEFS: KpiDef[] = [
   { key: "detenidos", label: "Detenidos", icon: ShieldAlert, color: "bg-alert-urgent/10 text-alert-urgent", glow: "kpi-glow-urgent", empty: "No hay detenidos", filter: "detenidos" },
   { key: "ppProximas", label: "PP próximas", icon: Clock, color: "bg-alert-warning/10 text-alert-warning", glow: "kpi-glow-warning", empty: "Sin PP próximas" },
-  { key: "rebeldes", label: "Rebeldes", icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", glow: "kpi-glow-warning", empty: "No hay rebeldes", filter: "rebeldes" },
+  { key: "rebeldes", label: "Rebeldías y paraderos", icon: AlertTriangle, color: "bg-alert-warning/10 text-alert-warning", glow: "kpi-glow-warning", empty: "No hay rebeldías ni paraderos", filter: "rebeldes" },
   { key: "eventos30d", label: "Eventos 30 días", icon: Scale, color: "bg-accent/10 text-accent", glow: "kpi-glow-accent", empty: "Sin eventos próximos", filter: "eventos30d" },
   { key: "totalCausas", label: "Total causas", icon: Users, color: "bg-alert-ok/10 text-alert-ok", glow: "kpi-glow-ok", empty: "No hay causas activas", filter: "all" },
 ];

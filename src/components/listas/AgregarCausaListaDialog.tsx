@@ -12,7 +12,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "tramite", label: "Trámite" },
   { key: "detenidos", label: "Detenidos" },
   { key: "sjp", label: "SJP" },
-  { key: "rebeldes", label: "Rebeldes" },
+  { key: "rebeldes", label: "Rebeldías y paraderos" },
   { key: "recursos", label: "Recursos" },
   { key: "terminadas", label: "Terminadas" },
 ];
@@ -70,12 +70,12 @@ export default function AgregarCausaListaDialog({ open, onOpenChange, vocaliaId,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let rows = (data as any[]) ?? [];
         if (tab === "detenidos" || tab === "sjp" || tab === "rebeldes") {
-          const need = tab === "detenidos" ? "detenido" : tab === "sjp" ? "probation" : "rebelde";
+          const need = tab === "detenidos" ? ["detenido"] : tab === "sjp" ? ["probation"] : ["rebelde", "paradero"];
           rows = rows.filter((r) =>
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (r.sujetos as any[] | null ?? [])
               .filter((s) => s.borrado_en == null)
-              .some((s) => s.situacion_libertad === need)
+              .some((s) => need.includes(s.situacion_libertad))
           );
         }
         setCausas(rows.map((r) => ({ id: r.id, caratula: r.caratula, expediente_nro: r.expediente_nro })));

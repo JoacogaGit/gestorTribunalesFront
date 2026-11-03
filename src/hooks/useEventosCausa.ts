@@ -42,7 +42,8 @@ export function useEventosCausa(causaId: string | null | undefined) {
 
   const conFecha = eventos
     .filter((e) => !!e.fecha_hora)
-    .sort((a, b) => parseLocalTime(a.fecha_hora!) - parseLocalTime(b.fecha_hora!));
+    // La más reciente arriba.
+    .sort((a, b) => parseLocalTime(b.fecha_hora!) - parseLocalTime(a.fecha_hora!));
   const sinFecha = eventos
     .filter((e) => !e.fecha_hora)
     .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());

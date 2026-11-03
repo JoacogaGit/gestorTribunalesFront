@@ -72,7 +72,7 @@ const ESTADOS_CAUSA: Record<string, string[]> = {
   "Delegada": ["Delegada"],
 };
 
-const SITUACIONES_LIBERTAD = ["Detenido", "Excarcelado", "Rebelde", "SJP"];
+const SITUACIONES_LIBERTAD = ["Detenido", "Excarcelado", "Rebelde", "Paradero", "SJP"];
 
 const ROLES_ESTUDIO = ["Defensa", "Querella", "Denunciante"];
 
@@ -83,7 +83,12 @@ const criterioLibertad: CriterioEstadistica = {
   columna: "libertad",
   opciones: () => SITUACIONES_LIBERTAD,
   etiquetaValor: (v) => etiquetaEstadoLibertad(v),
-  cumple: (c, valor) => c.imputados.some((i) => norm(i.estadoLibertad || "") === norm(valor)),
+  cumple: (c, valor) => c.imputados.some((i) => {
+    const sit = norm(i.estadoLibertad || "");
+    // "Rebelde" cuenta también a los paraderos (equivalen a efectos registrales).
+    if (norm(valor) === norm("Rebelde")) return sit === norm("Rebelde") || sit === norm("Paradero");
+    return sit === norm(valor);
+  }),
 };
 
 const criterioVencimientos: CriterioEstadistica = {
