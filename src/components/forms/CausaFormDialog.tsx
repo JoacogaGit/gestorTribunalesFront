@@ -1063,7 +1063,7 @@ export default function CausaFormDialog({
                         checked={!!causa.delegada}
                         onCheckedChange={(v) => updateCausa(
                           v
-                            ? { delegada: true, ...(causa.estado_causa === "tramite" ? { estado_causa: "delegada" as DbEstadoCausa, tipo_recurso: null } : {}) }
+                            ? { delegada: true, ...(causa.estado_causa !== "terminada" ? { estado_causa: "delegada" as DbEstadoCausa, tipo_recurso: null } : {}) }
                             : { delegada: false, ...(causa.estado_causa === "delegada" ? { estado_causa: "tramite" as DbEstadoCausa } : {}) },
                         )}
                       />
