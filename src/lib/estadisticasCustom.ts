@@ -72,6 +72,8 @@ const ESTADOS_CAUSA: Record<string, string[]> = {
   "Delegada": ["Delegada"],
 };
 
+const DELEGADA_QUE_TERMINO = "Delegada que terminó";
+
 const SITUACIONES_LIBERTAD = ["Detenido", "Excarcelado", "Rebelde", "Paradero", "SJP"];
 
 const ROLES_ESTUDIO = ["Defensa", "Querella", "Denunciante"];
@@ -129,8 +131,10 @@ export const CRITERIOS_JUDICIAL: CriterioEstadistica[] = [
     label: "Por estado de causa",
     tipoValor: "opciones",
     columna: "estado",
-    opciones: () => Object.keys(ESTADOS_CAUSA),
+    opciones: () => [...Object.keys(ESTADOS_CAUSA), DELEGADA_QUE_TERMINO],
     cumple: (c, valor) => {
+      // Causa que fue delegada y terminó: conserva la marca delegada.
+      if (valor === DELEGADA_QUE_TERMINO) return c.estadoCausa === "Terminada" && !!c.delegada;
       const lista = ESTADOS_CAUSA[valor] ?? [valor];
       return lista.some((e) => norm(e) === norm(c.estadoCausa || ""));
     },
