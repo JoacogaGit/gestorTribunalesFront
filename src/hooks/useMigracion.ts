@@ -249,7 +249,8 @@ export function useMigracion() {
           despachante: (c.despachante ?? null)?.toString().slice(0, 50) || null,
 
 
-          estado_causa: c.estado_causa,
+          // Una causa delegada en trámite va al estado "delegada" (así aparece en la lista Delegadas).
+          estado_causa: c.delegada && c.estado_causa === "tramite" ? "delegada" : c.estado_causa,
           tipo_recurso: c.tipo_recurso,
           tipo_proceso: c.tipo_proceso ?? null,
           fecha_ingreso: normalizarDateDb(c.fecha_ingreso),
