@@ -8,12 +8,15 @@ import type { ModoTribunal } from "@/hooks/useTribunal";
 import type { ListaPersonalizada } from "@/hooks/useListasPersonalizadas";
 import type { Tablero } from "@/hooks/useTableros";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { nombreListaVisible } from "@/hooks/useNombresListas";
+import { FileQuestion, RotateCcw } from "lucide-react";
 
 const navBeforeTerminadas = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "tramite", label: "Causas en Trámite", icon: Scale },
   { id: "detenidos", label: "Detenidos", icon: Shield },
-  { id: "rebeldes", label: "Rebeldes", icon: AlertTriangle },
+  { id: "rebeldes", label: "Rebeldías y paraderos", icon: AlertTriangle },
   { id: "sjp", label: "SJP en Trámite", icon: Pause },
   { id: "recursos", label: "Recursos", icon: Users },
   { id: "para_sentencia", label: "Para sacar sentencia", icon: Gavel },
@@ -21,6 +24,7 @@ const navBeforeTerminadas = [
   { id: "delegadas", label: "Delegadas", icon: FolderOpen },
   { id: "art196bis", label: "196bis / NN", icon: Lock },
   { id: "flagrancia", label: "Flagrancia", icon: Zap },
+  { id: "falta_merito", label: "Falta de mérito", icon: FileQuestion },
 ];
 const terminadasItem = { id: "terminadas", label: "Causas Terminadas", icon: Archive };
 const navAfterLists = [
@@ -74,6 +78,11 @@ interface Props {
   onDeleteTablero?: (id: string) => void;
   esEstudio?: boolean;
   userStorageKey: string;
+  /** Nombres propios de las listas predeterminadas (guardados por oficina). */
+  nombresListas?: Record<string, string>;
+  /** Si está, se puede renombrar con click derecho (nombre vacío = volver al original). */
+  onRenombrarLista?: (id: string, nombre: string | null) => void;
+  onRenombrarListaPersonalizada?: (listaId: string, nombre: string) => void;
 }
 
 
@@ -84,8 +93,67 @@ export default function AppSidebar({
   listasPersonalizadas = [], onCreateLista,
   tableros = [], onCreateTablero, onDeleteTablero, esEstudio = false,
   userStorageKey,
-
+  nombresListas = {}, onRenombrarLista, onRenombrarListaPersonalizada,
 }: Props) {
+  const [renombrandoId, setRenombrandoId] = useState<string | null>(null);
+  const [renombreValor, setRenombreValor] = useState("");
+  const etiqueta = (item: { id: string; label: string }) => nombreListaVisible(nombresListas, item.id, item.label);
+  const listasPredeterminadas = useMemo(
+    () => new Set([...(esEstudio ? navEstudio : navBeforeTerminadas).map((i) => i.id).filter((id) => id !== "dashboard"), terminadasItem.id]),
+    [esEstudio],
+  );
+  const empezarRenombre = (id: string, actual: string) => { setRenombrandoId(id); setRenombreValor(actual); };
+  const confirmarRenombre = () => {
+    const id = renombrandoId;
+    const valor = renombreValor.trim();
+    setRenombrandoId(null);
+    if (!id || !valor) return;
+    if (id.startsWith("lista-")) onRenombrarListaPersonalizada?.(id.slice(6), valor);
+    else onRenombrarLista?.(id, valor);
+  };
+  const inputRenombre = (
+    <div className="flex items-center gap-1 px-2 py-1">
+      <input
+        value={renombreValor}
+        onChange={(e) => setRenombreValor(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") confirmarRenombre();
+          if (e.key === "Escape") setRenombrandoId(null);
+        }}
+        onBlur={confirmarRenombre}
+        maxLength={60}
+        aria-label="Nuevo nombre de la lista"
+        className="flex-1 min-w-0 bg-sidebar-accent/50 text-sidebar-foreground text-sm px-2 py-1.5 rounded-md outline-none border border-sidebar-border"
+        autoFocus
+      />
+      <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={confirmarRenombre} className="p-1 text-alert-ok hover:text-alert-ok/80" aria-label="Guardar nombre">
+        <Check className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+  /** Menú de click derecho para renombrar una lista del panel. */
+  const conMenuRenombre = (id: string, actual: string, original: string | null, contenido: React.ReactElement) => {
+    const puede = id.startsWith("lista-") ? !!onRenombrarListaPersonalizada : !!onRenombrarLista;
+    if (!puede || collapsed) return contenido;
+    return (
+      <ContextMenu key={id}>
+        <ContextMenuTrigger asChild>{contenido}</ContextMenuTrigger>
+        <ContextMenuContent className="w-56">
+          <ContextMenuLabel className="text-xs truncate">{actual}</ContextMenuLabel>
+          <ContextMenuSeparator />
+          <ContextMenuItem className="text-xs" onSelect={() => empezarRenombre(id, actual)}>
+            <Pencil className="w-3.5 h-3.5 mr-2" /> Cambiar nombre
+          </ContextMenuItem>
+          {original && actual !== original && (
+            <ContextMenuItem className="text-xs" onSelect={() => onRenombrarLista?.(id, null)}>
+              <RotateCcw className="w-3.5 h-3.5 mr-2" /> Volver a "{original}"
+            </ContextMenuItem>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  };
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -113,8 +181,8 @@ export default function AppSidebar({
       ...base,
       terminadasItem,
       ...listasPersonalizadas.map((lista) => ({ id: `lista-${lista.id}`, label: lista.nombre, icon: FolderOpen })),
-    ];
-  }, [esEstudio, listasPersonalizadas]);
+    ].map((item) => ({ ...item, label: nombreListaVisible(nombresListas, item.id, item.label) }));
+  }, [esEstudio, listasPersonalizadas, nombresListas]);
 
   const isVisible = (id: string) => !hiddenItems.has(id);
   const toggleVisibility = (id: string) => {
@@ -145,8 +213,11 @@ export default function AppSidebar({
     { id: "papelera", label: "Papelera", icon: Trash2 },
   ];
 
-  const renderNavButton = (item: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }) => {
+  const renderNavButton = (rawItem: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }) => {
+    const item = { ...rawItem, label: etiqueta(rawItem) };
     const isActive = active === item.id;
+    const renombrable = listasPredeterminadas.has(item.id);
+    if (renombrable && renombrandoId === item.id && !collapsed) return <div key={item.id}>{inputRenombre}</div>;
     const esListaPredeterminada = (esEstudio ? navEstudio : navBeforeTerminadas).some((navItem) => navItem.id === item.id)
       || item.id === terminadasItem.id;
     const btn = (
@@ -167,7 +238,7 @@ export default function AppSidebar({
         {!collapsed && <span className="truncate">{item.label}</span>}
       </button>
     );
-    if (!collapsed) return btn;
+    if (!collapsed) return renombrable ? conMenuRenombre(item.id, item.label, rawItem.label, btn) : btn;
     return (
       <Tooltip key={item.id} delayDuration={150}>
         <TooltipTrigger asChild>{btn}</TooltipTrigger>
@@ -305,6 +376,7 @@ export default function AppSidebar({
             {listasPersonalizadas.filter((lista) => isVisible(`lista-${lista.id}`)).map((lista) => {
               const id = `lista-${lista.id}`;
               const isActive = active === id;
+              if (renombrandoId === id && !collapsed) return <div key={id}>{inputRenombre}</div>;
               const btn = (
                 <button
                   key={id}
@@ -326,7 +398,7 @@ export default function AppSidebar({
                   )}
                 </button>
               );
-              if (!collapsed) return btn;
+              if (!collapsed) return conMenuRenombre(id, lista.nombre, null, btn);
               return (
                 <Tooltip key={id} delayDuration={150}>
                   <TooltipTrigger asChild>{btn}</TooltipTrigger>
