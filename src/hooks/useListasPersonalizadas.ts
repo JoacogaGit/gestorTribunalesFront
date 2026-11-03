@@ -116,11 +116,24 @@ export function useListasPersonalizadas(vocaliaId: string | null) {
     await fetchData();
   }, [fetchData]);
 
+  const renombrarLista = useCallback(async (listaId: string, nombre: string) => {
+    const limpio = nombre.trim().slice(0, 60);
+    if (!limpio) return;
+    const { data, error } = await supabase
+      .from("listas_personalizadas")
+      .update({ nombre: limpio })
+      .eq("id", listaId)
+      .select("id");
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error("No tenés permiso para renombrar esta lista");
+    await fetchData();
+  }, [fetchData]);
+
   const borrarLista = useCallback(async (listaId: string) => {
     const { error } = await supabase.from("listas_personalizadas").delete().eq("id", listaId);
     if (error) throw error;
     await fetchData();
   }, [fetchData]);
 
-  return { listas, loading, error, refetch: fetchData, crearLista, borrarLista, actualizarOcultaDe, actualizarOpciones };
+  return { listas, loading, error, refetch: fetchData, crearLista, borrarLista, renombrarLista, actualizarOcultaDe, actualizarOpciones };
 }
