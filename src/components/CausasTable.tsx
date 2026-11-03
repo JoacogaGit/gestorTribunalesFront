@@ -97,6 +97,7 @@ const libertadBadge: Record<string, string> = {
   Detenido: "bg-alert-urgent/15 text-alert-urgent",
   Excarcelado: "bg-alert-ok/15 text-alert-ok",
   Rebelde: "bg-alert-warning/15 text-alert-warning",
+  Paradero: "bg-alert-warning/15 text-alert-warning",
   SJP: "bg-alert-info/15 text-alert-info",
 };
 
