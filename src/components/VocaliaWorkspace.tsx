@@ -764,7 +764,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
                           />}
                       <KpiCardsCustom
                         estadisticas={estadisticasCustom.estadisticas}
-                        causas={responsableFiltro.filtrar(dashCausasRemote.causas)}
+                        causas={responsableFiltro.filtrar(dashCausasRemote.causas).filter((c) => esVisibleEnDashboard(c, ocultosDash))}
                         esEstudio={esEstudio}
                         ctx={estadisticaCtx}
                         activeFilter={dashFilter}
