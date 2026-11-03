@@ -13,6 +13,7 @@ import { useTribunalesGlobal } from "@/hooks/useSuperadminData";
 import { useSuperadminMode } from "@/context/SuperadminModeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import SuperadminRoles from "@/components/superadmin/SuperadminRoles";
 
 export default function SuperadminPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -236,6 +237,8 @@ export default function SuperadminPanel() {
             </table>
           </div>
         )}
+
+        <SuperadminRoles oficinas={new Map(data.map((t) => [t.id, t.nombre]))} />
 
         {/* Papelera */}
         <section className="mt-12">
