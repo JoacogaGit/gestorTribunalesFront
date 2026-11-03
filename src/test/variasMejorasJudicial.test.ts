@@ -33,7 +33,7 @@ describe("Delegada que termina", () => {
     expect(esDelegadaQueTermino({ estado_causa: "terminada", delegada: false })).toBe(false);
   });
   it("las estadísticas personalizadas cuentan las delegadas que terminaron", () => {
-    const criterio = buscarCriterio(false, "estado")!;
+    const criterio = buscarCriterio(false, "estado_causa")!;
     expect(criterio.cumple(causa({ estadoCausa: "Terminada", delegada: true }), "Delegada que terminó", {})).toBe(true);
     expect(criterio.cumple(causa({ estadoCausa: "Terminada", delegada: false }), "Delegada que terminó", {})).toBe(false);
   });
