@@ -718,15 +718,13 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
         <PushReminderBanner />
 
-        <AnimatePresence mode="wait">
-
-
+        {/* Cambio de pantalla inmediato: la nueva aparece con un fundido muy corto,
+            sin esperar a que la anterior termine de desaparecer. */}
           <motion.div
             key={view}
-            initial={{ opacity: 0.6 }}
+            initial={{ opacity: 0.85 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.06 } }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            transition={{ duration: 0.1, ease: "easeOut" }}
             data-tour="main"
              className={view === "migrar" ? "hidden" : "flex flex-1 min-h-0 flex-col overflow-hidden"}
           >
@@ -1268,7 +1266,6 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             )}
 
           </motion.div>
-        </AnimatePresence>
 
         {/* Wizard de migración SIEMPRE montado mientras haya vocalía seleccionada.
             Se oculta visualmente cuando la vista activa no es "migrar", pero su
