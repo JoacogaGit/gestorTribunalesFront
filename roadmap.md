@@ -71,3 +71,9 @@
 - [x] Situación "Paradero" (equivale a Rebeldía) + lista "Rebeldías y paraderos"
 - [x] Eventos de la causa: más reciente arriba
 - [ ] Probar los ocho cambios dentro de una oficina real (bloqueado: sin sesión en Supabase externo)
+
+## Fluidez general
+- [x] Listas que solo consultan estando a la vista, con memoria y precarga
+- [x] Un solo refresco por guardado; imputados y anotaciones en paralelo
+- [x] Cambio de pantalla sin espera de animación; pantallas pesadas separadas y precargadas
+- [ ] Medir la mejora dentro de una oficina real (bloqueado: sin sesión en Supabase externo)
