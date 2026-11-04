@@ -38,5 +38,5 @@ export function useDetenidos(vocaliaId: string | null, enabled = true) {
         return { ...ui, rowKey: `${causa.id}::${sujeto.id}` };
       });
     return filas;
-  });
+  }, enabled);
 }
