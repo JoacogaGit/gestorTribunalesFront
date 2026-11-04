@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { MODOS_TERMINACION_BASE, TIPOS_VIOLENCIA_GENERO, leerModosPropios, guardarModosPropios, hoyArgentina } from "@/lib/terminacion";
 import { supabase } from "@/integrations/supabase/client";
 import { useCausaMutations, CausaInput, SujetoInput } from "@/hooks/useCausaMutations";
+import { conAvisosAgrupados } from "@/lib/loteAvisos";
 import { useSubestadosTramite } from "@/hooks/useSubestadosTramite";
 import { useVocaliaActual } from "@/context/VocaliaContext";
 import { useTipoOficina } from "@/hooks/useTipoOficina";
