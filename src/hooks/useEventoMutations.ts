@@ -77,10 +77,12 @@ export function useEventoMutations() {
   const borrarEvento = useCallback(async (id: string): Promise<Result> => {
     setSaving(true);
     try {
-      const { data: userRes } = await supabase.auth.getUser();
       // Necesitamos causa_id para sync; lo leemos antes del soft delete.
-      const { data: prev } = await supabase.from("eventos").select("causa_id").eq("id", id).maybeSingle();
-      const patch = { borrado_en: new Date().toISOString(), borrado_por: userRes.user?.id ?? null } as never;
+      const [{ data: ses }, { data: prev }] = await Promise.all([
+        supabase.auth.getSession(),
+        supabase.from("eventos").select("causa_id").eq("id", id).maybeSingle(),
+      ]);
+      const patch = { borrado_en: new Date().toISOString(), borrado_por: ses.session?.user.id ?? null } as never;
       const { error } = await supabase.from("eventos").update(patch).eq("id", id);
       if (error) return { ok: false, error: error.message };
       emitEventosChanged();

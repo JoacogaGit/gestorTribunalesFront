@@ -40,15 +40,11 @@ export async function syncPrescripcionesSujeto(
     const { error: delErr } = await supabase.from("prescripciones").delete().eq("sujeto_id", sujetoId).not("id", "in", `(${ids.join(",")})`);
     if (delErr) return { ok: false, error: delErr.message };
   }
-  for (const d of drafts) {
-    if (!d.fecha) continue;
-    if (d.id) {
-      const { error } = await supabase.from("prescripciones").update({ fecha: d.fecha, descripcion: d.descripcion }).eq("id", d.id);
-      if (error) return { ok: false, error: error.message };
-    } else {
-      const { error } = await supabase.from("prescripciones").insert({ sujeto_id: sujetoId, fecha: d.fecha, descripcion: d.descripcion });
-      if (error) return { ok: false, error: error.message };
-    }
-  }
+  // Todas a la vez: cada fecha es independiente de las demás.
+  const resultados = await Promise.all(drafts.filter((d) => d.fecha).map((d) => d.id
+    ? supabase.from("prescripciones").update({ fecha: d.fecha, descripcion: d.descripcion }).eq("id", d.id)
+    : supabase.from("prescripciones").insert({ sujeto_id: sujetoId, fecha: d.fecha, descripcion: d.descripcion })));
+  const fallo = resultados.find((r) => r.error);
+  if (fallo?.error) return { ok: false, error: fallo.error.message };
   return { ok: true };
 }

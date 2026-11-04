@@ -621,7 +621,8 @@ export default function CausaFormDialog({
     if (guardandoRef.current) return;
     guardandoRef.current = true;
     try {
-      await doSubmitInner();
+      // Un solo refresco de las listas al final, no uno por cada paso del guardado.
+      await conAvisosAgrupados(doSubmitInner);
     } finally {
       guardandoRef.current = false;
     }
@@ -641,13 +642,13 @@ export default function CausaFormDialog({
       if (res.ok !== true) { setErrorMsg(res.error); return; }
       // Sync prescripciones para cada sujeto recién creado.
       const sujetosToSync = visibleSujetos.filter((s) => !isSujetoEmpty(s));
-      for (let i = 0; i < sujetosToSync.length; i++) {
+      await Promise.all(sujetosToSync.map((s, i) => {
         const newId = res.sujetoIds[i];
-        const drafts = (sujetosToSync[i].prescripciones ?? []).filter((p) => p.fecha).map<PrescripcionDraft>((p) => ({
+        const drafts = (s.prescripciones ?? []).filter((p) => p.fecha).map<PrescripcionDraft>((p) => ({
           fecha: p.fecha, descripcion: p.descripcion?.trim() || null,
         }));
-        if (newId && drafts.length > 0) await syncPrescripcionesSujeto(newId, drafts);
-      }
+        return newId && drafts.length > 0 ? syncPrescripcionesSujeto(newId, drafts) : null;
+      }));
       const editadosLocal = new Map(anotPendientes.filter((p) => p.editarId).map((p) => [p.editarId!, p.input]));
       const aCrear: EventoInput[] = [
         ...anotBorradores.map((b) => {
@@ -657,10 +658,10 @@ export default function CausaFormDialog({
         }),
         ...anotPendientes.filter((p) => !p.editarId).map((p) => p.input),
       ];
-      for (const input of aCrear) {
-        const r = await eventoMuts.crearEvento(res.id, input);
-        if (r.ok !== true) toast.error(`No se pudo guardar la anotación "${input.titulo}"`);
-      }
+      const resAnot = await Promise.all(aCrear.map((input) => eventoMuts.crearEvento(res.id, input)));
+      resAnot.forEach((r, i) => {
+        if (r.ok !== true) toast.error(`No se pudo guardar la anotación "${aCrear[i].titulo}"`);
+      });
       setAnotBorradores([]);
       toast.success("Causa creada");
       fireVocaliaResync();
@@ -677,50 +678,47 @@ export default function CausaFormDialog({
     const resCausa = await muts.actualizarCausa(causaId, causaP);
     if (resCausa.ok !== true) { setErrorMsg(resCausa.error); return; }
 
-    // Borrar marcados (persistidos)
+    // Imputados y anotaciones son independientes entre sí: se guardan todos a
+    // la vez (antes iban de a uno y cada paso sumaba espera).
     const toDelete = sujetos.filter((s) => s._markedForDelete && s.id);
-    for (const s of toDelete) {
-      const r = await muts.borrarSujeto(s.id!);
-      if (r.ok !== true) {
-        const msg = `Error al borrar imputado: ${r.error}`;
-        setErrorMsg(msg);
-        toast.error(msg);
-        return;
-      }
-    }
-    // Procesar visibles no vacíos (alineados con sujetosP)
     const sujetosToSync = visibleSujetos.filter((s) => !isSujetoEmpty(s));
-    for (let i = 0; i < sujetosToSync.length; i++) {
-      const draft = sujetosToSync[i];
-      const payload = sujetosP[i];
+    const guardarSujeto = async (draft: typeof sujetosToSync[number], payload: SujetoInput): Promise<string | null> => {
       let sujetoId: string | undefined = draft.id;
       if (draft.id) {
         const r = await muts.actualizarSujeto(draft.id, payload);
-        if (r.ok !== true) { setErrorMsg(`Error al guardar imputado: ${r.error}`); return; }
+        if (r.ok !== true) return `Error al guardar imputado: ${r.error}`;
       } else {
         const r = await muts.crearSujeto(causaId, payload);
-        if (r.ok !== true) { setErrorMsg(`Error al crear imputado: ${r.error}`); return; }
+        if (r.ok !== true) return `Error al crear imputado: ${r.error}`;
         sujetoId = r.id;
       }
-      // Sincronizar prescripciones de este sujeto
       if (sujetoId) {
         const drafts = (draft.prescripciones ?? []).filter((p) => p.fecha).map<PrescripcionDraft>((p) => ({
           id: p.id, fecha: p.fecha, descripcion: p.descripcion?.trim() || null,
         }));
         const psync = await syncPrescripcionesSujeto(sujetoId, drafts);
-        if (psync.ok !== true) { setErrorMsg(`Error al guardar prescripciones: ${psync.error}`); return; }
+        if (psync.ok !== true) return `Error al guardar prescripciones: ${psync.error}`;
       }
-    }
-    for (const p of anotPendientes) {
-      const r = p.editarId
-        ? await eventoMuts.actualizarEvento(p.editarId, p.input)
-        : await eventoMuts.crearEvento(causaId, p.input);
-      if (r.ok !== true) {
-        const msg = `No se pudo guardar la anotación "${p.input.titulo}": ${r.error}`;
-        setErrorMsg(msg);
-        toast.error(msg);
-        return;
-      }
+      return null;
+    };
+    const [errBorrar, errSujetos, errAnot] = await Promise.all([
+      Promise.all(toDelete.map(async (s) => {
+        const r = await muts.borrarSujeto(s.id!);
+        return r.ok !== true ? `Error al borrar imputado: ${r.error}` : null;
+      })),
+      Promise.all(sujetosToSync.map((draft, i) => guardarSujeto(draft, sujetosP[i]))),
+      Promise.all(anotPendientes.map(async (p) => {
+        const r = p.editarId
+          ? await eventoMuts.actualizarEvento(p.editarId, p.input)
+          : await eventoMuts.crearEvento(causaId, p.input);
+        return r.ok !== true ? `No se pudo guardar la anotación "${p.input.titulo}": ${r.error}` : null;
+      })),
+    ]);
+    const primerError = [...errBorrar, ...errSujetos, ...errAnot].find((m): m is string => !!m);
+    if (primerError) {
+      setErrorMsg(primerError);
+      toast.error(primerError);
+      return;
     }
     toast.success("Cambios guardados");
     fireVocaliaResync();
