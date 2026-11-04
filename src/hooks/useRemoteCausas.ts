@@ -56,7 +56,11 @@ export function useRemoteCausas(key: string | null, fetcher: () => Promise<Causa
       return;
     }
     let silent = loadedKey.current === key;
-    if (!silent) {
+    if (silent) {
+      // Si otra instancia o la precarga trajo algo más nuevo, mostrarlo ya.
+      const enMemoria = memoria.get(key);
+      if (enMemoria) setCausas(enMemoria);
+    } else {
       const enMemoria = memoria.get(key);
       if (enMemoria) {
         // Mostrar lo último conocido ya mismo y actualizar por detrás.
@@ -109,10 +113,9 @@ export function useRemoteCausas(key: string | null, fetcher: () => Promise<Causa
     }, 1500);
   }, [key, enabled]);
 
+  // Oculta: no consulta; se pone al día cuando se abre.
   useCausasChanged(() => {
     if (enabledRef.current) void fetchData();
-    // Oculta: lo guardado en memoria queda viejo; se refresca al abrirla.
-    else if (key) prefetchHechos.delete(key);
   });
 
   return { causas, loading, error, refetch: fetchData };
