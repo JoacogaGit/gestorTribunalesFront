@@ -289,32 +289,36 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   // En modo lista_unica mostramos el nombre del tribunal en el sidebar en lugar de la vocalía oculta "General".
   const sidebarLabel = isListaUnica ? (tribunal?.nombre ?? vocaliaNombre) : vocaliaNombre;
 
-  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "paradero", "probation"] });
-  const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
-  const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
-  const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId);
-  const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId);
+  // Cada lista consulta solo mientras está a la vista; las demás se precargan
+  // una vez en segundo plano y se ponen al día al abrirlas.
+  const enVista = (...vistas: string[]) => vistas.includes(view);
+  const vistaDashboard = enVista("dashboard", "fueros", "delitos", "instruccion", "elevadas", "recurridas");
+  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "paradero", "probation"] }, enVista("tramite"));
+  const recursosRemote = useCausasPorEstado("recurso", vocaliaId, {}, enVista("recursos"));
+  const terminadasRemote = useCausasPorEstado("terminada", vocaliaId, {}, enVista("terminadas"));
+  const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId, {}, enVista("para_sentencia"));
+  const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId, {}, enVista("para_comunicar"));
   // Delegadas: solo las causas en estado "delegada"; al terminar salen solas (la marca se conserva).
-  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId);
-  const faltaMeritoRemote = useCausasFaltaMerito(vocaliaId);
-  const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId);
-  const rebeldesRemote = useCausasConSujetoEn(SITUACIONES_REBELDIA, vocaliaId);
-  const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
-  const detenidosRemote = useDetenidos(vocaliaId);
-  const flagranciaRemote = useCausasFlagrancia(vocaliaId);
+  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId, {}, enVista("delegadas"));
+  const faltaMeritoRemote = useCausasFaltaMerito(vocaliaId, enVista("falta_merito"));
+  const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId, enVista("art196bis"));
+  const rebeldesRemote = useCausasConSujetoEn(SITUACIONES_REBELDIA, vocaliaId, enVista("rebeldes"));
+  const sjpRemote = useCausasConSujetoEn("probation", vocaliaId, enVista("sjp"));
+  const detenidosRemote = useDetenidos(vocaliaId, enVista("detenidos"));
+  const flagranciaRemote = useCausasFlagrancia(vocaliaId, enVista("flagrancia"));
   const { esEstudio } = useTipoOficina(tribunalId);
   const responsableFiltro = useResponsableFilter(vocaliaId, esEstudio);
   const [filtroTerm, setFiltroTerm] = useState<FiltroTerminadas>(FILTRO_TERMINADAS_VACIO);
   const terminadasBase = responsableFiltro.filtrar(terminadasRemote.causas);
   const terminadasFiltradas = aplicarFiltroTerminadas(terminadasBase, filtroTerm);
-  const dashboardKpis = useDashboardKpis(vocaliaId);
+  const dashboardKpis = useDashboardKpis(vocaliaId, vistaDashboard);
   // El dashboard muestra todas las causas de la oficina, incluidas las terminadas.
-  const dashCausasRemote = useCausasDashboard(vocaliaId, true);
+  const dashCausasRemote = useCausasDashboard(vocaliaId, true, vistaDashboard);
   const claveOcultosDash = claveVisibilidad(user.email, vocaliaId);
   const [ocultosDash, setOcultosDashState] = useState<Set<string>>(() => leerOcultos(claveOcultosDash));
   useEffect(() => { setOcultosDashState(leerOcultos(claveOcultosDash)); }, [claveOcultosDash]);
   const setOcultosDash = (next: Set<string>) => { setOcultosDashState(next); guardarOcultos(claveOcultosDash, next); };
-  const eventos30d = useEventosProximos30d(vocaliaId);
+  const eventos30d = useEventosProximos30d(vocaliaId, vistaDashboard);
   const [mostrarKpis, setMostrarKpis] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("iustrack_dash_kpis") !== "0";
@@ -339,7 +343,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     ? estadisticasCustom.estadisticas.find((e) => e.id === dashFilter.slice(7)) ?? null
     : null;
   const criterioActivo = estadisticaActiva ? buscarCriterio(esEstudio, estadisticaActiva.campo) : null;
-  const { eventosPorCausa } = useEventosPorCausa(vocaliaId);
+  const { eventosPorCausa } = useEventosPorCausa(vocaliaId, vistaDashboard);
   const estadisticaCtx = useMemo(() => ({ eventosPorCausa }), [eventosPorCausa]);
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
