@@ -449,6 +449,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     }
   }, [view, esAdmin]);
 
+  // Precargar las pantallas pesadas cuando la app ya está quieta.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+      if (ric) ric(precargarPantallas); else precargarPantallas();
+    }, 2500);
+    return () => clearTimeout(t);
+  }, []);
+
   // Si venimos de la bienvenida con flag de migrar, abrimos el wizard una sola vez.
   useEffect(() => {
     if (typeof window === "undefined") return;
