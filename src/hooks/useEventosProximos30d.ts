@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEventosChanged } from "@/lib/eventosBus";
-import { useCausasChanged } from "@/lib/causasBus";
+import { useRefrescoVisible } from "@/hooks/useRefrescoVisible";
 
 /** IDs de causas con al menos un evento (tabla eventos) dentro de los próximos 30 días. */
-export function useEventosProximos30d(vocaliaId: string | null) {
+export function useEventosProximos30d(vocaliaId: string | null, enabled = true) {
   const [ids, setIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 
@@ -28,9 +27,8 @@ export function useEventosProximos30d(vocaliaId: string | null) {
     setLoading(false);
   }, [vocaliaId]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-  useEventosChanged(fetchAll);
-  useCausasChanged(fetchAll);
+  // Solo consulta mientras el panel está a la vista.
+  useRefrescoVisible(fetchAll, enabled);
 
   return { ids, loading, refetch: fetchAll };
 }
