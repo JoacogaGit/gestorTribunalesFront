@@ -5,7 +5,6 @@ import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
 import KpiCardsEstudio from "@/components/KpiCardsEstudio";
 import CausasTable from "@/components/CausasTable";
-import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
 import NotificationBell from "@/components/NotificationBell";
 import PushReminderBanner from "@/components/PushReminderBanner";
@@ -43,23 +42,17 @@ import { useTipoOficina } from "@/hooks/useTipoOficina";
 import { supabase } from "@/integrations/supabase/client";
 import { fireCausaResync } from "@/lib/gcalSync";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
-import MiembrosTribunal from "@/components/MiembrosTribunal";
 import AbandonarTribunal, { AbandonarTribunalHandle } from "@/components/AbandonarTribunal";
-import Papelera from "@/components/Papelera";
 import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
-import CategoriasManager from "@/components/CategoriasManager";
-import RelevamientosPanel from "@/components/metricas/RelevamientosPanel";
 import TutorialTour, { lanzarTutorial } from "@/components/TutorialTour";
-import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
 import CrearListaDialog from "@/components/listas/CrearListaDialog";
 import ListaPersonalizadaView from "@/components/listas/ListaPersonalizadaView";
 import { useTableros } from "@/hooks/useTableros";
 import CrearTableroDialog from "@/components/tableros/CrearTableroDialog";
-import TableroView from "@/components/tableros/TableroView";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, Scale as ScaleIcon } from "lucide-react";
@@ -68,7 +61,6 @@ import ZoomControl from "@/components/ZoomControl";
 import ResponsableFilterButton from "@/components/ResponsableFilterButton";
 import ExportarListasButton from "@/components/ExportarListasButton";
 import { useResponsableFilter } from "@/hooks/useResponsableFilter";
-import AgrupadasView from "@/components/estudio/AgrupadasView";
 import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
 import { useEventosProximos30d } from "@/hooks/useEventosProximos30d";
 import { useEstadisticasCustom } from "@/hooks/useEstadisticasCustom";
@@ -83,6 +75,41 @@ import type { Causa } from "@/data/mockCausas";
 
 
 const WizardMigracion = lazy(() => import("@/components/WizardMigracion"));
+
+// Pantallas pesadas (gráficos 3D, Excel, arrastrar y soltar…): se descargan
+// aparte para que la app abra rápido, y se precargan apenas hay un respiro.
+const cargarCalendario = () => import("@/components/CalendarioAlertas");
+const cargarMiembros = () => import("@/components/MiembrosTribunal");
+const cargarPapelera = () => import("@/components/Papelera");
+const cargarCategorias = () => import("@/components/CategoriasManager");
+const cargarRelevamientos = () => import("@/components/metricas/RelevamientosPanel");
+const cargarSubestados = () => import("@/components/SubestadosManager");
+const cargarTablero = () => import("@/components/tableros/TableroView");
+const cargarAgrupadas = () => import("@/components/estudio/AgrupadasView");
+const CalendarioAlertas = lazy(cargarCalendario);
+const MiembrosTribunal = lazy(cargarMiembros);
+const Papelera = lazy(cargarPapelera);
+const CategoriasManager = lazy(cargarCategorias);
+const RelevamientosPanel = lazy(cargarRelevamientos);
+const SubestadosManager = lazy(cargarSubestados);
+const TableroView = lazy(cargarTablero);
+const AgrupadasView = lazy(cargarAgrupadas);
+let pantallasPrecargadas = false;
+function precargarPantallas() {
+  if (pantallasPrecargadas) return;
+  pantallasPrecargadas = true;
+  [cargarCalendario, cargarTablero, cargarCategorias, cargarSubestados, cargarMiembros, cargarPapelera, cargarAgrupadas, cargarRelevamientos]
+    .forEach((cargar) => { void cargar().catch(() => { pantallasPrecargadas = false; }); });
+}
+
+function VistaCargando() {
+  return (
+    <div className="space-y-3 pt-2" aria-busy="true">
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-40 w-full" />
+    </div>
+  );
+}
 
 interface RemoteListSectionProps {
   loading: boolean;
@@ -728,6 +755,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
             data-tour="main"
              className={view === "migrar" ? "hidden" : "flex flex-1 min-h-0 flex-col overflow-hidden"}
           >
+            <Suspense fallback={<VistaCargando />}>
             {view === "dashboard" && (
               <div className="flex flex-1 min-h-0 flex-col gap-1 overflow-hidden pr-1 [&>*:not(:last-child)]:shrink-0">
                 <div className="flex justify-end gap-1">
@@ -1265,6 +1293,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <TableroView key={tableroActivo.id} tablero={tableroActivo} vocaliaId={vocaliaId} esAdmin={esAdmin} tribunalId={tribunalId} />
             )}
 
+            </Suspense>
           </motion.div>
 
         {/* Wizard de migración SIEMPRE montado mientras haya vocalía seleccionada.
