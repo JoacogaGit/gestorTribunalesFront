@@ -19,10 +19,13 @@ interface Options {
 
 const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,secreta,caratula,estado_causa,subestado_tramite_id,subestados_tramite(nombre),delegada,art196bis,subestados,tipo_recurso,tipo_proceso,fecha_ingreso,firmante,modo_inicio,fiscalia_interviniente,ultimo_movimiento,modo_terminacion,fecha_terminacion,vocalia_id,created_at,querella,actor_civil,otros_intervinientes,causa_conexa_texto,causa_conexa_id,link_externo,color_destacado,sujetos(id,nombre_completo,delito,situacion_libertad,defensor,fecha_detencion,prescripcion_fecha,vencimiento_pp,vencimiento_pena,vencimiento_pena_nota,violencia_genero,tipo_violencia_genero,observaciones,lugar_alojamiento,causa_id,created_at,borrado_en)";
 
-export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | null, options: Options = {}) {
+export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | null, options: Options = {}, enabled = true) {
   const excluirKey = (options.excluirSituaciones ?? []).slice().sort().join(",");
 
   return useRemoteCausas(vocaliaId ? `estado|${estado}|${vocaliaId}|${excluirKey}` : null, async () => {
+    const pestana = PESTANA_POR_ESTADO[estado];
+    // En paralelo con la consulta principal (antes iba después y sumaba espera).
+    const ocultasP = pestana ? fetchCausasOcultasDe(vocaliaId!, pestana) : Promise.resolve(new Set<string>());
     const { data, error } = await supabase
       .from("causas")
       .select(CAUSAS_SELECT)
@@ -35,11 +38,8 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let rows = (data ?? []) as any[];
     // Ocultar causas de listas personalizadas configuradas para esta pestaña.
-    const pestana = PESTANA_POR_ESTADO[estado];
-    if (pestana) {
-      const ocultas = await fetchCausasOcultasDe(vocaliaId!, pestana);
-      if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
-    }
+    const ocultas = await ocultasP;
+    if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
     const excl = excluirKey ? excluirKey.split(",") : [];
     if (excl.length > 0) {
       rows = rows.filter((r) => {
@@ -51,5 +51,5 @@ export function useCausasPorEstado(estado: DbEstadoCausa, vocaliaId: string | nu
       });
     }
     return rows.map(dbCausaToUI);
-  });
+  }, enabled);
 }

@@ -10,10 +10,11 @@ const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,s
  * Causas con al menos un sujeto en la situación dada (Rebeldes / SJP),
  * cualquiera sea el estado de la causa salvo "terminada".
  */
-export function useCausasConSujetoEn(situacion: DbSituacionLibertad | DbSituacionLibertad[], vocaliaId: string | null) {
+export function useCausasConSujetoEn(situacion: DbSituacionLibertad | DbSituacionLibertad[], vocaliaId: string | null, enabled = true) {
   const situaciones = Array.isArray(situacion) ? situacion : [situacion];
   const clave = situaciones.slice().sort().join(",");
   return useRemoteCausas(vocaliaId ? `sujeto|${clave}|${vocaliaId}` : null, async () => {
+    const ocultasP = fetchCausasOcultasDe(vocaliaId!, situaciones.includes("rebelde") ? "rebeldes" : "sjp");
     // Paso 1: ids de causas (de esta vocalía) con al menos un sujeto en esa situación.
     const { data: matches, error: e1 } = await supabase
       .from("sujetos")
@@ -38,7 +39,7 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad | DbSituacio
       .order("created_at", { ascending: false });
     if (e2) throw new Error(e2.message);
 
-    const ocultas = await fetchCausasOcultasDe(vocaliaId!, situaciones.includes("rebelde") ? "rebeldes" : "sjp");
+    const ocultas = await ocultasP;
     /* eslint-disable @typescript-eslint/no-explicit-any */
     return ((data ?? []) as any[])
       .filter((r) => !ocultas.has(r.id) && apareceEnListaPorSituacion(r.estado_causa, r.sujetos, situaciones))
@@ -51,5 +52,5 @@ export function useCausasConSujetoEn(situacion: DbSituacionLibertad | DbSituacio
       }))
       .map(dbCausaToUI);
     /* eslint-enable @typescript-eslint/no-explicit-any */
-  });
+  }, enabled);
 }

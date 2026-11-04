@@ -12,8 +12,9 @@ const DETENIDOS_SELECT = "id,nombre_completo,delito,situacion_libertad,defensor,
  * La causa aparece cualquiera sea su estado (trámite, recurso, para sacar
  * sentencia, para comunicar…), salvo que esté terminada.
  */
-export function useDetenidos(vocaliaId: string | null) {
+export function useDetenidos(vocaliaId: string | null, enabled = true) {
   return useRemoteCausas(vocaliaId ? `detenidos|${vocaliaId}` : null, async () => {
+    const ocultasP = fetchCausasOcultasDe(vocaliaId!, "detenidos");
     const { data, error } = await supabase
       .from("sujetos")
       .select(DETENIDOS_SELECT)
@@ -26,7 +27,7 @@ export function useDetenidos(vocaliaId: string | null) {
     if (error) throw new Error(error.message);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (data as any[]) ?? [];
-    const ocultas = await fetchCausasOcultasDe(vocaliaId!, "detenidos");
+    const ocultas = await ocultasP;
     const filas: Causa[] = rows
       .filter((r) => r.causas && !ocultas.has(r.causas.id)
         && apareceEnListaPorSituacion(r.causas.estado_causa, [r], "detenido"))

@@ -8,8 +8,9 @@ const CAUSAS_SELECT = "id,expediente_nro,numero_interno,despachante,flagrancia,s
 export type MarcaCausa = "delegada" | "art196bis";
 
 /** Causas marcadas con una marca booleana (delegada / 196bis-NN) en el espacio actual. */
-export function useCausasPorMarca(marca: MarcaCausa, vocaliaId: string | null) {
+export function useCausasPorMarca(marca: MarcaCausa, vocaliaId: string | null, enabled = true) {
   return useRemoteCausas(vocaliaId ? `marca|${marca}|${vocaliaId}` : null, async () => {
+    const ocultasP = fetchCausasOcultasDe(vocaliaId!, marca === "delegada" ? "delegadas" : "art196bis");
     let q = supabase
       .from("causas")
       .select(CAUSAS_SELECT)
@@ -25,8 +26,8 @@ export function useCausasPorMarca(marca: MarcaCausa, vocaliaId: string | null) {
     if (error) throw new Error(error.message);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let rows = (data ?? []) as any[];
-    const ocultas = await fetchCausasOcultasDe(vocaliaId!, marca === "delegada" ? "delegadas" : "art196bis");
+    const ocultas = await ocultasP;
     if (ocultas.size > 0) rows = rows.filter((r) => !ocultas.has(r.id));
     return rows.map(dbCausaToUI);
-  });
+  }, enabled);
 }
