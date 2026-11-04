@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEventosChanged } from "@/lib/eventosBus";
-import { useCausasChanged } from "@/lib/causasBus";
+import { useRefrescoVisible } from "@/hooks/useRefrescoVisible";
 import { fetchCausasOcultasDe } from "@/lib/pestanasOcultables";
 
 export interface DashboardKpis {
@@ -33,7 +32,7 @@ async function countOrThrow(query: { count: number | null; error: { message: str
   return query.count ?? 0;
 }
 
-export function useDashboardKpis(vocaliaId: string | null) {
+export function useDashboardKpis(vocaliaId: string | null, enabled = true) {
   const [kpis, setKpis] = useState<DashboardKpis>({
     detenidos: 0, juiciosEsteMes: 0, ppProximas: 0, rebeldes: 0, eventos30d: 0, totalCausas: 0,
   });
@@ -155,9 +154,8 @@ export function useDashboardKpis(vocaliaId: string | null) {
     }
   }, [vocaliaId]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-  useEventosChanged(fetchAll);
-  useCausasChanged(fetchAll);
+  // Solo consulta mientras el panel está a la vista.
+  useRefrescoVisible(fetchAll, enabled);
 
   return { kpis, loading, error, refetch: fetchAll };
 }

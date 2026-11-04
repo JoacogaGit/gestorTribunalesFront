@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEventosChanged } from "@/lib/eventosBus";
-import { useCausasChanged } from "@/lib/causasBus";
+import { useRefrescoVisible } from "@/hooks/useRefrescoVisible";
 
 /** Mapa causaId -> timestamps (ms) de eventos futuros (hasta 1 año), para estadísticas por plazo. */
-export function useEventosPorCausa(vocaliaId: string | null) {
+export function useEventosPorCausa(vocaliaId: string | null, enabled = true) {
   const [eventosPorCausa, setEventosPorCausa] = useState<Map<string, number[]>>(new Map());
 
   const fetchAll = useCallback(async () => {
@@ -34,9 +33,8 @@ export function useEventosPorCausa(vocaliaId: string | null) {
     setEventosPorCausa(map);
   }, [vocaliaId]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-  useEventosChanged(fetchAll);
-  useCausasChanged(fetchAll);
+  // Solo consulta mientras el panel está a la vista.
+  useRefrescoVisible(fetchAll, enabled);
 
   return { eventosPorCausa, refetch: fetchAll };
 }

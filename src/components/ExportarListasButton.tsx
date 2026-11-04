@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, ListFilter, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import { exportarCausasXlsx, exportarVistaActualXlsx } from "@/lib/exportCausasExcel";
 import { obtenerVistasActuales, type VistaExportable } from "@/lib/vistaExportable";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -35,9 +34,12 @@ export default function ExportarListasButton({ vocaliaId, nombreOficina, esEstud
     setLoading(true);
     try {
       if (alcance === "lista") {
+        // El generador de Excel se descarga recién cuando se usa.
+        const { exportarVistaActualXlsx } = await import("@/lib/exportCausasExcel");
         const total = await exportarVistaActualXlsx(vistas, { nombreOficina, esEstudio });
         toast.success(`Excel descargado (${total} filas de esta lista)`);
       } else {
+        const { exportarCausasXlsx } = await import("@/lib/exportCausasExcel");
         const total = await exportarCausasXlsx({ vocaliaId, nombreOficina, esEstudio });
         toast.success(`Excel descargado (${total} causas de toda la oficina)`);
       }

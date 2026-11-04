@@ -5,7 +5,6 @@ import AppSidebar, { CustomBoard } from "@/components/AppSidebar";
 import KpiCards from "@/components/KpiCards";
 import KpiCardsEstudio from "@/components/KpiCardsEstudio";
 import CausasTable from "@/components/CausasTable";
-import CalendarioAlertas from "@/components/CalendarioAlertas";
 import UserMenu from "@/components/UserMenu";
 import NotificationBell from "@/components/NotificationBell";
 import PushReminderBanner from "@/components/PushReminderBanner";
@@ -43,23 +42,17 @@ import { useTipoOficina } from "@/hooks/useTipoOficina";
 import { supabase } from "@/integrations/supabase/client";
 import { fireCausaResync } from "@/lib/gcalSync";
 import { useRolTribunal } from "@/hooks/useRolTribunal";
-import MiembrosTribunal from "@/components/MiembrosTribunal";
 import AbandonarTribunal, { AbandonarTribunalHandle } from "@/components/AbandonarTribunal";
-import Papelera from "@/components/Papelera";
 import type { MigracionStatus } from "@/components/WizardMigracion";
 import PendientesRevision from "@/components/migracion/PendientesRevision";
 import MigracionFloatingBanner from "@/components/migracion/MigracionFloatingBanner";
-import CategoriasManager from "@/components/CategoriasManager";
-import RelevamientosPanel from "@/components/metricas/RelevamientosPanel";
 import TutorialTour, { lanzarTutorial } from "@/components/TutorialTour";
-import SubestadosManager from "@/components/SubestadosManager";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useListasPersonalizadas } from "@/hooks/useListasPersonalizadas";
 import CrearListaDialog from "@/components/listas/CrearListaDialog";
 import ListaPersonalizadaView from "@/components/listas/ListaPersonalizadaView";
 import { useTableros } from "@/hooks/useTableros";
 import CrearTableroDialog from "@/components/tableros/CrearTableroDialog";
-import TableroView from "@/components/tableros/TableroView";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, Scale as ScaleIcon } from "lucide-react";
@@ -68,7 +61,6 @@ import ZoomControl from "@/components/ZoomControl";
 import ResponsableFilterButton from "@/components/ResponsableFilterButton";
 import ExportarListasButton from "@/components/ExportarListasButton";
 import { useResponsableFilter } from "@/hooks/useResponsableFilter";
-import AgrupadasView from "@/components/estudio/AgrupadasView";
 import { EP_INSTRUCCION, EP_ELEVADAS, EP_RECURRIDAS } from "@/lib/estadosProcesales";
 import { useEventosProximos30d } from "@/hooks/useEventosProximos30d";
 import { useEstadisticasCustom } from "@/hooks/useEstadisticasCustom";
@@ -83,6 +75,41 @@ import type { Causa } from "@/data/mockCausas";
 
 
 const WizardMigracion = lazy(() => import("@/components/WizardMigracion"));
+
+// Pantallas pesadas (gráficos 3D, Excel, arrastrar y soltar…): se descargan
+// aparte para que la app abra rápido, y se precargan apenas hay un respiro.
+const cargarCalendario = () => import("@/components/CalendarioAlertas");
+const cargarMiembros = () => import("@/components/MiembrosTribunal");
+const cargarPapelera = () => import("@/components/Papelera");
+const cargarCategorias = () => import("@/components/CategoriasManager");
+const cargarRelevamientos = () => import("@/components/metricas/RelevamientosPanel");
+const cargarSubestados = () => import("@/components/SubestadosManager");
+const cargarTablero = () => import("@/components/tableros/TableroView");
+const cargarAgrupadas = () => import("@/components/estudio/AgrupadasView");
+const CalendarioAlertas = lazy(cargarCalendario);
+const MiembrosTribunal = lazy(cargarMiembros);
+const Papelera = lazy(cargarPapelera);
+const CategoriasManager = lazy(cargarCategorias);
+const RelevamientosPanel = lazy(cargarRelevamientos);
+const SubestadosManager = lazy(cargarSubestados);
+const TableroView = lazy(cargarTablero);
+const AgrupadasView = lazy(cargarAgrupadas);
+let pantallasPrecargadas = false;
+function precargarPantallas() {
+  if (pantallasPrecargadas) return;
+  pantallasPrecargadas = true;
+  [cargarCalendario, cargarTablero, cargarCategorias, cargarSubestados, cargarMiembros, cargarPapelera, cargarAgrupadas, cargarRelevamientos]
+    .forEach((cargar) => { void cargar().catch(() => { pantallasPrecargadas = false; }); });
+}
+
+function VistaCargando() {
+  return (
+    <div className="space-y-3 pt-2" aria-busy="true">
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-40 w-full" />
+    </div>
+  );
+}
 
 interface RemoteListSectionProps {
   loading: boolean;
@@ -289,32 +316,36 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
   // En modo lista_unica mostramos el nombre del tribunal en el sidebar en lugar de la vocalía oculta "General".
   const sidebarLabel = isListaUnica ? (tribunal?.nombre ?? vocaliaNombre) : vocaliaNombre;
 
-  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "paradero", "probation"] });
-  const recursosRemote = useCausasPorEstado("recurso", vocaliaId);
-  const terminadasRemote = useCausasPorEstado("terminada", vocaliaId);
-  const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId);
-  const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId);
+  // Cada lista consulta solo mientras está a la vista; las demás se precargan
+  // una vez en segundo plano y se ponen al día al abrirlas.
+  const enVista = (...vistas: string[]) => vistas.includes(view);
+  const vistaDashboard = enVista("dashboard", "fueros", "delitos", "instruccion", "elevadas", "recurridas");
+  const tramiteRemote = useCausasPorEstado("tramite", vocaliaId, { excluirSituaciones: ["rebelde", "paradero", "probation"] }, enVista("tramite"));
+  const recursosRemote = useCausasPorEstado("recurso", vocaliaId, {}, enVista("recursos"));
+  const terminadasRemote = useCausasPorEstado("terminada", vocaliaId, {}, enVista("terminadas"));
+  const paraSentenciaRemote = useCausasPorEstado("para_sentencia", vocaliaId, {}, enVista("para_sentencia"));
+  const paraComunicarRemote = useCausasPorEstado("para_comunicar", vocaliaId, {}, enVista("para_comunicar"));
   // Delegadas: solo las causas en estado "delegada"; al terminar salen solas (la marca se conserva).
-  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId);
-  const faltaMeritoRemote = useCausasFaltaMerito(vocaliaId);
-  const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId);
-  const rebeldesRemote = useCausasConSujetoEn(SITUACIONES_REBELDIA, vocaliaId);
-  const sjpRemote = useCausasConSujetoEn("probation", vocaliaId);
-  const detenidosRemote = useDetenidos(vocaliaId);
-  const flagranciaRemote = useCausasFlagrancia(vocaliaId);
+  const delegadasRemote = useCausasPorEstado("delegada", vocaliaId, {}, enVista("delegadas"));
+  const faltaMeritoRemote = useCausasFaltaMerito(vocaliaId, enVista("falta_merito"));
+  const art196bisRemote = useCausasPorMarca("art196bis", vocaliaId, enVista("art196bis"));
+  const rebeldesRemote = useCausasConSujetoEn(SITUACIONES_REBELDIA, vocaliaId, enVista("rebeldes"));
+  const sjpRemote = useCausasConSujetoEn("probation", vocaliaId, enVista("sjp"));
+  const detenidosRemote = useDetenidos(vocaliaId, enVista("detenidos"));
+  const flagranciaRemote = useCausasFlagrancia(vocaliaId, enVista("flagrancia"));
   const { esEstudio } = useTipoOficina(tribunalId);
   const responsableFiltro = useResponsableFilter(vocaliaId, esEstudio);
   const [filtroTerm, setFiltroTerm] = useState<FiltroTerminadas>(FILTRO_TERMINADAS_VACIO);
   const terminadasBase = responsableFiltro.filtrar(terminadasRemote.causas);
   const terminadasFiltradas = aplicarFiltroTerminadas(terminadasBase, filtroTerm);
-  const dashboardKpis = useDashboardKpis(vocaliaId);
+  const dashboardKpis = useDashboardKpis(vocaliaId, vistaDashboard);
   // El dashboard muestra todas las causas de la oficina, incluidas las terminadas.
-  const dashCausasRemote = useCausasDashboard(vocaliaId, true);
+  const dashCausasRemote = useCausasDashboard(vocaliaId, true, vistaDashboard);
   const claveOcultosDash = claveVisibilidad(user.email, vocaliaId);
   const [ocultosDash, setOcultosDashState] = useState<Set<string>>(() => leerOcultos(claveOcultosDash));
   useEffect(() => { setOcultosDashState(leerOcultos(claveOcultosDash)); }, [claveOcultosDash]);
   const setOcultosDash = (next: Set<string>) => { setOcultosDashState(next); guardarOcultos(claveOcultosDash, next); };
-  const eventos30d = useEventosProximos30d(vocaliaId);
+  const eventos30d = useEventosProximos30d(vocaliaId, vistaDashboard);
   const [mostrarKpis, setMostrarKpis] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("iustrack_dash_kpis") !== "0";
@@ -339,7 +370,7 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
     ? estadisticasCustom.estadisticas.find((e) => e.id === dashFilter.slice(7)) ?? null
     : null;
   const criterioActivo = estadisticaActiva ? buscarCriterio(esEstudio, estadisticaActiva.campo) : null;
-  const { eventosPorCausa } = useEventosPorCausa(vocaliaId);
+  const { eventosPorCausa } = useEventosPorCausa(vocaliaId, vistaDashboard);
   const estadisticaCtx = useMemo(() => ({ eventosPorCausa }), [eventosPorCausa]);
   const subestadosEspacio = useSubestadosTramite(vocaliaId);
 
@@ -417,6 +448,15 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
       setView("dashboard");
     }
   }, [view, esAdmin]);
+
+  // Precargar las pantallas pesadas cuando la app ya está quieta.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+      if (ric) ric(precargarPantallas); else precargarPantallas();
+    }, 2500);
+    return () => clearTimeout(t);
+  }, []);
 
   // Si venimos de la bienvenida con flag de migrar, abrimos el wizard una sola vez.
   useEffect(() => {
@@ -714,18 +754,17 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
 
         <PushReminderBanner />
 
-        <AnimatePresence mode="wait">
-
-
+        {/* Cambio de pantalla inmediato: la nueva aparece con un fundido muy corto,
+            sin esperar a que la anterior termine de desaparecer. */}
           <motion.div
             key={view}
-            initial={{ opacity: 0.6 }}
+            initial={{ opacity: 0.85 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.06 } }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            transition={{ duration: 0.1, ease: "easeOut" }}
             data-tour="main"
              className={view === "migrar" ? "hidden" : "flex flex-1 min-h-0 flex-col overflow-hidden"}
           >
+            <Suspense fallback={<VistaCargando />}>
             {view === "dashboard" && (
               <div className="flex flex-1 min-h-0 flex-col gap-1 overflow-hidden pr-1 [&>*:not(:last-child)]:shrink-0">
                 <div className="flex justify-end gap-1">
@@ -1263,8 +1302,8 @@ export default function VocaliaWorkspace({ onBack, user, onLogout, onUpdateUser 
               <TableroView key={tableroActivo.id} tablero={tableroActivo} vocaliaId={vocaliaId} esAdmin={esAdmin} tribunalId={tribunalId} />
             )}
 
+            </Suspense>
           </motion.div>
-        </AnimatePresence>
 
         {/* Wizard de migración SIEMPRE montado mientras haya vocalía seleccionada.
             Se oculta visualmente cuando la vista activa no es "migrar", pero su

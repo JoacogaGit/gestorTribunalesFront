@@ -130,8 +130,9 @@ export function useCausaMutations() {
   ): Promise<{ ok: true } | { ok: false; error: string }> => {
     setSaving(true);
     try {
-      const { data: userRes } = await supabase.auth.getUser();
-      const uid = userRes.user?.id ?? null;
+      // La sesión local alcanza para saber quién borra (sin ida y vuelta al servidor).
+      const { data: ses } = await supabase.auth.getSession();
+      const uid = ses.session?.user.id ?? null;
       const patch = { borrado_en: new Date().toISOString(), borrado_por: uid } as never;
       const { error: evErr } = await supabase.from("eventos").update(patch).eq("causa_id", id).is("borrado_en", null);
       if (evErr) return { ok: false, error: `Eventos: ${evErr.message}` };
@@ -161,8 +162,8 @@ export function useCausaMutations() {
   }, []);
 
   const borrarSujeto = useCallback(async (id: string) => {
-    const { data: userRes } = await supabase.auth.getUser();
-    const patch = { borrado_en: new Date().toISOString(), borrado_por: userRes.user?.id ?? null } as never;
+    const { data: ses } = await supabase.auth.getSession();
+    const patch = { borrado_en: new Date().toISOString(), borrado_por: ses.session?.user.id ?? null } as never;
     const { error } = await supabase.from("sujetos").update(patch).eq("id", id);
     if (!error) emitCausasChanged();
     return error ? { ok: false as const, error: error.message } : { ok: true as const };
