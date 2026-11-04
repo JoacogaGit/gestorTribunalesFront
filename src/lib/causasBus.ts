@@ -22,12 +22,15 @@ export function emitCausasChanged() {
   programar();
 }
 
+/** Suscripción simple; devuelve la función para desuscribirse. */
+export function onCausasChanged(cb: () => void): () => void {
+  const handler = () => cb();
+  target.addEventListener(EVENT_NAME, handler);
+  return () => target.removeEventListener(EVENT_NAME, handler);
+}
+
 export function useCausasChanged(cb: () => void) {
   const ref = useRef(cb);
   ref.current = cb;
-  useEffect(() => {
-    const handler = () => ref.current();
-    target.addEventListener(EVENT_NAME, handler);
-    return () => target.removeEventListener(EVENT_NAME, handler);
-  }, []);
+  useEffect(() => onCausasChanged(() => ref.current()), []);
 }
