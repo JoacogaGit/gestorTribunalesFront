@@ -128,15 +128,20 @@ export function useTribunalDetalleSuperadmin(tribunalId: string | undefined) {
 
       const causaIds = (causasRes.data ?? []).map((c) => c.id);
       const [eventosRes, perfilesRes] = await Promise.all([
-        causaIds.length
-          ? supabase
-              .from("eventos")
-              .select("id, causa_id, fecha_hora")
-              .in("causa_id", causaIds)
-              .gte("fecha_hora", ahora)
-              .lte("fecha_hora", en30)
-              .is("borrado_en", null)
-          : Promise.resolve({ data: [], error: null } as const),
+        // Por tandas: una lista enorme de causas rompe la consulta (URL demasiado larga).
+        (async () => {
+          const tandas: string[][] = [];
+          for (let i = 0; i < causaIds.length; i += 50) tandas.push(causaIds.slice(i, i + 50));
+          const res = await Promise.all(tandas.map((t) => supabase
+            .from("eventos")
+            .select("id, causa_id, fecha_hora")
+            .in("causa_id", t)
+            .gte("fecha_hora", ahora)
+            .lte("fecha_hora", en30)
+            .is("borrado_en", null)));
+          const err = res.find((r) => r.error)?.error ?? null;
+          return { data: res.flatMap((r) => r.data ?? []), error: err };
+        })(),
         (mRes.data ?? []).length
           ? supabase.from("perfiles").select("id, nombre_completo, email").in("id", (mRes.data ?? []).map((m) => m.usuario_id))
           : Promise.resolve({ data: [], error: null } as const),
