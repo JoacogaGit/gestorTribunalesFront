@@ -1,5 +1,6 @@
 import { forwardRef, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { emitCausasChanged } from "@/lib/causasBus";
+import FilaSegura from "@/components/FilaSegura";
 import { patchEstadoDesdeMenu } from "@/lib/reglasListas";
 import { hoyArgentina } from "@/lib/terminacion";
 import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
@@ -320,7 +321,8 @@ export default function CausasTable({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Próximas anotaciones (eventos con fecha) por causa.
-  const causaIds = causas.map((c) => c.id);
+  // Solo de las causas de la página visible (no de toda la oficina de golpe).
+  const [causaIds, setCausaIds] = useState<string[]>([]);
   const { map: proximasMap } = useProximasAnotacionesPorCausa(causaIds);
 
   // Auto-abrir detalle cuando navegan desde una causa conexa.
@@ -882,6 +884,8 @@ export default function CausasTable({
   const shouldPaginate = sorted.length > PAGE_SIZE;
   const pageStart = shouldPaginate ? (page - 1) * PAGE_SIZE : 0;
   const visibleRows = shouldPaginate ? sorted.slice(pageStart, pageStart + PAGE_SIZE) : sorted;
+  const idsPaginaKey = useMemo(() => [...new Set(visibleRows.map((c) => c.id))].join(","), [visibleRows]);
+  useEffect(() => { setCausaIds(idsPaginaKey ? idsPaginaKey.split(",") : []); }, [idsPaginaKey]);
 
   // Posición de scroll: se guarda al desplazarse y se restaura al volver a la lista.
   const scrollMovilRef = useRef<HTMLDivElement | null>(null);
@@ -1142,8 +1146,9 @@ export default function CausasTable({
             const rk = c.rowKey ?? c.id;
             const expanded = expandedId === rk;
             return (
+              <FilaSegura key={rk} modo="tarjeta" numero={c.numero}>
               <div
-                key={rk}
+
                 className={`elevated-card rounded-xl p-3 border-l-4 ${c.secreta ? "causa-secreta-row" : ""}`}
                 style={{ borderLeftColor: rowColor || "hsl(var(--border))" }}
               >
@@ -1197,6 +1202,7 @@ export default function CausasTable({
                   </div>
                 )}
               </div>
+              </FilaSegura>
             );
           })}
           {sorted.length === 0 && (
@@ -1261,7 +1267,8 @@ export default function CausasTable({
               {visibleRows.map((c, idx) => {
                 const rowColor = colorOf(c);
                 return (
-                <ContextMenu key={c.rowKey ?? c.id}>
+                <FilaSegura key={c.rowKey ?? c.id} modo="fila" colSpan={visibleColumns.length + 1} numero={c.numero}>
+                <ContextMenu>
                   <ContextMenuTrigger asChild>
                     <CausaRow
                       causa={c}
@@ -1424,6 +1431,7 @@ export default function CausasTable({
                     )}
                   </ContextMenuContent>
                 </ContextMenu>
+                </FilaSegura>
                 );
               })}
               {sorted.length === 0 && (

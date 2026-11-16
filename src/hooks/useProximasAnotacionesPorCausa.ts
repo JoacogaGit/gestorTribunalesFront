@@ -20,12 +20,18 @@ export function useProximasAnotacionesPorCausa(causaIds: string[]) {
     const ids = idsKey ? idsKey.split(",") : [];
     if (ids.length === 0) { setMap(new Map()); return; }
     setLoading(true);
-    const { data, error } = await supabase
+    // Por tandas en paralelo: una lista enorme de ids rompe la consulta (URL demasiado larga).
+    const TANDA = 50;
+    const tandas: string[][] = [];
+    for (let i = 0; i < ids.length; i += TANDA) tandas.push(ids.slice(i, i + TANDA));
+    const res = await Promise.all(tandas.map((t) => supabase
       .from("eventos")
       .select("id, causa_id, titulo, fecha_hora, created_at")
-      .in("causa_id", ids)
-      .is("borrado_en", null);
-    if (error || !data) { setLoading(false); return; }
+      .in("causa_id", t)
+      .is("borrado_en", null)
+      .limit(5000)));
+    if (res.some((r) => r.error)) { setLoading(false); return; }
+    const data = res.flatMap((r) => r.data ?? []);
 
     const now = Date.now();
     const conFecha = new Map<string, { id: string; titulo: string; fecha_hora: string }[]>();
@@ -34,11 +40,11 @@ export function useProximasAnotacionesPorCausa(causaIds: string[]) {
     for (const r of data) {
       if (r.fecha_hora) {
         const arr = conFecha.get(r.causa_id) ?? [];
-        arr.push({ id: r.id, titulo: r.titulo, fecha_hora: r.fecha_hora });
+        arr.push({ id: r.id, titulo: r.titulo ?? "", fecha_hora: r.fecha_hora });
         conFecha.set(r.causa_id, arr);
       } else {
         const arr = sinFecha.get(r.causa_id) ?? [];
-        arr.push({ id: r.id, titulo: r.titulo, created_at: r.created_at ?? new Date().toISOString() });
+        arr.push({ id: r.id, titulo: r.titulo ?? "", created_at: r.created_at ?? new Date().toISOString() });
         sinFecha.set(r.causa_id, arr);
       }
     }
@@ -56,7 +62,7 @@ export function useProximasAnotacionesPorCausa(causaIds: string[]) {
       const proximaConFecha = futuras[0] ?? pasadas[0];
 
       const sf = (sinFecha.get(causaId) ?? []).sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        (a, b) => (new Date(b.created_at).getTime() || 0) - (new Date(a.created_at).getTime() || 0),
       );
       const proximaSinFecha = sf[0];
 

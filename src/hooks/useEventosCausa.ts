@@ -18,8 +18,8 @@ export interface EventoCausa {
 /** Anotaciones con fecha de una causa, la más reciente arriba. */
 export function ordenarAnotacionesConFecha<T extends { fecha_hora: string | null }>(eventos: T[]): T[] {
   return eventos
-    .filter((e) => !!e.fecha_hora)
-    .sort((a, b) => parseLocalTime(b.fecha_hora!) - parseLocalTime(a.fecha_hora!));
+    .filter((e) => !!e.fecha_hora && parseLocalTime(e.fecha_hora) !== Number.MAX_SAFE_INTEGER)
+    .sort((a, b) => parseLocalTime(b.fecha_hora) - parseLocalTime(a.fecha_hora));
 }
 
 export function useEventosCausa(causaId: string | null | undefined) {
@@ -48,9 +48,10 @@ export function useEventosCausa(causaId: string | null | undefined) {
   useEventosChanged(fetchAll);
 
   const conFecha = ordenarAnotacionesConFecha(eventos);
+  // Sin fecha (o con fecha ilegible) van al final.
   const sinFecha = eventos
-    .filter((e) => !e.fecha_hora)
-    .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());
+    .filter((e) => !e.fecha_hora || parseLocalTime(e.fecha_hora) === Number.MAX_SAFE_INTEGER)
+    .sort((a, b) => (new Date(b.created_at ?? 0).getTime() || 0) - (new Date(a.created_at ?? 0).getTime() || 0));
 
   return { eventos, conFecha, sinFecha, loading, error, refetch: fetchAll };
 }

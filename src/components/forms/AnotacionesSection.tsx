@@ -1,3 +1,4 @@
+import { parseLocalTime } from "@/lib/parseDate";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,7 @@ function fmt(d: string) {
 }
 
 function fmtCreado(d: string | null) {
-  if (!d) return "";
+  if (!d || isNaN(new Date(d).getTime())) return "";
   return new Date(d).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 }
 
@@ -54,7 +55,7 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
     categoria_personalizada_id: b.categoria_personalizada_id ?? null,
   }));
   const conFecha = local
-    ? borradoresComoEventos.filter((e) => !!e.fecha_hora).sort((a, b) => (a.fecha_hora! < b.fecha_hora! ? 1 : -1))
+    ? borradoresComoEventos.filter((e) => !!e.fecha_hora).sort((a, b) => parseLocalTime(b.fecha_hora) - parseLocalTime(a.fecha_hora))
     : remoto.conFecha;
   const sinFecha = local ? borradoresComoEventos.filter((e) => !e.fecha_hora) : remoto.sinFecha;
   const loading = local ? false : remoto.loading;
