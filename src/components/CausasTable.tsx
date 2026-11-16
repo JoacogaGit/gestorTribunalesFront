@@ -1,5 +1,6 @@
 import { forwardRef, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { emitCausasChanged } from "@/lib/causasBus";
+import FilaSegura from "@/components/FilaSegura";
 import { patchEstadoDesdeMenu } from "@/lib/reglasListas";
 import { hoyArgentina } from "@/lib/terminacion";
 import { guardarMemoriaVista, leerMemoriaVista } from "@/lib/memoriaVistaLista";
@@ -1145,8 +1146,9 @@ export default function CausasTable({
             const rk = c.rowKey ?? c.id;
             const expanded = expandedId === rk;
             return (
+              <FilaSegura key={rk} modo="tarjeta" numero={c.numero}>
               <div
-                key={rk}
+
                 className={`elevated-card rounded-xl p-3 border-l-4 ${c.secreta ? "causa-secreta-row" : ""}`}
                 style={{ borderLeftColor: rowColor || "hsl(var(--border))" }}
               >
@@ -1200,6 +1202,7 @@ export default function CausasTable({
                   </div>
                 )}
               </div>
+              </FilaSegura>
             );
           })}
           {sorted.length === 0 && (
@@ -1428,6 +1431,7 @@ export default function CausasTable({
                     )}
                   </ContextMenuContent>
                 </ContextMenu>
+                </FilaSegura>
                 );
               })}
               {sorted.length === 0 && (
