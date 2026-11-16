@@ -1,5 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from "react";
-import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+import { AlertTriangle, RotateCcw, Home, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -38,6 +38,23 @@ export default class ErrorBoundary extends Component<Props, State> {
     window.location.href = "/";
   };
 
+  private detalles = () => {
+    const e = this.state.error;
+    return [
+      `${e?.name}: ${e?.message}`,
+      e?.stack ?? "",
+      this.state.info?.componentStack ?? "",
+      `URL: ${window.location.href}`,
+      `Fecha: ${new Date().toISOString()}`,
+      `Navegador: ${navigator.userAgent}`,
+    ].join("\n\n");
+  };
+
+  private handleCopy = () => {
+    const texto = this.detalles();
+    navigator.clipboard?.writeText(texto).catch(() => window.prompt("Copiá los detalles:", texto));
+  };
+
   private handleReset = () => {
     this.setState({ error: null, info: null });
   };
@@ -45,7 +62,6 @@ export default class ErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.error) return this.props.children;
 
-    const isDev = import.meta.env.DEV;
     const scope = this.props.scope ?? "global";
     const title = this.props.title ?? "Algo salió mal";
     const message =
@@ -65,8 +81,14 @@ export default class ErrorBoundary extends Component<Props, State> {
             </div>
           </div>
 
-          {isDev && (
-            <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 overflow-auto max-h-64">
+          <details className="mt-4 rounded-md border border-border bg-muted/40 p-3">
+            <summary className="cursor-pointer text-sm font-semibold select-none">Detalles técnicos</summary>
+            <div className="mt-2 flex justify-end">
+              <Button variant="outline" size="sm" onClick={this.handleCopy}>
+                <Copy className="w-4 h-4 mr-1.5" /> Copiar detalles
+              </Button>
+            </div>
+            <div className="mt-2 overflow-auto max-h-64">
               <p className="text-xs font-mono font-semibold mb-2 text-alert-urgent">
                 {this.state.error.name}: {this.state.error.message}
               </p>
@@ -81,7 +103,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 </pre>
               )}
             </div>
-          )}
+          </details>
 
           <div className="mt-5 flex flex-wrap gap-2 justify-end">
             {scope === "local" && (
