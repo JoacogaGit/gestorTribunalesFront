@@ -252,6 +252,24 @@ export type Database = {
           },
         ]
       }
+      dias_inhabiles: {
+        Row: {
+          descripcion: string | null
+          fecha: string
+          tipo: string
+        }
+        Insert: {
+          descripcion?: string | null
+          fecha: string
+          tipo?: string
+        }
+        Update: {
+          descripcion?: string | null
+          fecha?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       estadisticas_custom: {
         Row: {
           campo: string

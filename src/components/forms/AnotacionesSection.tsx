@@ -16,6 +16,9 @@ import { getSemaforoBg, getSemaforoText } from "@/lib/eventoMapper";
 import { formatLocalDate } from "@/lib/parseDate";
 import { cn } from "@/lib/utils";
 import EventoFormInline from "./EventoFormInline";
+import PlazoFormInline from "./PlazoFormInline";
+import { ordenarPorCarga } from "@/lib/plazos";
+import { Timer } from "lucide-react";
 
 /** Anotación cargada antes de crear la causa; se guarda al crearla. */
 export interface AnotacionBorrador extends EventoInput { _id: string; _creado: string }
@@ -64,6 +67,7 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
   const { categorias } = useCategoriasVocalia(vocalia?.id ?? null);
   const muts = useEventoMutations();
   const [adding, setAdding] = useState(false);
+  const [addingPlazo, setAddingPlazo] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<EventoCausa | null>(null);
 
@@ -86,13 +90,13 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
   const handleCreate = async (v: EventoInput) => {
     if (local) {
       onBorradoresChange?.([...borradores, { ...v, _id: `borrador-${Date.now()}`, _creado: new Date().toISOString() }]);
-      setAdding(false);
+      setAdding(false); setAddingPlazo(false);
       return;
     }
     const r = await muts.crearEvento(causaId!, v);
     if (r.ok !== true) { toast.error(r.error); return; }
     toast.success("Anotación agregada");
-    setAdding(false);
+    setAdding(false); setAddingPlazo(false);
     await afterMutation();
   };
 
@@ -241,7 +245,13 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
             Anotaciones y eventos
           </h3>
         )}
-        {!adding && (
+        {enPanel && !adding && !addingPlazo && (
+          <Button type="button" size="sm" variant="outline" className="h-9 px-3 text-sm mr-2"
+            onClick={() => { setAddingPlazo(true); setEditingId(null); }}>
+            <Timer className="mr-1 h-4 w-4" /> Agregar plazo
+          </Button>
+        )}
+        {!adding && !addingPlazo && (
           <Button
             type="button"
             size="sm"
@@ -270,9 +280,25 @@ export default function AnotacionesSection({ causaId, borradores = [], onBorrado
         />
       )}
 
+      {addingPlazo && (
+        <PlazoFormInline saving={muts.saving} onCancel={() => setAddingPlazo(false)} onSubmit={handleCreate} />
+      )}
+
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando…
+        </div>
+      ) : enPanel ? (
+        <div className="space-y-2">
+          {conFecha.length + sinFecha.length === 0 ? (
+            <p className="text-xs text-muted-foreground/60 italic">Sin anotaciones</p>
+          ) : (
+            <div className="space-y-2" data-tour="anotaciones-con-fecha">
+              {ordenarPorCarga([...conFecha, ...sinFecha]).map((e) => renderItem(e, !!e.fecha_hora))}
+            </div>
+          )}
+          {conFecha.length + sinFecha.length === 0 && <div className="space-y-2" data-tour="anotaciones-con-fecha" />}
+          <div className="space-y-2" data-tour="anotaciones-sin-fecha" />
         </div>
       ) : (
         <div className={cn("grid gap-5", enPanel ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 gap-4")}>
